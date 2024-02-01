@@ -1,0 +1,107 @@
+\documentclass{beamer}
+
+
+\usenavigationsymbolstemplate{}
+
+\usetheme{unibt}
+\usepackage{xcolor}
+\usepackage[ansinew]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[authoryear]{natbib}
+\usepackage{transparent}
+\usepackage[titletoc]{appendix}
+\usepackage[left]{eurosym}
+\usepackage{booktabs}
+\usepackage{animate}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{hyperref}
+
+
+\usepackage[absolute, overlay]{textpos} % gives textblock environment
+\usepackage{xurl} % break urls
+
+
+\newcommand{\rbg}[1]{\raisebox{2.25ex}[-2.25ex]{#1}}
+\newcommand{\rbv}[1]{\raisebox{1.25ex}[-1.25ex]{#1}}
+
+\newcounter{saveeqn}
+\newcommand{\appeqn}{\setcounter{saveeqn}{\value{equation}\stepcounter{saveeqn}}%
+	\setcounter{equation}{0}%
+	\renewcommand{\theequation}{%
+		\mbox{A\arabic{equation}}}}
+\newcommand{\reseteqn}{\setcounter{equation}{\value{saveeqn}}%
+	\renewcommand{\theequation}{\arabic{equation}}}
+
+\newcommand{\appppage}{
+	\setcounter{page}{1}%
+	\renewcommand{\thepage}{%
+		\mbox{A\arabic{page}}}}
+
+\newcommand{\appsection}{
+	\setcounter{section}{1}%
+	\renewcommand{\thesection}{%
+		\mbox{A\arabic{section}}}}
+
+\newcounter{tableapp}
+\newcommand{\apptable}{\setcounter{tableapp}{\value{table}\stepcounter{tableapp}}%
+	\setcounter{table}{0}%
+	\renewcommand{\thetable}{%
+		\mbox{A\arabic{table}}}
+	\renewcommand{\theHtable}{%
+		\mbox{A\arabic{table}}}}
+
+\newcommand{\resettable}{\setcounter{table}{\value{tableapp}}%
+	\renewcommand{\thetable}{\arabic{table}}}
+
+\definecolor{titlecolor}{RGB}{3,138,94} 
+
+
+\usefoottemplate{\vbox{%
+		\tinycolouredline{structure!0!hell}%
+		{\color{white}\begin{parbox}{0.5cm}{\pgfimage[height=0.35cm]{figures/logo2.png}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{1cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hspace{3cm}\begin{parbox}{3.2cm}{\textbf{EE2024}}\end{parbox}}}}
+
+
+\useheadtemplate{\vbox{%
+		\tinycolouredline{structure!0!hell}%
+		{\color{white}\begin{parbox}{20cm}{\insertsection}\end{parbox}}}}
+
+
+
+\title{Conglomerate mergers: \newline Effects on
+growth and competition}
+\author{Simon Bl\"othner \footnote{University of Bayreuth}, Alessandro Kadner-Graziano \footnote{Charles River Associates}}
+\date{\today}
+
+\begin{document}
+\maketitle
+\section{Introduction}
+\begin{frame}{Motivation}
+    Your content goes here.
+\end{frame}
+\begin{frame}{Model and setup}
+    \begin{itemize}
+        \item Bullet Point 1
+
+        \item Bullet Point 2
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Results}
+    \begin{itemize}
+        \item Bullet Point 1
+
+        \item Bullet Point 2
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Questions to be addressed}
+    \begin{itemize}
+        \item Bullet Point 1
+
+        \item Bullet Point 2
+    \end{itemize}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,39 @@
+\ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/color/beamercolorthemeunibt.sty,v 1.6 2007/01/28 20:48:24 tantau Exp $
+
+
+\mode<presentation>
+
+\definecolor{hell}{RGB}{3,138,94}
+\definecolor{dunkel}{RGB}{26,26,26}
+\definecolor{hellgrau}{RGB}{222,222,222}
+
+\setbeamercolor{structure}{fg=hell} 
+\setbeamercolor{titlelike}{parent=structure}
+\setbeamercolor{frametitle}{fg=hell}
+\setbeamercolor{title}{fg=black}
+\setbeamercolor{item}{fg=hell}
+
+
+\setbeamercolor{normal text}{fg=black,bg=white}
+
+\setbeamercolor*{palette primary}{fg=white,bg=hell}
+\setbeamercolor*{palette secondary}{parent=palette primary,use=palette primary,bg=hell}
+\setbeamercolor*{palette tertiary}{parent=palette primary,use=palette primary,bg=dunkel}
+
+\setbeamercolor*{sidebar}{parent=palette primary}
+
+\setbeamercolor*{palette sidebar primary}{fg=white}
+\setbeamercolor*{palette sidebar secondary}{fg=black}
+\setbeamercolor*{palette sidebar tertiary}{fg=white}
+\setbeamercolor*{palette sidebar quaternary}{fg=black}
+
+\setbeamercolor*{block title example}{fg=white,bg=hell}
+\setbeamercolor*{block body example}{fg=black,bg= hellgrau}
+
+\setbeamercolor{framesubtitle}{fg=black}
+
+\setbeamercolor*{subtitle}{fg=black}
+
+
+\mode
+<all>
