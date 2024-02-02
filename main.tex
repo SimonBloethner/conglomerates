@@ -1,4 +1,4 @@
-\documentclass{beamer}
+\documentclass[aspectratio=169]{beamer}
 
 
 \usenavigationsymbolstemplate{}
@@ -17,6 +17,8 @@
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{svg}
 
 
 \usepackage[absolute, overlay]{textpos} % gives textblock environment
@@ -60,7 +62,7 @@
 
 \usefoottemplate{\vbox{%
 		\tinycolouredline{structure!0!hell}%
-		{\color{white}\begin{parbox}{0.5cm}{\pgfimage[height=0.35cm]{figures/logo2.png}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{1cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hspace{3cm}\begin{parbox}{3.2cm}{\textbf{EE2024}}\end{parbox}}}}
+		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{1cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hspace{3cm}\begin{parbox}{3.2cm}{\textbf{EE2024}}\end{parbox}}}}
 
 
 \useheadtemplate{\vbox{%
@@ -79,7 +81,37 @@ growth and competition}
 \begin{document}
 \maketitle
 \begin{frame}{Motivation}
-    Your content goes here.
+  \begin{columns}[T]
+    \begin{column}{0.4\textwidth}
+      \begin{tikzpicture}
+        % Adjust the coordinates to position logos as needed
+        \node at (0,0) {\includesvg[width=2cm]{figures/logos/Adani_logo_2012.svg}};
+        \node at (1,1) {\includesvg[width=2cm]{figures/logos/Hitachi_logo.svg}};
+        \node at (-1,2) {\includesvg[width=2cm]{figures/logos/Procter_&_Gamble_logo.svg}};
+        \node at (-1,-1) {\includesvg[width=2cm]{figures/logos/Samsung_wordmark.svg}};
+        \node at (2,-1) {\includesvg[width=2cm]{figures/logos/Lockheed_Martin_logo.svg}};
+        \node at (2,-2) {\includesvg[width=2cm]{figures/logos/LVMH_wordmark.svg}};
+        \node at (1,3) {\includesvg[width=2cm]{figures/logos/JNJ_Logo_New.svg}};
+        \node at (-1,-3.3) {\includesvg[width=2cm]{figures/logos/DuPont_logo.svg}};
+        \node at (2.2,2) {\includesvg[width=2cm]{figures/logos/Siemens_AG_logo.svg}};
+        \node at (0,-2) {\includesvg[width=2cm]{figures/logos/KT_Logo.svg}};
+        % Add more nodes for additional logos
+      \end{tikzpicture}
+      
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \begin{itemize}
+        \item A conglomerate is a combination of business units operating in entirely different industries
+        \item Usually they span multiple countries (multinational)
+        \item There are more than \textit{1000} conglomerates world wide
+        \item 
+        \item 
+      \end{itemize}
+    \end{column}
+    
+  \end{columns}
+    
+      
 \end{frame}
 \begin{frame}{Model and setup}
     \begin{itemize}
@@ -111,7 +143,7 @@ growth and competition}
         \item More dynamic splitting decisions depending on a change of ranks or market share
         \item Include jump processes
         \item Include pricing decisions by the firms to compute welfare statistics
-        \item 
+        \item Check whether certain industrial configurations have different underlying processes (chemicals, electronics, consumer goods, etc.)
     \end{itemize}
 \end{frame}
 
