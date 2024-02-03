@@ -64,7 +64,7 @@
 
 \usefoottemplate{\vbox{%
 		\tinycolouredline{structure!0!hell}%
-		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{1cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hspace{3cm}\begin{parbox}{3.2cm}{\textbf{EE2024}}\end{parbox}}}}
+		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{2.5cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hfill\begin{parbox}{2.2cm}{\textbf{EE2024}}\end{parbox}}}}
 
 
 \useheadtemplate{\vbox{%
@@ -73,8 +73,8 @@
 
 
 
-\title{Conglomerate mergers: \newline Effects on
-growth and competition}
+\title{Conglomerate Mergers: \newline Effects on
+Growth and Competition}
 
 \author{Simon Bl\"othner \inst{1} \and Alessandro Kadner-Graziano \inst{1, 2}}
 \institute{\inst{1}University of Bayreuth  \and \inst{2}Charles River Associates}
@@ -82,6 +82,7 @@ growth and competition}
 
 \begin{document}
 \maketitle
+
 \begin{frame}{Motivation}
   \begin{columns}[T]
     \begin{column}{0.4\textwidth}
@@ -103,17 +104,28 @@ growth and competition}
     \end{column}
     \begin{column}{0.6\textwidth}
       \begin{itemize}
+        \setlength\itemsep{0.8em}
         \item A conglomerate is a combination of business units operating in entirely different industries
         \item Usually they span multiple countries (multinational)
-        \item There are more than \textit{1000} conglomerates world wide
-        \item 
-        \item 
+        \item There are more than \textit{1000} conglomerates worldwide
+        \item Highly dynamic process of merging, acquiring and splitting
+        \item Many of the brands you use daily probably belong to a conglomerate
       \end{itemize}
     \end{column}
     
   \end{columns}
-    
-      
+       
+\end{frame}
+
+\begin{frame}{Key Questions}
+  
+  \begin{enumerate}
+    \setlength\itemsep{0.8em}
+    \item Conglomerate mergers are not well understood in economics. Why would firms in unrelated markets merge?
+    \item How can antitrust authorities, who are tasked with protecting consumers from harmful mergers, evaluate these mergers?
+    \item How will transaction costs (communication, transfer, trust, etc.) affect conglomerate structure?
+  \end{enumerate}
+
 \end{frame}
 
 
@@ -148,7 +160,7 @@ growth and competition}
         \item $\Delta =$ Growth $(\sim \mathcal{N}(\mu_n, \sigma_n))$
         \item $T =$ Total steps
         \item $p =$ Merge probability
-        \item $\alpha =$ Pooling rate
+        \item $\alpha =$ Pooling rate ($0.2$)
         \item $\lambda =$ Transaction cost function
         \begin{itemize}
           \item $\frac{\partial \lambda}{\partial \# m_i \in c_k} > 0$
@@ -160,7 +172,7 @@ growth and competition}
 \end{frame}
 
 
-\begin{frame}{Results: Merging Behaviour}
+\begin{frame}{Merging Behavior}
   \begin{columns}[T]
     \begin{column}{0.3\textwidth}
       \centering
@@ -179,14 +191,15 @@ growth and competition}
   \end{columns}
 
   \begin{itemize}
-    \item Merging is a dominant strategy with more than 70\,\% of firms in a conglomerate
-    \item Stabilisation in the number of conglomeates (convergence speed depends on transaction costs)
-    \item Highly unequal distribution of conglomerate size, with the 90\,\% and 70\,\% quantiles being far apart the 25\,\% and 10\,\% ones
+    \setlength\itemsep{0.8em}
+    \item Merging is a dominant strategy with more than 70\,\% of firms in a conglomerate (invariant to merge probability $p$)
+    \item Stabilization in the number of conglomerates (convergence speed depends on transaction costs)
+    \item Highly unequal distribution of conglomerate size, with the 90\,\% and 70\,\% quantiles being far apart from the 25\,\% and 10\,\% ones
   \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Results: Market Concentration (1/3)}
+\begin{frame}{Market Concentration (1/3) - Size Matters}
   \begin{columns}[T]
     \begin{column}{0.3\textwidth}
       \centering
@@ -205,14 +218,15 @@ growth and competition}
   \end{columns}
 
   \begin{itemize}
-    \item 
-    \item 
-    \item 
+    \setlength\itemsep{0.8em}
+    \item Increasing the conglomerate size decreases the chance to end up in the lower quantiles (ranks) and to have lower market share ($\frac{s_{it}}{\sum_{i} s_{it}}$)
+    \item Increasing the size above a certain threshold will not increase the success anymore (inverse U-shape)
+    \item In the progression of the model the optimal size increases, but the costs eat up the gains from size at an increasing rate
   \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Results: Market Concentration (2/3)}
+\begin{frame}{Market Concentration (2/3) - Persistence \& Mobility}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \centering
@@ -222,9 +236,16 @@ growth and competition}
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{itemize}
-        \item 
-        \item 
-        \item 
+        \setlength\itemsep{0.8em}
+        \item Almost all markets tend to strong, but not perfect inequality
+        \item Many market participants have almost no market share 
+        \item High inequality is driven by low mobility across the ranks
+        \begin{itemize}
+          \setlength\itemsep{0.6em}
+          \item Maximum quantiles are populated by a few enduring firms
+          \item Low quantiles are made up by a varying population
+          \item High end (90\,\%) quantiles are much more attainable
+        \end{itemize}
       \end{itemize}
         
     \end{column}
@@ -233,29 +254,45 @@ growth and competition}
   
 \end{frame}
 
-\begin{frame}{Results: Market Concentration (3/3)}
+\begin{frame}{Market Concentration (3/3) - The Impact of Pooling}
     \begin{columns}[T] % T aligns the tops of the columns
-        \begin{column}{0.6\textwidth}
+        \begin{column}{0.5\textwidth}
           \centering
-          \includegraphics[width=\textwidth]{figures/shares.png}
+          \includegraphics[width=0.96\textwidth]{figures/shares.png}
         \end{column}
       
-        \begin{column}{0.4\textwidth}
+        \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \item Explanation point 1
-            \item Explanation point 2
-            \item Explanation point 3
+            \setlength\itemsep{0.8em}
+            \item No-pooling baseline case (dotted line) yields the known result of high skew
+            \item Increasing the pooling rate marginally (to 1\,\%) from the baseline already lowers market concentration drastically
+            \item Increasing the sharing rate lowers market concentration gradually
+
           \end{itemize}
         \end{column}
       \end{columns}
+\end{frame}
+
+\begin{frame}{Key Findings}
+  
+  \begin{enumerate}
+    \setlength\itemsep{0.8em}
+    \item Including dynamic frameworks allows for the explanation of many phenomena of economic exchange
+    \item Increasing firm cooperation through conglomerate formation does not necessarily harm competition
+    \item Transaction costs play a crucial role in determining the size of a conglomerate
+  \end{enumerate}
+
 \end{frame}
 
 \begin{frame}{Questions to be addressed}
     \begin{itemize}
         \item More dynamic splitting decisions depending on a change of ranks or market share
         \item Include jump processes
-        \item Include pricing decisions by the firms to compute welfare statistics
-        \item Check whether certain industrial configurations have different underlying processes (chemicals, electronics, consumer goods, etc.)
+        \item Model pricing decisions by the firms to compute welfare statistics
+        \item Investigate whether certain industrial configurations have different underlying processes (chemicals, electronics, consumer goods, etc.)
+        \item Check how conglomerate performance is linked to the underlying growth process
+        \item Find stronger transaction cost modelling 
+        \item More robustness tests
     \end{itemize}
 \end{frame}
 
@@ -269,13 +306,13 @@ growth and competition}
 
 \vspace{1.5cm}
 
-simon.bloethner@uni-bayreuth.de
+\href{mailto:simon.bloethner@uni-bayreuth.de}{simon.bloethner@uni-bayreuth.de}
 
 \medskip
 
 \vspace{.5cm}
 
-a.kadner-graziano@uni-bayreuth.de
+\href{mailto:a.kadner-graziano@uni-bayreuth.de}{a.kadner-graziano@uni-bayreuth.de}
 \end{frame}
 
 \end{document}
