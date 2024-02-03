@@ -19,6 +19,8 @@
 \usepackage{hyperref}
 \usepackage{tikz}
 \usepackage{svg}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{algpseudocode}
 
 
 \usepackage[absolute, overlay]{textpos} % gives textblock environment
@@ -113,15 +115,125 @@ growth and competition}
     
       
 \end{frame}
-\begin{frame}{Model and setup}
-    \begin{itemize}
-        \item Bullet Point 1
 
-        \item Bullet Point 2
-    \end{itemize}
+
+\begin{frame}{Model and setup}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{minipage}{\linewidth}
+        \begin{algorithm}[H]
+          \SetAlgoLined
+          \KwIn{$N, M, C, \Delta, T, p , \alpha, \lambda$}
+          \For{$t$ in $T$}{
+            \ForEach{$m_i$ $\in$ $N \times M$}{
+              Merge with $m_j$ if $m_j$ $\notin$ $n_i$ and $m_j$ $\notin$ $c_{it}$ with $p$ 
+            }
+            \ForEach{$c_k \in C$}{
+              $pool_k$ = $\sum_{m_i \in c_k} \alpha \Delta_{it} - \lambda(c_k)$
+              $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
+            }
+            \ForEach{$m_i$ $\in$ $N \times M$}{
+              Split if $s_{it} < s_{it - 4}$  
+            }
+
+          }
+        \end{algorithm}
+      \end{minipage}
+    \end{column}
+    \begin{column}{0.5\textwidth}  
+      \begin{itemize}
+        \item $N = \#$ Markets (100)
+        \item $M = \#$ Firms per Market (100)
+        \item $C =$ Conglomerates
+        \item $\Delta =$ Growth $(\sim \mathcal{N}(\mu_n, \sigma_n))$
+        \item $T =$ Total steps
+        \item $p =$ Merge probability
+        \item $\alpha =$ Pooling rate
+        \item $\lambda =$ Transaction cost function
+        \begin{itemize}
+          \item $\frac{\partial \lambda}{\partial \# m_i \in c_k} > 0$
+          \item $\frac{\partial^2 \lambda }{\partial^2 \# m_i \in c_k} > 0$ 
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}{Results}
+
+\begin{frame}{Results: Merging Behaviour}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/mean.png}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/number.png}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/q_m.png}
+    \end{column}
+  \end{columns}
+
+  \begin{itemize}
+    \item Merging is a dominant strategy with more than 70\,\% of firms in a conglomerate
+    \item Stabilisation in the number of conglomeates (convergence speed depends on transaction costs)
+    \item Highly unequal distribution of conglomerate size, with the 90\,\% and 70\,\% quantiles being far apart the 25\,\% and 10\,\% ones
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Results: Market Concentration (1/3)}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/sizevrank.png}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/sizevshare.png}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{figures/est.png}
+    \end{column}
+  \end{columns}
+
+  \begin{itemize}
+    \item 
+    \item 
+    \item 
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Results: Market Concentration (2/3)}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=0.67\textwidth]{figures/gini.png}
+
+      \includegraphics[width=0.67\textwidth]{figures/persistence.png}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item 
+        \item 
+        \item 
+      \end{itemize}
+        
+    \end{column}
+  \end{columns}
+
+  
+\end{frame}
+
+\begin{frame}{Results: Market Concentration (3/3)}
     \begin{columns}[T] % T aligns the tops of the columns
         \begin{column}{0.6\textwidth}
           \centering
