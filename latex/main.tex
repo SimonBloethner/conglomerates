@@ -18,6 +18,8 @@
 \usepackage{epstopdf}
 \usepackage{hyperref}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usepackage{svg}
 \usepackage[ruled,vlined]{algorithm2e}
 \usepackage{algpseudocode}
@@ -64,7 +66,7 @@
 
 \usefoottemplate{\vbox{%
 		\tinycolouredline{structure!0!hell}%
-		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{2.5cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hfill\begin{parbox}{2.2cm}{\textbf{EE2024}}\end{parbox}}}}
+		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{2.5cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hfill\begin{parbox}{2.2cm}{\textbf{GradSem SS24}}\end{parbox}}}}
 
 
 \useheadtemplate{\vbox{%
@@ -117,7 +119,45 @@ Growth and Competition}
        
 \end{frame}
 
-\begin{frame}{Key Questions}
+
+\begin{frame}[fragile]{Growth Optimization: A Primer}
+  \begin{columns}
+   \begin{column}{0.6\textwidth}
+    \begin{itemize}
+     \item ``When tomorrow depends on today''
+     \item Losses hurt exponentially more
+     \item Irreversibility of state transitions makes things even worse (Think Russian Roulette)
+     \item Most economic processes are multiplicative
+     \begin{itemize}
+      \item Capital accumulation
+      \item Trust, reputation
+      \item Legal cases
+     \end{itemize}
+     \item Shifting the return distribution upwards, at the smallest cost
+    \end{itemize}
+   \end{column}
+   \begin{column}{0.4\textwidth}
+    \only<1->{\begin{tikzpicture}[scale=0.7]
+     \begin{axis}[
+      xlabel=$x$,
+      ylabel=$\log(x)$,
+      xmin=0.1, xmax=5,
+      ymin=-2, ymax=3,
+      domain=0.1:5,
+      samples=100,
+      smooth,
+      axis lines=middle,
+      xtick=\empty,
+      ytick=\empty
+     ]
+     \addplot[blue, thick] {ln(x)};
+     \end{axis}
+    \end{tikzpicture}}
+   \end{column}
+  \end{columns}
+ \end{frame}
+
+ \begin{frame}{Key Questions}
   
   \begin{enumerate}
     \setlength\itemsep{0.8em}
@@ -284,15 +324,102 @@ Growth and Competition}
 
 \end{frame}
 
+
+\begin{frame}{Model Extension: Endogenous Pricing}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{minipage}{\linewidth}
+        \begin{algorithm}[H]
+          \SetAlgoLined
+          \only<1>{\KwIn{$N, M, C, \Delta, T, p , \alpha, \lambda$}
+          \For{$t$ in $T$}{
+            \ForEach{$m_i$ $\in$ $N \times M$}{
+              Merge with $m_j$ if $m_j$ $\notin$ $n_i$ and $m_j$ $\notin$ $c_{it}$ with $p$ 
+            }
+            \ForEach{$c_k \in C$}{
+              $pool_k$ = $\sum_{m_i \in c_k} \alpha \Delta_{it} - \lambda(c_k)$
+              $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
+              
+            }
+            \ForEach{$m_i$ $\in$ $N \times M$}{
+              Split if $s_{it} < s_{it - 4}$  
+            }
+            }
+          }
+            \only<2>{
+              \vdots
+              \ForEach{$m \in M$}{
+                $p_{mt} = \pi(\cdot)$
+              }
+              \ForEach{$c_k \in C$}{
+                $pool_k$ = $\sum_{m_i \in c_k} \alpha \textcolor{red}{\Pi_{it}(\cdot)}  - \lambda(c_k)$
+                $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
+              }
+              \ForEach{$m \in M$}{
+                $s_{mt}(\boldsymbol{\Pi})$
+              }
+
+            \vdots
+            }
+          
+        \end{algorithm}
+      \end{minipage}
+    \end{column}
+    \begin{column}{0.5\textwidth}  
+      \only<2>{\begin{itemize}
+        \item Allow firms to set prices following their policy $\pi(\cdot)$
+        \item Fluctuations in a company's growth through stochastic costs $c_{it}$
+        \item Market share as the cumulative profits $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) * p_{it} - c_{it}$ with $s_{it}(\boldsymbol{\Pi}) = \frac{\sum_{\tau=1}^{t}\Pi_{i \tau}}{\sum_{\tau=1}^{t} \underset{j: j \neq i}{\sum} \Pi_{j \tau}}$
+
+      \end{itemize}
+      }
+    \end{column}
+  \end{columns}
+
+
+
+
+  \only<1>{ % This will appear from the second slide onwards
+  \begin{tikzpicture}[remember picture, overlay]
+      \draw[red, very thick, rounded corners] 
+      (current page.north west) ++(1.1cm,-4.5cm) rectangle +(5.8cm,-2.1cm);
+  \end{tikzpicture}
+  }
+
+\end{frame}
+
+\begin{frame}{Model Extension: Pricing Decision}
+
+  \begin{columns}[T] % T aligns the tops of the columns
+    \begin{column}{0.55\textwidth}
+      \begin{itemize}
+        \setlength\itemsep{0.8em}
+        \item Demand function of the form $D(\mathbf{P_t}, s_{t}) = 1 - (1 - s_{it}) p_{it} + 0.5 \underset{j: j \neq i}{\max} \, p_{jt}$
+        \item Learn the optimal pricing policy $\pi(\cdot)$ using a Proximal Policy Optimization reinforcement learning algorithm
+        \item Information set of the firm  $\{p_{it-1}, s_{it-1}, \underset{j: j \neq i}{\max} \, p_{jt-1}, \underset{j: j \neq i}{\max} \, p_{jt-2}\}$
+        \item Goal of the firm is to optimize the profit $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) * p_{it}$
+                
+      \end{itemize}
+    \end{column}
+
+
+
+    \begin{column}{0.45\textwidth}
+        \begin{figure}
+          \includegraphics[width=.9\textwidth]{figures/share_zoomed.png}
+        \end{figure}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 \begin{frame}{Questions to be addressed}
     \begin{itemize}
         \item More dynamic splitting decisions depending on a change of ranks or market share
         \item Include jump processes
-        \item Model pricing decisions by the firms to compute welfare statistics
         \item Investigate whether certain industrial configurations have different underlying processes (chemicals, electronics, consumer goods, etc.)
         \item Check how conglomerate performance is linked to the underlying growth process
         \item Find stronger transaction cost modelling 
-        \item More robustness tests
+        \item Profit pooling vs. Cost pooling
     \end{itemize}
 \end{frame}
 

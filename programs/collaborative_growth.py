@@ -145,7 +145,7 @@ def model(params):
             for firm in firms:
                 if len(firm.conglomerate) > 1:
                     # if firm.states[step] / firm.states[step - comparison] < break_thresh:
-                    if firm.rank[step] - firm.rank[step - comparison] < 3:
+                    if firm.rank[step] - firm.rank[step - comparison] < 10:
                         exit_(firms, firm)
 
     results = np.array([firm.states for firm in firms]).T
