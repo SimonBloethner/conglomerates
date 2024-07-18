@@ -15,6 +15,7 @@ share = 0.9999
 merge_thresh = 0.1
 comparison = 2
 break_thresh = 0.85
+lookback = 50
 proportional = False
 shares = np.arange(0, 1.1, 0.1)
 shares = np.array([0.2])
@@ -23,7 +24,7 @@ shares = np.array([0.2])
 quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
 
 for trial, share in enumerate(shares):
-    params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional]
+    params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback]
     res = collaborative_growth.model(params=params_)
 
     mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res

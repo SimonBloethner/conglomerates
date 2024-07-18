@@ -3,13 +3,15 @@ from scipy.stats import random_correlation
 
 
 class Firm:
-    def __init__(self, market, number, steps):
+    def __init__(self, market, number, steps, lookback):
         self.id = number
         self.home_market = market
         self.states = np.ones(steps + 1)
         self.markets = [market]
         self.conglomerate = [self.id]
         self.rank = np.ones(steps + 1)
+        self.outside_profits = np.ones(lookback)
+        self.entered = 0
 
 
 def logistic_cost(x, k, x_0):
@@ -57,7 +59,7 @@ def model(params):
     mu_sig_corr = 0.7
     means = [0.1, 0.05]
 
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional = params
+    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
     cov_mat = np.ones((2, 2)) * mu_sig_corr + np.diag(np.tile(1 - mu_sig_corr, 2))
     growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
     growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
@@ -78,7 +80,7 @@ def model(params):
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
-    firms = [Firm(market=market, number=ids[market, firm], steps=steps) for market in range(markets) for firm in
+    firms = [Firm(market=market, number=ids[market, firm], steps=steps, lookback=lookback) for market in range(markets) for firm in
              range(firms_per_market)]
     conglomerates = []
     for step in range(steps):
@@ -100,7 +102,12 @@ def model(params):
 
                     conglomerate = firms[target].conglomerate + firms[firm].conglomerate
                     conglomerate.sort()
-
+                    
+                    if step > 10:
+                        returns_ = np.zeros((np.min([step, lookback]), len(conglomerate)))
+                        for enumer, partner in enumerate(conglomerate):
+                            returns_[:, enumer] = firms[partner].states[np.max([step - lookback, 0]):step]
+                            
                     for partner in conglomerate:
                         firms[partner].markets = joint_markets.copy()
                         firms[partner].conglomerate = conglomerate.copy()
@@ -126,6 +133,7 @@ def model(params):
                 conglomerate) if share > 0 else gains  # Equal distribution of pool contents.
 
             for partner, firm in enumerate(conglomerate):
+                firms[firm].outside_profits[step % lookback] = realizations[(step, ) + tuple(markets_structure[firm])]
                 firms[firm].states[step + 1] = firms[firm].states[step] + returns[partner]
                 if firms[firm].states[step + 1] < 0:
                     firms[firm].states[step + 1] = 1
@@ -144,9 +152,15 @@ def model(params):
         if step > comparison:
             for firm in firms:
                 if len(firm.conglomerate) > 1:
+                    if firm.entered < step - lookback:
+                        outside_profit = np.prod(firm.outside_profits) ** 1 / lookback
+                        inside_profits = firm.states[step - lookback:step]
+                        inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** 1 / lookback
+                        if outside_profit > inside_profits:
+                            exit_(firms, firm)
                     # if firm.states[step] / firm.states[step - comparison] < break_thresh:
-                    if firm.rank[step] - firm.rank[step - comparison] < 10:
-                        exit_(firms, firm)
+                    # if firm.rank[step] - firm.rank[step - comparison] < 10:
+                    #     exit_(firms, firm)
 
     results = np.array([firm.states for firm in firms]).T
 
