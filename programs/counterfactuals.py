@@ -19,6 +19,7 @@ share = 0.9999
 merge_thresh = 0.05
 comparison = 4
 break_thresh = 0.85
+lookback = 50
 proportional = False
 shares = np.arange(0, 0.2, 0.01)
 
@@ -30,7 +31,7 @@ for trial, share in tqdm(enumerate(shares)):
     quantiles = np.empty(shape=(counterfactuals, 4, steps + 1))
     for experiment in range(counterfactuals):
         params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
-                   proportional]
+                   proportional, lookback]
         res = collaborative_growth.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res
         quantiles[experiment, :, :] = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=(0, 2))

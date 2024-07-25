@@ -92,7 +92,8 @@ def model(params):
              range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
-    for step in tqdm(range(steps)):
+    # for step in tqdm(range(steps)):
+    for step in range(steps):
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
         if draws.shape[0] > 0:
@@ -283,9 +284,10 @@ def model(params):
         avg_share = []
         avg_rank = []
         for conglomerate in all_time_conglomerates[period]:
-            to_append = [len(conglomerate), market_share[:, period, :][np.where(np.isin(ids, conglomerate))].mean()]
+            coords = markets_structure[list(conglomerate)]
+            to_append = [len(conglomerate), market_share[:, period, :][(coords[:, 0], coords[:, 1])].mean()]
             avg_share.append(to_append)
-            to_append = [len(conglomerate), ranks[period, :, :][np.where(np.isin(ids, conglomerate))].mean()]
+            to_append = [len(conglomerate), ranks[period, :, :][(coords[:, 0], coords[:, 1])].mean()]
             avg_rank.append(to_append)
 
         avg_shares.append(np.array(avg_share))

@@ -18,7 +18,7 @@ break_thresh = 0.85
 lookback = 50
 proportional = False
 shares = np.arange(0, 1.1, 0.1)
-shares = np.array([0.2])
+shares = np.array([0.0])
 
 
 quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
