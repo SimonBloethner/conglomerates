@@ -1,5 +1,8 @@
 import numpy as np
 from scipy.stats import random_correlation
+from tqdm import tqdm
+
+np.random.seed(1)
 
 
 class Firm:
@@ -11,7 +14,8 @@ class Firm:
         self.conglomerate = [self.id]
         self.rank = np.ones(steps + 1)
         self.outside_profits = np.ones(lookback)
-        self.entered = 0
+        self.entered = None
+        self.conglomerate_id = None
 
 
 def logistic_cost(x, k, x_0):
@@ -36,15 +40,19 @@ def format_func(value, tick_number):
     return f'{value:.2f}'
 
 
-def exit_(firms, firm):
+def exit_(firms, firm, conglomerates):
     partners = firm.conglomerate.copy()
     partners.remove(firm.id)
     for partner in partners:
         firms[partner].markets.remove(firm.home_market)
         firms[partner].conglomerate.remove(firm.id)
 
+    conglomerates[firm.conglomerate_id]['firms'].remove(firm.id)
+
     firm.conglomerate = [firm.id]
     firm.markets = [firm.home_market]
+    firm.entered = None
+    firm.conglomerate_id = None
 
 
 def model(params):
@@ -82,8 +90,9 @@ def model(params):
 
     firms = [Firm(market=market, number=ids[market, firm], steps=steps, lookback=lookback) for market in range(markets) for firm in
              range(firms_per_market)]
-    conglomerates = []
-    for step in range(steps):
+    all_time_conglomerates = []
+    conglomerates = {}
+    for step in tqdm(range(steps)):
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
         if draws.shape[0] > 0:
@@ -97,51 +106,125 @@ def model(params):
                 target = np.where((markets_structure == target).all(axis=1))[0][0]
 
                 if not np.isin(firms[target].markets, firms[firm].markets).any():
+                    home_id = firms[firm].conglomerate_id
+                    cong_id = firms[target].conglomerate_id
+
                     joint_markets = firms[target].markets + firms[firm].markets
                     joint_markets.sort()
 
                     conglomerate = firms[target].conglomerate + firms[firm].conglomerate
                     conglomerate.sort()
                     
-                    if step > 10:
-                        returns_ = np.zeros((np.min([step, lookback]), len(conglomerate)))
-                        for enumer, partner in enumerate(conglomerate):
-                            returns_[:, enumer] = firms[partner].states[np.max([step - lookback, 0]):step]
-                            
+                    if len(conglomerate) > 2:
+                        if home_id is None or cong_id is None:
+                            conglomerate_id = home_id if cong_id is None else cong_id
+                            true_pool = conglomerates[conglomerate_id]['pool']
+                            synth_pool = np.zeros(lookback).astype(float)
+                            for enumer, synth in enumerate(range(max(step - lookback, 0), step)):
+                                indices = markets_structure[conglomerate, :]
+                                returns = realizations[synth, indices[:, 1], indices[:, 0]]
+                                states = np.array([firms[firm].states[synth] for firm in conglomerate])
+                                gains = states * returns - states
+                                if proportional:
+                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                else:
+                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+
+                                synth_pool[enumer] = pool
+
+                            if synth_pool.sum() < true_pool.sum():
+                                continue
+                        else:
+                            true_pool0 = conglomerates[home_id]['pool']
+                            true_pool1 = conglomerates[cong_id]['pool']
+                            synth_pool = np.zeros(lookback).astype(float)
+                            indices = markets_structure[conglomerate, :]
+                            for enumer, synth in enumerate(range(max(step - lookback, 0), step)):
+                                returns = realizations[synth, indices[:, 1], indices[:, 0]]
+                                states = np.array([firms[firm].states[synth] for firm in conglomerate])
+                                gains = states * returns - states
+                                if proportional:
+                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                else:
+                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+
+                                synth_pool[enumer] = pool
+
+                            if synth_pool.sum() < true_pool0.sum() or synth_pool.sum() < true_pool1.sum():
+                                continue
+                    
+                    if cong_id is None and home_id is None:
+                        existing = np.array(list(conglomerates.keys()))
+                        if len(existing) == 0:
+                            new_id = 0
+                        else:
+                            all_ = np.arange(len(conglomerates.keys()))
+                            lowest_new = all_[np.logical_not(np.isin(all_, existing))]
+                            if lowest_new.shape[0] == 0:
+                                new_id = np.max(all_) + 1
+                            else:
+                                new_id = np.min(lowest_new)
+
                     for partner in conglomerate:
                         firms[partner].markets = joint_markets.copy()
                         firms[partner].conglomerate = conglomerate.copy()
 
-        period_conglomerates = list(
-            set(tuple(lst) for lst in [firm.conglomerate for firm in firms if len(firm.conglomerate) > 1]))
-        conglomerates.append(period_conglomerates)
+                    if home_id is not None and cong_id is not None:
+                        conglomerates[cong_id] = {'firms': conglomerate.copy(), 'pool': synth_pool}
+                        
+                        for member in conglomerate:
+                            firms[member].conglomerate_id = cong_id
+                            firms[firm].entered = step
+                        
+                        del conglomerates[home_id]
+
+                    elif home_id is None and cong_id is not None:
+                        conglomerates[cong_id]['firms'] = conglomerate.copy()
+                        firms[firm].conglomerate_id = cong_id
+                        firms[firm].entered = step
+
+                    elif home_id is not None and cong_id is None:
+                        conglomerates[home_id]['firms'] = conglomerate.copy()
+                        firms[target].conglomerate_id = home_id
+                        firms[target].entered = step
+
+                    elif home_id is None and cong_id is None:
+                        firms[firm].conglomerate_id = new_id
+                        firms[target].conglomerate_id = new_id
+                        firms[firm].entered = step
+                        firms[target].entered = step
+                        conglomerates[new_id] = {'firms': conglomerate.copy(), 'pool': np.zeros(lookback).astype(float)}
+
+        period_conglomerates = list(set(tuple(lst) for lst in [firm.conglomerate for firm in firms if len(firm.conglomerate) > 1]))
+        all_time_conglomerates.append(period_conglomerates)
 
         solo = [firm.id for firm in firms if len(firm.conglomerate) == 1]
 
-        for conglomerate in period_conglomerates:
+        for conglomerate_ in conglomerates.keys():
+            conglomerate = conglomerates[conglomerate_]['firms']
             indices = markets_structure[conglomerate, :]
             returns = realizations[step, indices[:, 1], indices[:, 0]]
             states = np.array([firms[firm].states[step] for firm in conglomerate])
-            gains = states * returns - states
+            gains = states * returns - states    
             if proportional:
                 pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
             else:
-                pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1,
-                                                                            x_0=markets * 0.4)  # len(conglomerate) / markets
+                pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets 
 
-            returns = (1 - share) * gains + pool / len(
-                conglomerate) if share > 0 else gains  # Equal distribution of pool contents.
+            returns = ((1 - share) * gains + pool / len(conglomerate)) if share > 0 else gains  # Equal distribution of pool contents.
 
             for partner, firm in enumerate(conglomerate):
-                firms[firm].outside_profits[step % lookback] = realizations[(step, ) + tuple(markets_structure[firm])]
+                firms[firm].outside_profits[step % lookback] = realizations[(step, ) + tuple(markets_structure[firm, :])]
                 firms[firm].states[step + 1] = firms[firm].states[step] + returns[partner]
                 if firms[firm].states[step + 1] < 0:
                     firms[firm].states[step + 1] = 1
-                    exit_(firms, firms[firm])
+                    exit_(firms, firms[firm], conglomerates=conglomerates)
+
+            conglomerates[conglomerate_]['pool'][step % lookback] = pool
 
         for firm in solo:
-            index = markets_structure[firm, :]
-            firms[firm].states[step + 1] = firms[firm].states[step] * realizations[step, index[1], index[0]]
+            firms[firm].outside_profits[step % lookback] = realizations[(step,) + tuple(markets_structure[firm, :])]
+            firms[firm].states[step + 1] = firms[firm].states[step] * realizations[(step,) + tuple(markets_structure[firm, :])]
 
         results = np.array([firm.states[step] for firm in firms]).reshape(firms_per_market, markets)
         ranks = np.argsort(results, axis=0)
@@ -149,24 +232,21 @@ def model(params):
         for firm in firms:
             firm.rank[step] = ranks[tuple(markets_structure[firm.id])]
 
-        if step > comparison:
+        if step > lookback:
             for firm in firms:
                 if len(firm.conglomerate) > 1:
                     if firm.entered < step - lookback:
-                        outside_profit = np.prod(firm.outside_profits) ** 1 / lookback
+                        outside_profit = np.prod(firm.outside_profits) ** (1 / lookback)
                         inside_profits = firm.states[step - lookback:step]
-                        inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** 1 / lookback
+                        inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
                         if outside_profit > inside_profits:
-                            exit_(firms, firm)
-                    # if firm.states[step] / firm.states[step - comparison] < break_thresh:
-                    # if firm.rank[step] - firm.rank[step - comparison] < 10:
-                    #     exit_(firms, firm)
+                            exit_(firms, firm, conglomerates=conglomerates)
 
     results = np.array([firm.states for firm in firms]).T
 
     num_cong = []
     members = []
-    for conglomerate in conglomerates:
+    for conglomerate in all_time_conglomerates:
         num_cong.append(len(conglomerate))
         members.append([len(members) for members in conglomerate])
 
@@ -174,13 +254,7 @@ def model(params):
 
     quantiles_members = np.array([np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) for member in members])
 
-    market_share = np.array([results[:,
-                             np.arange(market * firms_per_market, (market + 1) * firms_per_market)] / results[:,
-                                                                                                      np.arange(
-                                                                                                          market * firms_per_market,
-                                                                                                          (
-                                                                                                                      market + 1) * firms_per_market)].sum(
-        axis=1).reshape(steps + 1, 1) for market in range(markets)])
+    market_share = np.array([results[:, np.arange(market * firms_per_market, (market + 1) * firms_per_market)] / results[:, np.arange(market * firms_per_market, (market + 1) * firms_per_market)].sum(axis=1).reshape(steps + 1, 1) for market in range(markets)])
     # shape = markets x steps + 1 x firms_per_market
     mean_share = market_share.mean(axis=2)
     quantiles_shares = np.quantile(market_share, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99], axis=2)
@@ -208,7 +282,7 @@ def model(params):
     for period in range(steps):
         avg_share = []
         avg_rank = []
-        for conglomerate in conglomerates[period]:
+        for conglomerate in all_time_conglomerates[period]:
             to_append = [len(conglomerate), market_share[:, period, :][np.where(np.isin(ids, conglomerate))].mean()]
             avg_share.append(to_append)
             to_append = [len(conglomerate), ranks[period, :, :][np.where(np.isin(ids, conglomerate))].mean()]
