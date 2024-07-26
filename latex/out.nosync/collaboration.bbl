@@ -1,0 +1,29 @@
+\begin{thebibliography}{1}
+
+\bibitem{messmore1995variance}
+Tom Messmore.
+\newblock Variance drain.
+\newblock {\em Journal of Portfolio Management}, 21(4):104, 1995.
+
+\bibitem{peters2019ergodicity}
+Ole Peters.
+\newblock The ergodicity problem in economics.
+\newblock {\em Nature Physics}, 15(12):1216--1221, 2019.
+
+\bibitem{peters2022ergodicity}
+Ole Peters and Alexander Adamou.
+\newblock The ergodicity solution of the cooperation puzzle.
+\newblock {\em Philosophical Transactions of the Royal Society A},
+  380(2227):20200425, 2022.
+
+\bibitem{schulman2017proximal}
+John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov.
+\newblock Proximal policy optimization algorithms.
+\newblock {\em arXiv preprint arXiv:1707.06347}, 2017.
+
+\bibitem{spitznagel2021safe}
+Mark Spitznagel.
+\newblock {\em Safe Haven: Investing for Financial Storms}.
+\newblock John Wiley \& Sons, 2021.
+
+\end{thebibliography}

@@ -1,0 +1,165 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{algpseudocode}
+
+
+% Title information
+\title{Conglomerate Mergers: Effects on Growth and Competition}
+\author{Simon Bl\"othner}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+Your abstract goes here. It should be a brief summary of your article.
+\end{abstract}
+
+\newpage
+
+\section{Introduction}
+\cite{peters2019ergodicity}
+
+\section{Background}
+\label{sec:Background}
+Compound annual growth rate
+volatility tax, variance drain \cite{messmore1995variance}, \cite{spitznagel2021safe}
+\cite{peters2022ergodicity}
+Merge as a hedge against larger draw downs
+
+
+\begin{gather}
+    g = \mu - \frac{\sigma^2}{2}
+\end{gather}
+
+
+\section{Model}
+
+\subsection{Random Multiplicative Growth}
+\label{sec:mult_growth}
+\subsubsection{Growth Process}
+To investigate conglomerate formation we set up an Agent Based Model with $M$ markets that are uncorrelated between each other, each containing an amount of $N$ firms.
+Firms face random multiplicative growth that is unique for their market, drawn from a normal distribution with positive mean $\mathcal{N}(\mu_m, \sigma_m)$. In this 
+framework each firms state is multiplicatively linked to its previous one. This can be interpreted as firms setting a certain price and obtaining a random demand for it.
+
+\begin{gather}
+    s_{i t+1} = s_{it} \delta_t \quad \text{with} \quad \delta_t \sim \mathcal{N}(\mu_m, \sigma_m)
+\end{gather}
+
+We model markets such that mean and the standard deviation of the distribution over their growth increments are positively correlated, meaning that a higher mean $\mu_m$ comes 
+with a higher standard deviation $\sigma_m$. As explained in section \ref{sec:Background}, in multiplicative processes one is not just maximizing for the ensemble mean, but for the growth rate.
+Hence, a higher scale $\sigma_m$ decreases the growth rate, through the volatility tax. \\
+Each firm thus realizes a gain of $\Delta_{it} = s_{it} \delta_t - s_{it-1}$. For any firm, not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates
+pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$. However, as conglomerates grow in size, maintaining them becomes ever more difficult as transaction costs increase. We model these as a logistic function of the form
+
+\begin{gather}
+    \Phi (O_c, M) = \frac{1}{1 + \exp^{-|O_c| + 0.4 M}}
+\end{gather}
+
+This factor scales the cost according to conglomerate size $\sum_{i \in c} s_{it}$ such that the pool size is given by
+
+\begin{gather}
+    \Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}
+\end{gather}
+
+Notice that the factor $0.4$ in logistic function scales, the costs so that a conglomerate operating in 40\,\% of all markets would lose 50\,\% of their market value in transaction cost every round.
+Lastly, this pool will be shared equally such that a members profit is determined by
+$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_{c_i}|}$. Consequently, any firms next state is given by $s_{it+1} = s_{it} + \Pi_{it}$.
+
+\subsubsection{Merging Process}
+
+At the beginning of every time step $t$ each firm $i \in M \times N$  gets a chance to choose another with probability $p$. If successful, it will select a random other firm $j$, among the remaining $(M \times N) - 1$ firms. 
+We allow conglomerates $C$ to only operate one firm per market, meaning it can have a maximum of $M$ members, with the set markets of a conglomerate defined as $O_c \subseteq M$. Hence, conglomeration is only \textit{feasible} if firm $j$ and $i$: 
+
+\begin{enumerate}
+    \item don't operate in the same market $(m_i \neq m_j)$
+    \item are not part of a conglomerate that operates in a market in which the other firm, or the conglomerate which it is part of operates $(O_{c_i} \cap O_{c_j} = \emptyset)$
+\end{enumerate}
+
+We assume that if both firms are in conglomerates that these will merge as well. After confirming \textit{feasibility}, merging firms determine desirability, meaning that they would both benefit from joining forces.
+They do so by comparing the realized pool $\Omega$ size over the last $l$ periods, against a ``synthetic'' pool $\hat{\Omega}$ size if they had merged. If $\hat{\Omega} > \Omega$ the merger will be implemented. 
+
+\subsubsection{Splitting Process}
+
+After an initial $l$ periods each firm that is part of a conglomerate evaluates its performance within it by comparing its growth rate $g_{i(t-l):t}$ by being part of the conglomerate against the potential rate $\hat{g}_{i(t-l):t}$ it had
+realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone.
+
+
+\subsection{Endogenous Pricing}
+Going beyond random growth, we enable our firms to optimize revenues by setting their period prices $p_{it}$ for which they receive the following demand
+\begin{gather}
+    D_{it}(\mathbf{P}_t, \theta_{it}) = 1 - (1 - \theta_t) p_{it} + 0.5 \, \underset{j: j \neq i}{\max} \, \mathbf{P}_t
+\end{gather}
+where $\theta_{it}$ is the firms current market share, which are the relative cumulative profits within a market
+\begin{gather}
+    \theta_{it} = \frac{\sum_{\tau=1}^{t}\Pi_{i \tau}}{\sum_{\tau=1}^{t} \underset{j: j \neq i}{\sum}\Pi_{j \tau}}
+\end{gather}
+Consequently, period revenues take the form of $D_{it}(\mathbf{P}_t, \theta_{it}) p_{it}$.
+We further assume stochastic costs $\gamma$ that are drawn from a log-normal distribution $\mathcal{L}(0, 1)$ that is scaled to 
+match the mean growth rate of revenues per period. Hence, a firm's pre-pooling profit is given by $Delta_{it} = D_{it}(\mathbf{P}_t, \theta_{it}) p_{it} - \gamma$. If the firm in not in a conglomerate, there is no pooling, meaning $\Pi_{it} = \Delta_{it}$. In case it is part of a conglomerate, it will continue as outlined in section \ref{sec:mult_growth}. \\
+
+To learn the optimal pricing policy $\pi$, we trained a reinforcement learning agent using the Proximal Policy Optimization algorithm \cite{schulman2017proximal}. 
+We trained the agents in a separate environment being tasked to only optimize revenues $D_{it}(\mathbf{P}_t, \theta_{it}) p_{it}$. Its information set contains its price and market share in the previous round, as well as the maximum price of its competitors in the
+previous two rounds, $\{p_{it-1}, \theta_{it-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-2}\}$. To expose the agents to possible market share constellations, we exogenously set the $\theta_{it}$. The resulting policy can be seen 
+in figure \ref{fig:PPO}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.75\textwidth]{figures/share_zoomed.png}
+    \caption{Testing a trained policy with countervailing market shares.}
+    \label{fig:PPO}
+\end{figure}
+
+The resulting model flow can be seen in algorithm \ref{alg:PPO}.
+
+\begin{algorithm}[H]
+    \label{alg:PPO}
+    \For{$t$ in $T$}{
+      \ForEach{$i$ $\in$ $N \times M$}{
+        Merge with $j$ if $(m_i \neq m_j)$ and $(O_{c_i} \cap O_{c_j} = \emptyset)$ and $\hat{\Omega} > \Omega$  
+      }
+      \ForEach{$i$ $\in$ $N \times M$}{
+        $p_{it} = \pi (p_{it-1}, \theta_{it-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-2})$
+      }
+      $\mathbf{\Delta}_t = D(\mathbf{P}_t, \mathbf{\theta}_t) \, \mathbf{P}_t - \mathbf{\gamma}$ \\
+      \ForEach{$c \in C$}{
+        $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}$ \\
+        \ForEach{$i \in c$}{$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_c|}$} 
+      }
+      \ForEach{$i \notin c \text{ for all } c \in C$}{$\Pi_{it} = \Delta_{it}$}
+      \ForEach{$i \in  M \times N$}{$\theta_{it} = \frac{\sum_{\tau=1}^{t}\Pi_{i \tau}}{\sum_{\tau=1}^{t} \underset{j: j \neq i}{\sum}\Pi_{j \tau}}$}
+      
+      
+      \ForEach{$i \in c \text{ for all } c \in C$}{
+        Exit $c$ if $\hat{g}_{i(t-l):t} > g_{i(t-l):t}$
+      }
+
+    }
+    \caption{Model flow with endogenous pricing.}
+\end{algorithm}
+
+
+
+
+\section{Results}
+
+
+\section{Discussion}
+
+
+\section{Conclusion}
+
+\clearpage
+\bibliographystyle{plain}
+\bibliography{references}
+
+
+
+\end{document}

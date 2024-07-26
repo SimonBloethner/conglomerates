@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  3 JUL 2024 20:29
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  25 JUL 2024 15:47
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**"/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/main"
+**"/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/main.tex"
 (/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/main.tex
 LaTeX2e <2021-11-15> patch level 1
 L3 programming layer <2022-02-24> (/usr/local/texlive/2022/texmf-dist/tex/latex/beamer/beamer.cls
@@ -862,24 +862,24 @@ Package: xurl 2022/01/09 v 0.10 modify URL breaks
  (out.nosync/main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 85.
-LaTeX Font Info:    ... okay on input line 85.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 86.
+LaTeX Font Info:    ... okay on input line 86.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -929,7 +929,7 @@ LaTeX Font Info:    ... okay on input line 85.
 \makeMPintoPDFobject=\count399
 \everyMPtoPDFconversion=\toks57
 )
-Package hyperref Info: Link coloring OFF on input line 85.
+Package hyperref Info: Link coloring OFF on input line 86.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
  (/usr/local/texlive/2022/texmf-dist/tex/latex/refcount/refcount.sty
@@ -939,55 +939,55 @@ Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
 \c@section@level=\count400
 )
-LaTeX Info: Redefining \ref on input line 85.
-LaTeX Info: Redefining \pageref on input line 85.
-LaTeX Info: Redefining \nameref on input line 85.
+LaTeX Info: Redefining \ref on input line 86.
+LaTeX Info: Redefining \pageref on input line 86.
+LaTeX Info: Redefining \nameref on input line 86.
  (out.nosync/main.out) (out.nosync/main.out)
 \@outlinefile=\write5
 \openout5 = `main.out'.
 
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
-(Font)                  OT1/cmr/m/n --> OT1/cmss/m/n on input line 85.
+(Font)                  OT1/cmr/m/n --> OT1/cmss/m/n on input line 86.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
-(Font)                  OT1/cmr/bx/n --> OT1/cmss/b/n on input line 85.
+(Font)                  OT1/cmr/bx/n --> OT1/cmss/b/n on input line 86.
 \symnumbers=\mathgroup6
 \sympureletters=\mathgroup7
 LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `normal'
-(Font)                  OT1/cmss/m/n --> T1/ptm/m/n on input line 85.
-LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 85.
+(Font)                  OT1/cmss/m/n --> T1/ptm/m/n on input line 86.
+LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
-(Font)                  OT1/cmr/bx/n --> T1/phv/b/n on input line 85.
+(Font)                  OT1/cmr/bx/n --> T1/phv/b/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  OT1/cmr/bx/n --> T1/phv/b/n on input line 85.
-LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 85.
+(Font)                  OT1/cmr/bx/n --> T1/phv/b/n on input line 86.
+LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> T1/phv/m/n on input line 85.
+(Font)                  OT1/cmss/m/n --> T1/phv/m/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> T1/phv/m/n on input line 85.
-LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 85.
+(Font)                  OT1/cmss/bx/n --> T1/phv/m/n on input line 86.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
-(Font)                  OT1/cmr/m/it --> T1/phv/m/it on input line 85.
+(Font)                  OT1/cmr/m/it --> T1/phv/m/it on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
-(Font)                  OT1/cmr/bx/it --> T1/phv/m/it on input line 85.
-LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 85.
+(Font)                  OT1/cmr/bx/it --> T1/phv/m/it on input line 86.
+LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> T1/pcr/m/n on input line 85.
+(Font)                  OT1/cmtt/m/n --> T1/pcr/m/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> T1/pcr/m/n on input line 85.
+(Font)                  OT1/cmtt/m/n --> T1/pcr/m/n on input line 86.
 LaTeX Font Info:    Overwriting symbol font `numbers' in version `bold'
-(Font)                  T1/phv/m/n --> T1/phv/b/n on input line 85.
+(Font)                  T1/phv/m/n --> T1/phv/b/n on input line 86.
 LaTeX Font Info:    Overwriting symbol font `pureletters' in version `bold'
-(Font)                  T1/phv/m/it --> T1/phv/b/it on input line 85.
+(Font)                  T1/phv/m/it --> T1/phv/b/it on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `bold'
-(Font)                  OT1/cmss/b/n --> T1/ptm/b/n on input line 85.
+(Font)                  OT1/cmss/b/n --> T1/ptm/b/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  T1/phv/b/n --> T1/phv/b/n on input line 85.
+(Font)                  T1/phv/b/n --> T1/phv/b/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  T1/phv/m/n --> T1/phv/b/n on input line 85.
+(Font)                  T1/phv/m/n --> T1/phv/b/n on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
-(Font)                  T1/phv/m/it --> T1/phv/b/it on input line 85.
+(Font)                  T1/phv/m/it --> T1/phv/b/it on input line 86.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  T1/pcr/m/n --> T1/pcr/b/n on input line 85.
+(Font)                  T1/pcr/m/n --> T1/pcr/b/n on input line 86.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/translator/translator-basic-dictionary-English.dict
 Dictionary: translator-basic-dictionary, Language: English 
 ) (/usr/local/texlive/2022/texmf-dist/tex/latex/translator/translator-bibliography-dictionary-English.dict
@@ -1011,34 +1011,30 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 85.
+(epstopdf)             \includegraphics on input line 86.
 Package epstopdf Info: Output file is already uptodate.
 <figures/logo2-eps-converted-to.pdf, id=13, 239.89626pt x 237.88875pt>
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 85.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 86.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 85.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 86.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 85.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 86.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <6> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 85.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 86.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <5> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 85.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 86.
 
-Underfull \hbox (badness 10000) detected at line 85
+Underfull \hbox (badness 10000) detected at line 86
   []$[]$[]  
  []
 
-LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10.95> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 86.
-LaTeX Font Info:    Font shape `T1/phv/m/it' in size <8> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 86.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
@@ -1051,16 +1047,16 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 86.
+(epstopdf)             \includegraphics on input line 87.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 86.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 87.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [1
 
 {/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./figures/logo2-eps-converted-to.pdf>]
-Package svg Info: Last page of `./svg-inkscape/Adani_logo_2012_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Adani_logo_2012_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Adani_logo_2012_svg-tex.pdf_tex
 <./svg-inkscape/Adani_logo_2012_svg-tex.pdf, id=26, page=1, 89.54453pt x 30.57121pt>
 File: ./svg-inkscape/Adani_logo_2012_svg-tex.pdf Graphic file (type pdf)
@@ -1068,7 +1064,7 @@ File: ./svg-inkscape/Adani_logo_2012_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Adani_logo_2012_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 19.42789pt.
 )
-Package svg Info: Last page of `./svg-inkscape/Hitachi_logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Hitachi_logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Hitachi_logo_svg-tex.pdf_tex
 <./svg-inkscape/Hitachi_logo_svg-tex.pdf, id=28, page=1, 224.33812pt x 36.22745pt>
 File: ./svg-inkscape/Hitachi_logo_svg-tex.pdf Graphic file (type pdf)
@@ -1076,7 +1072,7 @@ File: ./svg-inkscape/Hitachi_logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Hitachi_logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 9.18895pt.
 )
-Package svg Info: Last page of `./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf_tex
 <./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf, id=30, page=1, 542.025pt x 542.025pt>
 File: ./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf Graphic file (type pdf)
@@ -1084,7 +1080,7 @@ File: ./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Procter_&_Gamble_logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 56.90189pt.
 )
-Package svg Info: Last page of `./svg-inkscape/Samsung_wordmark_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Samsung_wordmark_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Samsung_wordmark_svg-tex.pdf_tex
 <./svg-inkscape/Samsung_wordmark_svg-tex.pdf, id=32, page=1, 5308.38382pt x 813.0375pt>
 File: ./svg-inkscape/Samsung_wordmark_svg-tex.pdf Graphic file (type pdf)
@@ -1092,7 +1088,7 @@ File: ./svg-inkscape/Samsung_wordmark_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Samsung_wordmark_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 8.70895pt.
 )
-Package svg Info: Last page of `./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf_tex
 <./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf, id=34, page=1, 1604.94821pt x 242.433pt>
 File: ./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf Graphic file (type pdf)
@@ -1100,7 +1096,7 @@ File: ./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Lockheed_Martin_logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 8.59329pt.
 )
-Package svg Info: Last page of `./svg-inkscape/LVMH_wordmark_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/LVMH_wordmark_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/LVMH_wordmark_svg-tex.pdf_tex
 <./svg-inkscape/LVMH_wordmark_svg-tex.pdf, id=36, page=1, 417.30612pt x 98.99184pt>
 File: ./svg-inkscape/LVMH_wordmark_svg-tex.pdf Graphic file (type pdf)
@@ -1108,7 +1104,7 @@ File: ./svg-inkscape/LVMH_wordmark_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/LVMH_wordmark_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 13.49774pt.
 )
-Package svg Info: Last page of `./svg-inkscape/JNJ_Logo_New_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/JNJ_Logo_New_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/JNJ_Logo_New_svg-tex.pdf_tex
 <./svg-inkscape/JNJ_Logo_New_svg-tex.pdf, id=38, page=1, 434.19214pt x 40.40344pt>
 File: ./svg-inkscape/JNJ_Logo_New_svg-tex.pdf Graphic file (type pdf)
@@ -1116,7 +1112,7 @@ File: ./svg-inkscape/JNJ_Logo_New_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/JNJ_Logo_New_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 5.29517pt.
 )
-Package svg Info: Last page of `./svg-inkscape/DuPont_logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/DuPont_logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/DuPont_logo_svg-tex.pdf_tex
 <./svg-inkscape/DuPont_logo_svg-tex.pdf, id=40, page=1, 89.97049pt x 27.00822pt>
 File: ./svg-inkscape/DuPont_logo_svg-tex.pdf Graphic file (type pdf)
@@ -1124,7 +1120,7 @@ File: ./svg-inkscape/DuPont_logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/DuPont_logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 17.08243pt.
 )
-Package svg Info: Last page of `./svg-inkscape/Siemens_AG_logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/Siemens_AG_logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/Siemens_AG_logo_svg-tex.pdf_tex
 <./svg-inkscape/Siemens_AG_logo_svg-tex.pdf, id=42, page=1, 752.8125pt x 119.69719pt>
 File: ./svg-inkscape/Siemens_AG_logo_svg-tex.pdf Graphic file (type pdf)
@@ -1132,7 +1128,7 @@ File: ./svg-inkscape/Siemens_AG_logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/Siemens_AG_logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 9.0463pt.
 )
-Package svg Info: Last page of `./svg-inkscape/KT_Logo_svg-tex.pdf' is 1 on input line 120.
+Package svg Info: Last page of `./svg-inkscape/KT_Logo_svg-tex.pdf' is 1 on input line 121.
  (./svg-inkscape/KT_Logo_svg-tex.pdf_tex
 <./svg-inkscape/KT_Logo_svg-tex.pdf, id=44, page=1, 184.49977pt x 150.5625pt>
 File: ./svg-inkscape/KT_Logo_svg-tex.pdf Graphic file (type pdf)
@@ -1140,6 +1136,11 @@ File: ./svg-inkscape/KT_Logo_svg-tex.pdf Graphic file (type pdf)
 Package pdftex.def Info: ./svg-inkscape/KT_Logo_svg-tex.pdf , page1 used on input line 56.
 (pdftex.def)             Requested size: 56.9055pt x 46.43726pt.
 )
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10.95> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 121.
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <8> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 121.
+
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
  []
@@ -1151,11 +1152,11 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 120.
+(epstopdf)             \includegraphics on input line 121.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 120.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 121.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [2
 
@@ -1191,9 +1192,9 @@ pdfTeX warning: pdflatex (file ./svg-inkscape/KT_Logo_svg-tex.pdf): PDF inclusio
 
  (out.nosync/main.vrb
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 10.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 14.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <7> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 10.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 14.
 )
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
@@ -1206,15 +1207,15 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 158.
+(epstopdf)             \includegraphics on input line 160.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 158.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 160.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [3
 
-]
+] (out.nosync/main.vrb)
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
  []
@@ -1226,19 +1227,15 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 169.
+(epstopdf)             \includegraphics on input line 160.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 169.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 160.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [4
 
-]
-Overfull \vbox (8.04234pt too high) detected at line 212
- []
-
-
+] (out.nosync/main.vrb)
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
  []
@@ -1250,31 +1247,15 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 212.
+(epstopdf)             \includegraphics on input line 160.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 212.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 160.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [5
 
-]
-<figures/mean.png, id=1053, 462.528pt x 346.896pt>
-File: figures/mean.png Graphic file (type png)
-<use figures/mean.png>
-Package pdftex.def Info: figures/mean.png  used on input line 240.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-<figures/number.png, id=1055, 462.528pt x 346.896pt>
-File: figures/number.png Graphic file (type png)
-<use figures/number.png>
-Package pdftex.def Info: figures/number.png  used on input line 240.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-<figures/q_m.png, id=1056, 462.528pt x 346.896pt>
-File: figures/q_m.png Graphic file (type png)
-<use figures/q_m.png>
-Package pdftex.def Info: figures/q_m.png  used on input line 240.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-
+] (out.nosync/main.vrb)
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
  []
@@ -1286,31 +1267,15 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 240.
+(epstopdf)             \includegraphics on input line 160.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 240.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 160.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [6
 
- <./figures/mean.png> <./figures/number.png> <./figures/q_m.png>]
-<figures/sizevrank.png, id=1067, 462.528pt x 346.896pt>
-File: figures/sizevrank.png Graphic file (type png)
-<use figures/sizevrank.png>
-Package pdftex.def Info: figures/sizevrank.png  used on input line 267.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-<figures/sizevshare.png, id=1068, 462.528pt x 346.896pt>
-File: figures/sizevshare.png Graphic file (type png)
-<use figures/sizevshare.png>
-Package pdftex.def Info: figures/sizevshare.png  used on input line 267.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-<figures/est.png, id=1069, 462.528pt x 346.896pt>
-File: figures/est.png Graphic file (type png)
-<use figures/est.png>
-Package pdftex.def Info: figures/est.png  used on input line 267.
-(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
-
+] (out.nosync/main.vrb)
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
  []
@@ -1322,27 +1287,36 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 267.
+(epstopdf)             \includegraphics on input line 160.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 267.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 160.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
 [7
 
- <./figures/sizevrank.png> <./figures/sizevshare.png> <./figures/est.png>]
-<figures/gini.png, id=1081, 462.528pt x 346.896pt>
-File: figures/gini.png Graphic file (type png)
-<use figures/gini.png>
-Package pdftex.def Info: figures/gini.png  used on input line 295.
-(pdftex.def)             Requested size: 133.44305pt x 100.08382pt.
-<figures/persistence.png, id=1082, 462.528pt x 346.896pt>
-File: figures/persistence.png Graphic file (type png)
-<use figures/persistence.png>
-Package pdftex.def Info: figures/persistence.png  used on input line 295.
-(pdftex.def)             Requested size: 133.44305pt x 100.08382pt.
+]
+Underfull \hbox (badness 10000) has occurred while \output is active
+  []$[]$[]  
+ []
 
-Overfull \vbox (1.23836pt too high) detected at line 295
+Package epstopdf Info: Source file: <figures/logo2.eps>
+(epstopdf)                    date: 2024-02-02 18:59:46
+(epstopdf)                    size: 33841 bytes
+(epstopdf)             Output file: <figures/logo2-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-02-02 19:06:51
+(epstopdf)                    size: 17240 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
+(epstopdf)             \includegraphics on input line 171.
+Package epstopdf Info: Output file is already uptodate.
+File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/logo2-eps-converted-to.pdf>
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 171.
+(pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
+[8
+
+]
+Overfull \vbox (8.04234pt too high) detected at line 215
  []
 
 
@@ -1357,19 +1331,126 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 295.
+(epstopdf)             \includegraphics on input line 215.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 295.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 215.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[8
+[9
+
+]
+<figures/mean.png, id=1079, 462.528pt x 346.896pt>
+File: figures/mean.png Graphic file (type png)
+<use figures/mean.png>
+Package pdftex.def Info: figures/mean.png  used on input line 243.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+<figures/number.png, id=1081, 462.528pt x 346.896pt>
+File: figures/number.png Graphic file (type png)
+<use figures/number.png>
+Package pdftex.def Info: figures/number.png  used on input line 243.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+<figures/q_m.png, id=1082, 462.528pt x 346.896pt>
+File: figures/q_m.png Graphic file (type png)
+<use figures/q_m.png>
+Package pdftex.def Info: figures/q_m.png  used on input line 243.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+
+Underfull \hbox (badness 10000) has occurred while \output is active
+  []$[]$[]  
+ []
+
+Package epstopdf Info: Source file: <figures/logo2.eps>
+(epstopdf)                    date: 2024-02-02 18:59:46
+(epstopdf)                    size: 33841 bytes
+(epstopdf)             Output file: <figures/logo2-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-02-02 19:06:51
+(epstopdf)                    size: 17240 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
+(epstopdf)             \includegraphics on input line 243.
+Package epstopdf Info: Output file is already uptodate.
+File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/logo2-eps-converted-to.pdf>
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 243.
+(pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
+[10
+
+ <./figures/mean.png> <./figures/number.png> <./figures/q_m.png>]
+<figures/sizevrank.png, id=1092, 462.528pt x 346.896pt>
+File: figures/sizevrank.png Graphic file (type png)
+<use figures/sizevrank.png>
+Package pdftex.def Info: figures/sizevrank.png  used on input line 270.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+<figures/sizevshare.png, id=1093, 462.528pt x 346.896pt>
+File: figures/sizevshare.png Graphic file (type png)
+<use figures/sizevshare.png>
+Package pdftex.def Info: figures/sizevshare.png  used on input line 270.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+<figures/est.png, id=1094, 462.528pt x 346.896pt>
+File: figures/est.png Graphic file (type png)
+<use figures/est.png>
+Package pdftex.def Info: figures/est.png  used on input line 270.
+(pdftex.def)             Requested size: 119.50279pt x 89.62445pt.
+
+Underfull \hbox (badness 10000) has occurred while \output is active
+  []$[]$[]  
+ []
+
+Package epstopdf Info: Source file: <figures/logo2.eps>
+(epstopdf)                    date: 2024-02-02 18:59:46
+(epstopdf)                    size: 33841 bytes
+(epstopdf)             Output file: <figures/logo2-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-02-02 19:06:51
+(epstopdf)                    size: 17240 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
+(epstopdf)             \includegraphics on input line 270.
+Package epstopdf Info: Output file is already uptodate.
+File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/logo2-eps-converted-to.pdf>
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 270.
+(pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
+[11
+
+ <./figures/sizevrank.png> <./figures/sizevshare.png> <./figures/est.png>]
+<figures/gini.png, id=1105, 462.528pt x 346.896pt>
+File: figures/gini.png Graphic file (type png)
+<use figures/gini.png>
+Package pdftex.def Info: figures/gini.png  used on input line 298.
+(pdftex.def)             Requested size: 133.44305pt x 100.08382pt.
+<figures/persistence.png, id=1106, 462.528pt x 346.896pt>
+File: figures/persistence.png Graphic file (type png)
+<use figures/persistence.png>
+Package pdftex.def Info: figures/persistence.png  used on input line 298.
+(pdftex.def)             Requested size: 133.44305pt x 100.08382pt.
+
+Overfull \vbox (1.23836pt too high) detected at line 298
+ []
+
+
+Underfull \hbox (badness 10000) has occurred while \output is active
+  []$[]$[]  
+ []
+
+Package epstopdf Info: Source file: <figures/logo2.eps>
+(epstopdf)                    date: 2024-02-02 18:59:46
+(epstopdf)                    size: 33841 bytes
+(epstopdf)             Output file: <figures/logo2-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-02-02 19:06:51
+(epstopdf)                    size: 17240 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
+(epstopdf)             \includegraphics on input line 298.
+Package epstopdf Info: Output file is already uptodate.
+File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/logo2-eps-converted-to.pdf>
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 298.
+(pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
+[12
 
  <./figures/gini.png> <./figures/persistence.png>]
-<figures/shares.png, id=1091, 578.16pt x 578.16pt>
+<figures/shares.png, id=1115, 578.16pt x 578.16pt>
 File: figures/shares.png Graphic file (type png)
 <use figures/shares.png>
-Package pdftex.def Info: figures/shares.png  used on input line 314.
+Package pdftex.def Info: figures/shares.png  used on input line 317.
 (pdftex.def)             Requested size: 191.20386pt x 191.1992pt.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
@@ -1383,13 +1464,13 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 314.
+(epstopdf)             \includegraphics on input line 317.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 314.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 317.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[9
+[13
 
  <./figures/shares.png>]
 Underfull \hbox (badness 10000) has occurred while \output is active
@@ -1403,16 +1484,16 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 325.
+(epstopdf)             \includegraphics on input line 328.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 325.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 328.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[10
+[14
 
 ]
-Overfull \vbox (9.04234pt too high) detected at line 389
+Overfull \vbox (9.04234pt too high) detected at line 392
  []
 
 
@@ -1427,27 +1508,27 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 389.
+(epstopdf)             \includegraphics on input line 392.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 389.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 392.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[11
+[15
 
 ]
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <10.95> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 389.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 392.
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <8> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 389.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 392.
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <6> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 389.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 392.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <10.95> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 389.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 392.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <8> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 389.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 392.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <6> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 389.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 392.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
   []$[]$[]  
@@ -1460,19 +1541,19 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 389.
+(epstopdf)             \includegraphics on input line 392.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 389.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 392.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[12
+[16
 
 ]
-<figures/share_zoomed.png, id=1120, 462.528pt x 346.896pt>
+<figures/share_zoomed.png, id=1145, 462.528pt x 346.896pt>
 File: figures/share_zoomed.png Graphic file (type png)
 <use figures/share_zoomed.png>
-Package pdftex.def Info: figures/share_zoomed.png  used on input line 413.
+Package pdftex.def Info: figures/share_zoomed.png  used on input line 416.
 (pdftex.def)             Requested size: 161.32492pt x 120.99196pt.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
@@ -1486,13 +1567,13 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 413.
+(epstopdf)             \includegraphics on input line 416.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 413.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 416.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[13
+[17
 
  <./figures/share_zoomed.png>]
 Underfull \hbox (badness 10000) has occurred while \output is active
@@ -1506,13 +1587,13 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 424.
+(epstopdf)             \includegraphics on input line 427.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 424.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 427.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[14
+[18
 
 ]
 Underfull \hbox (badness 10000) has occurred while \output is active
@@ -1526,13 +1607,13 @@ Package epstopdf Info: Source file: <figures/logo2.eps>
 (epstopdf)                    date: 2024-02-02 19:06:51
 (epstopdf)                    size: 17240 bytes
 (epstopdf)             Command: <epstopdf --outfile=figures/logo2-eps-converted-to.pdf figures/logo2.eps>
-(epstopdf)             \includegraphics on input line 443.
+(epstopdf)             \includegraphics on input line 446.
 Package epstopdf Info: Output file is already uptodate.
 File: figures/logo2-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/logo2-eps-converted-to.pdf>
-Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 443.
+Package pdftex.def Info: figures/logo2-eps-converted-to.pdf  used on input line 446.
 (pdftex.def)             Requested size: 10.04079pt x 9.95863pt.
-[15
+[19
 
 ]
 \tf@nav=\write6
@@ -1549,18 +1630,18 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 40449 strings out of 478268
- 952272 string characters out of 5846347
- 1376461 words of memory out of 5000000
- 57760 multiletter control sequences out of 15000+600000
+ 40495 strings out of 478268
+ 953062 string characters out of 5846347
+ 1386008 words of memory out of 5000000
+ 57790 multiletter control sequences out of 15000+600000
  534871 words of font info for 104 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 128i,26n,122p,805b,2470s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 128i,26n,122p,809b,2470s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb>
-Output written on out.nosync/main.pdf (15 pages, 948852 bytes).
+Output written on out.nosync/main.pdf (19 pages, 967285 bytes).
 PDF statistics:
- 1216 PDF objects out of 1440 (max. 8388607)
- 1010 compressed objects within 11 object streams
- 31 named destinations out of 1000 (max. 500000)
+ 1244 PDF objects out of 1440 (max. 8388607)
+ 1034 compressed objects within 11 object streams
+ 39 named destinations out of 1000 (max. 500000)
  198 words of extra memory for PDF output out of 10000 (max. 10000000)
 
