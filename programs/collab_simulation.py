@@ -18,7 +18,7 @@ break_thresh = 0.85
 lookback = 50
 proportional = False
 shares = np.arange(0, 1.1, 0.1)
-shares = np.array([0.0])
+shares = np.array([0.2])
 
 
 quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
@@ -35,7 +35,7 @@ percentiles = ['10', '90', '99']
 ramp = 10
 coeffs = np.zeros((steps - ramp, 3))
 for step in range(ramp, steps):
-    coeffs[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], np.log2(avg_shares[step][:, 1]), 2)
+    coeffs[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
 
 
 fn = np.poly1d(coeffs[-1])
@@ -56,7 +56,7 @@ axes[0][1].set_title('Quantiles of members')
 axes[1][0].plot(num_cong)
 axes[1][0].set_title('Number of conglomerates')
 axes[1][1].scatter(x=avg_shares[-1][:, 0], y=avg_shares[-1][:, 1], label='Mean market share')
-axes[1][1].plot(avg_shares[-1][:, 0][sorted_index], np.exp(predictions[sorted_index]), color='red')
+axes[1][1].plot(avg_shares[-1][:, 0][sorted_index], predictions[sorted_index], color='red')
 axes[1][1].set_title('Size vs. Mean share')
 axes[1][1].set_yscale('log', base=2)
 color_palette = cm.tab10(range(len(percentile_ranks)))
@@ -70,7 +70,7 @@ axes[0][2].scatter(x=avg_ranks[-1][:, 0], y=avg_ranks[-1][:, 1])
 axes[0][2].set_title('Size vs. Mean Rank')
 axes[1][2].plot(coeffs[:, 0], label='square')
 axes[1][2].plot(coeffs[:, 1], label='linear')
-axes[1][2].set_yscale('symlog')
+# axes[1][2].set_yscale('symlog')
 axes[1][2].legend(loc='center right')
 axes[1][2].set_title('Estimates')
 colors = sns.color_palette("husl", n_colors=markets)
