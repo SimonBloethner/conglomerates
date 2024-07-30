@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  26 JUL 2024 14:10
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  30 JUL 2024 20:57
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -351,34 +351,92 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
 {/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3]
-Underfull \hbox (badness 10000) in paragraph at lines 103--107
+Underfull \hbox (badness 10000) in paragraph at lines 124--128
 
  []
 
-<figures/share_zoomed.png, id=96, 462.528pt x 346.896pt>
+[4]
+<figures/share_zoomed.png, id=110, 462.528pt x 346.896pt>
 File: figures/share_zoomed.png Graphic file (type png)
 <use figures/share_zoomed.png>
-Package pdftex.def Info: figures/share_zoomed.png  used on input line 115.
+Package pdftex.def Info: figures/share_zoomed.png  used on input line 136.
 (pdftex.def)             Requested size: 292.5pt x 219.38724pt.
-[4] [5 <./figures/share_zoomed.png>] [6] (out.nosync/collaboration.bbl) [7
+ [5 <./figures/share_zoomed.png>] [6]
+Package epstopdf Info: Source file: <figures/overview.eps>
+(epstopdf)                    date: 2024-07-30 20:54:03
+(epstopdf)                    size: 3616316 bytes
+(epstopdf)             Output file: <figures/overview-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-07-30 20:54:08
+(epstopdf)                    size: 873938 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/overview-eps-converted-to.pdf figures/overview.eps>
+(epstopdf)             \includegraphics on input line 205.
+Package epstopdf Info: Output file is already uptodate.
+<figures/overview-eps-converted-to.pdf, id=133, 505.89pt x 505.89pt>
+File: figures/overview-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/overview-eps-converted-to.pdf>
+Package pdftex.def Info: figures/overview-eps-converted-to.pdf  used on input line 205.
+(pdftex.def)             Requested size: 292.5pt x 292.50552pt.
+Package epstopdf Info: Source file: <figures/sizes.eps>
+(epstopdf)                    date: 2024-07-30 11:34:59
+(epstopdf)                    size: 483756 bytes
+(epstopdf)             Output file: <figures/sizes-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-07-30 11:37:43
+(epstopdf)                    size: 79185 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/sizes-eps-converted-to.pdf figures/sizes.eps>
+(epstopdf)             \includegraphics on input line 213.
+Package epstopdf Info: Output file is already uptodate.
+<figures/sizes-eps-converted-to.pdf, id=134, 578.16pt x 578.16pt>
+File: figures/sizes-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/sizes-eps-converted-to.pdf>
+Package pdftex.def Info: figures/sizes-eps-converted-to.pdf  used on input line 213.
+(pdftex.def)             Requested size: 292.5pt x 292.4934pt.
+Package epstopdf Info: Source file: <figures/shares.eps>
+(epstopdf)                    date: 2024-07-30 11:34:58
+(epstopdf)                    size: 538348 bytes
+(epstopdf)             Output file: <figures/shares-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-07-30 11:37:43
+(epstopdf)                    size: 98551 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/shares-eps-converted-to.pdf figures/shares.eps>
+(epstopdf)             \includegraphics on input line 220.
+Package epstopdf Info: Output file is already uptodate.
+<figures/shares-eps-converted-to.pdf, id=135, 578.16pt x 578.16pt>
+File: figures/shares-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/shares-eps-converted-to.pdf>
+Package pdftex.def Info: figures/shares-eps-converted-to.pdf  used on input line 220.
+(pdftex.def)             Requested size: 292.5pt x 292.4934pt.
+Package epstopdf Info: Source file: <figures/ginis.eps>
+(epstopdf)                    date: 2024-07-30 11:50:25
+(epstopdf)                    size: 311215 bytes
+(epstopdf)             Output file: <figures/ginis-eps-converted-to.pdf>
+(epstopdf)                    date: 2024-07-30 11:50:31
+(epstopdf)                    size: 43487 bytes
+(epstopdf)             Command: <epstopdf --outfile=figures/ginis-eps-converted-to.pdf figures/ginis.eps>
+(epstopdf)             \includegraphics on input line 227.
+Package epstopdf Info: Output file is already uptodate.
+<figures/ginis-eps-converted-to.pdf, id=136, 578.16pt x 578.16pt>
+File: figures/ginis-eps-converted-to.pdf Graphic file (type pdf)
+<use figures/ginis-eps-converted-to.pdf>
+Package pdftex.def Info: figures/ginis-eps-converted-to.pdf  used on input line 227.
+(pdftex.def)             Requested size: 292.5pt x 292.4934pt.
+ [7] [8 <./figures/overview-eps-converted-to.pdf>] [9 <./figures/sizes-eps-converted-to.pdf>] [10 <./figures/shares-eps-converted-to.pdf>] [11 <./figures/ginis-eps-converted-to.pdf>] (out.nosync/collaboration.bbl) [12
 
 ] (out.nosync/collaboration.aux)
 Package rerunfilecheck Info: File `collaboration.out' has not changed.
-(rerunfilecheck)             Checksum: 1C879BEC9A041EFDB5A5D1538237F1DC;1323.
+(rerunfilecheck)             Checksum: AF60F33F2799A5F1453F701C7B273C48;1527.
  ) 
 Here is how much of TeX's memory you used:
- 11160 strings out of 478268
- 173961 string characters out of 5846347
- 470886 words of memory out of 5000000
- 29177 multiletter control sequences out of 15000+600000
+ 11209 strings out of 478268
+ 175134 string characters out of 5846347
+ 475278 words of memory out of 5000000
+ 29208 multiletter control sequences out of 15000+600000
  487970 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 60i,18n,63p,483b,466s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 60i,18n,63p,776b,470s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on out.nosync/collaboration.pdf (7 pages, 531913 bytes).
+Output written on out.nosync/collaboration.pdf (12 pages, 1621595 bytes).
 PDF statistics:
- 226 PDF objects out of 1000 (max. 8388607)
- 171 compressed objects within 2 object streams
- 36 named destinations out of 1000 (max. 500000)
- 94 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 420 PDF objects out of 1000 (max. 8388607)
+ 230 compressed objects within 3 object streams
+ 49 named destinations out of 1000 (max. 500000)
+ 122 words of extra memory for PDF output out of 10000 (max. 10000000)
 

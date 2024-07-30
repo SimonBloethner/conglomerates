@@ -92,6 +92,27 @@ After an initial $l$ periods each firm that is part of a conglomerate evaluates 
 realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone.
 
 
+\begin{algorithm}[H]
+    \label{alg:rand_growth}
+    \For{$t$ in $T$}{
+      \ForEach{$i$ $\in$ $N \times M$}{
+        Merge with $j$ if $(m_i \neq m_j)$ and $(O_{c_i} \cap O_{c_j} = \emptyset)$ and $\hat{\Omega} > \Omega$  
+      }
+      \ForEach{$c \in C$}{
+        $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}$ \\
+        \ForEach{$i \in c$}{$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_c|}$} 
+      }
+      \ForEach{$i \notin c \text{ for all } c \in C$}{$\Pi_{it} = \Delta_{it}$}   
+      
+      \ForEach{$i \in c \text{ for all } c \in C$}{
+        Exit $c$ if $\hat{g}_{i(t-l):t} > g_{i(t-l):t}$
+      }
+
+    }
+    \caption{Model flow with random growth.}
+\end{algorithm}
+
+
 \subsection{Endogenous Pricing}
 Going beyond random growth, we enable our firms to optimize revenues by setting their period prices $p_{it}$ for which they receive the following demand
 \begin{gather}
@@ -149,9 +170,66 @@ The resulting model flow can be seen in algorithm \ref{alg:PPO}.
 
 
 \section{Results}
+\subsection{Random Multiplicative Growth}
+We implemented the models outlined in the previous section in python with a parameter specification that can be found in Table \ref{tab:model_params}. However, note that we conducted extensive robustness testing, none of which 
+altered the central findings of this section. 
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|}
+    \hline
+    \textbf{Parameter} & \textbf{Value} \\
+    \hline
+    $M$ & 100  \\
+    $N$ & 100 \\
+    $T$ & 1000 \\
+    $l$ & 50 \\
+    $p$ & 0.05 \\
+    $\alpha$ & $\left[0, 0.18 \right]$ \\
+    \hline
+    \end{tabular}
+    \caption{Model Parameters and their values}
+    \label{tab:model_params}
+    \end{table}
+
+To answer the questions outlined in section \ref{sec:Background}, we analyze certain outputs of our model, which can be seen in figure \ref{fig:overview}. Firstly, panels (a)--(c) show a stable tendency to form conglomerates, which after initial fluctuations, partially due the 
+review period $l$, settles to a stable level. Both the number of conglomerates, and their size converge to a regular pattern.
+In addition, when looking at panels (d) and (e), which are snapshots taken after the model reached its ultimate iteration, we see that that larger conglomerates are made up of firms that on average occupy higher ranks and have higher market share in their respective markets. Note that a firm's rank is determined ordering each firm in a market by market share.
+Panel (f) in turn fits a polynomial of degree two to the relation between conglomerate size and average market share $mean\_share = \beta_0 + \beta_1 size + \beta_2 size^2$, the result of which indicates an increasing importance of being in a larger conglomerate, given the steady increase in $\beta_1$.
+These findings suggest that our proposed mechanism behind conglomerate formation explains a part of this phenomenon. However, as a conglomerate's size increases we see the transaction costs biting into profits, capping its growth as $\beta_2$ becomes ever more negative. Consequently, this sheds light on our question 3, by setting an upper bound on conglomerate size. \\
+Thirdly, the last row of figure \ref{fig:overview} provides insights into the competitive landscape. Panel (g) showcases how firms move been market share percentiles. While almost every firm was above the $10$\,\% level, the top spot is occupied by a few firms for the majority of the time. This suggests that there is some mobility but tendency to have strong agglomeration effects. Panel (h) yields further evidence to the point as we can see the firm with the highest market share averaging roughly $20\,\%$ throughout the model's runtime. Lastly, we see that the Gini coefficient calculated for each market steadily increases over time, suggesting a 
+rise in market share inequality. 
 
 
+\begin{figure}
+    \centering
+    \includegraphics[width=.75\textwidth]{figures/overview.eps}
+    \caption{Overview of relevant variables $(\alpha = 0.2)$.}
+    \label{fig:overview}
+\end{figure}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.75\textwidth]{figures/sizes.eps}
+    \caption{Conglomerate sizes and number of conglomerates $\alpha \in \left[2, 0.18 \right]$.}
+    \label{fig:sizes}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.75\textwidth]{figures/shares.eps}
+    \caption{Market share of a given quantile $\alpha \in \left[0, 0.18 \right]$.}
+    \label{fig:shares}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.75\textwidth]{figures/ginis.eps}
+    \caption{Quantiles of Gini coefficients $\alpha \in \left[0, 0.18 \right]$.}
+    \label{fig:ginis}
+\end{figure}
 \section{Discussion}
+
 
 
 \section{Conclusion}

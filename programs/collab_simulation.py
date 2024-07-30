@@ -5,6 +5,11 @@ from matplotlib.ticker import FuncFormatter
 import seaborn as sns
 import numpy as np
 import collaborative_growth
+import os
+
+is_local = os.getcwd().find('Simon') > 0
+
+path_figures = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/figures' if is_local else 'conglomerate/figures'
 
 np.random.seed(7)
 markets = 100
@@ -12,7 +17,7 @@ firms_per_market = 100
 total_firms = markets * firms_per_market
 steps = 1000
 share = 0.9999
-merge_thresh = 0.1
+merge_thresh = 0.05
 comparison = 2
 break_thresh = 0.85
 lookback = 50
@@ -30,7 +35,7 @@ for trial, share in enumerate(shares):
     mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res
     quantiles[trial, :, :] = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=(0, 2))
 
-percentiles = ['10', '90', '99']
+percentiles = ['10', '90', 'Maximum']
 
 ramp = 10
 coeffs = np.zeros((steps - ramp, 3))
@@ -50,34 +55,51 @@ sorted_index = np.argsort(avg_shares[-1][:, 0])
 fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(7, 7))
 
 axes[0][0].plot(mean_members)
-axes[0][0].set_title('Mean number of members')
+axes[0][0].set_title('(a) Mean # of members')
 axes[0][1].plot(quantiles_members)
-axes[0][1].set_title('Quantiles of members')
-axes[1][0].plot(num_cong)
-axes[1][0].set_title('Number of conglomerates')
-axes[1][1].scatter(x=avg_shares[-1][:, 0], y=avg_shares[-1][:, 1], label='Mean market share')
-axes[1][1].plot(avg_shares[-1][:, 0][sorted_index], predictions[sorted_index], color='red')
-axes[1][1].set_title('Size vs. Mean share')
-axes[1][1].set_yscale('log', base=2)
+axes[0][1].set_title('(b) Quantiles of members')
+axes[0][2].plot(num_cong)
+axes[0][2].set_title('(c) # of conglomerates')
+axes[1][0].scatter(x=avg_shares[-1][:, 0], y=avg_shares[-1][:, 1], label='Mean market share')
+axes[1][0].plot(avg_shares[-1][:, 0][sorted_index], predictions[sorted_index], color='red')
+axes[1][0].set_title('(d) Size vs. Mean share')
+axes[1][0].set_yscale('log', base=2)
+axes[1][1].scatter(x=avg_ranks[-1][:, 0], y=avg_ranks[-1][:, 1])
+axes[1][1].set_title('(e) Size vs. Mean Rank')
+
+ax1 = axes[1][2]
+ax2 = ax1.twinx()
+
+# Plot data on the first y-axis
+color1 = 'tab:blue'
+ax1.plot(coeffs[:, 0], color=color1, label=r'$\beta_2$')
+ax1.tick_params(axis='y', labelcolor=color1)
+
+# Plot data on the second y-axis
+color2 = 'tab:orange'
+ax2.plot(coeffs[:, 1], color=color2, label=r'$\beta_1$')
+ax2.tick_params(axis='y', labelcolor=color2)
+
+# Set title and combine legends
+ax1.set_title('(f) Estimates')
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='center left', prop={'size': 8})
+
 color_palette = cm.tab10(range(len(percentile_ranks)))
 for perc in range(len(percentile_ranks)):
-    axes[2][0].hist(percentile_ranks[perc].flat, bins=firms_per_market, color=color_palette[perc], alpha=0.7, label='{} %'.format(percentiles[perc]))
+    axes[2][0].hist(percentile_ranks[perc].flat, bins=firms_per_market, color=color_palette[perc], alpha=0.7, label='{} {}'.format(percentiles[perc], '%' if perc != 2 else ''))
 axes[2][0].legend(loc='upper center')
-axes[2][0].set_title('Percentile Persistence')
+axes[2][0].set_title('(g) Rank Persistence')
 axes[2][1].plot(max_shares)
-axes[2][1].set_title('Max market share')
-axes[0][2].scatter(x=avg_ranks[-1][:, 0], y=avg_ranks[-1][:, 1])
-axes[0][2].set_title('Size vs. Mean Rank')
-axes[1][2].plot(coeffs[:, 0], label='square')
-axes[1][2].plot(coeffs[:, 1], label='linear')
-# axes[1][2].set_yscale('symlog')
-axes[1][2].legend(loc='center right')
-axes[1][2].set_title('Estimates')
+axes[2][1].set_title('(h) Max market share')
 colors = sns.color_palette("husl", n_colors=markets)
 for market in range(markets):
     axes[2][2].plot(gini_coefficient[market, :], color=colors[market])
-axes[2][2].set_title('Gini coefficient')
+axes[2][2].set_title('(i) Gini coefficient')
 fig.tight_layout()
+
+plt.savefig('{}/{}'.format(path_figures, 'overview.eps'), format='eps')
 
 fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(8, 8))
 

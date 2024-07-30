@@ -7,9 +7,9 @@ from tqdm import tqdm
 import os
 
 
-is_local = os.getcwd().find('nomis') > 0
+is_local = os.getcwd().find('Simon') > 0
 
-path_figures = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\figures' if is_local else 'conglomerate/figures'
+path_figures = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/figures' if is_local else 'conglomerate/figures'
 
 np.random.seed(7)
 markets = 100

@@ -12,7 +12,6 @@ class Firm:
         self.states = np.ones(steps + 1)
         self.markets = [market]
         self.conglomerate = [self.id]
-        self.rank = np.ones(steps + 1)
         self.outside_profits = np.ones(lookback)
         self.entered = None
         self.conglomerate_id = None
@@ -92,8 +91,8 @@ def model(params):
              range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
-    # for step in tqdm(range(steps)):
-    for step in range(steps):
+    for step in tqdm(range(steps)):
+    # for step in range(steps):
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
         if draws.shape[0] > 0:
@@ -226,12 +225,6 @@ def model(params):
         for firm in solo:
             firms[firm].outside_profits[step % lookback] = realizations[(step,) + tuple(markets_structure[firm, :])]
             firms[firm].states[step + 1] = firms[firm].states[step] * realizations[(step,) + tuple(markets_structure[firm, :])]
-
-        results = np.array([firm.states[step] for firm in firms]).reshape(firms_per_market, markets)
-        ranks = np.argsort(results, axis=0)
-
-        for firm in firms:
-            firm.rank[step] = ranks[tuple(markets_structure[firm.id])]
 
         if step > lookback:
             for firm in firms:
