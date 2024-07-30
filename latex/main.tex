@@ -78,8 +78,9 @@
 \title{Conglomerate Mergers: \newline Effects on
 Growth and Competition}
 
-\author{Simon Bl\"othner \inst{1, 2} \and Alessandro Kadner-Graziano \inst{1, 3}}
-\institute{\inst{1}University of Bayreuth  \and \inst{2}Defiria \and \inst{3}Charles River Associates}
+%\author{Simon Bl\"othner \inst{1, 2} \and Alessandro Kadner-Graziano \inst{1, 3}}
+\author{Simon Bl\"othner \and Alessandro Kadner-Graziano}
+%\institute{\inst{1}University of Bayreuth  \and \inst{2}Defiria \and \inst{3}Charles River Associates}
 \date{\today}
 
 \begin{document}
@@ -124,16 +125,17 @@ Growth and Competition}
   \begin{columns}
    \begin{column}{0.6\textwidth}
     \begin{itemize}
-     \item ``When tomorrow depends on today''
-     \item Losses hurt exponentially more
-     \item Irreversibility of state transitions makes things even worse (Think Russian Roulette)
-     \item Most economic processes are multiplicative
+      \setlength\itemsep{0.8em}
+     \onslide<1->{\item ``When tomorrow depends on today''} 
+     \onslide<2->{\item Losses hurt exponentially more} 
+     \onslide<3->{\item Irreversibility of state transitions makes things even worse (Think Russian Roulette)} 
+     \onslide<4->{     \item Most economic processes are multiplicative
      \begin{itemize}
       \item Capital accumulation
       \item Trust, reputation
       \item Legal cases
-     \end{itemize}
-     \item Shifting the return distribution upwards, at the smallest cost
+     \end{itemize}} 
+     \onslide<5->{\item Shifting the return distribution upwards, at the smallest cost}      
     \end{itemize}
    \end{column}
    \begin{column}{0.4\textwidth}
@@ -201,6 +203,7 @@ Growth and Competition}
         \item $T =$ Total steps (1000)
         \item $p =$ Merge probability (0.02)
         \item $\alpha =$ Pooling rate ($0.2$)
+        \item $s =$ Market share
         \item $\lambda =$ Transaction cost function
         \begin{itemize}
           \item $\frac{\partial \lambda}{\partial \# m_i \in c_k} > 0$
@@ -317,7 +320,7 @@ Growth and Competition}
   
   \begin{enumerate}
     \setlength\itemsep{0.8em}
-    \item Including dynamic frameworks allows for the explanation of many phenomena of economic exchange
+    \item Including dynamic frameworks allows for the explanation of many phenomena of economic exchange such as conglomerate formation
     \item Increasing firm cooperation through conglomerate formation does not necessarily harm competition
     \item Transaction costs play a crucial role in determining the size of a conglomerate
   \end{enumerate}
@@ -397,7 +400,7 @@ Growth and Competition}
         \item Demand function of the form $D(\mathbf{P_t}, s_{t}) = 1 - (1 - s_{it}) p_{it} + 0.5 \underset{j: j \neq i}{\max} \, p_{jt}$
         \item Learn the optimal pricing policy $\pi(\cdot)$ using a Proximal Policy Optimization reinforcement learning algorithm
         \item Information set of the firm  $\{p_{it-1}, s_{it-1}, \underset{j: j \neq i}{\max} \, p_{jt-1}, \underset{j: j \neq i}{\max} \, p_{jt-2}\}$
-        \item Goal of the firm is to optimize the profit $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) * p_{it}$
+        \item Goal of the firm is to optimize the profit $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) p_{it}$
                 
       \end{itemize}
     \end{column}

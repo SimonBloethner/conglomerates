@@ -2,16 +2,17 @@
 \begin{columns}
    \begin{column}{0.6\textwidth}
     \begin{itemize}
-     \item ``When tomorrow depends on today''
-     \item Losses hurt exponentially more
-     \item Irreversibility of state transitions makes things even worse (Think Russian Roulette)
-     \item Most economic processes are multiplicative
+      \setlength\itemsep{0.8em}
+     \onslide<1->{\item ``When tomorrow depends on today''}
+     \onslide<2->{\item Losses hurt exponentially more}
+     \onslide<3->{\item Irreversibility of state transitions makes things even worse (Think Russian Roulette)}
+     \onslide<4->{     \item Most economic processes are multiplicative
      \begin{itemize}
       \item Capital accumulation
       \item Trust, reputation
       \item Legal cases
-     \end{itemize}
-     \item Shifting the return distribution upwards, at the smallest cost
+     \end{itemize}}
+     \onslide<5->{\item Shifting the return distribution upwards, at the smallest cost}
     \end{itemize}
    \end{column}
    \begin{column}{0.4\textwidth}
