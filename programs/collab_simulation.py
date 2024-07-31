@@ -74,11 +74,17 @@ ax2 = ax1.twinx()
 color1 = 'tab:blue'
 ax1.plot(coeffs[:, 0], color=color1, label=r'$\beta_2$')
 ax1.tick_params(axis='y', labelcolor=color1)
+# Adjust the offset text position for ax1
+y_offset_text1 = ax1.yaxis.get_offset_text()
+current_pos1 = y_offset_text1.get_position()
+new_x_pos1 = current_pos1[0] - 0.16  # Move to the left
+y_offset_text1.set_x(new_x_pos1)
 
 # Plot data on the second y-axis
 color2 = 'tab:orange'
 ax2.plot(coeffs[:, 1], color=color2, label=r'$\beta_1$')
 ax2.tick_params(axis='y', labelcolor=color2)
+
 
 # Set title and combine legends
 ax1.set_title('(f) Estimates')
@@ -98,6 +104,10 @@ for market in range(markets):
     axes[2][2].plot(gini_coefficient[market, :], color=colors[market])
 axes[2][2].set_title('(i) Gini coefficient')
 fig.tight_layout()
+
+# Show the plot
+plt.show()
+
 
 plt.savefig('{}/{}'.format(path_figures, 'overview.eps'), format='eps')
 
