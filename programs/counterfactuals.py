@@ -22,7 +22,7 @@ comparison = 4
 break_thresh = 0.85
 lookback = 50
 proportional = False
-shares = np.arange(0, 0.2, 0.02)
+shares = np.arange(0, 0.52, 0.02)
 
 counterfactuals = 10
 

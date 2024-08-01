@@ -8,7 +8,10 @@
 \usepackage{hyperref}
 \usepackage[ruled,vlined]{algorithm2e}
 \usepackage{algpseudocode}
+\usepackage{xcolor}
 
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 % Title information
 \title{Conglomerate Mergers: Effects on Growth and Competition}
@@ -29,15 +32,69 @@ Your abstract goes here. It should be a brief summary of your article.
 
 \section{Background}
 \label{sec:Background}
-Compound annual growth rate
-volatility tax, variance drain \cite{messmore1995variance}, \cite{spitznagel2021safe}
-\cite{peters2022ergodicity}
-Merge as a hedge against larger draw downs
+Conventional economic models had great success explaining the formation of vertical and horizontal mergers. Despite this, conglomerative mergers have escaped such reasoning so far. Many explanations are based on cost sharing arguments {\color{orange} (source)}, whereby firms split up expenses amongst themselves. One point often made against such an explanation is 
+that this is in effect zero-sum {\color{orange} (source)}, given that one firms gains is another's loss. However, this critique only holds under the assumption of additive growth. In a setting of multiplicative dynamics, where the next state of some variable (e.g. market share, reputation, size) is dependent on the previous one, the objective is to maximize the growth rate $g$, the geometric average of periodic increments $\delta_t \in \left(0, \infty \right)$, sometimes also referred to as the Compound Annual Growth Rate in investment circles
 
+\begin{gather}
+    g = \left(\prod_{t=1}^{T} \delta_t \right)^\frac{1}{T}
+\end{gather}
+
+These increments are the changes to the variables in question, such as the change in sales, the effect of marketing campaigns on the way consumers perceive as firm, etc. Crucially, the lower increments are, the greater their impact on the growth rate. While an increment of $\delta_t = 0.2$ already requires the next one to be $\delta_{t + 1} = 1.25$ to compensate it, one of $\delta_t = 0.5$ requires $\delta_{t+1}$ to be $2$. This asymmetry in influence of losses over gains grows exponentially and thus following a logarithmic function of the increments on the growth rate as seen in Figure \ref{fig:log}. From the point of view of avoiding the smaller levels of $\delta_t$ or increasing them across the board, sharing cost and even revenues in a conglomerate becomes a positive-sum game, as the reduction in the gain of the more successful firms is overcompensated by the increase in gain of the others. This holds true regardless of whether all firms make profits, or only some. Suppose there are two firms in a conglomerate with increments $\delta_{it} > \delta_{jt}$ and sharing of $x$, given that $\frac{\partial^2 log(x)}{\partial^2 x} < 0$, it is clear that $\log(\delta_{it}) - \log(\delta_{it} - x) < \log(\delta_{jt} + x) - \log(\delta_{jt})$. 
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[scale=0.8]
+        \begin{axis}[
+            domain=1:10, % Domain of the function
+            samples=100, % Number of samples for the function
+            axis lines=middle, % Axis lines through the middle
+            xlabel={$\delta$}, % Label for x-axis
+            ylabel={$g$}, % Label for y-axis
+            xtick=\empty, % Remove x-axis tick marks
+            ytick=\empty, % Remove y-axis tick marks
+            minor tick num=1, % Number of minor ticks
+            enlargelimits={abs=0.5}, % Add some space around the plot
+            every axis plot/.append style={thick}, % Thicker lines for plots
+        ]
+            % Plot the logarithm function
+            \addplot[blue, domain=0.3:10] {ln(x)};
+    
+            % Add points and vertical/horizontal lines
+            \addplot[only marks, mark=*] coordinates {(2, 0.693) (4, 1.386) (7, 1.946) (9, 2.197)};
+            \addplot[dashed] coordinates {(2,0) (2, 0.693)};
+            \addplot[dashed] coordinates {(4,0) (4, 1.386)};
+            \addplot[dashed] coordinates {(7,0) (7, 1.946)};
+            \addplot[dashed] coordinates {(9,0) (9, 2.197)};
+    
+            % Add labels for the points
+            \node at (axis cs:2, -0.02) [anchor=north] {$\delta_{jt}$};
+            \node at (axis cs:4, -0.02) [anchor=north] {$\delta_{jt} + x$};
+            \node at (axis cs:7, -0.02) [anchor=north] {$\delta_{it} - x$};
+            \node at (axis cs:9, -0.02) [anchor=north] {$\delta_{it}$};
+    
+        \end{axis}
+    \end{tikzpicture}
+    
+    \caption{Impact of growth increments on the compound growth rate.}
+    \label{fig:log}
+\end{figure}
+
+From example, assuming a multiplicative process consisting of normally distributed increments with mean $\mu$ and standard deviation $\sigma$, the time average growth rate, the average increment, converges to
 
 \begin{gather}
     g = \mu - \frac{\sigma^2}{2}
 \end{gather}
+
+In addition to the mean $\mu$, the fluctuation of the increments $\frac{\sigma^2}{2}$ has an outsized impact on the growth rate, as the negative fluctuations outweigh the positive ones even though they are symmetric.\footnote{$(1 - \delta_t)(1 + \delta_t) = 1 - \delta_t^2 < 1$.} This dynamic is sometimes referred to as \textit{variance drain} \cite{messmore1995variance} or \textit{volatility drag} \cite{spitznagel2021safe}. 
+Thus, as outlined, reducing the magnitude of fluctuations is the largest lever to increase the growth rate.  
+
+Again, we can link this to sharing, where conglomerate formation increases $g$ for all firms within the entity. Under multiplicative dynamics, sharing can be shown to be growth optimal \cite{peters2022ergodicity} in the following way. With $N$ firms, whose growth increments $\delta_i$ are independently drawn from the same distribution $\mathcal{N} \sim (\mu, \sigma)$, the sharing of their increments increases their individual growth rates such that
+
+\begin{gather}
+    g = \mu - \frac{\sigma^2}{2N}
+\end{gather}
+
+As the number of firms $N$ in a conglomerate increases, the drag imposed by the fluctuations decreases. In the extreme case of $N \to \infty$ each firm is able to realize the ensemble average $\mu$ with every increment. Of course there are limits to how big a firm and thus a conglomerate can grow, given that transaction cost, especially for coordination increase \cite{coase19883}. Any increase in conglomerate size will increase transaction cost, while at the same time increasing the growth rate for all firms included. Thus, one can see this kind of cooperation as a hedge, or an insurance against unfavorable growth increments, the premium for which is the cost of coordination. Clearly, there is a trade-off involved, and a conglomerate size, though certainly varying, which optimizes it.
 
 
 \section{Model}
@@ -45,19 +102,16 @@ Merge as a hedge against larger draw downs
 \subsection{Random Multiplicative Growth}
 \label{sec:mult_growth}
 \subsubsection{Growth Process}
-To investigate conglomerate formation we set up an Agent Based Model with $M$ markets that are uncorrelated between each other, each containing an amount of $N$ firms.
-Firms face random multiplicative growth that is unique for their market, drawn from a normal distribution with positive mean $\mathcal{N}(\mu_m, \sigma_m)$. In this 
-framework each firms state is multiplicatively linked to its previous one. This can be interpreted as firms setting a certain price and obtaining a random demand for it.
+To investigate how this influences the incentives in conglomerate formation, we set up an Agent Based Model with $M$ markets that are uncorrelated between each other, each containing an amount of $N$ firms.
+Firms face random multiplicative growth that is unique for their market. Each increment $\delta_{it}$ is drawn from a normal distribution $\mathcal{N}(\mu_m, \sigma_m)$ with positive ensemble average $\mu_m$. In this framework each firms periodic state, which can be seen as its size, is multiplicatively linked to its previous one. 
 
 \begin{gather}
-    s_{i t+1} = s_{it} \delta_t \quad \text{with} \quad \delta_t \sim \mathcal{N}(\mu_m, \sigma_m)
+    s_{i t+1} = s_{it} \delta_{it} \quad \text{with} \quad \delta_t \sim \mathcal{N}(\mu_m, \sigma_m)
 \end{gather}
 
 We model markets such that mean and the standard deviation of the distribution over their growth increments are positively correlated, meaning that a higher mean $\mu_m$ comes 
-with a higher standard deviation $\sigma_m$. As explained in section \ref{sec:Background}, in multiplicative processes one is not just maximizing for the ensemble mean, but for the growth rate.
-Hence, a higher scale $\sigma_m$ decreases the growth rate, through the volatility tax. \\
-Each firm thus realizes a gain of $\Delta_{it} = s_{it} \delta_t - s_{it-1}$. For any firm, not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates
-pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$. However, as conglomerates grow in size, maintaining them becomes ever more difficult as transaction costs increase. We model these as a logistic function of the form
+with a higher standard deviation $\sigma_m$. As explained in section \ref{sec:Background}, in multiplicative processes one is not just maximizing for the ensemble average $\mu_m$, but for the growth rate $g$. Hence, a higher scale $\sigma_m$ decreases the growth rate, through the volatility tax. \\
+Each firm thus realizes a gain of $\Delta_{it} = s_{it-1} \delta_{it} - s_{it-1}$. For any firm not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates $C$ pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$. However, as conglomerates grow in size, maintaining them becomes ever more difficult as transaction costs increase. We model these as a logistic function of the form
 
 \begin{gather}
     \Phi (O_c, M) = \frac{1}{1 + \exp^{-|O_c| + 0.4 M}}
@@ -68,28 +122,28 @@ This factor scales the cost according to conglomerate size $\sum_{i \in c} s_{it
 \begin{gather}
     \Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}
 \end{gather}
-
-Notice that the factor $0.4$ in logistic function scales, the costs so that a conglomerate operating in 40\,\% of all markets would lose 50\,\% of their market value in transaction cost every round.
-Lastly, this pool will be shared equally such that a members profit is determined by
+where the set of markets a conglomerate operates in is defined as $O_c \subseteq M$.
+Notice that the factor $0.4$ in the logistic function scales the costs such that a conglomerate operating in 40\,\% of all markets would lose 50\,\% of their market value in transaction cost every round.
+Lastly, this pool will be shared equally, determining a members profit by
 $\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_{c_i}|}$. Consequently, any firms next state is given by $s_{it+1} = s_{it} + \Pi_{it}$.
 
 \subsubsection{Merging Process}
 
 At the beginning of every time step $t$ each firm $i \in M \times N$  gets a chance to choose another with probability $p$. If successful, it will select a random other firm $j$, among the remaining $(M \times N) - 1$ firms. 
-We allow conglomerates $C$ to only operate one firm per market, meaning it can have a maximum of $M$ members, with the set markets of a conglomerate defined as $O_c \subseteq M$. Hence, conglomeration is only \textit{feasible} if firm $j$ and $i$: 
+We allow conglomerates to only operate one firm per market, meaning it can have a maximum of $M$ members. Hence, conglomeration is only \textit{feasible} if firm $j$ and $i$: 
 
 \begin{enumerate}
     \item don't operate in the same market $(m_i \neq m_j)$
-    \item are not part of a conglomerate that operates in a market in which the other firm, or the conglomerate which it is part of operates $(O_{c_i} \cap O_{c_j} = \emptyset)$
+    \item are not part of a conglomerate that operates in a market in which the other firm, or the conglomerate which it is part of operates in $(O_{c_i} \cap O_{c_j} = \emptyset)$
 \end{enumerate}
 
-We assume that if both firms are in conglomerates that these will merge as well. After confirming \textit{feasibility}, merging firms determine desirability, meaning that they would both benefit from joining forces.
+We assume that if both firms are in conglomerates that these will merge as well. After confirming \textit{feasibility}, merging firms determine \textit{desirability}, meaning that they would both benefit from joining forces.
 They do so by comparing the realized pool $\Omega$ size over the last $l$ periods, against a ``synthetic'' pool $\hat{\Omega}$ size if they had merged. If $\hat{\Omega} > \Omega$ the merger will be implemented. 
 
 \subsubsection{Splitting Process}
 
-After an initial $l$ periods each firm that is part of a conglomerate evaluates its performance within it by comparing its growth rate $g_{i(t-l):t}$ by being part of the conglomerate against the potential rate $\hat{g}_{i(t-l):t}$ it had
-realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone.
+After an initial $l$ periods each firm that is part of a conglomerate evaluates its performance within it by comparing its growth rate $g_{i(t-l):t}$ being part of the conglomerate against the potential rate $\hat{g}_{i(t-l):t}$ it had
+realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone. The full model can be seen in algorithm \ref{alg:rand_growth}.
 
 
 \begin{algorithm}[H]
@@ -118,18 +172,18 @@ Going beyond random growth, we enable our firms to optimize revenues by setting 
 \begin{gather}
     D_{it}(\mathbf{P}_t, \theta_{it}) = 1 - (1 - \theta_t) p_{it} + 0.5 \, \underset{j: j \neq i}{\max} \, \mathbf{P}_t
 \end{gather}
-where $\theta_{it}$ is the firms current market share, which are the relative cumulative profits within a market
+where $\theta_{it}$ is the firm's current market share, which is the relative cumulative profits within a market
 \begin{gather}
     \theta_{it} = \frac{\sum_{\tau=1}^{t}\Pi_{i \tau}}{\sum_{\tau=1}^{t} \underset{j: j \neq i}{\sum}\Pi_{j \tau}}
 \end{gather}
 Consequently, period revenues take the form of $D_{it}(\mathbf{P}_t, \theta_{it}) p_{it}$.
 We further assume stochastic costs $\gamma$ that are drawn from a log-normal distribution $\mathcal{L}(0, 1)$ that is scaled to 
-match the mean growth rate of revenues per period. Hence, a firm's pre-pooling profit is given by $Delta_{it} = D_{it}(\mathbf{P}_t, \theta_{it}) p_{it} - \gamma$. If the firm in not in a conglomerate, there is no pooling, meaning $\Pi_{it} = \Delta_{it}$. In case it is part of a conglomerate, it will continue as outlined in section \ref{sec:mult_growth}. \\
+match the mean growth rate of revenues per period. Hence, a firm's pre-pooling profit is given by $\Delta_{it} = D_{it}(\mathbf{P}_t, \theta_{it}) p_{it} - \gamma$. If the firm is not in a conglomerate, there is no pooling, meaning $\Pi_{it} = \Delta_{it}$. In case it is part of a conglomerate, it will continue as outlined in section \ref{sec:mult_growth}. \\
 
-To learn the optimal pricing policy $\pi$, we trained a reinforcement learning agent using the Proximal Policy Optimization algorithm \cite{schulman2017proximal}. 
+To learn the optimal pricing policy $\pi$, the optimal response given a set of information, we trained a reinforcement learning agent using the Proximal Policy Optimization algorithm \cite{schulman2017proximal}. 
 We trained the agents in a separate environment being tasked to only optimize revenues $D_{it}(\mathbf{P}_t, \theta_{it}) p_{it}$. Its information set contains its price and market share in the previous round, as well as the maximum price of its competitors in the
 previous two rounds, $\{p_{it-1}, \theta_{it-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-1}, \underset{j: j \neq i}{\max}\mathbf{P}_{jt-2}\}$. To expose the agents to possible market share constellations, we exogenously set the $\theta_{it}$. The resulting policy can be seen 
-in figure \ref{fig:PPO}.
+in figure \ref{fig:PPO}. By combining all these elements, the resulting model flow can be seen in algorithm \ref{alg:PPO}.
 
 \begin{figure}
     \centering
@@ -137,8 +191,6 @@ in figure \ref{fig:PPO}.
     \caption{Testing a trained policy with countervailing market shares.}
     \label{fig:PPO}
 \end{figure}
-
-The resulting model flow can be seen in algorithm \ref{alg:PPO}.
 
 \begin{algorithm}[H]
     \label{alg:PPO}
@@ -171,7 +223,7 @@ The resulting model flow can be seen in algorithm \ref{alg:PPO}.
 
 \section{Results}
 \subsection{Random Multiplicative Growth}
-We implemented the models outlined in the previous section in python with a parameter specification that can be found in Table \ref{tab:model_params}. However, note that we conducted extensive robustness testing, none of which 
+We implemented the models outlined in the previous section in python with a parameter specification that can be found in Table \ref{tab:model_params}. Note that we conducted extensive robustness testing, none of which 
 altered the central findings of this section. 
 \begin{table}[h]
     \centering
@@ -190,14 +242,12 @@ altered the central findings of this section.
     \caption{Model Parameters and their values}
     \label{tab:model_params}
     \end{table}
-
-To answer the questions outlined in section \ref{sec:Background}, we analyze certain outputs of our model, which can be seen in figure \ref{fig:overview}. Firstly, panels (a)--(c) show a stable tendency to form conglomerates, which after initial fluctuations, partially due the 
+To answer the questions outlined in section \ref{sec:Background}, we analyze certain outputs of our model, which can be seen in Figure \ref{fig:overview}. Firstly, panels (a)--(c) show a stable tendency to form conglomerates, which after initial fluctuations, partially due the 
 review period $l$, settles to a stable level. Both the number of conglomerates, and their size converge to a regular pattern.
-In addition, when looking at panels (d) and (e), which are snapshots taken after the model reached its ultimate iteration, we see that that larger conglomerates are made up of firms that on average occupy higher ranks and have higher market share in their respective markets. Note that a firm's rank is determined ordering each firm in a market by market share.
+In addition, when looking at panels (d) and (e), which are snapshots taken after the model reached its ultimate iteration, we see that that larger conglomerates are made up of firms that on average occupy higher ranks and have higher market share in their respective markets. Note that a firm's rank is determined by ordering each firm in a market by market share.
 Panel (f) in turn fits a polynomial of degree two to the relation between conglomerate size and average market share $mean\_share = \beta_0 + \beta_1 size + \beta_2 size^2$, the result of which indicates an increasing importance of being in a larger conglomerate, given the steady increase in $\beta_1$.
-These findings suggest that our proposed mechanism behind conglomerate formation explains a part of this phenomenon. However, as a conglomerate's size increases we see the transaction costs biting into profits, capping its growth as $\beta_2$ becomes ever more negative. Consequently, this sheds light on our question 3, by setting an upper bound on conglomerate size. \\
-Thirdly, the last row of figure \ref{fig:overview} provides insights into the competitive landscape. Panel (g) showcases how firms move been market share percentiles. While almost every firm was above the $10$\,\% level, the top spot is occupied by a few firms for the majority of the time. This suggests that there is some mobility but tendency to have strong agglomeration effects. Panel (h) yields further evidence to the point as we can see the firm with the highest market share averaging roughly $20\,\%$ throughout the model's runtime. Lastly, we see that the Gini coefficient calculated for each market steadily increases over time, suggesting a 
-rise in market share inequality. 
+These findings suggest that our proposed mechanism behind conglomerate formation explains a part of this phenomenon. However, as a conglomerate's size increases, we see the transaction costs biting into profits, capping its growth as $\beta_2$ becomes ever more negative. Consequently, this sheds light on our question 3, by setting an upper bound on conglomerate size. \\
+Thirdly, the last row of figure \ref{fig:overview} provides insights into the competitive landscape. Panel (g) showcases how much firms move between market share percentiles. While almost every firm was above the $10$\,\% level, the top spot is occupied by a few firms for the majority of the time. This suggests that there is some mobility but a tendency to have strong agglomeration effects. Panel (h) yields further evidence to the point as we can see that the firms with the highest market shares in their respective market average roughly $20\,\%$ throughout the model's runtime. Lastly, we see that the Gini coefficient calculated for each market steadily increases over time, suggesting a rise in market share inequality. 
 
 
 \begin{figure}
@@ -207,28 +257,36 @@ rise in market share inequality.
     \label{fig:overview}
 \end{figure}
 
+To further increase the reliability of our results, we conducted several Monte Carlo studies, the outcome of which can be seen in figures \ref{fig:sizes} -- \ref{fig:ginis}. For these we kept the setup largely fixed except for increasing the sharing rate $\alpha$ from $0$ to $0.2$ at $0.02$ increments. At each level we ran $10$ simulations and averaged over their outcomes. \\
+
+Figure \ref{fig:shares} shows the emergence of a stable pattern with regard to conglomerate size and numbers. Intuitively, increasing the sharing rate leads to larger conglomerates, but only up to a point. Note that for this figure the experiments start with $\alpha = 0.02$ and not with $0$. {\color{orange} What if we crank $\alpha$ even higher? Will this decrease conglomerate sizes?} In turn, more sharing also leads to fewer conglomerates, as shown in the lower panel.
+
 
 \begin{figure}
     \centering
-    \includegraphics[width=.75\textwidth]{figures/sizes.eps}
-    \caption{Conglomerate sizes and number of conglomerates $\alpha \in \left[2, 0.18 \right]$.}
+    \includegraphics[width=.7\textwidth]{figures/sizes.eps}
+    \caption{Conglomerate sizes and number of conglomerates $\alpha \in \left[0.02, 0.18 \right]$.}
     \label{fig:sizes}
 \end{figure}
 
+To investigate the competitive behavior in the different settings, we analyze the quantiles of market shares in Figure \ref{fig:shares}. These are taken across every market for every point in time. In our setup with $100$ firms per market a perfectly equal result would assign every firm a market share of $0.01$. Yet as expected, the case without pooling returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the 90th percentile dropping to $0\,\%$ share. Increasing $\alpha$ just ever so slightly already changes this dynamic drastically. Even though the median firm eventually loses market share,
+it bottoms out at multiples higher than in the case without pooling. Even though the largest firms still capture a considerable piece of the market, it is much smaller than the no sharing case, never reaching more than $50\,\%$ market share. This finding is being confounded by Figure \ref{fig:ginis}, for which we calculate the Gini coefficient for every market, divide these into quantiles over which we can then average across simulations. Firstly, we can see that higher quantiles reach their maximum inequality earlier than lower ones. More importantly, larger values of $\alpha$ slow the increase and cap the maximum level of inequality. 
+
 \begin{figure}
     \centering
-    \includegraphics[width=.75\textwidth]{figures/shares.eps}
+    \includegraphics[width=.7\textwidth]{figures/shares.eps}
     \caption{Market share of a given quantile $\alpha \in \left[0, 0.18 \right]$.}
     \label{fig:shares}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=.75\textwidth]{figures/ginis.eps}
+    \includegraphics[width=.7\textwidth]{figures/ginis.eps}
     \caption{Quantiles of Gini coefficients $\alpha \in \left[0, 0.18 \right]$.}
     \label{fig:ginis}
 \end{figure}
 \section{Discussion}
+
 
 
 
