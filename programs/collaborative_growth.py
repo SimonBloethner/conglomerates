@@ -91,8 +91,8 @@ def model(params):
              range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
-    for step in tqdm(range(steps)):
-    # for step in range(steps):
+    #for step in tqdm(range(steps)):
+    for step in range(steps):
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
         if draws.shape[0] > 0:
@@ -265,7 +265,7 @@ def model(params):
     area_under_curve = np.trapz(y=Lorenz_curve, axis=2, dx=1 / firms_per_market)
     gini_coefficient = 1 - 2 * area_under_curve
 
-    ranks = np.array([np.argsort(market_share[:, step_, :], axis=1) for step_ in range(steps)])
+    ranks = np.array([np.argsort(np.argsort(market_share[:, step_, :], axis=1)) for step_ in range(steps)])
 
     percentile_thresh = firms_per_market * np.array([0.1, 0.9, ranks.max() / firms_per_market])
 

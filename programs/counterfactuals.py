@@ -6,6 +6,7 @@ import matplotlib.cm as cm
 from scipy.stats import gaussian_kde
 from tqdm import tqdm
 import os
+import warnings
 
 
 is_mac = os.getcwd().find('Simon') > 0
@@ -64,11 +65,14 @@ for trial, share in tqdm(enumerate(shares)):
         for _ in range(3):
             mean_persistence_quantiles_[_][experiment, :] = np.quantile(percentile_ranks[_], q=persistence_quantiles)
             count = np.bincount(percentile_ranks[_].reshape(-1))
-            indices, vals = np.unique(percentile_ranks[_], return_counts=True)
-            mean_persistence_[_] = mean_persistence_[_][indices - 1] + count
+            temp = np.zeros(steps + 1)
+            temp[:percentile_ranks[_].reshape(-1).max() + 1] = temp[:percentile_ranks[_].reshape(-1).max() + 1] + count
+            mean_persistence_[_] = mean_persistence_[_] + temp
 
         for step in range(ramp, steps):
-            coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', np.exceptions.RankWarning)
+                coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
             mean_ests_[step - ramp, :, experiment] = (coeffs[1], coeffs[0])
 
     mean_quantiles[trial, :, :] = shares_quantiles.mean(0)
