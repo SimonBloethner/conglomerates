@@ -49,7 +49,7 @@ for trial, share in tqdm(enumerate(shares)):
     mean_members__ = np.empty(shape=(steps, counterfactuals))
     mean_conglomerates_ = np.empty(shape=(steps, counterfactuals))
     mean_ests_ = np.empty(shape=(steps, 2, counterfactuals))
-    mean_persistence_ = [np.zeros(steps) for _ in range(3)]
+    mean_persistence_ = [np.zeros(steps + 1) for _ in range(3)]
     mean_persistence_quantiles_ = [np.zeros((counterfactuals, len(persistence_quantiles))) for _ in range(3)]
     for experiment in range(counterfactuals):
         params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
@@ -63,8 +63,9 @@ for trial, share in tqdm(enumerate(shares)):
         mean_conglomerates_[:, experiment] = num_cong
         for _ in range(3):
             mean_persistence_quantiles_[_][experiment, :] = np.quantile(percentile_ranks[_], q=persistence_quantiles)
+            count = np.bincount(percentile_ranks[_].reshape(-1))
             indices, vals = np.unique(percentile_ranks[_], return_counts=True)
-            mean_persistence_[_][indices - 1] = mean_persistence_[_][indices - 1] + vals
+            mean_persistence_[_] = mean_persistence_[_][indices - 1] + count
 
         for step in range(ramp, steps):
             coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
