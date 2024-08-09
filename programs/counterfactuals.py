@@ -22,7 +22,7 @@ np.random.seed(7)
 markets = 100
 firms_per_market = 100
 total_firms = markets * firms_per_market
-steps = 1000
+steps = 20
 share = 0.9999
 merge_thresh = 0.05
 comparison = 4
@@ -32,7 +32,7 @@ ramp = 10
 proportional = False
 shares = np.arange(0, 0.52, 0.02)
 
-counterfactuals = 10
+counterfactuals = 2
 persistence_quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99]
 
 mean_quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
@@ -80,10 +80,10 @@ for trial, share in tqdm(enumerate(shares)):
 
 plt.rcParams.update({'font.size': 12})
 
-fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(8, 8))
-
 normalize = mcolors.Normalize(vmin=shares.min(), vmax=shares.max())
 colormap = cm.viridis
+fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(8, 8))
+
 for plot_ in range(4):
     for row, share_ in enumerate(shares):
         axes[plot_].plot(mean_quantiles[row, plot_, :], color=colormap(normalize(share_)), linestyle='-' if row != 0 else '--')
@@ -156,11 +156,11 @@ fig.text(0.5, 0.04, r'$\alpha$', ha='center', va='center', fontsize=14)
 plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pdf', dpi=300)
 
 
-fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 6))
+fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 7))
 overlap = 0.7
 for plot_ in range(len(mean_persistence)):
     max_density = 0
-    for i, (row, label, share) in enumerate(zip(reversed(percentile_ranks[plot_]), reversed(shares), reversed(shares))):
+    for i, (row, label, share) in enumerate(zip(reversed(mean_persistence_quantiles[plot_]), reversed(shares), reversed(shares))):
         density = gaussian_kde(row)
         x = np.linspace(min(row), max(row), 200)
         y = density(x)
@@ -170,9 +170,9 @@ for plot_ in range(len(mean_persistence)):
 
     axes[plot_].set_yticks([])
 
-plt.tight_layout()
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
+plt.tight_layout(rect=[0, 0, 1, 0.95])
 colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
 colorbar.set_label(r'$\alpha$', labelpad=1)
 axes[0].set_title('10 %')
