@@ -22,7 +22,7 @@ np.random.seed(7)
 markets = 100
 firms_per_market = 100
 total_firms = markets * firms_per_market
-steps = 20
+steps = 1000
 share = 0.9999
 merge_thresh = 0.05
 comparison = 4
@@ -32,7 +32,7 @@ ramp = 10
 proportional = False
 shares = np.arange(0, 0.52, 0.02)
 
-counterfactuals = 2
+counterfactuals = 10
 persistence_quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99]
 
 mean_quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
@@ -67,7 +67,8 @@ for trial, share in tqdm(enumerate(shares)):
             mean_persistence_[_][indices - 1] = mean_persistence_[_][indices - 1] + vals
 
         for step in range(ramp, steps):
-            mean_ests_[step - ramp, :, experiment] = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
+            coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
+            mean_ests_[step - ramp, :, experiment] = (coeffs[1], coeffs[0])
 
     mean_quantiles[trial, :, :] = shares_quantiles.mean(0)
     mean_gini[trial, :, :] = gini_quantiles.mean(axis=2).T
@@ -126,8 +127,8 @@ for row, share_ in enumerate(shares):
     axes[0].plot(mean_members_[row, :], color=colormap(normalize(share_)))
     axes[1].plot(mean_conglomerates[row, :], color=colormap(normalize(share_)))
 
-    ax1.plot(mean_ests[row, :steps - ramp, 1], color=colormap(normalize(share_)), linestyle='--', label=r'$\beta_1$' if row == 1 else "", alpha=0.8)
-    ax2.plot(mean_ests[row, :steps - ramp:, 0], color=colormap(normalize(share_)), linestyle='dotted', label=r'$\beta_2$' if row == 1 else "", alpha=0.8)
+    ax1.plot(mean_ests[row, :steps - ramp, 0], color=colormap(normalize(share_)), linestyle='--', label=r'$\beta_1$' if row == 1 else "", alpha=0.8)
+    ax2.plot(mean_ests[row, :steps - ramp:, 1], color=colormap(normalize(share_)), linestyle='dotted', label=r'$\beta_2$' if row == 1 else "", alpha=0.8)
 
 axes[0].set_title('Mean Conglomerate Size')
 axes[1].set_title('Mean Conglomerate Count')
