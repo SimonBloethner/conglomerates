@@ -97,7 +97,7 @@ scalarmappaple.set_array(shares)
 fig.tight_layout()
 colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
 colorbar.set_label(r'$\alpha$', labelpad=1)
-plt.savefig('{}/{}'.format(path_figures, 'shares.eps'), format='eps')
+plt.savefig('{}/{}'.format(path_figures, 'shares.pdf'), format='pdf', dpi=300)
 
 fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(8, 8))
 for plot_ in range(5):
@@ -114,7 +114,7 @@ scalarmappaple.set_array(shares)
 fig.tight_layout()
 colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
 colorbar.set_label(r'$\alpha$', labelpad=1)
-plt.savefig('{}/{}'.format(path_figures, 'ginis.eps'), format='eps')
+plt.savefig('{}/{}'.format(path_figures, 'ginis.pdf'), format='pdf', dpi=300)
 
 
 fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
@@ -126,8 +126,8 @@ for row, share_ in enumerate(shares):
     axes[0].plot(mean_members_[row, :], color=colormap(normalize(share_)))
     axes[1].plot(mean_conglomerates[row, :], color=colormap(normalize(share_)))
 
-    ax1.plot(mean_ests[row, :steps - ramp, 1], color=colormap(normalize(share_)), linestyle='--', label=r'$\beta_1$' if row == 1 else "")
-    ax2.plot(mean_ests[row, :steps - ramp:, 0], color=colormap(normalize(share_)), linestyle='dotted', label=r'$\beta_2$' if row == 1 else "")
+    ax1.plot(mean_ests[row, :steps - ramp, 1], color=colormap(normalize(share_)), linestyle='--', label=r'$\beta_1$' if row == 1 else "", alpha=0.8)
+    ax2.plot(mean_ests[row, :steps - ramp:, 0], color=colormap(normalize(share_)), linestyle='dotted', label=r'$\beta_2$' if row == 1 else "", alpha=0.8)
 
 axes[0].set_title('Mean Conglomerate Size')
 axes[1].set_title('Mean Conglomerate Count')
@@ -140,7 +140,7 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-plt.savefig('{}/{}'.format(path_figures, 'sizes.eps'), format='eps')
+plt.savefig('{}/{}'.format(path_figures, 'sizes.pdf'), format='pdf', dpi=300)
 
 fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
 for plot_ in range(3):
@@ -148,9 +148,12 @@ for plot_ in range(3):
     axes[plot_].fill_between(shares, y1=mean_persistence_quantiles[plot_][:, 1], y2=mean_persistence_quantiles[plot_][:, -2], color="tab:blue", alpha=0.3)
     axes[plot_].fill_between(shares, y1=mean_persistence_quantiles[plot_][:, 2], y2=mean_persistence_quantiles[plot_][:, -3], color="tab:blue", alpha=0.3)
     axes[plot_].plot(shares, mean_persistence_quantiles[plot_][:, 3], color="tab:blue")
-
+axes[0].set_title('10 %')
+axes[1].set_title('90 %')
+axes[2].set_title('Maximum')
+fig.tight_layout()
 fig.text(0.5, 0.04, r'$\alpha$', ha='center', va='center', fontsize=14)
-plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.eps'), format='eps')
+plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pdf', dpi=300)
 
 
 fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 6))
@@ -172,5 +175,7 @@ scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
 colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
 colorbar.set_label(r'$\alpha$', labelpad=1)
-
-plt.savefig('{}/{}'.format(path_figures, 'percentile_distributions.eps'), format='eps')
+axes[0].set_title('10 %')
+axes[1].set_title('90 %')
+axes[2].set_title('Maximum')
+plt.savefig('{}/{}'.format(path_figures, 'percentile_distributions.pdf'), format='pdf', dpi=300)
