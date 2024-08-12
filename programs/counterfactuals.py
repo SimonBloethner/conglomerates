@@ -40,8 +40,8 @@ mean_quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
 mean_members_ = np.empty(shape=(shares.shape[0], steps))
 mean_conglomerates = np.empty(shape=(shares.shape[0], steps))
 mean_gini = np.empty(shape=(shares.shape[0], 5, steps + 1))
-mean_ests = np.full([shares.shape[0], steps, 2], np.nan)
-mean_persistence = [np.zeros((shares.shape[0], steps)) for _ in range(3)]
+mean_ests = np.full([shares.shape[0], steps, 3], np.nan)
+mean_persistence = [np.zeros((shares.shape[0], steps + 1)) for _ in range(3)]
 mean_persistence_quantiles = [np.zeros((shares.shape[0], len(persistence_quantiles))) for _ in range(3)]
 
 for trial, share in tqdm(enumerate(shares)):
@@ -49,7 +49,7 @@ for trial, share in tqdm(enumerate(shares)):
     gini_quantiles = np.empty(shape=(steps + 1, 5, counterfactuals))
     mean_members__ = np.empty(shape=(steps, counterfactuals))
     mean_conglomerates_ = np.empty(shape=(steps, counterfactuals))
-    mean_ests_ = np.empty(shape=(steps, 2, counterfactuals))
+    mean_ests_ = np.empty(shape=(steps, 3, counterfactuals))
     mean_persistence_ = [np.zeros(steps + 1) for _ in range(3)]
     mean_persistence_quantiles_ = [np.zeros((counterfactuals, len(persistence_quantiles))) for _ in range(3)]
     for experiment in range(counterfactuals):
@@ -70,10 +70,8 @@ for trial, share in tqdm(enumerate(shares)):
             mean_persistence_[_] = mean_persistence_[_] + temp
 
         for step in range(ramp, steps):
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore', np.exceptions.RankWarning)
-                coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)[1:]
-            mean_ests_[step - ramp, :, experiment] = (coeffs[1], coeffs[0])
+            coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
+            mean_ests_[step - ramp, :, experiment] = coeffs
 
     mean_quantiles[trial, :, :] = shares_quantiles.mean(0)
     mean_gini[trial, :, :] = gini_quantiles.mean(axis=2).T
@@ -163,10 +161,10 @@ plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pd
 
 
 fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 7))
-overlap = 0.7
+overlap = 100
 for plot_ in range(len(mean_persistence)):
     max_density = 0
-    for i, (row, label, share) in enumerate(zip(reversed(mean_persistence_quantiles[plot_]), reversed(shares), reversed(shares))):
+    for i, (row, label, share) in enumerate(zip(reversed(mean_persistence[plot_]), reversed(shares), reversed(shares))):
         density = gaussian_kde(row)
         x = np.linspace(min(row), max(row), 200)
         y = density(x)
@@ -184,4 +182,13 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 axes[0].set_title('10 %')
 axes[1].set_title('90 %')
 axes[2].set_title('Maximum')
+plt.show()
 plt.savefig('{}/{}'.format(path_figures, 'percentile_distributions.pdf'), format='pdf', dpi=300)
+
+np.savez('{}/{}'.format(path_figures, 'mean_persistence.npz'), *mean_persistence)
+np.savez('{}/{}'.format(path_figures, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
+np.savez('{}/{}'.format(path_figures, 'mean_gini.npz'), *mean_gini)
+np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
+np.savez('{}/{}'.format(path_figures, 'mean_members_.npz'), *mean_members_)
+np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
+np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
