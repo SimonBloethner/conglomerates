@@ -14,6 +14,7 @@ is_windows = os.getcwd().find('nomis') > 0
 
 if is_mac:
     path_figures = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/figures'
+    path_outdata = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/outdata'
 elif is_windows:
     path_figures = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\figures'
 else:
@@ -148,6 +149,7 @@ lines2, labels2 = ax2.get_legend_handles_labels()
 ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
 plt.savefig('{}/{}'.format(path_figures, 'sizes.pdf'), format='pdf', dpi=300)
 
+
 fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
 for plot_ in range(3):
     axes[plot_].fill_between(x=shares, y1=mean_persistence_quantiles[plot_][:, 0], y2=mean_persistence_quantiles[plot_][:, -1], color="tab:blue", alpha=0.3)
@@ -163,18 +165,35 @@ plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pd
 
 
 fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 7))
-overlap = 100
+overlap = 0.006  # Adjust this value to change the overlap of the plots
+
 for plot_ in range(len(mean_persistence)):
-    max_density = 0
     for i, (row, label, share) in enumerate(zip(reversed(mean_persistence[plot_]), reversed(shares), reversed(shares))):
-        density = gaussian_kde(row)
-        x = np.linspace(min(row), max(row), 200)
-        y = density(x)
-        max_density = max(max_density, max(y))
+        y = row
+        start = np.argmax(y != 0)
+        # Find the last non-zero element
+        end = len(y) - np.argmax(y[::-1] != 0)
+        y = y[start:end]
+
+        # Create x array with the same length as y
+        x = np.linspace(start, end - 1, len(y))
+
+        if plot_ != 2:
+            shift = 2
+            x = x[shift:-shift]
+            y = y[shift:-shift]
+        else:
+            y = np.log2(y + 1)
+
         color = colormap(normalize(share))
-        axes[plot_].fill_between(x, i + y * overlap, i, alpha=0.8, color=color, label=label)
+
+        # Offset each plot vertically
+        offset = i * 0.4  # Adjust this value to change the spacing between plots
+
+        axes[plot_].fill_between(x, offset + y * (overlap if plot_ != 2 else overlap * 10), offset, alpha=0.8, color=color, label=label)
 
     axes[plot_].set_yticks([])
+
 
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
@@ -191,6 +210,6 @@ np.savez('{}/{}'.format(path_figures, 'mean_persistence.npz'), *mean_persistence
 np.savez('{}/{}'.format(path_figures, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
 np.savez('{}/{}'.format(path_figures, 'mean_gini.npz'), *mean_gini)
 np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
-np.savez('{}/{}'.format(path_figures, 'mean_members_.npz'), *mean_members_)
+np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
 np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
 np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
