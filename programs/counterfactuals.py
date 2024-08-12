@@ -70,7 +70,9 @@ for trial, share in tqdm(enumerate(shares)):
             mean_persistence_[_] = mean_persistence_[_] + temp
 
         for step in range(ramp, steps):
-            coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', np.RankWarning)
+                coeffs = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
             mean_ests_[step - ramp, :, experiment] = coeffs
 
     mean_quantiles[trial, :, :] = shares_quantiles.mean(0)
