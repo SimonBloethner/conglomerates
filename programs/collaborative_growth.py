@@ -265,7 +265,7 @@ def model(params):
     area_under_curve = np.trapz(y=Lorenz_curve, axis=2, dx=1 / firms_per_market)
     gini_coefficient = 1 - 2 * area_under_curve
 
-    ranks = np.array([np.argsort(market_share[:, step_, :], axis=1) for step_ in range(steps)])
+    ranks = np.array([np.argsort(np.argsort(market_share[:, step_, :], axis=1)) for step_ in range(steps)]) # Have to sort twice to get ranks.
 
     percentile_thresh = firms_per_market * np.array([0.1, 0.9, ranks.max() / firms_per_market])
 
