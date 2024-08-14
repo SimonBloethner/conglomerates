@@ -124,29 +124,20 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'ginis.pdf'), format='pdf', dpi=300)
 
 
-fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
-ax1 = axes[2]
-ax2 = ax1.twinx()
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 for row, share_ in enumerate(shares):
     if row == 0:
         continue
     axes[0].plot(mean_members_[row, :], color=colormap(normalize(share_)))
     axes[1].plot(mean_conglomerates[row, :], color=colormap(normalize(share_)))
 
-    ax1.plot(mean_ests[row, :steps - ramp, 0], color=colormap(normalize(share_)), linestyle='--', label=r'$\beta_1$' if row == 1 else "", alpha=0.8)
-    ax2.plot(mean_ests[row, :steps - ramp:, 1], color=colormap(normalize(share_)), linestyle='dotted', label=r'$\beta_2$' if row == 1 else "", alpha=0.8)
-
 axes[0].set_title('Mean Conglomerate Size')
 axes[1].set_title('Mean Conglomerate Count')
-axes[2].set_title('Impact of Conglomerate Size')
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
 fig.tight_layout()
 colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
 colorbar.set_label(r'$\alpha$', labelpad=1)
-lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
 plt.savefig('{}/{}'.format(path_figures, 'sizes.pdf'), format='pdf', dpi=300)
 
 
@@ -163,6 +154,23 @@ fig.tight_layout()
 fig.text(0.5, 0.04, r'$\alpha$', ha='center', va='center', fontsize=14)
 plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pdf', dpi=300)
 
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
+
+for row, share_ in enumerate(shares):
+    if row == 0:
+        continue
+
+    axes[0].plot(mean_ests[row, :steps - ramp, 1], color=colormap(normalize(share_)))
+    axes[1].plot(mean_ests[row, :steps - ramp:, 0], color=colormap(normalize(share_)))
+
+axes[0].set_title(r'$\beta_1$')
+axes[1].set_title(r'$\beta_2$')
+scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
+scalarmappaple.set_array(shares)
+fig.tight_layout()
+colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
+colorbar.set_label(r'$\alpha$', labelpad=1)
+plt.savefig('{}/{}'.format(path_figures, 'ests.pdf'), format='pdf', dpi=300)
 
 fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 7))
 overlap = 0.006  # Adjust this value to change the overlap of the plots
@@ -213,3 +221,4 @@ np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
 np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
 np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
 np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
+
