@@ -242,27 +242,9 @@ altered the central findings of this section.
     \caption{Model Parameters and their values}
     \label{tab:model_params}
     \end{table}
+
 To answer the questions outlined in section \ref{sec:Background}, we analyze certain outputs of our model. We gradually increase the parameter of interest, the sharing rate $\alpha$, by $0.02$ to investigate the behavior of our model. To gain further confidence in our result, we ran each experimental setup (each level of $\alpha$) 10 times in a Monte Carlo type setting and averaged them. Firstly, Figure \ref{fig:sizes} indicates a stable tendency to form conglomerates, which after initial fluctuations, partially due the 
-review period $l$, settles to a stable level up until the final number of iterations $T$ is reached. Both the number of conglomerates, and their size converge to a regular pattern. Interestingly, while initially increasing the sharing rate leads to larger conglomerates, there seems to be an optimum in regard to conglomerate size somewhere between $0.2$ and $0.3$. This is also reflected, though not as strongly, in the number of conglomerates, which bottoms out at the same level, as expected. Both of these findings, lend support to the idea of collaborative growth being able to explain incentives to merge in a conglomerative manner. \\
-
-To examine the impact of such mergers on the competitive landscape as well as that transaction cost, we fit a polynomial of degree two to the relation between conglomerate size and average market share of firms within a given conglomerate $\bar{\Omega}_{ct} = \beta_{0t} + \beta_{1t} |O_{ct}| + \beta_{2t} |O_{ct}|^2$ for each step in the model and display the result in Figure \ref{fig:ests}. For all levels of $\alpha$ we see that an increase in conglomerate size increases market share ($\beta_{1t} > 0$), once the initial fluctuations pass. However, we also note that $\beta_{2t}$ is negative in the same region, meaning that growing too large will decrease competitiveness. This sheds light on our question 3, by indicating the existence an upper bound on conglomerate size. Note that, as we increase the sharing rate, these effects become ever more muted, pushing the estimates for both $\beta_{1t}$ and $\beta_{2t}$ towards $0$. This is a direct consequence of a decrease in the variability and scale of market share inequality. \\
-
-We explore the 
-
-Thirdly, the last row of figure \ref{fig:overview} provides insights into the competitive landscape. Panel (g) showcases how much firms move between market share percentiles. While almost every firm was above the $10$\,\% level, the top spot is occupied by a few firms for the majority of the time. This suggests that there is some mobility but a tendency to have strong agglomeration effects. Panel (h) yields further evidence to the point as we can see that the firms with the highest market shares in their respective market average roughly $20\,\%$ throughout the model's runtime. Lastly, we see that the Gini coefficient calculated for each market steadily increases over time, suggesting a rise in market share inequality. 
-
-
-\begin{figure}
-    \centering
-    \includegraphics[width=.75\textwidth]{figures/overview.eps}
-    \caption{Overview of relevant variables $(\alpha = 0.2)$.}
-    \label{fig:overview}
-\end{figure}
-
-To further increase the reliability of our results, we conducted several Monte Carlo studies, the outcome of which can be seen in figures \ref{fig:sizes} -- \ref{fig:ginis}. For these we kept the setup largely fixed except for increasing the sharing rate $\alpha$ from $0$ to $0.5$ at $0.02$ increments. At each level we ran $10$ simulations and averaged over their outcomes. \\
-
-Figure \ref{fig:shares} shows the emergence of a stable pattern with regard to conglomerate size and numbers. Intuitively, increasing the sharing rate leads to larger conglomerates, but only up to a point. Note that for this figure the experiments start with $\alpha = 0.02$ and not with $0$. In turn, more sharing also leads to fewer conglomerates, as shown in the lower panel. Interestingly, this relationship only holds up to a point. Any sharing rate larger than around 25\,\% will reverse it leading to smaller conglomerates with a higher number of average members. 
-
+review period $l$, settles to a stable level up until the final number of iterations $T$ is reached. Both the number of conglomerates, and their size converge to a regular pattern. Interestingly, while initially increasing the sharing rate leads to larger conglomerates, there seems to be an optimum in regard to conglomerate size somewhere between $0.2$ and $0.3$. This is also reflected, though not as strongly, in the number of conglomerates, which bottoms out at the same level, as expected. Both of these findings, lend support to the idea of collaborative growth being able to explain incentives to merge in a conglomerative manner. 
 
 \begin{figure}
     \centering
@@ -271,8 +253,18 @@ Figure \ref{fig:shares} shows the emergence of a stable pattern with regard to c
     \label{fig:sizes}
 \end{figure}
 
-To investigate the competitive behavior in the different settings, we analyze the quantiles of market shares in Figure \ref{fig:shares}. These are taken across every market for every point in time. In our setup with $100$ firms per market a perfectly equal result would assign every firm a market share of $0.01$. Yet as expected, the case without pooling returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the 90th percentile dropping to $0\,\%$ share. Increasing $\alpha$ just ever so slightly already changes this dynamic drastically. Even though the median firm eventually loses market share,
-it bottoms out at multiples higher than in the case without pooling. Even though the largest firms still capture a considerable piece of the market, it is much smaller than the no sharing case, never reaching more than $50\,\%$ market share. This finding is being confounded by Figure \ref{fig:ginis}, for which we calculate the Gini coefficient for every market, divide these into quantiles over which we can then average across simulations. Firstly, we can see that higher quantiles reach their maximum inequality earlier than lower ones. More importantly, larger values of $\alpha$ slow the increase and cap the maximum level of inequality. 
+
+To examine the impact of such mergers on the competitive landscape as well as that transaction cost, we fit a polynomial of degree two to the relation between conglomerate size and average market share of firms within a given conglomerate $\bar{\Omega}_{ct} = \beta_{0t} + \beta_{1t} |O_{ct}| + \beta_{2t} |O_{ct}|^2$ for each step in the model and display the result in Figure \ref{fig:ests}. For all levels of $\alpha$ we see that an increase in conglomerate size increases market share ($\beta_{1t} > 0$), once the initial fluctuations pass. However, we also note that $\beta_{2t}$ is negative in the same region, meaning that growing too large will decrease competitiveness. This sheds light on our question 3, by indicating the existence an upper bound on conglomerate size. Note that, as we increase the sharing rate, these effects become ever more muted, pushing the estimates for both $\beta_{1t}$ and $\beta_{2t}$ towards $0$. This is a direct consequence of a decrease in the variability and scale of market share inequality.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.7\textwidth]{figures/ests.pdf}
+    \caption{Average estimates for the impact of conglomerate size on market share.}
+    \label{fig:ests}
+\end{figure}
+
+
+Figure \ref{fig:shares} provides an initial insight into this dynamic by illustrating the market share distribution across different quantiles. The graph displays the cumulative market share attained by each quantile of firms, ordered from largest to smallest. These are taken across every market and averaged across all quantiles for every point in time. In our setup with $100$ firms per market a perfectly equal result would assign every firm a market share of $0.01$. As expected, the case without pooling (the dashed line) returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the 90th percentile quickly dropping to $0\,\%$ share. Increasing $\alpha$ just ever so slightly already changes this dynamic drastically for the largest firm. Furthermore, all quantiles become more equal in market share until they eventually remain close to equality for the entirety of the simulation. As already alluded to, this also explains why conglomerate size becomes ever less predictive with an increase in sharing as the variation within the market shares becomes ever smaller. 
 
 \begin{figure}
     \centering
@@ -281,13 +273,17 @@ it bottoms out at multiples higher than in the case without pooling. Even though
     \label{fig:shares}
 \end{figure}
 
+
+This finding is being confounded by Figure \ref{fig:ginis}, for which we calculate the Gini coefficient for every market, divide these into quantiles over which we can then average across simulations. Firstly, we can see that higher quantiles reach their maximum inequality earlier than lower ones. More importantly though, larger values of $\alpha$ slow the increase and cap the maximum level of inequality for all quantiles. Again, as the sharing rate reaches its maximum inequality as measured by the Gini coefficient is minimized, mirroring finding of the previous analysis. 
+
 \begin{figure}
     \centering
     \includegraphics[width=.7\textwidth]{figures/ginis.eps}
     \caption{Quantiles of Gini coefficients.}
     \label{fig:ginis}
 \end{figure}
-\section{Discussion}
+
+Yet, these two analyses are both static measures for a distribution, meaning that they can only provide information on the aggregate. To address this, we follow each firm throughout and tally how often it is with a certain percentile in its market. Using this dynamic measurement, having equal opportunity to reach rank would mean that the results under static inequality are somewhat misleading, as there would be fluctuation in between the ranks. Figure \ref{fig:percentile} shows that almost every firm passes through the lowest $10\,\%$ quantile at least once per simulation, with a large part of them remaining there longer. Even though, we observe similar picture emerges for the 90th quantile, the firm with the highest market share stay there for almost all periods (note that we used a $\log$ scale for this panel of the plot). We interpret this to collaborate the findings of our static analysis. Strikingly, increasing the sharing rate seems not to shift the distribution, but decrease its spread, meaning that it allows firms to maintain their rank even more easily.
 
 \begin{figure}
     \centering
@@ -296,12 +292,6 @@ it bottoms out at multiples higher than in the case without pooling. Even though
     \label{fig:percentile}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=.7\textwidth]{figures/ests.pdf}
-    \caption{Average estimates for the impact of conglomerate size on market share.}
-    \label{fig:ests}
-\end{figure}
 \section{Discussion}
 
 
