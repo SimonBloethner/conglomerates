@@ -37,6 +37,7 @@ shares = np.arange(0, 0.52, 0.02)
 counterfactuals = 10
 persistence_quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99]
 
+ranks_ = np.zeros((steps, markets, firms_per_market, counterfactuals, shares.shape[0]))
 mean_quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
 mean_members_ = np.empty(shape=(shares.shape[0], steps))
 mean_conglomerates = np.empty(shape=(shares.shape[0], steps))
@@ -58,6 +59,7 @@ for trial, share in tqdm(enumerate(shares)):
                    proportional, lookback]
         res = collaborative_growth.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res
+        ranks_[:, :, :, experiment, trial] = share
         temp = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=2)
         shares_quantiles[experiment, :, :] = temp.mean(axis=1)
         gini_quantiles[:, :, experiment] = np.quantile(gini_coefficient, q=[0.1, 0.25, 0.5, 0.75, 0.9], axis=0).T
