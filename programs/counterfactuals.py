@@ -221,4 +221,5 @@ np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
 np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
 np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
 np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
+np.save('{}/{}'.format(path_figures, 'ranks.npy'), ranks)
 
