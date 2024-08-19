@@ -34,6 +34,11 @@ ramp = 10
 proportional = False
 shares = np.arange(0, 0.52, 0.02)
 
+plt.rcParams.update({'font.size': 12})
+
+normalize = mcolors.Normalize(vmin=shares.min(), vmax=shares.max())
+colormap = cm.viridis
+
 counterfactuals = 10
 persistence_quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99]
 
@@ -87,10 +92,17 @@ for trial, share in tqdm(enumerate(shares)):
         mean_persistence_quantiles[_][trial, :] = mean_persistence_quantiles_[_].mean(axis=0)
         mean_persistence[_][trial, :] = mean_persistence_[_] / counterfactuals
 
-plt.rcParams.update({'font.size': 12})
+ranges = []
+sds = []
+for share in tqdm(range(shares.shape[0])):
+    min_rank = np.min(ranks_[:, :, :, :, share], axis=0)
+    max_rank = np.max(ranks_[:, :, :, :, share], axis=0)
 
-normalize = mcolors.Normalize(vmin=shares.min(), vmax=shares.max())
-colormap = cm.viridis
+    ranges_ = max_rank - min_rank
+    ranges.append(ranges_)
+    sds.append(np.std(ranks_[:, :, :, :, share], axis=0))
+
+
 fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(8, 8))
 
 for plot_ in range(4):
@@ -174,47 +186,63 @@ colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fract
 colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'ests.pdf'), format='pdf', dpi=300)
 
-fig, axes = plt.subplots(ncols=len(mean_persistence), nrows=1, figsize=(10, 7))
-overlap = 0.006  # Adjust this value to change the overlap of the plots
 
-for plot_ in range(len(mean_persistence)):
-    for i, (row, label, share) in enumerate(zip(reversed(mean_persistence[plot_]), reversed(shares), reversed(shares))):
-        y = row
-        start = np.argmax(y != 0)
-        # Find the last non-zero element
-        end = len(y) - np.argmax(y[::-1] != 0)
-        y = y[start:end]
+fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(12, 8))
 
-        # Create x array with the same length as y
-        x = np.linspace(start, end - 1, len(y))
+# Assuming 'ranges' is a list of your data ranges
+# and 'shares' is a list of corresponding share values
+n_distributions = len(ranges)
 
-        if plot_ != 2:
-            shift = 2
-            x = x[shift:-shift]
-            y = y[shift:-shift]
-        else:
-            y = np.log2(y + 1)
+# Parameters for the ridge plot
+overlap = 0.8  # Adjust this to change the overlap between distributions
+offset = 0.8  # Vertical spacing between distributions
 
-        color = colormap(normalize(share))
+max_density = 0
+for i, share in enumerate(shares):
+    max_density = max(max_density, max(y))
+    color = colormap(normalize(share))
 
-        # Offset each plot vertically
-        offset = i * 0.4  # Adjust this value to change the spacing between plots
+    row = ranges[i].reshape(-1)
+    density = gaussian_kde(row)
+    x = np.linspace(min(row), max(row), 1000)
+    y = density(x)
 
-        axes[plot_].fill_between(x, offset + y * (overlap if plot_ != 2 else overlap * 10), offset, alpha=0.8, color=color, label=label)
+    # Scale the density
+    y = y / y.max() * overlap
 
-    axes[plot_].set_yticks([])
+    # Add the offset
+    y = y + i * offset
 
+    axes[0].fill_between(x, y, i * offset, alpha=0.8, color=color)
 
-scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
-scalarmappaple.set_array(shares)
-plt.tight_layout(rect=[0, 0, 1, 0.95])
-colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fraction=0.05, pad=0.1)
-colorbar.set_label(r'$\alpha$', labelpad=1)
-axes[0].set_title('10 %')
-axes[1].set_title('90 %')
-axes[2].set_title('Maximum')
+    row = sds[i].reshape(-1)
+    density = gaussian_kde(row)
+    x = np.linspace(min(row), max(row), 1000)
+    y = density(x)
+
+    # Scale the density
+    y = y / y.max() * overlap
+
+    # Add the offset
+    y = y + i * offset
+
+    axes[1].fill_between(x, y, i * offset, alpha=0.8, color=color)
+
+# Remove y-ticks
+axes[0].set_yticks([])
+axes[1].set_yticks([])
+
+# Set labels and title
+axes[0].set_title('Range')
+axes[1].set_title('Standard Deviation')
+
+# Add a colorbar centered beneath both subplots
+sm = plt.cm.ScalarMappable(cmap=colormap, norm=normalize)
+sm.set_array([])
+cbar = fig.colorbar(sm, ax=axes, orientation='horizontal', fraction=0.05, pad=0.15)
+cbar.set_label(r'$\alpha$')
 plt.show()
-plt.savefig('{}/{}'.format(path_figures, 'percentile_distributions.pdf'), format='pdf', dpi=300)
+plt.savefig('{}/{}'.format(path_figures, 'mobility.pdf'), format='pdf', dpi=300)
 
 np.savez('{}/{}'.format(path_figures, 'mean_persistence.npz'), *mean_persistence)
 np.savez('{}/{}'.format(path_figures, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
@@ -223,5 +251,4 @@ np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
 np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
 np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
 np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
-np.save('{}/{}'.format(path_figures, 'ranks.npy'), ranks)
-
+np.save('{}/{}'.format(path_figures, 'ranks.npy'), ranks_)
