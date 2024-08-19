@@ -994,11 +994,11 @@ INPUT ./figures/ginis.eps
 INPUT ./figures/ginis-eps-converted-to.pdf
 INPUT ./figures/ginis-eps-converted-to.pdf
 INPUT ./figures/ginis-eps-converted-to.pdf
-INPUT ./figures/percentile_distributions.pdf
-INPUT ./figures/percentile_distributions.pdf
-INPUT figures/percentile_distributions.pdf
-INPUT ./figures/percentile_distributions.pdf
-INPUT ./figures/percentile_distributions.pdf
+INPUT ./figures/mobility.pdf
+INPUT ./figures/mobility.pdf
+INPUT figures/mobility.pdf
+INPUT ./figures/mobility.pdf
+INPUT ./figures/mobility.pdf
 INPUT out.nosync/collaboration.bbl
 INPUT out.nosync/collaboration.bbl
 INPUT out.nosync/collaboration.bbl
