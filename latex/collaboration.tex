@@ -13,6 +13,7 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
+
 % Title information
 \title{Conglomerate Mergers: Effects on Growth and Competition}
 \author{Simon Bl\"othner}
@@ -283,13 +284,13 @@ This finding is being confounded by Figure \ref{fig:ginis}, for which we calcula
     \label{fig:ginis}
 \end{figure}
 
-Yet, these two analyses are both static measures for a distribution, meaning that they can only provide information on the aggregate. To address this, we follow each firm throughout and tally how often it is with a certain percentile in its market. Using this dynamic measurement, having equal opportunity to reach rank would mean that the results under static inequality are somewhat misleading, as there would be fluctuation in between the ranks. Figure \ref{fig:percentile} shows that almost every firm passes through the lowest $10\,\%$ quantile at least once per simulation, with a large part of them remaining there longer. Even though, we observe similar picture emerges for the 90th quantile, the firm with the highest market share stay there for almost all periods (note that we used a $\log$ scale for this panel of the plot). We interpret this to collaborate the findings of our static analysis. Strikingly, increasing the sharing rate seems not to shift the distribution, but decrease its spread, meaning that it allows firms to maintain their rank even more easily.
+Yet, these two analyses are both static measures for a distribution, meaning that they can only provide information on the aggregate. To address this, we follow each firm throughout each simulation and tally both the difference between its maximum and minimum rank and the standard deviation of its ranks, and plot the resulting distributions over all firms and counterfactuals in Figure \ref{fig:mobility}. Given that there are 100 firms per market, this sets an upper limit on mobility as measured by both metrics. Again we observe that introducing just a small amount of sharing changes the dynamic drastically, as both measures shift completely in their pattern, raising mobility drastically. In addition, increasing the sharing rate increases the variability of ranks, shifting the distribution to the right. Interestingly, as the maximum range is already reached for any sharing level, we only see more mass of the distribution moving to the right.
 
 \begin{figure}
     \centering
-    \includegraphics[width=.7\textwidth]{figures/percentile_distributions.pdf}
+    \includegraphics[width=.9\textwidth]{figures/mobility.pdf}
     \caption{Distribution over ranks.}
-    \label{fig:percentile}
+    \label{fig:mobility}
 \end{figure}
 
 \section{Discussion}
