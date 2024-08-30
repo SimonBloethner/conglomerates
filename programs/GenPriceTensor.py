@@ -33,7 +33,7 @@ random_seed = 0  # set random seed if required (0 = no random seed)
 checkpoint_path = '{}/programs/models'.format(path_)
 
 class ActorCritic(nn.Module):
-    def __init__(self, action_std_init, state_dim=4, action_dim=1, has_continuous_action_space=True):
+    def __init__(self, action_std_init=0.001, state_dim=4, action_dim=1, has_continuous_action_space=True):
         super(ActorCritic, self).__init__()
 
         self.has_continuous_action_space = has_continuous_action_space
@@ -43,9 +43,11 @@ class ActorCritic(nn.Module):
             self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
         # actor
         if has_continuous_action_space:
-            self.actor = nn.Sequential(nn.Linear(state_dim, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(), nn.Linear(64, action_dim), nn.Tanh())
+            self.actor = nn.Sequential(nn.Linear(state_dim, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(),
+                nn.Linear(64, action_dim), nn.Tanh())
         else:
-            self.actor = nn.Sequential(nn.Linear(state_dim, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(), nn.Linear(64, action_dim), nn.Softmax(dim=-1))
+            self.actor = nn.Sequential(nn.Linear(state_dim, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(),
+                nn.Linear(64, action_dim), nn.Softmax(dim=-1))
         # critic
         self.critic = nn.Sequential(nn.Linear(state_dim, 64), nn.Tanh(), nn.Linear(64, 64), nn.Tanh(), nn.Linear(64, 1))
 
@@ -68,7 +70,7 @@ class ActorCritic(nn.Module):
 
 
 class Firm:
-    def __init__(self, has_continuous_action_space=True, action_std_init=0.6, state_dim=4, action_dim=1):
+    def __init__(self, has_continuous_action_space=True, action_std_init=0.001, state_dim=4, action_dim=1):
 
         self.policy = ActorCritic(action_std_init, state_dim, action_dim, has_continuous_action_space).to(device)
 
@@ -93,8 +95,8 @@ actor = Firm()
 
 inc = 1/100
 max_level = 1
-price_states = np.arange(0, max_level + inc, inc)
-share_states = np.arange(0, max_level + inc, inc)
+price_states = np.arange(inc, max_level + inc, inc)
+share_states = np.arange(inc, max_level + inc, inc)
 
 combinations = np.array(np.meshgrid(price_states, share_states, price_states, price_states)).T.reshape(-1, 4)
 prices = np.zeros(combinations.shape[0])
@@ -104,15 +106,10 @@ for price in tqdm(range(combinations.shape[0])):
 
 side_length = price_states.shape[0]
 tensor_shape = (side_length, side_length, side_length, side_length)
-result_tensor = np.full(tensor_shape, np.nan)
-
-
-def to_index(value, max_val, size):
-    return min(int(value / max_val * (size - 1)), size - 1)
-
+result_tensor = np.full(tensor_shape, -1)
 
 for combo, output in zip(combinations, prices):
-    indices = tuple(to_index(val, max_level, side_length) for val in combo)
+    indices = tuple(int(val * 100 - 1) for val in combo)
     result_tensor[indices] = output
 
 np.save(checkpoint_path + '/price_tensor.npy', result_tensor)
