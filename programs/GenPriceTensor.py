@@ -91,6 +91,14 @@ class Firm:
         self.policy.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
 
 
+def matrix_row_to_tensor_coords(row_index, side_length):
+    k = row_index // (side_length**3)
+    l = (row_index % (side_length**3)) // (side_length**2)
+    i = (row_index % (side_length**2)) // side_length
+    j = row_index % side_length
+    return i, j, k, l
+
+
 actor = Firm()
 
 inc = 1/100
@@ -108,8 +116,10 @@ side_length = price_states.shape[0]
 tensor_shape = (side_length, side_length, side_length, side_length)
 result_tensor = np.full(tensor_shape, -1)
 
-for combo, output in zip(combinations, prices):
-    indices = tuple(int(val * 100 - 1) for val in combo)
-    result_tensor[indices] = output
+# Fill the tensor
+for row_index, output in enumerate(prices):
+    i, j, k, l = matrix_row_to_tensor_coords(row_index, side_length)
+    result_tensor[i, j, k, l] = output
+
 
 np.save(checkpoint_path + '/price_tensor.npy', result_tensor)
