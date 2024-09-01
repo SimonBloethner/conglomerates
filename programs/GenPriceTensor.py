@@ -5,6 +5,7 @@ from torch.distributions import MultivariateNormal
 from torch.distributions import Categorical
 import torch
 import os
+import sys
 
 np.random.seed(1)
 torch.manual_seed(1)
@@ -19,9 +20,9 @@ else:
     print("Device set to : cpu")
 
 path_ = os.getcwd()
-local = path_.find('Simon') > 0
+local = path_.find('nomis') > 0
 if local:
-    path_ = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE'
+    path_ = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\programs\\models'
 else:
     path_ = 'conglomerate'
 
@@ -30,7 +31,8 @@ action_std_decay_rate = 0.05  # linearly decay action_std (action_std = action_s
 action_std_init = 0.6
 
 random_seed = 0  # set random seed if required (0 = no random seed)
-checkpoint_path = '{}/programs/models'.format(path_)
+checkpoint_path = path_
+
 
 class ActorCritic(nn.Module):
     def __init__(self, action_std_init=0.001, state_dim=4, action_dim=1, has_continuous_action_space=True):
@@ -77,7 +79,7 @@ class Firm:
         self.policy_old = ActorCritic(action_std_init, state_dim, action_dim, has_continuous_action_space).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
-        self.load(checkpoint_path=checkpoint_path + '/agent_' + '1' + '.pth')
+        self.load(checkpoint_path=checkpoint_path + '\\agent_' + '1' + '.pth')
 
     def select_action(self, state):
         with torch.no_grad():
@@ -114,12 +116,11 @@ for price in tqdm(range(combinations.shape[0])):
 
 side_length = price_states.shape[0]
 tensor_shape = (side_length, side_length, side_length, side_length)
-result_tensor = np.full(tensor_shape, -1)
+result_tensor = np.full(tensor_shape, -1.0, dtype=float)
 
 # Fill the tensor
 for row_index, output in enumerate(prices):
     i, j, k, l = matrix_row_to_tensor_coords(row_index, side_length)
     result_tensor[i, j, k, l] = output
 
-
-np.save(checkpoint_path + '/price_tensor.npy', result_tensor)
+np.save(checkpoint_path + '\\price_tensor.npy', result_tensor)
