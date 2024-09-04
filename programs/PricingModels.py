@@ -48,7 +48,7 @@ class ActorCritic(nn.Module):
 
 
 class Firm:
-    def __init__(self, market, number, steps, lookback, has_continuous_action_space=True, action_std_init=0.6, state_dim=4, action_dim=1):
+    def __init__(self, market, number, steps, lookback, has_continuous_action_space=True, action_std_init=0.001, state_dim=4, action_dim=1):
         self.id = number
         self.home_market = market
         self.states = np.ones(steps + 1)
@@ -77,11 +77,7 @@ class Firm:
         self.policy.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
 
     def select_action_matrix(self, state):
-        if any(np.isnan(state)):
-            print('!')
         state = np.round(state, decimals=2)
         indices = tuple(int(state_ * 100 - 1) for state_ in state)
         action = model_tensor[indices]
-        if np.isnan(action):
-            print('!')
         return action

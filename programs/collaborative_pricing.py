@@ -3,6 +3,7 @@ from tqdm import tqdm
 import torch
 import os
 import PricingModels
+from scipy.stats import random_correlation
 
 np.random.seed(1)
 torch.manual_seed(1)
@@ -67,17 +68,46 @@ def exit_(firms, firm, conglomerates):
 
 
 def model(params):
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback = params
+    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback, eps = params
 
     prices = np.zeros((steps, firms_per_market, markets))
     demands = np.zeros((steps, firms_per_market, markets))
     profits = np.ones((steps, firms_per_market, markets))
     sizes = np.ones((steps, firms_per_market, markets))
-    market_share = np.zeros((steps, firms_per_market, markets))
+    market_share = np.tile(1 / firms_per_market, (steps, firms_per_market, markets))
 
     market_share[:, :, :] = 1 / firms_per_market
 
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
+    min_mu = 0.01
+    max_mu = 0.1
+    min_sig = 0.01
+    max_sig = 0.05
+
+    min_bound = np.array([min_mu, min_sig])
+    max_bound = np.array([max_mu, max_sig])
+
+    mu_sig_corr = 0.7
+    means = [0.1, 0.05]
+
+    cov_mat = np.ones((2, 2)) * mu_sig_corr + np.diag(np.tile(1 - mu_sig_corr, 2))
+    growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
+    growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
+    growth_vars = min_bound + (growth_vars / growth_vars.max(axis=0)) * (max_bound - min_bound)
+
+    eigen_vals = np.random.uniform(0.1, 3, markets)
+    eigen_vals = eigen_vals * markets / eigen_vals.sum()
+
+    market_corr = random_correlation.rvs(tuple(eigen_vals), random_state=np.random.default_rng())
+
+    # market_corr = np.diag(np.ones(markets))
+    # market_corr[np.triu_indices(markets, k=1)] = np.random.uniform(0.1, 0.8, int(markets * (markets - 1) / 2))
+    # market_corr = market_corr + market_corr.T - np.diag(np.ones(markets))
+    market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr
+
+    market_growth = np.random.multivariate_normal(growth_vars[:, 0], market_cov, size=(steps, firms_per_market)) + 1
+
+    # market_growth = np.random.normal(1.04, 0.04, size=(steps, markets))
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
@@ -201,30 +231,30 @@ def model(params):
             # prices[step, firm_id, firm.home_market] = firm.select_action(state)
             prices[step, firm_id, firm.home_market] = firm.select_action_matrix(state)
 
-        demand_growth = 1.01 ** step
+        demand_growth = market_growth[:step + 1, :, :].prod(axis=0)
         for market_ in range(markets):
-            demands[step, :, market_] = demand(prices[step, :, market_], share=market_share[step - 1, :, market_]) * demand_growth
-            profits[step, :, market_] = profit(prices[step, :, market_], share=market_share[step - 1, :, market_]) * demand_growth
+            demands[step, :, market_] = demand(prices[step, :, market_], share=market_share[step - 1, :, market_]) * demand_growth[:, market_] * market_share[step - 1, :, market_]
+            profits[step, :, market_] = profit(prices[step, :, market_], share=market_share[step - 1, :, market_]) * demand_growth[:, market_] * market_share[step - 1, :, market_]
 
         for conglomerate_ in conglomerates.keys():
             conglomerate = conglomerates[conglomerate_]['firms']
             indices = markets_structure[conglomerate, :]
             cong_profits = profits[step, indices[:, 1], indices[:, 0]]
             costs = np.random.lognormal(0, 1, len(conglomerate)) / 50
-            costs = costs * 0
-            costs = costs * profits[:step + 1, indices[:, 1], indices[:, 0]].sum(axis=0)    # Assume that costs are always calculated relative to the firm market value, not the period revenue.
+            cong_profits = np.max([1 - costs, np.zeros(len(conglomerate))], axis=0) * cong_profits
             if cost_pooling:    # TODO: Make the building and comparison of a cost dependent pool feasible. How to do the synthetic pool?
                 costs = (share * costs).sum() / len(conglomerate) + (1 - share) * costs
                 returns = cong_profits - costs
             else:
-                cong_profits -= costs
+                # cong_profits -= costs
                 if proportional:
                     pool = (cong_profits * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
                 else:
                     pool = (cong_profits * share).sum() - profits[step, indices[:, 1], indices[:, 0]].sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4) * (0 if share == 0 else 1)  # len(conglomerate) / markets
                     returns = (1 - share) * cong_profits + pool / len(conglomerate) if share > 0 else cong_profits  # Equal distribution of pool contents.
-
-            profits[step, indices[:, 1], indices[:, 0]] = returns
+            if (returns < 0).any():
+                print('here')
+            profits[step, indices[:, 1], indices[:, 0]] = returns + eps
 
             conglomerates[conglomerate_]['pool'][step % lookback] = pool    # TODO: Under cost sharing, there is no pool to define. Find metric to compare instead here.
 
@@ -239,9 +269,17 @@ def model(params):
 
         for firm in solo:
             firms[firm].outside_profits[step % lookback] = profits[(step,) + tuple(markets_structure[firm, :])]
-            firms[firm].states[step + 1] = profits[(step,) + tuple(markets_structure[firm, :])]
+            cost_ = np.random.lognormal(0, 1, size=1) / 50
+            firms[firm].states[step + 1] = profits[(step,) + tuple(markets_structure[firm, :])] * np.max([1 - cost_[0], 0])
+            if firms[firm].states[step + 1] < 0:
+                firms[firm].states[step + 1] = 1
 
-        sizes[step, :, :] = sizes[step - 1, :, :] * (np.exp((profits[step, :, :] - profits[step - 1, :, :]) / profits[step - 1, :, :]) if step > 0 else 1)
+        # sizes[step, :, :] = sizes[step - 1, :, :] + sizes[step - 1, :, :] * (0.1 * np.log2(1 + (profits[step, :, :] / profits[step - 1, :, :])) if step > 0 else 1)  # ** (1 / 2)  # 1.22 works well.
+        sizes[step, :, :] = sizes[step - 1, :, :] * (1 + profits[step, :, :] / sizes[step - 1, :, :])
+        if np.isnan(sizes[step, :, :]).any():
+            locs = np.where(np.isnan(sizes[step, :, :]))
+            print(profits[step, locs[0], locs[1]])
+            print(profits[step - 1, locs[0], locs[1]])
         market_share[step, :, :] = sizes[step, :, :] / np.sum(sizes[step, :, :], axis=0)
         if step > lookback:
             for firm in firms:
@@ -272,21 +310,21 @@ def model(params):
     quantiles_members = np.array([np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) for member in members])
 
     # shape = markets x steps + 1 x firms_per_market
-    quantiles_shares = np.quantile(market_share, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99], axis=2)
-    max_shares = np.max(market_share, axis=2)
+    quantiles_shares = np.quantile(market_share, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99], axis=1)
+    max_shares = np.max(market_share, axis=1)
 
     squared_market_share = market_share ** 2
-    hhi = np.sum(squared_market_share, axis=2)
+    hhi = np.sum(squared_market_share, axis=1)
 
-    sorted_market_share = np.sort(market_share, axis=2)
-    cum_market_share = np.cumsum(sorted_market_share, axis=2)
-    sums = np.sum(sorted_market_share, axis=2)
+    sorted_market_share = np.sort(market_share, axis=1)
+    cum_market_share = np.cumsum(sorted_market_share, axis=1)
+    sums = np.sum(sorted_market_share, axis=1)
     sums = sums[..., np.newaxis]
     lorenz_curve = cum_market_share / sums
-    area_under_curve = np.trapz(y=lorenz_curve, axis=2, dx=1 / firms_per_market)
+    area_under_curve = np.trapz(y=lorenz_curve, axis=1, dx=1 / firms_per_market)
     gini_coefficient = 1 - 2 * area_under_curve
 
-    ranks = np.array([np.argsort(np.argsort(market_share[step_, :, :], axis=1)) for step_ in range(steps)])
+    ranks = np.array([np.argsort(np.argsort(market_share[step_, :, :], axis=0)) for step_ in range(steps)])
 
     percentile_thresh = firms_per_market * np.array([0.1, 0.9, ranks.max() / firms_per_market])
 

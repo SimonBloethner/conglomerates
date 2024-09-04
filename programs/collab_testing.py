@@ -21,10 +21,11 @@ merge_thresh = 0.05
 comparison = 4
 break_thresh = 0.85
 lookback = 50
+eps = 1e-6
 proportional = False
 cost_pooling = False
 shares = np.arange(0, 0.2, 0.01)
-shares = np.array([0.2])
+shares = np.array([0.0])
 
 counterfactuals = 1
 
@@ -34,7 +35,7 @@ for trial, share in enumerate(shares):
     quantiles = np.empty(shape=(counterfactuals, 4, steps))
     for experiment in range(counterfactuals):
         params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
-                   proportional, cost_pooling, lookback]
+                   proportional, cost_pooling, lookback, eps]
         res = collaborative_pricing.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, sizes, profits, prices = res
         quantiles[experiment, :, :] = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=(1, 2))
@@ -68,7 +69,9 @@ percentiles = ['10', '90', 'Maximum']
 ramp = 10
 coeffs = np.zeros((steps - ramp, 3))
 for step in range(ramp, steps):
-    coeffs[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', np.RankWarning)
+        coeffs[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
 
 
 fn = np.poly1d(coeffs[-1])
@@ -129,7 +132,7 @@ axes[2][1].plot(max_shares)
 axes[2][1].set_title('(h) Max market share')
 colors = sns.color_palette("husl", n_colors=markets)
 for market in range(markets):
-    axes[2][2].plot(gini_coefficient[market, :], color=colors[market])
+    axes[2][2].plot(gini_coefficient[:, market], color=colors[market])
 axes[2][2].set_title('(i) Gini coefficient')
 fig.tight_layout()
 
