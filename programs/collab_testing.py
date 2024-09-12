@@ -7,6 +7,8 @@ import os
 import seaborn as sns
 import warnings
 
+np.random.seed(1)
+
 is_local = os.getcwd().find('Simon') > 0
 
 path_figures = '/Users/Simon/PycharmProjects/Collusion/figures' if is_local else 'conglomerate/figures'
@@ -68,14 +70,18 @@ percentiles = ['10', '90', 'Maximum']
 
 ramp = 10
 coeffs = np.zeros((steps - ramp, 3))
+coeffs_on_log = np.zeros((steps - ramp, 3))
 for step in range(ramp, steps):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', np.RankWarning)
         coeffs[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], avg_shares[step][:, 1], 2)
-
+        coeffs_on_log[step - ramp, :] = np.polyfit(avg_shares[step][:, 0], np.log2(avg_shares[step][:, 1]), 2)
 
 fn = np.poly1d(coeffs[-1])
 predictions = fn(avg_shares[-1][:, 0])
+
+log_fn = np.poly1d(coeffs_on_log[-1])
+log_predictions = fn(np.log2(avg_shares[-1][:, 0]))
 
 sign = np.sign(coeffs)
 log_coeffs = np.log2(np.abs(coeffs))

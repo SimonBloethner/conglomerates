@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
-from matplotlib.ticker import FuncFormatter
 import seaborn as sns
 import numpy as np
 import collaborative_growth
@@ -23,7 +22,7 @@ break_thresh = 0.85
 lookback = 50
 proportional = False
 shares = np.arange(0, 1.1, 0.1)
-shares = np.array([0.2])
+shares = np.array([5.0])
 
 
 quantiles = np.empty(shape=(shares.shape[0], 4, steps + 1))
