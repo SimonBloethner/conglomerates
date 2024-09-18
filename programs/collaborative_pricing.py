@@ -236,8 +236,8 @@ def model(params):
             indices = markets_structure[conglomerate, :]
             cong_profits = profits[step, indices[:, 1], indices[:, 0]]
             # costs = np.random.lognormal(0, 1, len(conglomerate)) / 50
-            costs = np.abs(np.random.normal(0, 0.01, len(conglomerate)))
-            cong_profits = cong_profits - costs * sizes[step - 1, indices[:, 1], indices[:, 0]]
+            costs = np.abs(np.random.normal(0, 0.1, len(conglomerate)))
+            # cong_profits = cong_profits - costs * sizes[step - 1, indices[:, 1], indices[:, 0]]
             cong_profits = cong_profits * (1 - costs)   # - costs * sizes[step - 1, indices[:, 1], indices[:, 0]]
             if cost_pooling:    # TODO: Make the building and comparison of a cost dependent pool feasible. How to do the synthetic pool?
                 costs = (share * costs).sum() / len(conglomerate) + (1 - share) * costs

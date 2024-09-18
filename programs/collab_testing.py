@@ -17,7 +17,7 @@ np.random.seed(7)
 markets = 100
 firms_per_market = 100
 total_firms = markets * firms_per_market
-steps = 1000
+steps = 2000
 share = 0.9999
 merge_thresh = 0.05
 comparison = 4
@@ -27,7 +27,7 @@ eps = 1e-6
 proportional = False
 cost_pooling = False
 shares = np.arange(0, 0.2, 0.01)
-shares = np.array([0.0])
+shares = np.array([0.2])
 
 counterfactuals = 1
 
@@ -144,6 +144,8 @@ fig.tight_layout()
 
 # Show the plot
 plt.show()
+
+
 
 
 
