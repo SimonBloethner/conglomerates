@@ -1,16 +1,8 @@
 import numpy as np
-from tqdm import tqdm
-import torch
 import os
-import PricingModels
-from scipy.stats import random_correlation
-from scipy import stats
+from tqdm import tqdm
 
 np.random.seed(1)
-torch.manual_seed(1)
-torch.cuda.manual_seed(1)
-
-device = 'cpu'
 
 path_ = os.getcwd()
 local = path_.find('Simon') > 0
@@ -19,12 +11,18 @@ if local:
 else:
     path_ = 'collusion'
 
-action_std = 0.1  # starting std for action distribution (Multivariate Normal)
-action_std_decay_rate = 0.05  # linearly decay action_std (action_std = action_std - action_std_decay_rate)
-action_std_init = 0.6
 
-random_seed = 0  # set random seed if required (0 = no random seed)
-checkpoint_path = '{}/{}/models'.format(path_, 'programs' if local else 'pythonFiles')
+class Firm:
+    def __init__(self, market, number, market_id, steps, lookback):
+        self.id = number
+        self.market_id = market_id
+        self.home_market = market
+        self.states = np.ones(steps + 1)
+        self.markets = [market]
+        self.conglomerate = [self.id]
+        self.outside_profits = np.ones(lookback)
+        self.entered = None
+        self.conglomerate_id = None
 
 
 def logistic_cost(x, k, x_0):
@@ -63,52 +61,27 @@ def exit_(firms, firm):
 
 
 def model(params):
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback, eps = params
-    np_random_state = np.random.RandomState(1)
+    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
     prices = np.zeros((steps, firms_per_market, markets))
     demands = np.zeros((steps, firms_per_market, markets))
     profits = np.ones((steps, firms_per_market, markets))
     sizes = np.ones((steps, firms_per_market, markets))
     market_share = np.tile(1 / firms_per_market, (steps, firms_per_market, markets))
-
+    lower_bound = 0.02
+    upper_bound = 0.07
+    costs = np.clip(np.random.normal(0.01, 0.001, (steps, firms_per_market, markets)), 0.0001, 0.1)
+    cost_pooling = False
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
-    min_mu = 0.01
-    max_mu = 0.1
-    min_sig = 0.01
-    max_sig = 0.05
 
-    min_bound = np.array([min_mu, min_sig])
-    max_bound = np.array([max_mu, max_sig])
-
-    mu_sig_corr = 0.7
-    means = [0.1, 0.05]
-
-    cov_mat = np.ones((2, 2)) * mu_sig_corr + np.diag(np.tile(1 - mu_sig_corr, 2))
-    growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
-    growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
-    growth_vars = min_bound + (growth_vars / growth_vars.max(axis=0)) * (max_bound - min_bound)
-
-    eigen_vals = np.random.uniform(0.1, 3, markets)
-    eigen_vals = eigen_vals * markets / eigen_vals.sum()
-
-    market_corr = random_correlation.rvs(tuple(eigen_vals), random_state=np_random_state)
-
-    # market_corr = np.diag(np.ones(markets))
-    # market_corr[np.triu_indices(markets, k=1)] = np.random.uniform(0.1, 0.8, int(markets * (markets - 1) / 2))
-    # market_corr = market_corr + market_corr.T - np.diag(np.ones(markets))
-    market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr
-
-    market_growth = np.random.multivariate_normal(growth_vars[:, 0], market_cov, size=(steps, firms_per_market)) + 1
     market_growth = np.ones((steps, markets))
-    # market_growth = np.random.normal(1.04, 0.04, size=(steps, markets))
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
-    firms = [PricingModels.Firm(market=market, number=ids[market, firm], market_id=firm, steps=steps, lookback=lookback) for market in range(markets) for firm in range(firms_per_market)]
+    firms = [Firm(market=market, number=ids[market, firm], market_id=firm, steps=steps, lookback=lookback) for market in range(markets) for firm in range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
-    for step in tqdm(range(steps)):
-    # for step in range(steps):
+    # for step in tqdm(range(steps)):
+    for step in range(steps):
         to_del = []
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
@@ -215,30 +188,13 @@ def model(params):
 
         solo = [firm.id for firm in firms if len(firm.conglomerate) == 1]
 
-        for firm in firms:
-            firm_id = firm.id % firms_per_market
-            mask = np.ones(firms_per_market, dtype=bool)
-            mask[firm_id] = False
-            p_ = np.max(prices[step - 1, mask, firm.home_market])
-            p__ = np.max(prices[step - 2, mask, firm.home_market])
-            state = [prices[step - 1, firm_id, firm.home_market], p_, p__,
-                     market_share[step - 1, firm_id, firm.home_market]]
-            # prices[step, firm_id, firm.home_market] = firm.select_action(state)
-            prices[step, firm_id, firm.home_market] = firm.select_action_matrix(state)
-
-        # demand_growth = market_growth[:step + 1, :, :].prod(axis=0)
-        for market_ in range(markets):
-            demands[step, :, market_] = demand(prices[step, :, market_], share=market_share[step - 1, :, market_]) * market_growth[:, market_].prod() * market_share[step - 1, :, market_]
-            profits[step, :, market_] = profit(prices[step, :, market_], share=market_share[step - 1, :, market_]) * market_growth[:, market_].prod() * market_share[step - 1, :, market_]
+        prices[step, :, :] = price_opt(market_share[step - 1, :, :], cost=costs[step, :, :])
+        profits[step, :, :] = profit(prices[step, :, :], market_share[step - 1, :, :], cost=costs[step, :, :], scale=market_growth.prod(axis=0))
 
         for conglomerate_ in conglomerates.keys():
             conglomerate = conglomerates[conglomerate_]['firms']
             indices = markets_structure[conglomerate, :]
             cong_profits = profits[step, indices[:, 1], indices[:, 0]]
-            # costs = np.random.lognormal(0, 1, len(conglomerate)) / 50
-            costs = np.abs(np.random.normal(0, 0.1, len(conglomerate)))
-            # cong_profits = cong_profits - costs * sizes[step - 1, indices[:, 1], indices[:, 0]]
-            cong_profits = cong_profits * (1 - costs)   # - costs * sizes[step - 1, indices[:, 1], indices[:, 0]]
             if cost_pooling:    # TODO: Make the building and comparison of a cost dependent pool feasible. How to do the synthetic pool?
                 costs = (share * costs).sum() / len(conglomerate) + (1 - share) * costs
                 returns = cong_profits - costs
@@ -274,23 +230,25 @@ def model(params):
 
         for firm in solo:
             tup = tuple([markets_structure[firm][1], markets_structure[firm][0]])
-            cost_ = np.abs(np.random.normal(0, 0.01))
-            profit_ = profits[(step,) + tup] * (1 - cost_)   # - cost_ * sizes[(step - 1,) + tup]
+            profit_ = profits[(step,) + tup]
             firms[firm].outside_profits[step % lookback] = profit_
             firms[firm].states[step + 1] = profit_
             if profit_ / sizes[(step - 1,) + tup] < np.exp(-1) - 1 or sizes[(step - 1,) + tup] < 0:
                 firms[firm].states[step + 1] = 1
                 profits[(step,) + tup] = 0
 
-        sizes[step, :, :] = sizes[step - 1, :, :] * (1 + np.log(1 + profits[step, :, :] / sizes[step - 1, :, :]))
-        if np.isnan(sizes[step, :, :]).any():
-            locs = np.where(np.isnan(sizes[step, :, :]))
-            print(locs)
-            print(profits[step, locs[0], locs[1]])
-            print(sizes[step - 1, locs[0], locs[1]])
+        reinvestment = profits[step, :, :] / sizes[step - 1, :, :]
+
+        normalized_reinvestment = (reinvestment - np.min(reinvestment, axis=0)) / (np.max(reinvestment, axis=0) - np.min(reinvestment, axis=0))     # Assumption: axis=0 means that there are normalizations for each market, not across all firms!
+
+        means = lower_bound + normalized_reinvestment * (upper_bound - lower_bound)
+
+        sds = 0.2 + 0.1 * means
+        increments = np.random.normal(means, sds)
+        increments[increments < -1] = -0.99
+        sizes[step, :, :] = sizes[step - 1, :, :] + sizes[step - 1, :, :] * increments
         market_share[step, :, :] = sizes[step, :, :] / np.sum(sizes[step, :, :], axis=0)
-        if (market_share < 0).any():
-            print('!')
+
         market_growth[step, :] = sizes[step, :, :].sum(axis=0) / sizes[step - 1, :, :].sum(axis=0)
 
         if step > lookback:
@@ -331,7 +289,8 @@ def model(params):
     sorted_market_share = np.sort(market_share, axis=1)
     cum_market_share = np.cumsum(sorted_market_share, axis=1)
     sums = np.sum(sorted_market_share, axis=1)
-    sums = sums[..., np.newaxis]
+    # sums = sums[..., np.newaxis]
+    sums = np.expand_dims(sums, axis=1)
     lorenz_curve = cum_market_share / sums
     area_under_curve = np.trapz(y=lorenz_curve, axis=1, dx=1 / firms_per_market)
     gini_coefficient = 1 - 2 * area_under_curve
@@ -349,9 +308,9 @@ def model(params):
         avg_rank = []
         for conglomerate in all_time_conglomerates[period]:
             coords = markets_structure[list(conglomerate)]
-            to_append = [len(conglomerate), market_share[period, :, :][(coords[:, 0], coords[:, 1])].mean()]
+            to_append = [len(conglomerate), market_share[period, :, :][(coords[:, 1], coords[:, 0])].mean()]
             avg_share.append(to_append)
-            to_append = [len(conglomerate), ranks[period, :, :][(coords[:, 0], coords[:, 1])].mean()]
+            to_append = [len(conglomerate), ranks[period, :, :][(coords[:, 1], coords[:, 0])].mean()]
             avg_rank.append(to_append)
 
         avg_shares.append(np.array(avg_share))
@@ -363,17 +322,12 @@ def model(params):
     return model_results
 
 
-def demand(p, share):
-    n_firms = p.shape[0]
-    minus_i = (np.ones((n_firms, n_firms)) - np.eye(n_firms)).astype(bool)
-    price = np.tile(p, (n_firms, 1))
-    minus_i = price[minus_i].reshape(n_firms, n_firms - 1)
-    minus_i = np.max(minus_i, axis=1)
-
-    d = 1 - p * (1 - share) + 0.5 * minus_i
-    return d
+def price_opt(share, cost):
+    p_opt = np.exp(cost) / (1 - share + 1e-6)
+    return p_opt
 
 
-def profit(p, share):
-    pi = np.array(p) * demand(p, share)
+def profit(p, share, cost, scale=10):
+    pi = (np.array(p) - np.exp(cost)) * scale * p ** (- 1 / share + 1e-6)
     return pi
+

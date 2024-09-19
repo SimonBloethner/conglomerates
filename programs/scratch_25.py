@@ -357,7 +357,7 @@ eps = 1e-6
 proportional = False
 cost_pooling = False
 shares = np.arange(0, 0.2, 0.01)
-shares = np.array([0.5])
+shares = np.array([0.0])
 
 counterfactuals = 1
 
@@ -459,11 +459,9 @@ lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 ax1.legend(lines1 + lines2, labels1 + labels2, loc='center left', prop={'size': 8})
 
-color_palette = cm.tab10(range(len(percentile_ranks)))
-for perc in range(len(percentile_ranks)):
-    axes[2][0].hist(percentile_ranks[perc].flat, bins=firms_per_market, color=color_palette[perc], alpha=0.7, label='{} {}'.format(percentiles[perc], '%' if perc != 2 else ''))
-axes[2][0].legend(loc='upper center')
-axes[2][0].set_title('(g) Rank Persistence')
+axes[2][0].plot(prices.max(axis=1))
+axes[2][0].set_title('(g) Maximum price')
+axes[2][0].set_yscale('log')
 axes[2][1].plot(max_shares)
 axes[2][1].set_title('(h) Max market share')
 colors = sns.color_palette("husl", n_colors=markets)
