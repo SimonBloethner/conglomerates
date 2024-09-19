@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  19 AUG 2024 20:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  13 SEP 2024 12:48
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -601,12 +601,12 @@ File: figures/share_zoomed.png Graphic file (type png)
 Package pdftex.def Info: figures/share_zoomed.png  used on input line 191.
 (pdftex.def)             Requested size: 292.5pt x 219.38724pt.
  [7 <./figures/share_zoomed.png>] [8]
-<figures/sizes.pdf, id=160, 578.16pt x 578.16pt>
-File: figures/sizes.pdf Graphic file (type pdf)
-<use figures/sizes.pdf>
-Package pdftex.def Info: figures/sizes.pdf  used on input line 252.
+<figures//sizes.pdf, id=160, 578.16pt x 578.16pt>
+File: figures//sizes.pdf Graphic file (type pdf)
+<use figures//sizes.pdf>
+Package pdftex.def Info: figures//sizes.pdf  used on input line 252.
 (pdftex.def)             Requested size: 272.99881pt x 272.99678pt.
- [9 <./figures/sizes.pdf>]
+ [9 <./figures//sizes.pdf>]
 <figures/ests.pdf, id=206, 578.16pt x 578.16pt>
 File: figures/ests.pdf Graphic file (type pdf)
 <use figures/ests.pdf>
@@ -654,15 +654,15 @@ Package rerunfilecheck Info: File `collaboration.out' has not changed.
 (rerunfilecheck)             Checksum: AF60F33F2799A5F1453F701C7B273C48;1527.
  ) 
 Here is how much of TeX's memory you used:
- 32066 strings out of 478268
- 752593 string characters out of 5846347
+ 32067 strings out of 478268
+ 752608 string characters out of 5846347
  1160538 words of memory out of 5000000
  49704 multiletter control sequences out of 15000+600000
  490146 words of font info for 79 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,18n,94p,1379b,2136s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on out.nosync/collaboration.pdf (14 pages, 2184251 bytes).
+Output written on out.nosync/collaboration.pdf (14 pages, 2183692 bytes).
 PDF statistics:
  480 PDF objects out of 1000 (max. 8388607)
  296 compressed objects within 3 object streams

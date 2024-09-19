@@ -962,11 +962,11 @@ INPUT ./figures/share_zoomed.png
 INPUT figures/share_zoomed.png
 INPUT ./figures/share_zoomed.png
 INPUT ./figures/share_zoomed.png
-INPUT ./figures/sizes.pdf
-INPUT ./figures/sizes.pdf
-INPUT figures/sizes.pdf
-INPUT ./figures/sizes.pdf
-INPUT ./figures/sizes.pdf
+INPUT ./figures//sizes.pdf
+INPUT ./figures//sizes.pdf
+INPUT figures//sizes.pdf
+INPUT ./figures//sizes.pdf
+INPUT ./figures//sizes.pdf
 INPUT ./figures/ests.pdf
 INPUT ./figures/ests.pdf
 INPUT figures/ests.pdf
