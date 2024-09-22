@@ -17,6 +17,7 @@ if is_mac:
     path_outdata = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/outdata'
 elif is_windows:
     path_figures = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\figures\\pricing'
+    path_outdata = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\outdata\\pricing'
 else:
     path_figures = 'conglomerate/figures/pricing'
 
@@ -51,7 +52,7 @@ mean_gini = np.empty(shape=(shares.shape[0], 5, steps))
 mean_ests = np.full([shares.shape[0], steps, 3], np.nan)
 mean_persistence = [np.zeros((shares.shape[0], steps)) for _ in range(3)]
 mean_persistence_quantiles = [np.zeros((shares.shape[0], len(persistence_quantiles))) for _ in range(3)]
-mean_price = np.empty(shape=(shares.shape[0], 5, steps))
+mean_price = np.empty(shape=(shares.shape[0], 4, steps))
 
 for trial, share in tqdm(enumerate(shares)):
     shares_quantiles = np.empty(shape=(counterfactuals, 4, steps))
@@ -61,11 +62,11 @@ for trial, share in tqdm(enumerate(shares)):
     mean_ests_ = np.empty(shape=(steps, 3, counterfactuals))
     mean_persistence_ = [np.zeros(steps) for _ in range(3)]
     mean_persistence_quantiles_ = [np.zeros((counterfactuals, len(persistence_quantiles))) for _ in range(3)]
-    mean_price_ = np.empty(shape=(5, steps, counterfactuals))
+    mean_price_ = np.empty(shape=(4, steps, counterfactuals))
     for experiment in range(counterfactuals):
         res = collaborative_pricing.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, sizes, profits, prices = res
-        ranks_[:, :, :, experiment, trial] = share
+        ranks_[:, :, :, experiment, trial] = ranks
         temp = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=1)
         shares_quantiles[experiment, :, :] = temp.mean(axis=2)
         gini_quantiles[:, :, experiment] = np.quantile(gini_coefficient, q=[0.1, 0.25, 0.5, 0.75, 0.9], axis=1).T
@@ -103,10 +104,15 @@ for plot_ in range(4):
         axes[plot_].plot(mean_price[row, plot_, :], color=colormap(normalize(share_)), linestyle='-' if row != 0 else '--')
 
 
-axes[2].set_title('50%')
+axes[0].set_title('50%')
+axes[1].set_title('90%')
 axes[2].set_title('90%')
-axes[2].set_title('90%')
-axes[2].set_title('Maximum')
+axes[3].set_title('Maximum')
+
+axes[0].set_yscale('log')
+axes[1].set_yscale('log')
+axes[2].set_yscale('log')
+axes[3].set_yscale('log')
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
 fig.tight_layout()
@@ -211,13 +217,13 @@ offset = 0.8  # Vertical spacing between distributions
 
 max_density = 0
 for i, share in enumerate(shares):
-    max_density = max(max_density, max(y))
-    color = colormap(normalize(share))
 
     row = ranges[i].reshape(-1)
     density = gaussian_kde(row)
     x = np.linspace(min(row), max(row), 1000)
     y = density(x)
+    max_density = max(max_density, max(y))
+    color = colormap(normalize(share))
 
     # Scale the density
     y = y / y.max() * overlap
@@ -256,11 +262,12 @@ cbar.set_label(r'$\alpha$')
 plt.show()
 plt.savefig('{}/{}'.format(path_figures, 'mobility.pdf'), format='pdf', dpi=300)
 
-np.savez('{}/{}'.format(path_figures, 'mean_persistence.npz'), *mean_persistence)
-np.savez('{}/{}'.format(path_figures, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
-np.savez('{}/{}'.format(path_figures, 'mean_gini.npz'), *mean_gini)
-np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
-np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
-np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
-np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
-np.save('{}/{}'.format(path_figures, 'ranks.npy'), ranks_)
+np.savez('{}/{}'.format(path_outdata, 'mean_persistence.npz'), *mean_persistence)
+np.savez('{}/{}'.format(path_outdata, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
+np.savez('{}/{}'.format(path_outdata, 'mean_gini.npz'), *mean_gini)
+np.savez('{}/{}'.format(path_outdata, 'mean_quantiles.npz'), *mean_quantiles)
+np.save('{}/{}'.format(path_outdata, 'mean_members_.npz'), mean_members_)
+np.savez('{}/{}'.format(path_outdata, 'mean_conglomerates.npz'), *mean_conglomerates)
+np.savez('{}/{}'.format(path_outdata, 'mean_ests.npz'), *mean_ests)
+np.save('{}/{}'.format(path_outdata, 'ranks.npy'), ranks_)
+np.save('{}/{}'.format(path_outdata, 'prices.npy'), mean_price)

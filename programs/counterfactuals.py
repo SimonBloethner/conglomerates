@@ -64,7 +64,7 @@ for trial, share in tqdm(enumerate(shares)):
                    proportional, lookback]
         res = collaborative_growth.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res
-        ranks_[:, :, :, experiment, trial] = share
+        ranks_[:, :, :, experiment, trial] = ranks
         temp = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=2)
         shares_quantiles[experiment, :, :] = temp.mean(axis=1)
         gini_quantiles[:, :, experiment] = np.quantile(gini_coefficient, q=[0.1, 0.25, 0.5, 0.75, 0.9], axis=0).T
