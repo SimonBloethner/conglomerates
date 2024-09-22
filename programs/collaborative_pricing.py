@@ -1,6 +1,6 @@
 import numpy as np
-import os
 from tqdm import tqdm
+import os
 
 np.random.seed(1)
 
@@ -61,7 +61,7 @@ def exit_(firms, firm):
 
 
 def model(params):
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
+    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback, eps = params
     prices = np.zeros((steps, firms_per_market, markets))
     demands = np.zeros((steps, firms_per_market, markets))
     profits = np.ones((steps, firms_per_market, markets))
@@ -70,7 +70,7 @@ def model(params):
     lower_bound = 0.02
     upper_bound = 0.07
     costs = np.clip(np.random.normal(0.01, 0.001, (steps, firms_per_market, markets)), 0.0001, 0.1)
-    cost_pooling = False
+
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
 
     market_growth = np.ones((steps, markets))
@@ -80,8 +80,8 @@ def model(params):
     firms = [Firm(market=market, number=ids[market, firm], market_id=firm, steps=steps, lookback=lookback) for market in range(markets) for firm in range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
-    # for step in tqdm(range(steps)):
-    for step in range(steps):
+    for step in tqdm(range(steps)):
+    # for step in range(steps):
         to_del = []
         draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
 
@@ -289,8 +289,7 @@ def model(params):
     sorted_market_share = np.sort(market_share, axis=1)
     cum_market_share = np.cumsum(sorted_market_share, axis=1)
     sums = np.sum(sorted_market_share, axis=1)
-    # sums = sums[..., np.newaxis]
-    sums = np.expand_dims(sums, axis=1)
+    sums = sums[..., np.newaxis]
     lorenz_curve = cum_market_share / sums
     area_under_curve = np.trapz(y=lorenz_curve, axis=1, dx=1 / firms_per_market)
     gini_coefficient = 1 - 2 * area_under_curve
@@ -308,9 +307,9 @@ def model(params):
         avg_rank = []
         for conglomerate in all_time_conglomerates[period]:
             coords = markets_structure[list(conglomerate)]
-            to_append = [len(conglomerate), market_share[period, :, :][(coords[:, 1], coords[:, 0])].mean()]
+            to_append = [len(conglomerate), market_share[period, :, :][(coords[:, 0], coords[:, 1])].mean()]
             avg_share.append(to_append)
-            to_append = [len(conglomerate), ranks[period, :, :][(coords[:, 1], coords[:, 0])].mean()]
+            to_append = [len(conglomerate), ranks[period, :, :][(coords[:, 0], coords[:, 1])].mean()]
             avg_rank.append(to_append)
 
         avg_shares.append(np.array(avg_share))
@@ -330,4 +329,3 @@ def price_opt(share, cost):
 def profit(p, share, cost, scale=10):
     pi = (np.array(p) - np.exp(cost)) * scale * p ** (- 1 / share + 1e-6)
     return pi
-

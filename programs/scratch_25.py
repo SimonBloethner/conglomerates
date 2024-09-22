@@ -251,8 +251,6 @@ def model(params):
 
         sds = 0.2 + 0.1 * means
         increments = np.random.normal(means, sds)
-        if (increments < -1).any():
-            print('!')
         increments[increments < -1] = -0.99
         sizes[step, :, :] = sizes[step - 1, :, :] + sizes[step - 1, :, :] * increments
         market_share[step, :, :] = sizes[step, :, :] / np.sum(sizes[step, :, :], axis=0)
