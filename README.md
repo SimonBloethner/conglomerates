@@ -1,1 +1,1 @@
-Find the article [here][latex/out.nosync/collaboration.pdf]
+Find the article [here](latex/out.nosync/collaboration.pdf)
