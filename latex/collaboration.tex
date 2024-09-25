@@ -29,12 +29,15 @@ Your abstract goes here. It should be a brief summary of your article.
 \newpage
 
 \section{Introduction}
-\cite{peters2019ergodicity}
+Unlike horizontal or vertical mergers, whose drivers have been studied thoroughly, conglomerative mergers have not received nearly as much attention. Formally, it defines the merging of two businesses that operate in different markets and are not part of the same value chain. For the purpose of this article, we will look at \textit{pure} conglomeration, omitting motivations of market or product extension \cite{felton1971conglomerate}. The determinants of such processes remain at once manifold and elusive. Among those brought forward are economies of scale, and increasing market power \cite{mueller1969theory}, taxation \cite{cohen1969conglomerate} or alignment with management salary risk preferences \cite{amihud1981risk}. One overarching theme, however, is the reduction in risk. For example, \cite{scherer1990industrial} points to a reduction in the standard deviation of profits by merging two firms operating in independent markets. Despite the fact that the standard deviation is neither technically, nor methodologically a good measure of risk \cite{taleb2020statistical}, it provides valuable insights into the determinants of conglomerative mergers. In this context \cite{mueller1969theory} introduces the concept of growth maximization as a reason for conglomeration, where diversifying across firms yields an increased rate of growth for the owning entity. Considering this in light of recent ideas by \cite{peters2019ergodicity} offers a new path forward. In particular, the notion of firm growth rate optimization dynamically through time through the reduction of losses seems both novel and established. Under this framework an agent (here a firm) searches for the most cost-effective means to reduce negative impacts on their growth rate. \cite{amihud1981risk} propose that mergers act to avoid disastrous outcomes, almost as some form of insurance, provided that the premium paid in terms of transaction costs is low enough. Adding more companies to a portfolio to reduce losses works best, of course, when these companies' outcomes are maximally independent. \cite{audretsch1989determinants} presents this thought by proposing that mergers happen at different stages of the firms' lifecycle, thus increasing the diversification potential. \\
+Just as unsolved remains question of the impact that such mergers have on the competitive landscape. While \cite{waldman1983impact} finds that post acquisition companies grow at an above industry average rate, \cite{goldberg1974conglomerate} and \cite{goldberg1973effect} do not detect any consequences that would increase market concentration. The results in \cite{waldman1983impact} seem to depend on the acquiring company to financially support the acquired company as a necessary condition of out performance. Naturally, there is a limit to the size of a company as transaction cost, such as the coordination of all constituent businesses, increase \cite{coase19883}. This provides a natural drag on the effectiveness of conglomeration as a means to increase the growth rate. The direction of the effect on competitiveness is of course relevant to policymakers, wishing to optimize consumer welfare. \\
+We will offer evidence to help propel the answer to both of these questions. Section \ref{sec:Background} provides an introduction into growth rate optimization under multiplicative dynamics and their relevance in trying to understand competitive processes. Section \ref{sec:Model} presents the formal model, as well as the assumptions implied in it. Continuing in Section \ref{sec:Results}, we show the results of the simulation, and introduce and discuss the metrics used in our arguments. We discuss these in Section \ref{sec:Discussion} before concluding in Section \ref{sec:Conclusion}.
+
 
 \section{Background}
 \label{sec:Background}
-Conventional economic models had great success explaining the formation of vertical and horizontal mergers. Despite this, conglomerative mergers have escaped such reasoning so far. Many explanations are based on cost sharing arguments {\color{orange} (source)}, whereby firms split up expenses amongst themselves. One point often made against such an explanation is 
-that this is in effect zero-sum {\color{orange} (source)}, given that one firms gains is another's loss. However, this critique only holds under the assumption of additive growth. In a setting of multiplicative dynamics, where the next state of some variable (e.g. market share, reputation, size) is dependent on the previous one, the objective is to maximize the growth rate $g$, the geometric average of periodic increments $\delta_t \in \left(0, \infty \right)$, sometimes also referred to as the Compound Annual Growth Rate in investment circles
+Conventional economic models had great success explaining the formation of vertical and horizontal mergers. Despite this, conglomerative mergers have escaped such reasoning so far. Many explanations are based on cost sharing arguments \cite{mueller1969theory}, whereby firms split up expenses among themselves. One point often made against such an explanation is 
+that this is in effect zero-sum , given that one firms gains is another's loss. However, this critique only holds under the assumption of additive growth. In a setting of multiplicative dynamics, where the next state of some variable (e.g. market share, reputation, size) is dependent on the previous one, the objective is to maximize the growth rate $g$, the geometric average of periodic increments $\delta_t \in \left(0, \infty \right)$, sometimes also referred to as the Compound Annual Growth Rate in investment circles
 
 \begin{gather}
     g = \left(\prod_{t=1}^{T} \delta_t \right)^\frac{1}{T}
@@ -95,11 +98,11 @@ Again, we can link this to sharing, where conglomerate formation increases $g$ f
     g = \mu - \frac{\sigma^2}{2N}
 \end{gather}
 
-As the number of firms $N$ in a conglomerate increases, the drag imposed by the fluctuations decreases. In the extreme case of $N \to \infty$ each firm is able to realize the ensemble average $\mu$ with every increment. Of course there are limits to how big a firm and thus a conglomerate can grow, given that transaction cost, especially for coordination increase \cite{coase19883}. Any increase in conglomerate size will increase transaction cost, while at the same time increasing the growth rate for all firms included. Thus, one can see this kind of cooperation as a hedge, or an insurance against unfavorable growth increments, the premium for which is the cost of coordination. Clearly, there is a trade-off involved, and a conglomerate size, though certainly varying, which optimizes it.
+As the number of firms $N$ in a conglomerate increases, the drag imposed by the fluctuations decreases. In the extreme case of $N \to \infty$ each firm is able to realize the ensemble average $\mu$ with every increment. Of course there are limits to how big a firm and thus a conglomerate can grow, given that transaction cost, especially for coordination increase \cite{coase19883}. Any increase in conglomerate size will increase transaction cost, while at the same time increasing the growth rate for all firms included. Thus, one can see this kind of cooperation as a hedge, or an insurance against unfavorable growth increments, the premium for which is the cost of coordination. Clearly, there is a trade-off involved, and a conglomerate size, though certainly varying, which optimizes it. This concept is somewhat related to that of diversification, as applied to financial portfolios. However, in contrast to the latter, pooling also improves the growth rates of the entities that make up the portfolio, while offering even greater growth prospects than diversification to the portfolio itself. It is in this sense, \textit{true diversification}. 
 
 
 \section{Model}
-
+\label{sec:Model}
 \subsection{Random Multiplicative Growth}
 \label{sec:mult_growth}
 \subsubsection{Growth Process}
@@ -223,6 +226,7 @@ in figure \ref{fig:PPO}. By combining all these elements, the resulting model fl
 
 
 \section{Results}
+\label{sec:Results}
 \subsection{Random Multiplicative Growth}
 We implemented the models outlined in the previous section in python with a parameter specification that can be found in Table \ref{tab:model_params}. Note that we conducted extensive robustness testing, none of which 
 altered the central findings of this section. 
@@ -293,12 +297,24 @@ Yet, these two analyses are both static measures for a distribution, meaning tha
     \label{fig:mobility}
 \end{figure}
 
+\begin{figure}
+    \centering
+    \input{/Users/Simon/Documents/Projects/EWF/Research/PhD/Tails/figures/ests_tail.tex}
+\end{figure}
+
 \section{Discussion}
+\label{sec:Discussion}
 
-
+Pooling as a way to share the spoils of R\&D efforts that are highly volatile \cite{felton1971conglomerate}.
 
 
 \section{Conclusion}
+\label{sec:Conclusion}
+
+In a world of ever-increasing specialization this becomes more important \cite{felton1971conglomerate}, but also easier.
+
+External vs. internal expansion / diversification. What is most cost-effective? \cite{goldberg1973effect}?
+
 
 \clearpage
 \bibliographystyle{plain}
