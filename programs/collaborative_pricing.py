@@ -9,7 +9,7 @@ local = path_.find('Simon') > 0
 if local:
     path_ = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE'
 else:
-    path_ = 'collusion'
+    path_ = 'conglomerate'
 
 
 class Firm:
@@ -63,17 +63,19 @@ def exit_(firms, firm):
 def model(params):
     markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback, eps = params
     prices = np.zeros((steps, firms_per_market, markets))
-    demands = np.zeros((steps, firms_per_market, markets))
+    increments = np.zeros((steps, firms_per_market, markets))
     profits = np.ones((steps, firms_per_market, markets))
     sizes = np.ones((steps, firms_per_market, markets))
     market_share = np.tile(1 / firms_per_market, (steps, firms_per_market, markets))
-    lower_bound = 0.02
-    upper_bound = 0.07
-    costs = np.clip(np.random.normal(0.5, 0.1, (steps, firms_per_market, markets)), a_min=0, a_max=1)
+    lower_bound = 0.9
+    upper_bound = 1.1
+    costs = np.random.lognormal(0, 1, size=(steps, firms_per_market, markets)) * 0
 
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
 
     market_growth = np.ones((steps, markets))
+
+    # merge_thresh = merge_thresh if share > 0 else 0     # Avoids going into the merging process if there is no pooling.
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
@@ -112,12 +114,13 @@ def model(params):
                             synth_pool = np.zeros(lookback).astype(float)
                             indices = markets_structure[conglomerate][:, [1, 0]]
                             for enumer, synth in enumerate(range(max(step - lookback, 0), step)):
-                                solo_profits = np.array([firms[firm].outside_profits[synth % lookback] for firm in conglomerate])
-                                states = sizes[synth, indices[:, 0], indices[:, 1]]
+                                returns = increments[synth, indices[:, 1], indices[:, 0]]
+                                states = np.array([firms[firm].states[synth] for firm in conglomerate])
+                                gains = states * (1 + returns) - states
                                 if proportional:
-                                    pool = (solo_profits * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
                                 else:
-                                    pool = (solo_profits * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
 
                                 synth_pool[enumer] = pool
 
@@ -129,12 +132,13 @@ def model(params):
                             synth_pool = np.zeros(lookback).astype(float)
                             indices = markets_structure[conglomerate][:, [1, 0]]
                             for enumer, synth in enumerate(range(max(step - lookback, 0), step)):
-                                solo_profits = np.array([firms[firm].outside_profits[synth % lookback] for firm in conglomerate])
-                                states = sizes[synth, indices[:, 0], indices[:, 1]]
+                                returns = increments[synth, indices[:, 1], indices[:, 0]]
+                                states = np.array([firms[firm].states[synth] for firm in conglomerate])
+                                gains = states * (1 + returns) - states
                                 if proportional:
-                                    pool = (solo_profits * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
                                 else:
-                                    pool = (solo_profits * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
 
                                 synth_pool[enumer] = pool
 
@@ -189,39 +193,49 @@ def model(params):
         solo = [firm.id for firm in firms if len(firm.conglomerate) == 1]
 
         prices[step, :, :] = price_opt(market_share[step - 1, :, :], cost=costs[step, :, :])
-        profits[step, :, :] = profit(prices[step, :, :], market_share[step - 1, :, :], cost=costs[step, :, :])
+        profits[step, :, :] = profit(prices[step, :, :], market_share[step - 1, :, :], cost=costs[step, :, :]) # * market_growth.prod(axis=0) * market_share[step - 1, :, :]
+
+        # reinvestment = (profits[step, :, :] / sizes[step - 1, :, :]) + 1
+
+        # normalized_reinvestment = (reinvestment - np.min(reinvestment, axis=0)) / (np.max(reinvestment, axis=0) - np.min(reinvestment, axis=0))  # Assumption: axis=0 means that there are normalizations for each market, not across all firms!
+        # if np.isnan(normalized_reinvestment).any():
+        #     print('!')
+        #
+        # means = lower_bound + normalized_reinvestment * (upper_bound - lower_bound)
+
+        means = (profits[step, :, :] / sizes[step - 1, :, :]) + 1
+        sds = 0.1 * means
+        if (sds < 0).any():
+            print('!')
+        increments[step, :, :] = np.random.normal(means, sds)
+        increments[increments < -1] = -0.99
 
         for conglomerate_ in conglomerates.keys():
             conglomerate = conglomerates[conglomerate_]['firms']
             indices = markets_structure[conglomerate, :]
-            cong_profits = profits[step, indices[:, 1], indices[:, 0]]
-            if cost_pooling:    # TODO: Make the building and comparison of a cost dependent pool feasible. How to do the synthetic pool?
-                costs = (share * costs).sum() / len(conglomerate) + (1 - share) * costs
-                returns = cong_profits - costs
+            inc = increments[step, indices[:, 1], indices[:, 0]]
+            states = sizes[step - 1, indices[:, 1], indices[:, 0]]
+            gains = states * inc - states
+            if proportional:
+                pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
             else:
-                # cong_profits -= costs
-                if proportional:
-                    pool = (cong_profits * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
-                else:
-                    # pool = (cong_profits * share).sum() - profits[step, indices[:, 1], indices[:, 0]].sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4) * (0 if share == 0 else 1)  # len(conglomerate) / markets
-                    pool = (cong_profits * share).sum() - sizes[step - 1, indices[:, 1], indices[:, 0]].sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4) * (0 if share == 0 else 1)  # len(conglomerate) / markets
-                    returns = (1 - share) * cong_profits + pool / len(conglomerate) if share > 0 else cong_profits  # Equal distribution of pool contents.
-            profits[step, indices[:, 1], indices[:, 0]] = returns
+                pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
 
-            conglomerates[conglomerate_]['pool'][step % lookback] = pool    # TODO: Under cost sharing, there is no pool to define. Find metric to compare instead here.
+            returns = ((1 - share) * gains + pool / len(conglomerate)) if share > 0 else gains  # Equal distribution of pool contents.
 
             del_firms = []
             for partner, firm in enumerate(conglomerate):
-                profit_ = returns[partner]
-                firms[firm].outside_profits[step % lookback] = cong_profits[partner]
-                firms[firm].states[step + 1] = profit_
                 tup = tuple([markets_structure[firm][1], markets_structure[firm][0]])
-                if profit_ / sizes[(step - 1,) + tup] < np.exp(-1) - 1 or sizes[(step - 1,) + tup] < 0:
+                firms[firm].outside_profits[step % lookback] = inc[partner]
+                firms[firm].states[step + 1] = firms[firm].states[step] + returns[partner]
+                sizes[(step, ) + tup] = sizes[(step - 1, ) + tup] + returns[partner]
+                if sizes[(step, ) + tup] < 0:
                     firms[firm].states[step + 1] = 1
-                    profits[(step,) + tup] = 0
-                    exit_(firms, firms[firm])
+                    sizes[(step,) + tup] = 1
                     del_firms.append(firm)
+                    exit_(firms, firms[firm])
 
+            conglomerates[conglomerate_]['pool'][step % lookback] = pool
             for firm in del_firms:
                 conglomerates[conglomerate_]['firms'].remove(firm)
 
@@ -229,38 +243,30 @@ def model(params):
                 to_del.append(conglomerate_)
 
         for firm in solo:
-            tup = tuple([markets_structure[firm][1], markets_structure[firm][0]])
-            profit_ = profits[(step,) + tup]
-            firms[firm].outside_profits[step % lookback] = profit_
-            firms[firm].states[step + 1] = profit_
-            if profit_ / sizes[(step - 1,) + tup] < np.exp(-1) - 1 or sizes[(step - 1,) + tup] < 0:
+            firms[firm].outside_profits[step % lookback] = increments[step, firms[firm].market_id, firms[firm].home_market]
+            firms[firm].states[step + 1] = firms[firm].states[step] * increments[step, firms[firm].market_id, firms[firm].home_market]
+            sizes[step, firms[firm].market_id, firms[firm].home_market] = sizes[step - 1, firms[firm].market_id, firms[firm].home_market] * increments[step, firms[firm].market_id, firms[firm].home_market]
+            if sizes[step, firms[firm].market_id, firms[firm].home_market] < 0:
                 firms[firm].states[step + 1] = 1
-                profits[(step,) + tup] = 0
+                sizes[step, firms[firm].market_id, firms[firm].home_market] = 1
+            if sizes[step, firms[firm].market_id, firms[firm].home_market] < 0:
+                print('!')
 
-        reinvestment = profits[step, :, :] / sizes[step - 1, :, :]
-
-        normalized_reinvestment = (reinvestment - np.min(reinvestment, axis=0)) / (np.max(reinvestment, axis=0) - np.min(reinvestment, axis=0))     # Assumption: axis=0 means that there are normalizations for each market, not across all firms!
-        if np.isnan(normalized_reinvestment).any():
-            print('!')
-
-        means = lower_bound + normalized_reinvestment * (upper_bound - lower_bound)
-
-        sds = 0.2 + 0.1 * means
-        increments = np.random.normal(means, sds)
-        increments[increments < -1] = -0.99
-        sizes[step, :, :] = sizes[step - 1, :, :] + sizes[step - 1, :, :] * increments
         market_share[step, :, :] = sizes[step, :, :] / np.sum(sizes[step, :, :], axis=0)
-
+        if (market_share[step, :, :] < 0).any():
+            print('!')
         market_growth[step, :] = sizes[step, :, :].sum(axis=0) / sizes[step - 1, :, :].sum(axis=0)
 
         if step > lookback:
             for firm in firms:
                 if len(firm.conglomerate) > 1:
                     if firm.entered < step - lookback:
-                        synth_size = sizes[step - lookback, firm.market_id, firm.home_market]
-                        for synth_step in range(lookback):
-                            synth_size = synth_size * (1 + np.log(1 + firm.outside_profits[synth_step - lookback] / synth_size))
-                        if synth_size > sizes[step, firm.market_id, firm.home_market]:
+                        outside_profit = np.prod(firm.outside_profits) ** (1 / lookback)
+                        if np.isnan(outside_profit):
+                            print('!')
+                        inside_profits = firm.states[step - lookback:step]
+                        inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
+                        if outside_profit > inside_profits:
                             conglomerates[firm.conglomerate_id]['firms'].remove(firm.id)
                             if len(conglomerates[firm.conglomerate_id]['firms']) < 2:
                                 to_del.append(firm.conglomerate_id)
@@ -323,20 +329,11 @@ def model(params):
     return model_results
 
 
-# def price_opt(share, cost):
-#     p_opt = np.exp(cost) / (1 - share + 1e-6)
-#     return p_opt
-#
-#
-# def profit(p, share, cost, scale=10):
-#     pi = (np.array(p) - np.exp(cost)) * scale * p ** (- 1 / share + 1e-6)
-#     return pi
-
-def price_opt(share, cost):
-     p_opt = (1 + cost * (-1 + share)) / (2 - 2 * share)
-     return p_opt
+def price_opt(share, cost, scale=1):
+    p_opt = (1 + (1 - share * scale) * cost) / (1 - share * scale + 1e-6)
+    return p_opt
 
 
-def profit(p, share, cost):
-    pi = (p - cost) * (1 - (1 - share) * p)
+def profit(p, share, cost, scale=1):
+    pi = (p - cost) * np.exp(-1 * (1 - share * scale + 1e-6) * p)
     return pi

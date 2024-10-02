@@ -24,7 +24,7 @@ date
 #setenv OMP_NUM_THREADS 32
 #-------------------------------------------------------------------------------
 #Execute
-python3 conglomerate/programs/mp_counterfactuals_pricing.py.py
+python3 conglomerate/programs/mp_counterfactuals_pricing.py
 exit()
 
 #set ERR = $?

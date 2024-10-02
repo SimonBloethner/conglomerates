@@ -120,8 +120,8 @@ def model(params):
                             conglomerate_id = home_id if cong_id is None else cong_id
                             true_pool = conglomerates[conglomerate_id]['pool']
                             synth_pool = np.zeros(lookback).astype(float)
+                            indices = markets_structure[conglomerate, :]
                             for enumer, synth in enumerate(range(max(step - lookback, 0), step)):
-                                indices = markets_structure[conglomerate, :]
                                 returns = realizations[synth, indices[:, 1], indices[:, 0]]
                                 states = np.array([firms[firm].states[synth] for firm in conglomerate])
                                 gains = states * returns - states

@@ -19,7 +19,7 @@ else:
 
 
 class Firm:
-    def __init__(self, market, number, market_id, steps, lookback, has_continuous_action_space=True, action_std_init=0.001, state_dim=4, action_dim=1):
+    def __init__(self, market, number, market_id, steps, lookback):
         self.id = number
         self.market_id = market_id
         self.home_market = market
@@ -327,13 +327,13 @@ def model(params):
     return model_results
 
 
-def price_opt(share, cost):
-    p_opt = np.exp(cost) / (1 - share + 1e-6)
+def price_opt(share, cost, scale=1):
+    p_opt = (1 + (1 - share * scale) * cost) / (1 - share * scale + 1e-6)
     return p_opt
 
 
-def profit(p, share, cost, scale=10):
-    pi = (np.array(p) - np.exp(cost)) * scale * p ** (- 1 / share + 1e-6)
+def profit(p, share, cost, scale=1):
+    pi = (p - cost) * np.exp(-1 * (1 - share * scale + 1e-6) * p)
     return pi
 
 

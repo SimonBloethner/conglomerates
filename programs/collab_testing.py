@@ -24,8 +24,7 @@ lookback = 50
 eps = 1e-6
 proportional = False
 cost_pooling = False
-shares = np.arange(0, 0.2, 0.01)
-shares = np.array([0.3])
+shares = np.array([0.5])
 
 counterfactuals = 1
 
@@ -125,7 +124,7 @@ ax1.legend(lines1 + lines2, labels1 + labels2, loc='center left', prop={'size': 
 
 axes[2][0].plot(prices.max(axis=1))
 axes[2][0].set_title('(g) Prices')
-axes[2][0].set_yscale('log')
+# axes[2][0].set_yscale('log')
 axes[2][1].plot(max_shares)
 axes[2][1].set_title('(h) Max market share')
 colors = sns.color_palette("husl", n_colors=markets)
@@ -136,6 +135,3 @@ fig.tight_layout()
 
 # Show the plot
 plt.show()
-
-
-
