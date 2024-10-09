@@ -1,15 +1,13 @@
 # Fdb version 3
-["bibtex out.nosync/collaboration"] 1727344473 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1727344477
+["bibtex out.nosync/collaboration"] 1728465024 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1728465026
   "/usr/local/texlive/2022/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "out.nosync/collaboration.aux" 1727344476 6192 c96bcac6fcadba6bf19d1365cd0f8853 "pdflatex"
+  "out.nosync/collaboration.aux" 1728465026 6192 626d212f5832eec9d38579a4bda95ebb "pdflatex"
   "references.bib" 1727257430 4802 48073cf400cb6675a1a32c93a925228e ""
   (generated)
   "out.nosync/collaboration.bbl"
   "out.nosync/collaboration.blg"
-["pdflatex"] 1727344473 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1727344477
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1727344468 26636 c882aad3fc340f07db96b782a76a491f ""
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Tails/figures/ests_body.tex" 1727262121 334977 3badcde569ed70706d495c981ed8fcb1 ""
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Tails/figures/ests_tail.tex" 1727257158 221810 2283a6dc15481ba5a4c3d4c316b17000 ""
+["pdflatex"] 1728465025 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1728465026
+  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1728465020 26370 8919fa74f1b97e8a9d16f56e972fb6f3 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecbx1095.tfm" 1136768653 3584 21b378cca2e40816b0e6d74a4dc98f04 ""
@@ -247,16 +245,16 @@
   "/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1647878959 4410336 7d30a02e9fa9a16d7d1f8d037ba69641 ""
   "/usr/local/texlive/2022/texmf-var/web2c/pdftex/pdflatex.fmt" 1647878983 2826437 14e9e79f51603ccdc89aeb0ddeac2dcc ""
   "/usr/local/texlive/2022/texmf.cnf" 1647878952 577 209b46be99c9075fd74d4c0369380e8c ""
-  "collaboration.tex" 1727344468 26636 c882aad3fc340f07db96b782a76a491f ""
+  "collaboration.tex" 1728465020 26370 8919fa74f1b97e8a9d16f56e972fb6f3 ""
   "figures//sizes.pdf" 1723615760 261756 c71a717a33daa4fff5c5cddb5d5b4083 ""
   "figures/ests.pdf" 1723615776 370252 529d76549c1454ecc8ffb028de3aa8fc ""
   "figures/ginis.eps" 1722706879 501523 c2b0cd8798354eb45f1ca38e45819a86 ""
   "figures/mobility.pdf" 1724078197 759113 b12a9d35c56784d936309742487ee9cb ""
   "figures/share_zoomed.png" 1719919381 252251 5b489e8246b9bd3c8124dca38dac13b6 ""
   "figures/shares.eps" 1722706879 602493 52f45bdabbe160c44df0cb4cd7240c4b ""
-  "out.nosync/collaboration.aux" 1727344476 6192 c96bcac6fcadba6bf19d1365cd0f8853 "pdflatex"
-  "out.nosync/collaboration.bbl" 1727344473 3069 52af3b6162147ed7d4a8b638d90b849d "bibtex out.nosync/collaboration"
-  "out.nosync/collaboration.out" 1727344476 1527 af60f33f2799a5f1453f701c7b273c48 "pdflatex"
+  "out.nosync/collaboration.aux" 1728465026 6192 626d212f5832eec9d38579a4bda95ebb "pdflatex"
+  "out.nosync/collaboration.bbl" 1728465025 3069 52af3b6162147ed7d4a8b638d90b849d "bibtex out.nosync/collaboration"
+  "out.nosync/collaboration.out" 1728465026 1527 af60f33f2799a5f1453f701c7b273c48 "pdflatex"
   (generated)
   "out.nosync/collaboration.aux"
   "out.nosync/collaboration.log"

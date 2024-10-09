@@ -61,7 +61,7 @@ def exit_(firms, firm):
 
 
 def model(params):
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, cost_pooling, lookback, eps = params
+    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
     prices = np.zeros((steps, firms_per_market, markets))
     increments = np.zeros((steps, firms_per_market, markets))
     profits = np.ones((steps, firms_per_market, markets))
@@ -203,8 +203,9 @@ def model(params):
         #
         # means = lower_bound + normalized_reinvestment * (upper_bound - lower_bound)
 
-        means = (profits[step, :, :] / sizes[step - 1, :, :]) + 1
-        sds = 0.1 * means
+        reinvestment = (profits[step, :, :] / sizes[step - 1, :, :])
+        sds = 0.05 * reinvestment
+        means = share + 1
         if (sds < 0).any():
             print('!')
         increments[step, :, :] = np.random.normal(means, sds)

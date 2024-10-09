@@ -11,7 +11,7 @@ is_local = os.getcwd().find('Simon') > 0
 
 path_figures = '/Users/Simon/PycharmProjects/Collusion/figures' if is_local else 'conglomerate/figures'
 
-np.random.seed(7)
+np.random.seed(10)
 markets = 100
 firms_per_market = 100
 total_firms = markets * firms_per_market
@@ -24,20 +24,22 @@ lookback = 50
 eps = 1e-6
 proportional = False
 cost_pooling = False
-shares = np.array([0.5])
+shares = np.array([0.0])
 
 counterfactuals = 1
 
 mean_quantiles = np.empty(shape=(shares.shape[0], 4, steps))
+mean_prices = np.empty(shape=(shares.shape[0], 4, steps))
 
 for trial, share in enumerate(shares):
     quantiles = np.empty(shape=(counterfactuals, 4, steps))
     for experiment in range(counterfactuals):
         params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
-                   proportional, cost_pooling, lookback, eps]
+                   proportional, lookback]
         res = model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, sizes, profits, prices = res
         quantiles[experiment, :, :] = np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=(1, 2))
+        max_prices = prices.max(axis=1)
 
     mean_quantiles[trial, :, :] = quantiles.mean(0)
 
