@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  14 OCT 2024 21:03
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  15 OCT 2024 13:03
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -590,19 +590,22 @@ Overfull \hbox (10.56023pt too wide) in paragraph at lines 28--29
 
 [1
 
-{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5] [6] [7]
-<figures//sizes.pdf, id=180, 578.16pt x 578.16pt>
+{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5] [6]
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[7]
+<figures//sizes.pdf, id=181, 578.16pt x 578.16pt>
 File: figures//sizes.pdf Graphic file (type pdf)
 <use figures//sizes.pdf>
 Package pdftex.def Info: figures//sizes.pdf  used on input line 257.
 (pdftex.def)             Requested size: 272.99881pt x 272.99678pt.
- [8 <./figures//sizes.pdf>]
-<figures/ests.pdf, id=225, 578.16pt x 578.16pt>
+<figures/ests.pdf, id=183, 578.16pt x 578.16pt>
 File: figures/ests.pdf Graphic file (type pdf)
 <use figures/ests.pdf>
 Package pdftex.def Info: figures/ests.pdf  used on input line 267.
 (pdftex.def)             Requested size: 272.99881pt x 272.99678pt.
- [9 <./figures/ests.pdf>]
+ [8] [9 <./figures//sizes.pdf>] [10 <./figures/ests.pdf>]
 Package epstopdf Info: Source file: <figures/shares.eps>
 (epstopdf)                    date: 2024-08-03 19:41:19
 (epstopdf)                    size: 602493 bytes
@@ -612,7 +615,7 @@ Package epstopdf Info: Source file: <figures/shares.eps>
 (epstopdf)             Command: <epstopdf --outfile=figures/shares-eps-converted-to.pdf figures/shares.eps>
 (epstopdf)             \includegraphics on input line 277.
 Package epstopdf Info: Output file is already uptodate.
-<figures/shares-eps-converted-to.pdf, id=258, 578.16pt x 578.16pt>
+<figures/shares-eps-converted-to.pdf, id=262, 578.16pt x 578.16pt>
 File: figures/shares-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/shares-eps-converted-to.pdf>
 Package pdftex.def Info: figures/shares-eps-converted-to.pdf  used on input line 277.
@@ -626,41 +629,41 @@ Package epstopdf Info: Source file: <figures/ginis.eps>
 (epstopdf)             Command: <epstopdf --outfile=figures/ginis-eps-converted-to.pdf figures/ginis.eps>
 (epstopdf)             \includegraphics on input line 287.
 Package epstopdf Info: Output file is already uptodate.
-<figures/ginis-eps-converted-to.pdf, id=260, 578.16pt x 578.16pt>
+<figures/ginis-eps-converted-to.pdf, id=264, 578.16pt x 578.16pt>
 File: figures/ginis-eps-converted-to.pdf Graphic file (type pdf)
 <use figures/ginis-eps-converted-to.pdf>
 Package pdftex.def Info: figures/ginis-eps-converted-to.pdf  used on input line 287.
 (pdftex.def)             Requested size: 272.99881pt x 272.99678pt.
- [10 <./figures/shares-eps-converted-to.pdf>] [11 <./figures/ginis-eps-converted-to.pdf>]
-<figures/mobility.pdf, id=319, 867.24pt x 578.16pt>
+ [11 <./figures/shares-eps-converted-to.pdf>] [12 <./figures/ginis-eps-converted-to.pdf>]
+<figures/mobility.pdf, id=323, 867.24pt x 578.16pt>
 File: figures/mobility.pdf Graphic file (type pdf)
 <use figures/mobility.pdf>
 Package pdftex.def Info: figures/mobility.pdf  used on input line 296.
 (pdftex.def)             Requested size: 350.99762pt x 234.00354pt.
- [12 <./figures/mobility.pdf>] [13] (out.nosync/collaboration.bbl [14
+ [13 <./figures/mobility.pdf>] [14] [15] (out.nosync/collaboration.bbl [16
 
 ]
-Underfull \hbox (badness 1014) in paragraph at lines 104--107
+Underfull \hbox (badness 1014) in paragraph at lines 122--125
 []\T1/cmr/m/n/12 Natalia Ra-mondo, Veron-ica Rap-poport, and Kim J Ruhl.  The
  []
 
-[15]) [16] (out.nosync/collaboration.aux)
+[17]) [18] (out.nosync/collaboration.aux)
 Package rerunfilecheck Info: File `collaboration.out' has not changed.
 (rerunfilecheck)             Checksum: 60D3F19E8E205A31C06ED82324D6B85C;1172.
  ) 
 Here is how much of TeX's memory you used:
- 32092 strings out of 478268
- 753262 string characters out of 5846347
+ 32102 strings out of 478268
+ 753428 string characters out of 5846347
  1160538 words of memory out of 5000000
- 49717 multiletter control sequences out of 15000+600000
+ 49721 multiletter control sequences out of 15000+600000
  489218 words of font info for 76 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,18n,94p,2984b,2136s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on out.nosync/collaboration.pdf (16 pages, 1940495 bytes).
+Output written on out.nosync/collaboration.pdf (18 pages, 1943803 bytes).
 PDF statistics:
- 526 PDF objects out of 1000 (max. 8388607)
- 347 compressed objects within 4 object streams
- 74 named destinations out of 1000 (max. 500000)
+ 543 PDF objects out of 1000 (max. 8388607)
+ 362 compressed objects within 4 object streams
+ 80 named destinations out of 1000 (max. 500000)
  118 words of extra memory for PDF output out of 10000 (max. 10000000)
 
