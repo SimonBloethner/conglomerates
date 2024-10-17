@@ -1,4 +1,4 @@
-import collaborative_growth
+import programs.collaborative_growth as collaborative_growth
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -7,6 +7,14 @@ from scipy.stats import gaussian_kde
 from tqdm import tqdm
 import os
 import warnings
+
+import matplotlib as mpl
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+})
 
 
 is_mac = os.getcwd().find('Simon') > 0
@@ -244,11 +252,11 @@ cbar.set_label(r'$\alpha$')
 plt.show()
 plt.savefig('{}/{}'.format(path_figures, 'mobility.pdf'), format='pdf', dpi=300)
 
-np.savez('{}/{}'.format(path_figures, 'mean_persistence.npz'), *mean_persistence)
-np.savez('{}/{}'.format(path_figures, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
-np.savez('{}/{}'.format(path_figures, 'mean_gini.npz'), *mean_gini)
-np.savez('{}/{}'.format(path_figures, 'mean_quantiles.npz'), *mean_quantiles)
-np.save('{}/{}'.format(path_figures, 'mean_members_.npz'), mean_members_)
-np.savez('{}/{}'.format(path_figures, 'mean_conglomerates.npz'), *mean_conglomerates)
-np.savez('{}/{}'.format(path_figures, 'mean_ests.npz'), *mean_ests)
-np.save('{}/{}'.format(path_figures, 'ranks.npy'), ranks_)
+np.savez('{}/{}'.format(path_outdata, 'mean_persistence.npz'), *mean_persistence)
+np.savez('{}/{}'.format(path_outdata, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
+np.savez('{}/{}'.format(path_outdata, 'mean_gini.npz'), *mean_gini)
+np.savez('{}/{}'.format(path_outdata, 'mean_quantiles.npz'), *mean_quantiles)
+np.save('{}/{}'.format(path_outdata, 'mean_members_.npz'), mean_members_)
+np.savez('{}/{}'.format(path_outdata, 'mean_conglomerates.npz'), *mean_conglomerates)
+np.savez('{}/{}'.format(path_outdata, 'mean_ests.npz'), *mean_ests)
+np.save('{}/{}'.format(path_outdata, 'ranks.npy'), ranks_)

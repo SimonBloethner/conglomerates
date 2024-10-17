@@ -1,14 +1,15 @@
 # Fdb version 3
-["bibtex out.nosync/collaboration"] 1729105191 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1729105555
+["bibtex out.nosync/collaboration"] 1729191820 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1729195705
   "/usr/local/texlive/2022/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "out.nosync/collaboration.aux" 1729105554 6464 edc564482e19bd03a69fdbdb220ff6ba "pdflatex"
-  "references.bib" 1728990197 11204 4189e648a33642b89ec86f675fb483de ""
+  "out.nosync/collaboration.aux" 1729195705 6585 6ffa9ee6d7f154fe4372013c996fecb4 "pdflatex"
+  "references.bib" 1729143219 11647 9c51cf58740761a57d302a9600d4dee8 ""
   (generated)
   "out.nosync/collaboration.bbl"
   "out.nosync/collaboration.blg"
-["pdflatex"] 1729105553 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1729105555
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1729105553 34356 5791bdf7e13e2912784de8f73d04debb ""
+["pdflatex"] 1729195704 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1729195705
+  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1729195703 34560 7122e55b683aacbd341e6d45f0dca1c5 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecbx1095.tfm" 1136768653 3584 21b378cca2e40816b0e6d74a4dc98f04 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecbx1200.tfm" 1136768653 3584 402da0b29eafbad07963b1224b222f18 ""
@@ -25,7 +26,10 @@
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecrm2074.tfm" 1136768653 3584 8e2870ec7aa9776f59654942b0923f51 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecti0600.tfm" 1136768653 3072 80e486733e39bf8ad2a360793cc998ae ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecti0800.tfm" 1136768653 3072 828ba0ea87cf5b727c4bfd6367195ec2 ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecti1000.tfm" 1136768653 3072 3bce340d4c075dffe6d4ec732b4c32fe ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/ecti1200.tfm" 1136768653 3072 8b5a64dc91775463bc95e2d818524028 ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/tcrm0700.tfm" 1136768653 1536 73da8e8f1d2a4c957d51ca133585586b ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm" 1246382020 916 f87d7c45f9c908e672703b83b72241a3 ""
@@ -68,6 +72,7 @@
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb" 1215737283 136101 f533469f523533d38317ab5729d00c8a ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb" 1215737283 131078 d96015a2fa5c350129e933ca070b2484 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb" 1215737283 131290 ea265c7de37664eae04a6f91a1f7a51f ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb" 1215737283 186554 e8f0fa8ca05e038f257a06405232745f ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb" 1215737283 198221 ca5aa71411090ef358a6cc78b7458365 ""
   "/usr/local/texlive/2022/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/local/texlive/2022/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
@@ -241,14 +246,14 @@
   "/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1647878959 4410336 7d30a02e9fa9a16d7d1f8d037ba69641 ""
   "/usr/local/texlive/2022/texmf-var/web2c/pdftex/pdflatex.fmt" 1647878983 2826437 14e9e79f51603ccdc89aeb0ddeac2dcc ""
   "/usr/local/texlive/2022/texmf.cnf" 1647878952 577 209b46be99c9075fd74d4c0369380e8c ""
-  "collaboration.tex" 1729105553 34356 5791bdf7e13e2912784de8f73d04debb ""
+  "collaboration.tex" 1729195703 34560 7122e55b683aacbd341e6d45f0dca1c5 ""
   "figures//sizes.pdf" 1723615760 261756 c71a717a33daa4fff5c5cddb5d5b4083 ""
   "figures/ests.pdf" 1723615776 370252 529d76549c1454ecc8ffb028de3aa8fc ""
   "figures/mobility.pdf" 1724078197 759113 b12a9d35c56784d936309742487ee9cb ""
   "figures/shares.eps" 1722706879 602493 52f45bdabbe160c44df0cb4cd7240c4b ""
-  "out.nosync/collaboration.aux" 1729105554 6464 edc564482e19bd03a69fdbdb220ff6ba "pdflatex"
-  "out.nosync/collaboration.bbl" 1729105191 6203 c390afb989cfac20f09d8e6ebb67a27a "bibtex out.nosync/collaboration"
-  "out.nosync/collaboration.out" 1729105554 1049 3e19e7a0b8615dbb80feffc1f8999634 "pdflatex"
+  "out.nosync/collaboration.aux" 1729195705 6585 6ffa9ee6d7f154fe4372013c996fecb4 "pdflatex"
+  "out.nosync/collaboration.bbl" 1729191820 6485 7b2836371baf43ea5ae221d539b0eb78 "bibtex out.nosync/collaboration"
+  "out.nosync/collaboration.out" 1729195705 1049 3e19e7a0b8615dbb80feffc1f8999634 "pdflatex"
   (generated)
   "out.nosync/collaboration.aux"
   "out.nosync/collaboration.log"
