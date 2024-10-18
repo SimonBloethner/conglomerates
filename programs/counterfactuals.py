@@ -117,9 +117,9 @@ for plot_ in range(4):
     for row, share_ in enumerate(shares):
         axes[plot_].plot(mean_quantiles[row, plot_, :], color=colormap(normalize(share_)), linestyle='-' if row != 0 else '--')
 
-axes[0].set_title('50%')
-axes[1].set_title('90%')
-axes[2].set_title('99%')
+axes[0].set_title('50\\%%')
+axes[1].set_title('90\\%%')
+axes[2].set_title('99\\%%')
 axes[3].set_title('Maximum')
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
@@ -133,11 +133,11 @@ for plot_ in range(5):
     for row, share_ in enumerate(shares):
         axes[plot_].plot(mean_gini[row, plot_, :], color=colormap(normalize(share_)), linestyle='-' if row != 0 else '--')
 
-axes[0].set_title('10%')
-axes[1].set_title('25%')
-axes[2].set_title('50%')
-axes[3].set_title('75%')
-axes[4].set_title('90%')
+axes[0].set_title('10\\%%')
+axes[1].set_title('25\\%%')
+axes[2].set_title('50\\%%')
+axes[3].set_title('75\\%%')
+axes[4].set_title('90\\%%')
 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
 scalarmappaple.set_array(shares)
 fig.tight_layout()
@@ -169,8 +169,8 @@ for plot_ in range(3):
     axes[plot_].fill_between(shares, y1=mean_persistence_quantiles[plot_][:, 1], y2=mean_persistence_quantiles[plot_][:, -2], color="tab:blue", alpha=0.3)
     axes[plot_].fill_between(shares, y1=mean_persistence_quantiles[plot_][:, 2], y2=mean_persistence_quantiles[plot_][:, -3], color="tab:blue", alpha=0.3)
     axes[plot_].plot(shares, mean_persistence_quantiles[plot_][:, 3], color="tab:blue")
-axes[0].set_title('10 %')
-axes[1].set_title('90 %')
+axes[0].set_title('10\\%%')
+axes[1].set_title('90\\%%')
 axes[2].set_title('Maximum')
 fig.tight_layout()
 fig.text(0.5, 0.04, r'$\alpha$', ha='center', va='center', fontsize=14)
@@ -181,9 +181,9 @@ fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 for row, share_ in enumerate(shares):
     if row == 0:
         continue
-
-    axes[0].plot(mean_ests[row, :steps - ramp, 1], color=colormap(normalize(share_)))
-    axes[1].plot(mean_ests[row, :steps - ramp:, 0], color=colormap(normalize(share_)))
+    est_level = mean_ests[row]
+    axes[0].plot(est_level[:steps - ramp, 1], color=colormap(normalize(share_)))
+    axes[1].plot(est_level[:steps - ramp:, 0], color=colormap(normalize(share_)))
 
 axes[0].set_title(r'$\beta_1$')
 axes[1].set_title(r'$\beta_2$')
@@ -197,9 +197,8 @@ plt.savefig('{}/{}'.format(path_figures, 'ests.pdf'), format='pdf', dpi=300)
 
 fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(12, 8))
 
-# Assuming 'ranges' is a list of your data ranges
-# and 'shares' is a list of corresponding share values
 n_distributions = len(ranges)
+
 
 # Parameters for the ridge plot
 overlap = 0.8  # Adjust this to change the overlap between distributions
@@ -207,13 +206,15 @@ offset = 0.8  # Vertical spacing between distributions
 
 max_density = 0
 for i, share in enumerate(shares):
-    max_density = max(max_density, max(y))
     color = colormap(normalize(share))
 
+    # For the first axis (ranges)
     row = ranges[i].reshape(-1)
     density = gaussian_kde(row)
     x = np.linspace(min(row), max(row), 1000)
     y = density(x)
+
+    max_density = max(max_density, max(y))
 
     # Scale the density
     y = y / y.max() * overlap
@@ -223,6 +224,7 @@ for i, share in enumerate(shares):
 
     axes[0].fill_between(x, y, i * offset, alpha=0.8, color=color)
 
+    # For the second axis (sds)
     row = sds[i].reshape(-1)
     density = gaussian_kde(row)
     x = np.linspace(min(row), max(row), 1000)
@@ -254,9 +256,11 @@ plt.savefig('{}/{}'.format(path_figures, 'mobility.pdf'), format='pdf', dpi=300)
 
 np.savez('{}/{}'.format(path_outdata, 'mean_persistence.npz'), *mean_persistence)
 np.savez('{}/{}'.format(path_outdata, 'mean_persistence_quantiles.npz'), *mean_persistence_quantiles)
-np.savez('{}/{}'.format(path_outdata, 'mean_gini.npz'), *mean_gini)
-np.savez('{}/{}'.format(path_outdata, 'mean_quantiles.npz'), *mean_quantiles)
-np.save('{}/{}'.format(path_outdata, 'mean_members_.npz'), mean_members_)
-np.savez('{}/{}'.format(path_outdata, 'mean_conglomerates.npz'), *mean_conglomerates)
+np.save('{}/{}'.format(path_outdata, 'mean_gini.npy'), mean_gini)
+np.save('{}/{}'.format(path_outdata, 'mean_quantiles.npy'), mean_quantiles)
+np.save('{}/{}'.format(path_outdata, 'mean_members_.npy'), mean_members_)
+np.save('{}/{}'.format(path_outdata, 'mean_conglomerates.npy'), mean_conglomerates)
 np.savez('{}/{}'.format(path_outdata, 'mean_ests.npz'), *mean_ests)
 np.save('{}/{}'.format(path_outdata, 'ranks.npy'), ranks_)
+np.savez('{}/{}'.format(path_outdata, 'ranges.npz'), *ranges)
+np.savez('{}/{}'.format(path_outdata, 'sds.npz'), *sds)
