@@ -1,13 +1,13 @@
 # Fdb version 3
-["bibtex out.nosync/collaboration"] 1729191820 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1729238253
+["bibtex out.nosync/collaboration"] 1729239401 "out.nosync/collaboration.aux" "out.nosync/collaboration.bbl" "out.nosync/collaboration" 1729239402
   "/usr/local/texlive/2022/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "out.nosync/collaboration.aux" 1729238253 6585 6ffa9ee6d7f154fe4372013c996fecb4 "pdflatex"
+  "out.nosync/collaboration.aux" 1729239402 6585 edc9a9bd6a7e73d94910805a73ca833d "pdflatex"
   "references.bib" 1729143219 11647 9c51cf58740761a57d302a9600d4dee8 ""
   (generated)
   "out.nosync/collaboration.bbl"
   "out.nosync/collaboration.blg"
-["pdflatex"] 1729238252 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1729238253
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1729238252 34560 c2dbd54c8ab645c6bf86ea829970f22b ""
+["pdflatex"] 1729239401 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "out.nosync/collaboration.pdf" "collaboration" 1729239402
+  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1729239399 34560 0328c9cabd05e63b1fa232119249aa26 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -56,6 +56,7 @@
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb" 1248133631 35469 70d41d2b9ea31d5d813066df7c99281c ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
+  "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb" 1248133631 32362 179c33bbf43f19adbb3825bb4e36e57a ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb" 1248133631 32734 69e00a6b65cedb993666e42eedb3d48f ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1248133631 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
   "/usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1248133631 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
@@ -246,14 +247,14 @@
   "/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1647878959 4410336 7d30a02e9fa9a16d7d1f8d037ba69641 ""
   "/usr/local/texlive/2022/texmf-var/web2c/pdftex/pdflatex.fmt" 1647878983 2826437 14e9e79f51603ccdc89aeb0ddeac2dcc ""
   "/usr/local/texlive/2022/texmf.cnf" 1647878952 577 209b46be99c9075fd74d4c0369380e8c ""
-  "collaboration.tex" 1729238252 34560 c2dbd54c8ab645c6bf86ea829970f22b ""
-  "figures//sizes.pdf" 1729237910 317009 3b9eabfb5c7d8e469b2764addd97ea8d ""
-  "figures/ests.pdf" 1729237901 556712 a152cf8e9db8e8b569a6bff003d69979 ""
-  "figures/mobility.pdf" 1729237147 814371 60ba9228b5c4cbbf151e33500ef51ab6 ""
-  "figures/shares.pdf" 1729238169 205517 59bf44749354623552ee002e60102ad0 ""
-  "out.nosync/collaboration.aux" 1729238253 6585 6ffa9ee6d7f154fe4372013c996fecb4 "pdflatex"
-  "out.nosync/collaboration.bbl" 1729191820 6485 7b2836371baf43ea5ae221d539b0eb78 "bibtex out.nosync/collaboration"
-  "out.nosync/collaboration.out" 1729238253 1049 3e19e7a0b8615dbb80feffc1f8999634 "pdflatex"
+  "collaboration.tex" 1729239399 34560 0328c9cabd05e63b1fa232119249aa26 ""
+  "figures/ests.pdf" 1729239260 507879 f46ec756eea6e56a8c0df440098481c3 ""
+  "figures/mobility.pdf" 1729238977 819339 ff3dabfad9543b08ec1485b9ce343573 ""
+  "figures/shares.pdf" 1729239292 267973 f9ce578d44d6c688ea4f8bcd5faf33ad ""
+  "figures/sizes.pdf" 1729239378 348478 3b1e763451214b245e13302ede186d0e ""
+  "out.nosync/collaboration.aux" 1729239402 6585 edc9a9bd6a7e73d94910805a73ca833d "pdflatex"
+  "out.nosync/collaboration.bbl" 1729239401 6485 7b2836371baf43ea5ae221d539b0eb78 "bibtex out.nosync/collaboration"
+  "out.nosync/collaboration.out" 1729239402 1049 3e19e7a0b8615dbb80feffc1f8999634 "pdflatex"
   (generated)
   "out.nosync/collaboration.aux"
   "out.nosync/collaboration.log"

@@ -14,6 +14,7 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["Computer Modern Roman"],
+    "font.size": 20
 })
 
 
@@ -41,8 +42,6 @@ lookback = 50
 ramp = 10
 proportional = False
 shares = np.arange(0, 0.52, 0.02)
-
-plt.rcParams.update({'font.size': 12})
 
 normalize = mcolors.Normalize(vmin=shares.min(), vmax=shares.max())
 colormap = cm.viridis
@@ -111,7 +110,7 @@ for share in tqdm(range(shares.shape[0])):
     sds.append(np.std(ranks_[:, :, :, :, share], axis=0))
 
 
-fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(16, 12))
 
 for plot_ in range(4):
     for row, share_ in enumerate(shares):
@@ -128,7 +127,7 @@ colorbar = plt.colorbar(scalarmappaple, ax=axes, orientation='horizontal', fract
 colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'shares.pdf'), format='pdf', dpi=300)
 
-fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(16, 11))
 for plot_ in range(5):
     for row, share_ in enumerate(shares):
         axes[plot_].plot(mean_gini[row, plot_, :], color=colormap(normalize(share_)), linestyle='-' if row != 0 else '--')
@@ -146,7 +145,7 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'ginis.pdf'), format='pdf', dpi=300)
 
 
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(16, 11))
 for row, share_ in enumerate(shares):
     if row == 0:
         continue
@@ -163,7 +162,7 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'sizes.pdf'), format='pdf', dpi=300)
 
 
-fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(16, 11))
 for plot_ in range(3):
     axes[plot_].fill_between(x=shares, y1=mean_persistence_quantiles[plot_][:, 0], y2=mean_persistence_quantiles[plot_][:, -1], color="tab:blue", alpha=0.3)
     axes[plot_].fill_between(shares, y1=mean_persistence_quantiles[plot_][:, 1], y2=mean_persistence_quantiles[plot_][:, -2], color="tab:blue", alpha=0.3)
@@ -176,7 +175,7 @@ fig.tight_layout()
 fig.text(0.5, 0.04, r'$\alpha$', ha='center', va='center', fontsize=14)
 plt.savefig('{}/{}'.format(path_figures, 'percentile_quantiles.pdf'), format='pdf', dpi=300)
 
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(16, 12))
 
 for row, share_ in enumerate(shares):
     if row == 0:
@@ -195,7 +194,7 @@ colorbar.set_label(r'$\alpha$', labelpad=1)
 plt.savefig('{}/{}'.format(path_figures, 'ests.pdf'), format='pdf', dpi=300)
 
 
-fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(12, 8))
+fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(16, 11))
 
 n_distributions = len(ranges)
 

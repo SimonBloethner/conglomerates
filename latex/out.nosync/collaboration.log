@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  18 OCT 2024 09:57
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  18 OCT 2024 10:16
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -614,11 +614,11 @@ pdfTeX warning (ext4): destination with the same identifier (name{algocf.1}) has
                                                   \__shipout_drop_firstpage_...
 l.264 ...arlo type setting and averaged them. \par
                                                   ]
-<figures//sizes.pdf, id=184, 578.16pt x 578.16pt>
-File: figures//sizes.pdf Graphic file (type pdf)
-<use figures//sizes.pdf>
-Package pdftex.def Info: figures//sizes.pdf  used on input line 270.
-(pdftex.def)             Requested size: 272.99881pt x 266.27936pt.
+<figures/sizes.pdf, id=184, 1040.68805pt x 794.97pt>
+File: figures/sizes.pdf Graphic file (type pdf)
+<use figures/sizes.pdf>
+Package pdftex.def Info: figures/sizes.pdf  used on input line 270.
+(pdftex.def)             Requested size: 354.90143pt x 266.25943pt.
  [9
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
@@ -629,34 +629,34 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.282 
-       <./figures//sizes.pdf>]
-<figures/ests.pdf, id=214, 578.16pt x 578.16pt>
+       <./figures/sizes.pdf>]
+<figures/ests.pdf, id=214, 1040.68805pt x 867.24pt>
 File: figures/ests.pdf Graphic file (type pdf)
 <use figures/ests.pdf>
 Package pdftex.def Info: figures/ests.pdf  used on input line 285.
-(pdftex.def)             Requested size: 272.99881pt x 265.60757pt.
+(pdftex.def)             Requested size: 350.99762pt x 287.22412pt.
  [11
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.291 ... market shares becomes ever smaller. \par
                                                    <./figures/ests.pdf>]
-<figures/shares.pdf, id=253, 578.16pt x 578.16pt>
+<figures/shares.pdf, id=243, 1040.68805pt x 867.24pt>
 File: figures/shares.pdf Graphic file (type pdf)
 <use figures/shares.pdf>
 Package pdftex.def Info: figures/shares.pdf  used on input line 295.
-(pdftex.def)             Requested size: 272.99881pt x 267.89146pt.
+(pdftex.def)             Requested size: 350.99762pt x 288.8555pt.
  [12
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.311 
        <./figures/shares.pdf>]
-<figures/mobility.pdf, id=272, 867.24pt x 578.16pt>
+<figures/mobility.pdf, id=261, 1040.68805pt x 794.97pt>
 File: figures/mobility.pdf Graphic file (type pdf)
 <use figures/mobility.pdf>
 Package pdftex.def Info: figures/mobility.pdf  used on input line 314.
-(pdftex.def)             Requested size: 350.99762pt x 200.60727pt.
+(pdftex.def)             Requested size: 350.99762pt x 254.19041pt.
  [13
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
@@ -674,8 +674,8 @@ Package rerunfilecheck Info: File `collaboration.out' has not changed.
 (rerunfilecheck)             Checksum: 3E19E7A0B8615DBB80FEFFC1F8999634;1049.
  ) 
 Here is how much of TeX's memory you used:
- 32227 strings out of 478268
- 755562 string characters out of 5846347
+ 32226 strings out of 478268
+ 755547 string characters out of 5846347
  1161182 words of memory out of 5000000
  49836 multiletter control sequences out of 15000+600000
  490578 words of font info for 79 fonts, out of 8000000 for 9000
@@ -684,11 +684,11 @@ Here is how much of TeX's memory you used:
 
 pdfTeX warning (dest): name{Hfootnote.1} has been referenced but does not exist, replaced by a fixed one
 
-{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on out.nosync/collaboration.pdf (19 pages, 2030771 bytes).
+{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
+Output written on out.nosync/collaboration.pdf (19 pages, 2109243 bytes).
 PDF statistics:
- 477 PDF objects out of 1000 (max. 8388607)
- 386 compressed objects within 4 object streams
+ 471 PDF objects out of 1000 (max. 8388607)
+ 379 compressed objects within 4 object streams
  81 named destinations out of 1000 (max. 500000)
  129 words of extra memory for PDF output out of 10000 (max. 10000000)
 
