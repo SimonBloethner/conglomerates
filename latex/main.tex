@@ -18,6 +18,7 @@
 \usepackage{epstopdf}
 \usepackage{hyperref}
 \usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing, shape, fit, positioning}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepackage{svg}
@@ -66,7 +67,7 @@
 
 \usefoottemplate{\vbox{%
 		\tinycolouredline{structure!0!hell}%
-		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{S.\  Bl\"other, A. \ Kadner-Graziano}}\end{parbox}\hspace{2.5cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hfill\begin{parbox}{2.2cm}{\textbf{GradSem SS24}}\end{parbox}}}}
+		{\color{white}\begin{parbox}{0.5cm}{\includegraphics[height=0.35cm]{figures/logo2.eps}}\end{parbox}\hspace{0.1cm}\begin{parbox}{4.4cm}{\textbf{Simon\  Bl\"othner}}\end{parbox}\hspace{2.5cm}\begin{parbox}{2cm}{ \insertframenumber\,/\,\inserttotalframenumber}\end{parbox}\hfill\begin{parbox}{2.2cm}{\textbf{EARIE 2025}}\end{parbox}}}}
 
 
 \useheadtemplate{\vbox{%
@@ -78,8 +79,10 @@
 \title{Conglomerate Mergers: \newline Effects on
 Growth and Competition}
 
-%\author{Simon Bl\"othner \inst{1, 2} \and Alessandro Kadner-Graziano \inst{1, 3}}
-\author{Simon Bl\"othner \and Alessandro Kadner-Graziano}
+
+\author{Simon Bl\"othner \\
+  \small University of Bayreuth
+}
 %\institute{\inst{1}University of Bayreuth  \and \inst{2}Defiria \and \inst{3}Charles River Associates}
 \date{\today}
 
@@ -120,329 +123,626 @@ Growth and Competition}
        
 \end{frame}
 
+\begin{frame}{Key Questions}
+  
+  \begin{enumerate}
+    \setlength\itemsep{0.8em}
+    \item Why would firms in \textit{unrelated} markets merge? 
+    \item How could antitrust authorities evaluate conglomerative mergers?
+    \item How do management costs affect conglomerate structure?
+  \end{enumerate}
 
-\begin{frame}[fragile]{Growth Optimization: A Primer}
-  \begin{columns}
-   \begin{column}{0.6\textwidth}
-    \begin{itemize}
-      \setlength\itemsep{0.8em}
-     \onslide<1->{\item ``When tomorrow depends on today''} 
-     \onslide<2->{\item Losses hurt exponentially more} 
-     \onslide<3->{\item Irreversibility of state transitions makes things even worse (Think Russian Roulette)} 
-     \onslide<4->{     \item Most economic processes are multiplicative
+\end{frame}
+
+\begin{frame}{Seeking Your Input}
+    \begin{block}{Publication Strategy Discussion}
+      I would greatly appreciate your thoughts on:
+      \begin{itemize}
+        \setlength\itemsep{0.8em}
+        \item Where this work fits within the existing literature
+        \item Which journals or outlets might be most suitable
+        \item What modifications would strengthen the contribution for
+  publication
+      \end{itemize}
+    \end{block}
+
+    \vspace{0.5cm}
+    \centering
+    \textit{Your expertise and suggestions would be invaluable!}
+\end{frame}
+
+ \begin{frame}{The Power of Resource Pooling}
+  \begin{center}
+    \only<1>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_01_2assets_hold}}
+    \only<2>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_02_2assets_rebalanced}}
+    \only<3>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_03_2assets_second}}
+    \only<4>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_04_5assets}}
+    \only<5>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_05_10assets}}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}{Multiplicative Growth}
+  \begin{itemize}
+    \onslide<1->{\item $g = \prod_{t=1}^T \delta_t$  instead of $g = \sum_{t=1}^T \delta_t$}
+    \onslide<2->{\item ``When tomorrow depends on today'' $\rightarrow s_{t+1} = s_t \delta_t $}
+    \onslide<3->{\item All economic dynamics that are denoted in \% are usually linked to multiplicative dynamics}
+    \onslide<4->{\item Prevalence of heavy tailed distributions in many economic domains well explained by multiplicativity}
+    \onslide<5->{\item Examples of multiplicative processes
      \begin{itemize}
       \item Capital accumulation
       \item Trust, reputation
       \item Legal cases
      \end{itemize}} 
-     \onslide<5->{\item Shifting the return distribution upwards, at the smallest cost}      
+    \onslide<6->{\item Investment in capital goods don't just add capacity, it transforms the entire production structure}
+  
+  \end{itemize}
+  
+\end{frame}
+
+\begin{frame}[fragile]{Growth and Risk: Two Sides of the Same Coin}
+  \begin{columns}
+   \begin{column}{0.6\textwidth}
+    \begin{itemize}
+      \setlength\itemsep{0.8em}
+      
+      \onslide<1->{\item Losses hurt exponentially more, while gains yield exponentially less ($\Delta_{g_1}} > \Delta_{g_2}$)} 
+     \onslide<2->{\item Risk $\neq$ Volatility, Risk = Loss (large upswings aren't as important)} 
+     \onslide<3->{\item Irreversibility of state transitions ($\delta_t = 0$) makes things even worse (think Russian Roulette)} 
+     \onslide<4->{\item \alert{Shifting the return distribution upwards, avoiding very small growth increments}}
+       
     \end{itemize}
    \end{column}
    \begin{column}{0.4\textwidth}
-    \only<1->{\begin{tikzpicture}[scale=0.7]
-     \begin{axis}[
-      xlabel=$x$,
-      ylabel=$\log(x)$,
-      xmin=0.1, xmax=5,
-      ymin=-2, ymax=3,
-      domain=0.1:5,
-      samples=100,
-      smooth,
-      axis lines=middle,
-      xtick=\empty,
-      ytick=\empty
-     ]
-     \addplot[blue, thick] {ln(x)};
-     \end{axis}
+    \only<1->{\begin{tikzpicture}[scale=0.8]
+        \begin{axis}[
+            domain=1:10, % Domain of the function
+            samples=100, % Number of samples for the function
+            axis lines=middle, % Axis lines through the middle
+            xlabel={$\delta$}, % Label for x-axis
+            ylabel={$g$}, % Label for y-axis
+            xtick=\empty, % Remove x-axis tick marks
+            ytick=\empty, % Remove y-axis tick marks
+            minor tick num=1, % Number of minor ticks
+            enlargelimits={abs=0.5}, % Add some space around the plot
+            every axis plot/.append style={thick}, % Thicker lines for plots
+            clip=false,
+        ]
+            % Plot the logarithm function
+            \addplot[blue, domain=0.3:10] {ln(x)};
+    
+            % Add points and vertical/horizontal lines
+            \addplot[only marks, mark=*] coordinates {(2, 0.693) (4, 1.386) (7, 1.946) (9, 2.197)};
+            \addplot[dashed] coordinates {(2,0) (2, 0.693)};
+            \addplot[dashed] coordinates {(4,0) (4, 1.386)};
+            \addplot[dashed] coordinates {(7,0) (7, 1.946)};
+            \addplot[dashed] coordinates {(9,0) (9, 2.197)};
+
+            \addplot[dashed] coordinates {(2, 0.693) (0, 0.693)};
+            \addplot[dashed] coordinates {(4, 1.386) (0, 1.386)};
+            \addplot[dashed] coordinates {(7, 1.946) (0, 1.946)};
+            \addplot[dashed] coordinates {(9, 2.197) (0, 2.197)};
+
+    
+            % Add labels for the points
+            \node at (axis cs:2, -0.02) [anchor=north] {$\delta_1 - x$};
+            \node at (axis cs:4, -0.02) [anchor=north] {$\delta_1$};
+            \node at (axis cs:7, -0.02) [anchor=north] {$\delta_2 - x$};
+            \node at (axis cs:9, -0.02) [anchor=north] {$\delta_2$};
+
+            \draw [decorate,decoration={brace,amplitude=10pt}] (axis cs:0, 0.693) -- (axis cs:0, 1.386) node [midway,left=10pt] {$\Delta_{g_1}$};
+            \draw [decorate,decoration={brace,amplitude=10pt}] (axis cs:0, 1.946) -- (axis cs:0, 2.197) node [midway,left=10pt] {$\Delta_{g_2}$};    
+
+    
+        \end{axis}
+        
     \end{tikzpicture}}
    \end{column}
   \end{columns}
  \end{frame}
 
- \begin{frame}{Key Questions}
-  
-  \begin{enumerate}
-    \setlength\itemsep{0.8em}
-    \item Conglomerate mergers are not well understood in economics. Why would firms in unrelated markets merge?
-    \item How can antitrust authorities, who are tasked with protecting consumers from harmful mergers, evaluate these mergers?
-    \item How will transaction costs (communication, transfer, trust, etc.) affect conglomerate structure?
-  \end{enumerate}
 
-\end{frame}
-
-
-\begin{frame}{Model and setup}
-  \begin{columns}[T]
+ \begin{frame}{Sharing is Sparing}
+  \begin{columns}
     \begin{column}{0.5\textwidth}
-      \begin{minipage}{\linewidth}
-        \begin{algorithm}[H]
-          \SetAlgoLined
-          \KwIn{$N, M, C, \Delta, T, p , \alpha, \lambda$}
-          \For{$t$ in $T$}{
-            \ForEach{$m_i$ $\in$ $N \times M$}{
-              Merge with $m_j$ if $m_j$ $\notin$ $n_i$ and $m_j$ $\notin$ $c_{it}$ with $p$ 
-            }
-            \ForEach{$c_k \in C$}{
-              $pool_k$ = $\sum_{m_i \in c_k} \alpha \Delta_{it} - \lambda(c_k)$
-              $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
-            }
-            \ForEach{$m_i$ $\in$ $N \times M$}{
-              Split if $s_{it} < s_{it - 4}$  
-            }
-
-          }
-        \end{algorithm}
-      \end{minipage}
-    \end{column}
-    \begin{column}{0.5\textwidth}  
       \begin{itemize}
-        \item $N = \#$ Markets (100)
-        \item $M = \#$ Firms per Market (100)
-        \item $C =$ Conglomerates
-        \item $\Delta =$ Growth $(\sim \mathcal{N}(\mu_n, \sigma_n))$
-        \item $T =$ Total steps (1000)
-        \item $p =$ Merge probability (0.02)
-        \item $\alpha =$ Pooling rate ($0.2$)
-        \item $s =$ Market share
-        \item $\lambda =$ Transaction cost function
-        \begin{itemize}
-          \item $\frac{\partial \lambda}{\partial \# m_i \in c_k} > 0$
-          \item $\frac{\partial^2 \lambda }{\partial^2 \# m_i \in c_k} > 0$ 
-        \end{itemize}
+        \item Sharing (pooling) of resources reduces the impact of a loss $\rightarrow$ insurance
+        \item \citet{peters2022ergodicity} show that with sharing under Gaussian growth increments we can increase $g = \mu - \frac{\sigma^2}{2}$ to $g = \mu - \frac{\sigma^2}{2N}$, with $N$ the number of sharing partners
+        \item Giving up resources to reduce a loss can be worth more than the resources themselves (positive sum)
       \end{itemize}
+      
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{tikzpicture}[firm/.style={draw, rectangle, minimum width=2.1cm, minimum
+        height=0.6cm}
+        ]
+
+
+        \only<1>{\node[firm] (firmA) at (6, 8) {Firm A};
+        \node[firm] (firmB) at (9, 8) {Firm B};
+
+        \draw[dashed] (firmA) -- (firmB);
+
+        \node (initA) at (6, 7.3) {100};
+        \node (initB) at (9, 7.3) {100};
+
+        \node (firstA) at (6, 5.3) {104};
+        \node (firstB) at (9, 5.3) {99};
+        
+        \draw[->] (initA) -- (firstA) node[midway, left] {$\delta_{A1} = 4\%$};
+        \draw[->] (initB) -- (firstB) node[midway, left] {$\delta_{B1} = -1\%$};
+
+        \node[draw, ellipse, dotted] (pool) at (7.5,5.3) {203};
+
+        \node (secondA) at (6, 3.3) {101.92};
+        \node (secondB) at (9, 3.3) {101.97};
+
+        \node[draw, ellipse, dotted] (pool1) at (7.5,2.3) {203.89};
+
+        \draw[->] (firstA) -- (secondA) node[midway, left] {$\delta_{A2} = -2\%$};
+        \draw[->] (firstB) -- (secondB) node[midway, left] {$\delta_{B2} = 3\%$};
+
+        
+        }
+
+
+        \only<2>{\node[firm] (firmA) at (6, 8) {Firm A};
+        \node[firm] (firmB) at (9, 8) {Firm B};
+
+        \draw[dashed] (firmA) -- (firmB);
+
+        \node (initA) at (6, 7.3) {100};
+        \node (initB) at (9, 7.3) {100};
+
+        
+        \node (firstA) at (6, 6.3) {104};
+        \node (firstB) at (9, 6.3) {99};
+        
+        \draw[->] (initA) -- (firstA) node[midway, left] {$\delta_{A1} = 4\%$};
+        \draw[->] (initB) -- (firstB) node[midway, left] {$\delta_{B1} = -1\%$};
+
+        \node[draw, ellipse] (pool) at (7.5,5.3) {203};
+
+        \draw[->, shorten >=4pt] (firstA) -- (pool.north);
+        \draw[->, shorten >=4pt] (firstB) -- (pool.north);
+
+        \node (afterA) at (6, 4.3) {101.5};
+        \node (afterB) at (9, 4.3) {101.5};
+
+        \draw[->] (pool.south) -- (afterA);
+        \draw[->] (pool.south) -- (afterB);
+
+        \node (secondA) at (6, 3.3) {99.47};
+        \node (secondB) at (9, 3.3) {104.545};
+
+        \draw[->] (afterA) -- (secondA) node[midway, left] {$\delta_{A2} = -2\%$};
+        \draw[->] (afterB) -- (secondB) node[midway, left] {$\delta_{B2} = 3\%$};
+
+        \node[draw, ellipse] (pool1) at (7.5,2.3) {204.015};
+
+        \draw[->, shorten >=4pt] (secondA) -- (pool1.north);
+        \draw[->, shorten >=4pt] (secondB) -- (pool1.north);}
+
+
+
+
+
+        
+      \end{tikzpicture}
+      
     \end{column}
   \end{columns}
+  
+ \end{frame}
+
+ \begin{frame}{The Anatomy of an Agent Based Model}
+  \begin{tikzpicture}[
+    market/.style={draw, rectangle, minimum width=2.2cm, minimum
+  height=0.7cm},
+    firm/.style={draw, rectangle, minimum width=2.2cm, minimum
+  height=0.7cm}
+  ]
+    \node[market] (market1) at (0,3) {Market 1};
+    \node[market] (market2) at (0,2) {Market 2};
+    \node[market] (market3) at (0,1) {Market 3};
+    \node at (0,0) {$\vdots$};
+    \node[market] (marketM1) at (0,-1) {Market M-1};
+    \node[market] (marketM) at (0,-2) {Market M};
+
+    \node at (0, -2.8)  {$\mathcal{N}(\mu_m, \sigma_m)$};
+
+
+    \only<1>{\node[firm] (firm1_1) at (3.5,3) {Firm 1};
+    \node[firm] (firm2) at (3.5,2) {Firm 2};
+    \node[firm] (firm3) at (3.5,1) {Firm 3};
+    \node at (3.5,0) {$\vdots$};
+    \node[firm] (firmN1) at (3.5,-1) {Firm N-1};
+    \node[firm] (firmN_1) at (3.5,-2) {Firm N};
+
+    \node at (3.5, -2.8)  {$\mathcal{N}(\mu_1, \sigma_1)$};
+
+    \draw[
+    decorate,
+    decoration={
+      brace,
+      raise=8pt,
+      amplitude=7pt,
+      aspect=0.065,
+      mirror
+    }
+    ] (firm1_1.north west) -- (firmN_1.south west);}
+
+    \only<2>{
+    \node[firm] (firm1_2) at (3.5,3) {Firm 1};
+    \node[firm] (firm2) at (3.5,2) {Firm 2};
+    \node[firm] (firm3) at (3.5,1) {Firm 3};
+    \node at (3.5,0) {$\vdots$};
+    \node[firm] (firmN1) at (3.5,-1) {Firm N-1};
+    \node[firm] (firmN_2) at (3.5,-2) {Firm N};
+
+    \node at (3.5, -2.8)  {$\mathcal{N}(\mu_3, \sigma_3)$};
+
+    \draw[
+    decorate,
+    decoration={
+      brace,
+      raise=8pt,
+      amplitude=7pt,
+      aspect=0.41,
+      mirror
+    }
+    ] (firm1_2.north west) -- (firmN_2.south west);}
+
+    \only<3>{
+      
+      \node[firm] (firm5) at (3.5,3) {Firm 5};
+      \node[firm] (firm27) at (3.5,2) {Firm 27};
+      \node[firm] (firm70) at (3.5,-2) {Firm 70};
+      
+      \node[draw, fit=(firm5)(firm27)(firm70), rectangle, dashed, inner
+        sep=10pt] (conglomerate) {};
+
+      \node at (3.5, 0) {Conglomerate};
+
+      \draw[->] (market1) -- (firm5);
+      \draw[->] (market2) -- (firm27);
+      \draw[->] (marketM) -- (firm70);
+
+
+
+    }
+      
+
+    
+    
+  \end{tikzpicture}
+ \end{frame}
+
+
+
+\begin{frame}{Growing in the Markets}
+  \begin{tikzpicture}[firm/.style={draw, rectangle, minimum width=2.1cm, minimum
+        height=0.6cm}
+        ]
+    \only<1->{
+      
+    \node[firm] (firm) at (0,2) {Firm$_{im}$};
+
+    \node at (2.5, 2) {$\delta_{it} \sim \mathcal{N}(\mu_m, \sigma_m)$};
+  
+        
+    \node (revenue) at (0, 0.5) {$\Delta_{it} = s_{it-1} \delta_{it} - s_{it-1}$};
+    }
+
+    \node[opacity=0] (blank1) at (0, -2.5) {1};
+    \node[opacity=0] (blank2) at (3.5,-1) {1};
+
+    \node[draw, fit=(firm)(revenue)(blank1)(blank2), rectangle, dashed, inner sep=10pt] {};
+    
+    
+    \only<2->{\node (profit1) at (-1, -1) {$\Pi_{it} = \Delta_{it}$};
+
+    \draw[->] (revenue) -- (profit1);
+    }
+    
+    
+    
+
+    
+
+
+    \only<3->{
+
+    \node[firm] (cong) at (8,2) {Conglomerate$_{c}$};
+
+    \node (sumShared) at (6, 0.5) {$\sum_{i \in c} \alpha \Delta_{it}$};
+    
+    \draw[->] (revenue) -- (sumShared);
+    
+    
+    \node (costCong) at (10, 0.5) {$\Phi(O_c, M) = \frac{1}{1 + e^{|O_c| + 0.4 M}}$};
+
+    \node (pool) at (8, -1) {$\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi(O_c, M) \sum_{i \in c} s_{it}$};
+
+    \draw[->] (sumShared) -- (pool);
+    \draw[->] (costCong) -- (pool);
+
+    \node[opacity=0] (blank3) at (8, 2) {1};
+    \node[opacity=0] (blank4) at (8,-2.5) {1};
+
+    \node[draw, fit=(sumShared)(costCong)(pool)(blank3)(blank4), rectangle, dashed, inner sep=10pt] {};
+
+    }
+
+    \only<4->{
+
+    \node (profit2) at (2,-1) {$\Pi_{it} = (1 - \alpha) \Delta_{it} +
+  \frac{\Omega_{ct}}{|O_{c_i}|}$};
+
+    \draw[->] (pool) -- (profit2);
+    }
+
+    \only<5->{
+    \node (nextState) at (0, -2.5) {$s_{it} = s_{it-1} + \Pi_{it}$};
+    \draw[->] (profit1) -- (nextState);
+    \draw[->] (profit2) -- (nextState);
+    }
+
+
+  \end{tikzpicture}
+  
+\end{frame}
+ 
+
+
+\begin{frame}{Merging and Splitting}
+  \begin{tikzpicture}
+    [firm/.style={draw, rectangle, minimum width=2.1cm, minimum
+        height=0.6cm, node distance=0.5cm}
+        ]
+
+    \only<1->{
+
+    \node[firm] (firm) at (0,0.4) {Firm$_{im}$};
+    \node at (0,-0.5) {$p=5\%$};
+ 
+    \node[opacity=0] (blank1) at (2.5,0.4) {};
+
+    \draw[->] (firm.est) -- (blank1);
+
+
+    \node[draw, rectangle, dotted] (feasibilityCheck) at (3.5, 3) {Feasibility};
+
+    \node[below=of feasibilityCheck] (select) {Pick $j \in (M \times N ) - 1$};
+
+    \node[below=of select] (nonSame){$m_i \neq m_j$};
+    
+    \node[below=of nonSame] (nonCong){$(O_{c_i} \cap O_{c_j} = \emptyset)$};
+
+    \draw[->] (select) -- (nonSame);
+    \draw[->] (nonSame) -- (nonCong);
+
+
+    \node[draw, fit=(feasibilityCheck)(feasibilityCheck)(nonSame)(nonCong), rectangle, dashed, inner sep=10pt, text width=3cm] {};
+
+    }
+
+    \only<2->{
+
+    \node[draw, rectangle, dotted, right=1.87cm of feasibilityCheck] (desirabilityCheck) {Desirability};
+
+    \node[below=of desirabilityCheck] (synthPool) {Compute $\hat{\Omega}$};
+    
+    \node[below=of synthPool] (checkPools) {$\hat{\Omega} > \Omega$};
+
+    \node[below=of checkPools] (merge) {\textbf{Merge}};
+
+    \draw[->] (synthPool) -- (checkPools);
+    \draw[->] (checkPools) -- (merge);
+
+    \node[draw, fit=(desirabilityCheck)(synthPool)(checkPools)(merge), rectangle, dashed, inner sep=10pt, text width=3cm] {};
+
+    \node[opacity=0] (blank2) at (4.5,0.4) {};
+    \node[opacity=0] (blank3) at (6.5,0.4) {};
+    
+    \draw[->] (blank2) -- (blank3);
+
+    }
+
+    \only<3->{
+
+    \node[draw, rectangle, dotted, right=2cm of desirabilityCheck] (split) {Splitting};
+
+    \node[below=of split] (compRate) {Compute $\hat{g}_{i(t-l):t}$};
+
+    \node[below=of compRate] (checkRates)  {$g_{i(t-l):t} > \hat{g}_{i(t-l):t}$};
+
+    \node[below=of checkRates] (exit)  {\textbf{Exit}};
+
+    \draw[->] (compRate) -- (checkRates);
+    \draw[->] (checkRates) -- (exit);
+
+
+    \node[draw, fit=(split)(exit)(compRate)(checkRates), rectangle, dashed, inner sep=10pt, text width=3cm] {};
+
+    }
+    
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Parametrization and Experimental Setup}
+  \begin{columns}
+    \begin{column}{0.5 \textwidth}
+      \begin{table}[h]
+        \centering
+        \begin{tabular}{|c|c|}
+          \hline
+          \textbf{Parameter} & \textbf{Value} \\
+          \hline
+          $M$ & 100  \\
+          $N$ & 100 \\
+          $T$ & 1000 \\
+          $l$ & 50 \\
+          $p$ & 0.05 \\
+          $\alpha$ & $\left[0, 0.5 \right]$ \\
+          \hline
+        \end{tabular}
+      \end{table}
+    \end{column}
+    \begin{column}{0.5 \textwidth}
+      \begin{itemize}
+        \item 100 Markets means maximum conglomerate size is 100
+        \item Increase the sharing rate $\alpha$ by $0.02$
+        \item Run each parametrization 10 times and average along their trajectories
+        \item Management cost function set such that operating in 40\,\% of the markets cost 50\,\% of the conglomerate each step
+      \end{itemize}
+      
+    \end{column}
+  \end{columns}
+
+  
+  
 \end{frame}
 
 
 \begin{frame}{Merging Behavior}
-  \begin{columns}[T]
-    \begin{column}{0.3\textwidth}
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
       \centering
-      \includegraphics[width=\textwidth]{figures/mean.png}
+      \begin{figure}
+        \includegraphics[width=8.5cm]{figures/sizes.pdf}
+      \end{figure}
     \end{column}
-
-    \begin{column}{0.3\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{figures/number.png}
-    \end{column}
-
-    \begin{column}{0.3\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{figures/q_m.png}
-    \end{column}
-  \end{columns}
-
-  \begin{itemize}
-    \setlength\itemsep{0.8em}
-    \item Merging is a dominant strategy with more than 70\,\% of firms in a conglomerate (invariant to merge probability $p$)
-    \item Stabilization in the number of conglomerates (convergence speed depends on transaction costs)
-    \item Highly unequal distribution of conglomerate size, with the 90\,\% and 70\,\% quantiles being far apart from the 25\,\% and 10\,\% ones
-  \end{itemize}
-
-\end{frame}
-
-\begin{frame}{Market Concentration (1/3) - Size Matters}
-  \begin{columns}[T]
-    \begin{column}{0.3\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{figures/sizevrank.png}
-    \end{column}
-
-    \begin{column}{0.3\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{figures/sizevshare.png}
-    \end{column}
-
-    \begin{column}{0.3\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{figures/est.png}
-    \end{column}
-  \end{columns}
-
-  \begin{itemize}
-    \setlength\itemsep{0.8em}
-    \item Increasing the conglomerate size decreases the chance to end up in the lower quantiles (ranks) and to have lower market share ($\frac{s_{it}}{\sum_{i} s_{it}}$)
-    \item Increasing the size above a certain threshold will not increase the success anymore (inverse U-shape)
-    \item In the progression of the model the optimal size increases, but the costs eat up the gains from size at an increasing rate
-  \end{itemize}
-
-\end{frame}
-
-\begin{frame}{Market Concentration (2/3) - Persistence \& Mobility}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \centering
-      \includegraphics[width=0.67\textwidth]{figures/gini.png}
-
-      \includegraphics[width=0.67\textwidth]{figures/persistence.png}
-    \end{column}
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.45\textwidth}
       \begin{itemize}
-        \setlength\itemsep{0.8em}
-        \item Almost all markets tend to strong, but not perfect inequality
-        \item Many market participants have almost no market share 
-        \item High inequality is driven by low mobility across the ranks
-        \begin{itemize}
-          \setlength\itemsep{0.6em}
-          \item Maximum quantiles are populated by a few enduring firms
-          \item Low quantiles are made up by a varying population
-          \item High end (90\,\%) quantiles are much more attainable
-        \end{itemize}
+        \item Stable conglomerate size
+        \item Stable number of conglomerates
+        \item Stabilization after the initial $l$ review periods
+        \item Increasing $\alpha$ decreases conglomerate size
+        \item Increasing $\alpha$ marginally decreases conglomerate count
       \end{itemize}
-        
+      
     \end{column}
   \end{columns}
 
-  
 \end{frame}
 
-\begin{frame}{Market Concentration (3/3) - The Impact of Pooling}
-    \begin{columns}[T] % T aligns the tops of the columns
-        \begin{column}{0.5\textwidth}
-          \centering
-          \includegraphics[width=0.96\textwidth]{figures/shares.png}
-        \end{column}
+\begin{frame}{The Impact of the Pooling Rate on Market Shares}
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
+      \centering
+      \begin{figure}
+        \includegraphics[width=8.5cm]{figures/shares.pdf}
+      \end{figure}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{itemize}
+        \item Perfect equality is $0.01$ with 100 firms per market
+        \item Inequality increases with time
+        \item Non-pooling returns the expected log-normal distribution
+        \item Increasing $\alpha$ decreases market share inequality and slows increase over time
+      \end{itemize}
       
-        \begin{column}{0.5\textwidth}
-          \begin{itemize}
-            \setlength\itemsep{0.8em}
-            \item No-pooling baseline case (dotted line) yields the known result of high skew
-            \item Increasing the pooling rate marginally (to 1\,\%) from the baseline already lowers market concentration drastically
-            \item Increasing the sharing rate lowers market concentration gradually
-
-          \end{itemize}
-        \end{column}
-      \end{columns}
+    \end{column}
+  \end{columns}
 \end{frame}
+
+\begin{frame}{Conglomerate Size and Market Share}
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
+      \centering
+      \begin{figure}
+        \includegraphics[width=8.5cm]{figures/ests.pdf}
+      \end{figure}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{itemize}
+        \item Impact of conglomerate size on market share of firms within the conglomerate $\bar{\Omega}_{ct} = \beta_{0t} + \beta_{1t} |O_{ct}| + \beta_{2t} |O_{ct}|^2$
+        \item $\beta_1 > 0$: Variance reduction
+        \item $\beta_2 < 0$: Management cost
+        \item Increasing $\alpha$ decreases the effects as market shares tend to equalize
+      \end{itemize}
+
+      
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+
+
+\begin{frame}{The Impact of the Pooling Rate on Mobility}
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
+      \centering
+      \begin{figure}
+        \includegraphics[width=8.5cm]{figures/mobility.pdf}
+      \end{figure}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{itemize}
+        \item Range as the difference between ranks over time
+        \item Standard deviation of ranks over time 
+        \item Any $\alpha > 0$ improves mobility drastically
+        \item Increasing $\alpha$ shifts distribution to higher mobility
+        \item Increasing $\alpha$ decreases the spread of distribution 
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
 
 \begin{frame}{Key Findings}
   
   \begin{enumerate}
     \setlength\itemsep{0.8em}
-    \item Including dynamic frameworks allows for the explanation of many phenomena of economic exchange such as conglomerate formation
-    \item Increasing firm cooperation through conglomerate formation does not necessarily harm competition
-    \item Transaction costs play a crucial role in determining the size of a conglomerate
+    \item Growth rate optimization is a novel view in standard models of industrial organisation
+    \item Growth optimization through resource sharing is a possible reason why conglomerates form
+    \item Pooling of resources within the conglomerate allows for improved performance for all companies with it 
+    \item Increasing firm cooperation through conglomerate formation improves static and dynamic measures of competitiveness
+    \item Management costs play a crucial role in determining the size of a conglomerate
   \end{enumerate}
 
 \end{frame}
 
 
-\begin{frame}{Model Extension: Endogenous Pricing}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \begin{minipage}{\linewidth}
-        \begin{algorithm}[H]
-          \SetAlgoLined
-          \only<1>{\KwIn{$N, M, C, \Delta, T, p , \alpha, \lambda$}
-          \For{$t$ in $T$}{
-            \ForEach{$m_i$ $\in$ $N \times M$}{
-              Merge with $m_j$ if $m_j$ $\notin$ $n_i$ and $m_j$ $\notin$ $c_{it}$ with $p$ 
-            }
-            \ForEach{$c_k \in C$}{
-              $pool_k$ = $\sum_{m_i \in c_k} \alpha \Delta_{it} - \lambda(c_k)$
-              $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
-              
-            }
-            \ForEach{$m_i$ $\in$ $N \times M$}{
-              Split if $s_{it} < s_{it - 4}$  
-            }
-            }
-          }
-            \only<2>{
-              \vdots
-              \ForEach{$m \in M$}{
-                $p_{mt} = \pi(\cdot)$
-              }
-              \ForEach{$c_k \in C$}{
-                $pool_k$ = $\sum_{m_i \in c_k} \alpha \textcolor{red}{\Pi_{it}(\cdot)}  - \lambda(c_k)$
-                $\Delta_{it}^{*} = (1 - \alpha) \Delta_{it} + \frac{pool_k}{\# m_i \in c_k}$
-              }
-              \ForEach{$m \in M$}{
-                $s_{mt}(\boldsymbol{\Pi})$
-              }
-
-            \vdots
-            }
-          
-        \end{algorithm}
-      \end{minipage}
-    \end{column}
-    \begin{column}{0.5\textwidth}  
-      \only<2>{\begin{itemize}
-        \item Allow firms to set prices following their policy $\pi(\cdot)$
-        \item Fluctuations in a company's growth through stochastic costs $c_{it}$
-        \item Market share as the cumulative profits $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) * p_{it} - c_{it}$ with $s_{it}(\boldsymbol{\Pi}) = \frac{\sum_{\tau=1}^{t}\Pi_{i \tau}}{\sum_{\tau=1}^{t} \underset{j: j \neq i}{\sum} \Pi_{j \tau}}$
-
-      \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-
-
-
-
-  \only<1>{ % This will appear from the second slide onwards
-  \begin{tikzpicture}[remember picture, overlay]
-      \draw[red, very thick, rounded corners] 
-      (current page.north west) ++(1.1cm,-4.5cm) rectangle +(5.8cm,-2.1cm);
-  \end{tikzpicture}
-  }
-
-\end{frame}
-
-\begin{frame}{Model Extension: Pricing Decision}
-
-  \begin{columns}[T] % T aligns the tops of the columns
-    \begin{column}{0.55\textwidth}
-      \begin{itemize}
+\begin{frame}{Future Developments}
+    \begin{enumerate}
         \setlength\itemsep{0.8em}
-        \item Demand function of the form $D(\mathbf{P_t}, s_{t}) = 1 - (1 - s_{it}) p_{it} + 0.5 \underset{j: j \neq i}{\max} \, p_{jt}$
-        \item Learn the optimal pricing policy $\pi(\cdot)$ using a Proximal Policy Optimization reinforcement learning algorithm
-        \item Information set of the firm  $\{p_{it-1}, s_{it-1}, \underset{j: j \neq i}{\max} \, p_{jt-1}, \underset{j: j \neq i}{\max} \, p_{jt-2}\}$
-        \item Goal of the firm is to optimize the profit $\Pi_{it} (\mathbf{P_t}, s_{it}) = D(\mathbf{P_t}, s_{it}) p_{it}$
-                
-      \end{itemize}
-    \end{column}
-
-
-
-    \begin{column}{0.45\textwidth}
-        \begin{figure}
-          \includegraphics[width=.9\textwidth]{figures/share_zoomed.png}
-        \end{figure}
-    \end{column}
-  \end{columns}
+        \item Other resources outside of capital could be modelled
+        \item Include jump processes or other return distributions
+        \item Robust management cost function for conglomerate size
+        \item More guided merger targeting process
+        \item Investigate how conglomerates change barriers to entry
+    \end{enumerate}
 \end{frame}
 
-\begin{frame}{Questions to be addressed}
-    \begin{itemize}
-        \item More dynamic splitting decisions depending on a change of ranks or market share
-        \item Include jump processes
-        \item Investigate whether certain industrial configurations have different underlying processes (chemicals, electronics, consumer goods, etc.)
-        \item Check how conglomerate performance is linked to the underlying growth process
-        \item Find stronger transaction cost modelling 
-        \item Profit pooling vs. Cost pooling
-    \end{itemize}
-\end{frame}
+  \begin{frame}[allowframebreaks]{References}
+      \bibliographystyle{apalike}  % or plainnat, abbrvnat, etc.
+      \bibliography{references}    % points to your references.bib file
+  \end{frame}
 
 
 \begin{frame}
-    \centering
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+    \textbf{\Huge Reach Out!}
 
-\textbf{\Huge Reach Out!}
+    \medskip
 
-\medskip
+    \vspace{1.5cm}
 
-\vspace{1.5cm}
-
-\href{mailto:simon.bloethner@uni-bayreuth.de}{simon.bloethner@uni-bayreuth.de}
-
-\medskip
-
-\vspace{.5cm}
-
-\href{mailto:a.kadner-graziano@uni-bayreuth.de}{a.kadner-graziano@uni-bayreuth.de}
+    \href{mailto:simon.bloethner@uni-bayreuth.de}{simon.bloethner@uni-bayreuth.de}
+    
+    \end{column}
+      \begin{column}{0.5\textwidth}
+        \begin{figure}
+          \includegraphics[width=0.8\textwidth]{figures/LI_QR.JPG}
+        \end{figure}
+  \end{column}
+    
+  \end{columns}
 \end{frame}
 
 \end{document}
