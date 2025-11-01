@@ -2,8 +2,6 @@ import numpy as np
 from scipy.stats import random_correlation
 from tqdm import tqdm
 
-np.random.seed(1)
-
 
 class Firm:
     def __init__(self, market, number, steps, lookback):
@@ -20,6 +18,11 @@ class Firm:
 def logistic_cost(x, k, x_0):
     y = 1 / (1 + np.exp(-k * (x - x_0)))
     return y
+
+
+def power_law_cost(size, b0, b1):
+    return b0 * size ** b1
+
 
 
 def cost(size, progression, degree=2):
@@ -39,7 +42,7 @@ def format_func(value, tick_number):
     return f'{value:.2f}'
 
 
-def exit_(firms, firm, conglomerates):
+def exit_(firms, firm, conglomerates, to_delete=None):
     partners = firm.conglomerate.copy()
     partners.remove(firm.id)
     for partner in partners:
@@ -47,6 +50,21 @@ def exit_(firms, firm, conglomerates):
         firms[partner].conglomerate.remove(firm.id)
 
     conglomerates[firm.conglomerate_id]['firms'].remove(firm.id)
+    
+    # Mark conglomerate for deletion if empty or only one firm remains
+    remaining_firms = conglomerates[firm.conglomerate_id]['firms']
+    if len(remaining_firms) <= 1:
+        # Clean up the remaining firm's state if there is one
+        if len(remaining_firms) == 1:
+            remaining_firm_id = remaining_firms[0]
+            firms[remaining_firm_id].conglomerate_id = None
+            firms[remaining_firm_id].conglomerate = [remaining_firm_id]
+            firms[remaining_firm_id].markets = [firms[remaining_firm_id].home_market]  # Reset to home only
+            firms[remaining_firm_id].entered = None  # Reset entry time
+        
+        # Mark for deletion instead of deleting immediately
+        if to_delete is not None:
+            to_delete.add(firm.conglomerate_id)
 
     firm.conglomerate = [firm.id]
     firm.markets = [firm.home_market]
@@ -66,7 +84,15 @@ def model(params):
     mu_sig_corr = 0.7
     means = [0.1, 0.05]
 
-    markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
+    # Extract parameters - now including power law parameters
+    if len(params) == 12:
+        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, b0, b1 = params
+        use_power_law = True
+    else:
+        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
+        b0, b1 = 1.0, 1.0  # Default values
+        use_power_law = False
+
     cov_mat = np.ones((2, 2)) * mu_sig_corr + np.diag(np.tile(1 - mu_sig_corr, 2))
     growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
     growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
@@ -91,9 +117,15 @@ def model(params):
              range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
+    
+    # Track merger frequency per period
+    mergers_per_period = np.zeros(steps)
+    
     #for step in tqdm(range(steps)):
     for step in range(steps):
-        draws = np.where(np.random.uniform(0, 1, total_firms) < merge_thresh)[0]
+        # Set merge_thresh to 0 when share=0 to disable mergers (pure Brownian motion)
+        effective_merge_thresh = 0 if share == 0 else merge_thresh
+        draws = np.where(np.random.uniform(0, 1, total_firms) < effective_merge_thresh)[0]
 
         if draws.shape[0] > 0:
             for firm in draws:
@@ -126,9 +158,17 @@ def model(params):
                                 states = np.array([firms[firm].states[synth] for firm in conglomerate])
                                 gains = states * returns - states
                                 if proportional:
-                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                    if use_power_law:
+                                        cost_factor = 1 - power_law_cost(len(conglomerate), b0, b1) / states.sum() if states.sum() > 0 else 0
+                                    else:
+                                        cost_factor = 1 - logistic_cost(len(conglomerate), k=1, x_0=markets)
+                                    pool = (gains * share).sum() * cost_factor
                                 else:
-                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+                                    if use_power_law:
+                                        management_cost = states.sum() * power_law_cost(len(conglomerate), b0, b1)
+                                    else:
+                                        management_cost = states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)
+                                    pool = (gains * share).sum() - management_cost
 
                                 synth_pool[enumer] = pool
 
@@ -144,9 +184,17 @@ def model(params):
                                 states = np.array([firms[firm].states[synth] for firm in conglomerate])
                                 gains = states * returns - states
                                 if proportional:
-                                    pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                                    if use_power_law:
+                                        cost_factor = 1 - power_law_cost(len(conglomerate), b0, b1) / states.sum() if states.sum() > 0 else 0
+                                    else:
+                                        cost_factor = 1 - logistic_cost(len(conglomerate), k=1, x_0=markets)
+                                    pool = (gains * share).sum() * cost_factor
                                 else:
-                                    pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets
+                                    if use_power_law:
+                                        management_cost = states.sum() * power_law_cost(len(conglomerate), b0, b1)
+                                    else:
+                                        management_cost = states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)
+                                    pool = (gains * share).sum() - management_cost
 
                                 synth_pool[enumer] = pool
 
@@ -194,11 +242,17 @@ def model(params):
                         firms[firm].entered = step
                         firms[target].entered = step
                         conglomerates[new_id] = {'firms': conglomerate.copy(), 'pool': np.zeros(lookback).astype(float)}
+                    
+                    # Count successful merger
+                    mergers_per_period[step] += 1
 
         period_conglomerates = list(set(tuple(lst) for lst in [firm.conglomerate for firm in firms if len(firm.conglomerate) > 1]))
         all_time_conglomerates.append(period_conglomerates)
 
         solo = [firm.id for firm in firms if len(firm.conglomerate) == 1]
+
+        # Track conglomerates to delete after pooling loop
+        conglomerates_to_delete = set()
 
         for conglomerate_ in conglomerates.keys():
             conglomerate = conglomerates[conglomerate_]['firms']
@@ -207,26 +261,42 @@ def model(params):
             states = np.array([firms[firm].states[step] for firm in conglomerate])
             gains = states * returns - states    
             if proportional:
-                pool = (gains * share).sum() * (1 - logistic_cost(len(conglomerate), k=1, x_0=markets))
+                if use_power_law:
+                    cost_factor = 1 - power_law_cost(len(conglomerate), b0, b1) / states.sum() if states.sum() > 0 else 0
+                else:
+                    cost_factor = 1 - logistic_cost(len(conglomerate), k=1, x_0=markets)
+                pool = (gains * share).sum() * cost_factor
             else:
-                pool = (gains * share).sum() - states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)  # len(conglomerate) / markets 
+                if use_power_law:
+                    management_cost = states.sum() * power_law_cost(len(conglomerate), b0, b1)
+                else:
+                    management_cost = states.sum() * logistic_cost(len(conglomerate), k=1, x_0=markets * 0.4)
+                pool = (gains * share).sum() - management_cost 
 
             returns = ((1 - share) * gains + pool / len(conglomerate)) if share > 0 else gains  # Equal distribution of pool contents.
 
             for partner, firm in enumerate(conglomerate):
-                firms[firm].outside_profits[step % lookback] = realizations[(step, ) + tuple(markets_structure[firm, :])]
+                firms[firm].outside_profits[step % lookback] = realizations[(step, ) + tuple(markets_structure[firm, ::-1])]
                 firms[firm].states[step + 1] = firms[firm].states[step] + returns[partner]
                 if firms[firm].states[step + 1] < 0:
                     firms[firm].states[step + 1] = 1
-                    exit_(firms, firms[firm], conglomerates=conglomerates)
+                    exit_(firms, firms[firm], conglomerates=conglomerates, to_delete=conglomerates_to_delete)
 
             conglomerates[conglomerate_]['pool'][step % lookback] = pool
 
+        # Clean up conglomerates marked for deletion
+        for cong_id in conglomerates_to_delete:
+            if cong_id in conglomerates:
+                del conglomerates[cong_id]
+
         for firm in solo:
-            firms[firm].outside_profits[step % lookback] = realizations[(step,) + tuple(markets_structure[firm, :])]
-            firms[firm].states[step + 1] = firms[firm].states[step] * realizations[(step,) + tuple(markets_structure[firm, :])]
+            firms[firm].outside_profits[step % lookback] = realizations[(step,) + tuple(markets_structure[firm, ::-1])]
+            firms[firm].states[step + 1] = firms[firm].states[step] * realizations[(step,) + tuple(markets_structure[firm, ::-1])]
 
         if step > lookback:
+            # Track conglomerates to delete after exit checks
+            exit_cleanup_to_delete = set()
+            
             for firm in firms:
                 if len(firm.conglomerate) > 1:
                     if firm.entered < step - lookback:
@@ -234,7 +304,12 @@ def model(params):
                         inside_profits = firm.states[step - lookback:step]
                         inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
                         if outside_profit > inside_profits:
-                            exit_(firms, firm, conglomerates=conglomerates)
+                            exit_(firms, firm, conglomerates=conglomerates, to_delete=exit_cleanup_to_delete)
+            
+            # Clean up conglomerates marked for deletion
+            for cong_id in exit_cleanup_to_delete:
+                if cong_id in conglomerates:
+                    del conglomerates[cong_id]
 
     results = np.array([firm.states for firm in firms]).T
 
@@ -244,9 +319,9 @@ def model(params):
         num_cong.append(len(conglomerate))
         members.append([len(members) for members in conglomerate])
 
-    mean_members = np.array([np.mean(member) for member in members])
+    mean_members = np.array([np.mean(member) if len(member) > 0 else 0.0 for member in members])
 
-    quantiles_members = np.array([np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) for member in members])
+    quantiles_members = np.array([np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) if len(member) > 0 else np.zeros(5) for member in members])
 
     market_share = np.array([results[:, np.arange(market * firms_per_market, (market + 1) * firms_per_market)] / results[:, np.arange(market * firms_per_market, (market + 1) * firms_per_market)].sum(axis=1).reshape(steps + 1, 1) for market in range(markets)])
     # shape = markets x steps + 1 x firms_per_market
@@ -287,6 +362,6 @@ def model(params):
         avg_ranks.append(np.array(avg_rank))
 
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share,
-                     hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks]
+                     hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, mergers_per_period]
 
     return model_results
