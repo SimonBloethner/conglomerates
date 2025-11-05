@@ -468,12 +468,21 @@ def model(params):
             # Track conglomerates to delete after exit checks
             exit_cleanup_to_delete = set()
 
-            for firm in firms:
+            if step % 100 == 0:
+                print(f"DEBUG: Step {step} starting exit checks for {len([f for f in firms if len(f.conglomerate) > 1])} conglomerate members", flush=True)
+
+            for firm_idx, firm in enumerate(firms):
                 if len(firm.conglomerate) > 1:
                     if firm.entered < step - lookback:
-                        outside_profit = np.prod(firm.outside_profits) ** (1 / lookback)
+                        # Numerically stable geometric mean for float128
+                        # Mathematical equivalence: prod(x)^(1/n) = exp(mean(log(x)))
+                        # The ^(1/n) is incorporated in mean() since mean = sum/n
+                        outside_profit = np.exp(np.mean(np.log(np.maximum(firm.outside_profits, 1e-300))))
+
                         inside_profits = firm.states[step - lookback:step]
-                        inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
+                        returns_ratio = inside_profits[1:] / np.maximum(inside_profits[:-1], 1e-300)
+                        inside_profits = np.exp(np.mean(np.log(np.maximum(returns_ratio, 1e-300))))
+
                         if outside_profit > inside_profits:
                             exit_(firms, firm, conglomerates=conglomerates, to_delete=exit_cleanup_to_delete)
 
