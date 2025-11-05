@@ -10,6 +10,8 @@ import warnings
 
 import matplotlib as mpl
 
+# TODO: Can I recreate merger waves?
+
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
@@ -42,6 +44,9 @@ lookback = 50
 ramp = 10
 proportional = False
 shares = np.arange(0, 0.52, 0.02)
+shares = np.array([0.2])
+b0 = 0.00001
+b1 = 1.2
 
 normalize = mcolors.Normalize(vmin=shares.min(), vmax=shares.max())
 colormap = cm.viridis
@@ -55,6 +60,7 @@ mean_members_ = np.empty(shape=(shares.shape[0], steps))
 mean_conglomerates = np.empty(shape=(shares.shape[0], steps))
 mean_gini = np.empty(shape=(shares.shape[0], 5, steps + 1))
 mean_ests = np.full([shares.shape[0], steps, 3], np.nan)
+
 mean_persistence = [np.zeros((shares.shape[0], steps + 1)) for _ in range(3)]
 mean_persistence_quantiles = [np.zeros((shares.shape[0], len(persistence_quantiles))) for _ in range(3)]
 
@@ -68,7 +74,7 @@ for trial, share in tqdm(enumerate(shares)):
     mean_persistence_quantiles_ = [np.zeros((counterfactuals, len(persistence_quantiles))) for _ in range(3)]
     for experiment in range(counterfactuals):
         params_ = [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
-                   proportional, lookback]
+                   proportional, lookback,b0, b1]
         res = collaborative_growth.model(params=params_)
         mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks = res
         ranks_[:, :, :, experiment, trial] = ranks

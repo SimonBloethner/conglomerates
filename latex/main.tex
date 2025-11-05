@@ -151,21 +151,21 @@ Growth and Competition}
     \textit{Your expertise and suggestions would be invaluable!}
 \end{frame}
 
- \begin{frame}{The Power of Resource Pooling}
-  \begin{center}
-    \only<1>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_01_2assets_hold}}
-    \only<2>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_02_2assets_rebalanced}}
-    \only<3>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_03_2assets_second}}
-    \only<4>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_04_5assets}}
-    \only<5>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_05_10assets}}
-  \end{center}
-\end{frame}
+%  \begin{frame}{The Power of Resource Pooling}
+%   \begin{center}
+%     \only<1>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_01_2assets_hold}}
+%     \only<2>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_02_2assets_rebalanced}}
+%     \only<3>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_03_2assets_second}}
+%     \only<4>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_04_5assets}}
+%     \only<5>{\includegraphics[width=0.75\textwidth]{figures/mc_figures/narrative_05_10assets}}
+%   \end{center}
+% \end{frame}
 
 
 \begin{frame}{Multiplicative Growth}
   \begin{itemize}
     \onslide<1->{\item $g = \prod_{t=1}^T \delta_t$  instead of $g = \sum_{t=1}^T \delta_t$}
-    \onslide<2->{\item ``When tomorrow depends on today'' $\rightarrow s_{t+1} = s_t \delta_t $}
+    \onslide<2->{\item ``When tomorrow depends on today'' $\rightarrow s_{t+1} = s_t \delta_t $ $\rightarrow$ The process of dependence} 
     \onslide<3->{\item All economic dynamics that are denoted in \% are usually linked to multiplicative dynamics}
     \onslide<4->{\item Prevalence of heavy tailed distributions in many economic domains well explained by multiplicativity}
     \onslide<5->{\item Examples of multiplicative processes
@@ -555,7 +555,7 @@ Growth and Competition}
 
     \node[below=of split] (compRate) {Compute $\hat{g}_{i(t-l):t}$};
 
-    \node[below=of compRate] (checkRates)  {$g_{i(t-l):t} > \hat{g}_{i(t-l):t}$};
+    \node[below=of compRate] (checkRates)  {$\hat{g}_{i(t-l):t} > g_{i(t-l):t}$};
 
     \node[below=of checkRates] (exit)  {\textbf{Exit}};
 
@@ -660,7 +660,7 @@ Growth and Competition}
         \item Impact of conglomerate size on market share of firms within the conglomerate $\bar{\Omega}_{ct} = \beta_{0t} + \beta_{1t} |O_{ct}| + \beta_{2t} |O_{ct}|^2$
         \item $\beta_1 > 0$: Variance reduction
         \item $\beta_2 < 0$: Management cost
-        \item Increasing $\alpha$ decreases the effects as market shares tend to equalize
+        \item Increasing $\alpha$ decreases the effects as market shares tend to equalize $\rightarrow$ lower market concentration
       \end{itemize}
 
       
@@ -686,6 +686,8 @@ Growth and Competition}
         \item Any $\alpha > 0$ improves mobility drastically
         \item Increasing $\alpha$ shifts distribution to higher mobility
         \item Increasing $\alpha$ decreases the spread of distribution 
+        \item Decreases barriers to entry
+      
       \end{itemize}
     \end{column}
   \end{columns}
@@ -697,8 +699,8 @@ Growth and Competition}
   
   \begin{enumerate}
     \setlength\itemsep{0.8em}
-    \item Growth rate optimization is a novel view in standard models of industrial organisation
-    \item Growth optimization through resource sharing is a possible reason why conglomerates form
+    \item Growth rate optimization is a novel view in standard models of industrial organization
+    \item Growth rate optimization through resource sharing is a possible reason why conglomerates form
     \item Pooling of resources within the conglomerate allows for improved performance for all companies with it 
     \item Increasing firm cooperation through conglomerate formation improves static and dynamic measures of competitiveness
     \item Management costs play a crucial role in determining the size of a conglomerate
