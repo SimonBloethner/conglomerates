@@ -2,13 +2,12 @@ import numpy as np
 from scipy.stats import random_correlation
 
 class Firm:
-    def __init__(self, market, number, steps, lookback):
-        self.id = int(number)  # Ensure Python int, not numpy int64
-        self.home_market = market
-        self.states = np.ones(steps + 1, dtype=np.float128)  # High precision for wealth
-        self.outside_profits = np.ones(lookback, dtype=np.float128)  # High precision for profits
+    def __init__(self, firm_id, home_market):
+        self.id = int(firm_id)  # Ensure Python int, not numpy int64
+        self.home_market = home_market
         self.entered = None  # Timestamp when firm entered a conglomerate
         self.conglomerate_id = None  # ID of conglomerate this firm belongs to (None if solo)
+        # Note: states and outside_profits are now stored in centralized arrays
 
 
 def logistic_cost(x, k, x_0):
@@ -194,7 +193,12 @@ def model(params):
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
-    firms = [Firm(market=market, number=ids[market, firm], steps=steps, lookback=lookback) for market in range(markets)
+    # OPTIMIZATION: Centralized array storage for firm states and outside profits
+    # This eliminates millions of Python object accesses and improves cache locality
+    firm_states = np.ones((steps + 1, total_firms), dtype=np.float128)
+    firm_outside_profits = np.ones((lookback, total_firms), dtype=np.float128)
+
+    firms = [Firm(firm_id=ids[market, firm], home_market=market) for market in range(markets)
              for firm in range(firms_per_market)]
     all_time_conglomerates = []
     conglomerates = {}
@@ -264,8 +268,7 @@ def model(params):
                             if hist_len > 0:
                                 hist_steps = slice(hist_start, step)
                                 past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = np.array([firms[firm].states[hist_start:step]
-                                                       for firm in conglomerate], dtype=np.float128).T  # shape: (hist_len, num_firms)
+                                past_states = firm_states[hist_start:step, conglomerate].T  # shape: (hist_len, num_firms) - direct array access!
 
                                 # Vectorized gains calculation
                                 gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
@@ -300,8 +303,7 @@ def model(params):
                             if hist_len > 0:
                                 hist_steps = slice(hist_start, step)
                                 past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = np.array([firms[firm].states[hist_start:step]
-                                                       for firm in conglomerate], dtype=np.float128).T  # shape: (hist_len, num_firms)
+                                past_states = firm_states[hist_start:step, conglomerate].T  # shape: (hist_len, num_firms) - direct array access!
 
                                 # Vectorized gains calculation
                                 gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
@@ -383,7 +385,7 @@ def model(params):
         for conglomerate_idx, conglomerate_ in enumerate(conglomerates.keys()):
             conglomerate = conglomerates[conglomerate_]['firms']
             returns = realizations[step, conglomerate]
-            states = np.array([firms[firm].states[step] for firm in conglomerate], dtype=np.float128)
+            states = firm_states[step, conglomerate]  # Direct array access!
             gains = states * returns - states
             if proportional:
                 cost_factor = 1 - management_cost_function(len(conglomerate), cost_type, c0, c1, c2) / states.sum() if states.sum() > 0 else 0
@@ -396,10 +398,10 @@ def model(params):
                 conglomerate)) if share > 0 else gains  # Equal distribution of pool contents.
 
             for partner, firm in enumerate(conglomerate):
-                firms[firm].outside_profits[step % lookback] = realizations[step, firm]
-                firms[firm].states[step + 1] = firms[firm].states[step] + returns[partner]
-                if firms[firm].states[step + 1] < 0:
-                    firms[firm].states[step + 1] = 1
+                firm_outside_profits[step % lookback, firm] = realizations[step, firm]
+                firm_states[step + 1, firm] = firm_states[step, firm] + returns[partner]
+                if firm_states[step + 1, firm] < 0:
+                    firm_states[step + 1, firm] = 1
                     exit_(firms, firms[firm], conglomerates=conglomerates, to_delete=conglomerates_to_delete)
 
             conglomerates[conglomerate_]['pool'][step % lookback] = pool
@@ -410,8 +412,8 @@ def model(params):
                 del conglomerates[cong_id]
 
         for firm in solo:
-            firms[firm].outside_profits[step % lookback] = realizations[step, firm]
-            firms[firm].states[step + 1] = firms[firm].states[step] * realizations[step, firm]
+            firm_outside_profits[step % lookback, firm] = realizations[step, firm]
+            firm_states[step + 1, firm] = firm_states[step, firm] * realizations[step, firm]
 
         if step > lookback:
             # Track conglomerates to delete after exit checks
@@ -420,8 +422,8 @@ def model(params):
             for firm in firms:
                 if firm.conglomerate_id is not None:
                     if firm.entered is not None and firm.entered < step - lookback:
-                        outside_profit = np.prod(firm.outside_profits) ** (1 / lookback)
-                        inside_profits = firm.states[step - lookback:step]
+                        outside_profit = np.prod(firm_outside_profits[:, firm.id]) ** (1 / lookback)
+                        inside_profits = firm_states[step - lookback:step, firm.id]
                         inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
                         if outside_profit > inside_profits:
                             exit_(firms, firm, conglomerates=conglomerates, to_delete=exit_cleanup_to_delete)
@@ -435,7 +437,7 @@ def model(params):
     # Simulation timing available if needed for debugging
     
     postprocessing_start_time = time.time()
-    results = np.array([firm.states for firm in firms], dtype=np.float128).T
+    results = firm_states.T  # Direct array transpose - no need to reconstruct from firm objects!
     
     # Validate state values for numerical issues
     has_inf = np.isinf(results).any()
