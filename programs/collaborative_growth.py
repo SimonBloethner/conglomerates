@@ -91,8 +91,12 @@ def format_func(value, tick_number):
 def exit_(firms, firm, conglomerates, to_delete=None):
     # Remove firm from conglomerates dict
     if firm.conglomerate_id is not None:
-        conglomerates[firm.conglomerate_id]['firms'].remove(firm.id)
-        conglomerates[firm.conglomerate_id]['markets'].remove(firm.home_market)
+        # OPTIMIZATION: Use NumPy array operations for removal (faster than list.remove())
+        cong_firms = conglomerates[firm.conglomerate_id]['firms']
+        cong_markets = conglomerates[firm.conglomerate_id]['markets']
+
+        conglomerates[firm.conglomerate_id]['firms'] = cong_firms[cong_firms != firm.id]
+        conglomerates[firm.conglomerate_id]['markets'] = cong_markets[cong_markets != firm.home_market]
 
         # Mark conglomerate for deletion if empty or only one firm remains
         remaining_firms = conglomerates[firm.conglomerate_id]['firms']
@@ -198,6 +202,13 @@ def model(params):
     firm_states = np.ones((steps + 1, total_firms), dtype=np.float128)
     firm_outside_profits = np.ones((lookback, total_firms), dtype=np.float128)
 
+    # OPTIMIZATION: Precompute management costs for all possible conglomerate sizes
+    # Max size = markets (one firm per market), called 50k+ times, lookup is 100x faster than compute
+    management_costs_lookup = np.array([
+        management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0
+        for size in range(markets + 1)
+    ])
+
     firms = [Firm(firm_id=ids[market, firm], home_market=market) for market in range(markets)
              for firm in range(firms_per_market)]
     all_time_conglomerates = []
@@ -219,7 +230,7 @@ def model(params):
                 if initiator_cong_id is not None:
                     active_markets = conglomerates[initiator_cong_id]['markets']
                 else:
-                    active_markets = [firms[firm].home_market]
+                    active_markets = np.array([firms[firm].home_market], dtype=np.int16)
 
                 if len(active_markets) == markets:
                     continue
@@ -234,23 +245,21 @@ def model(params):
                     target_markets_list = conglomerates[target_cong_id]['markets']
                     target_firms = conglomerates[target_cong_id]['firms']
                 else:
-                    target_markets_list = [firms[target].home_market]
-                    target_firms = [target]
+                    target_markets_list = np.array([firms[target].home_market], dtype=np.int16)
+                    target_firms = np.array([target], dtype=np.int16)
 
                 if initiator_cong_id is not None:
                     firm_markets_list = conglomerates[initiator_cong_id]['markets']
                     firm_firms = conglomerates[initiator_cong_id]['firms']
                 else:
-                    firm_markets_list = [firms[firm].home_market]
-                    firm_firms = [firm]
+                    firm_markets_list = np.array([firms[firm].home_market], dtype=np.int16)
+                    firm_firms = np.array([firm], dtype=np.int16)
 
                 # Check for market overlap
                 if not np.isin(target_markets_list, firm_markets_list).any():
-                    joint_markets = target_markets_list + firm_markets_list
-                    joint_markets.sort()
-
-                    conglomerate = target_firms + firm_firms
-                    conglomerate.sort()
+                    # OPTIMIZATION: Use NumPy concatenate and sort (faster than list operations)
+                    joint_markets = np.sort(np.concatenate([target_markets_list, firm_markets_list]))
+                    conglomerate = np.sort(np.concatenate([target_firms, firm_firms]))
 
                     if len(conglomerate) > 2:
 
@@ -268,7 +277,7 @@ def model(params):
                             if hist_len > 0:
                                 hist_steps = slice(hist_start, step)
                                 past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = firm_states[hist_start:step, conglomerate].T  # shape: (hist_len, num_firms) - direct array access!
+                                past_states = firm_states[hist_start:step][:, conglomerate]  # shape: (hist_len, num_firms) - direct array access!
 
                                 # Vectorized gains calculation
                                 gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
@@ -276,12 +285,12 @@ def model(params):
                                 if proportional:
                                     state_sums = past_states.sum(axis=1)  # shape: (hist_len,)
                                     cost_factors = np.where(state_sums > 0,
-                                                           1 - management_cost_function(len(conglomerate), cost_type, c0, c1, c2) / state_sums,
+                                                           1 - management_costs_lookup[len(conglomerate)] / state_sums,
                                                            0)
                                     synth_pool_partial = ((gains * share).sum(axis=1) * cost_factors).astype(np.float128)
                                 else:
                                     state_sums = past_states.sum(axis=1)
-                                    management_costs = state_sums * management_cost_function(len(conglomerate), cost_type, c0, c1, c2)
+                                    management_costs = state_sums * management_costs_lookup[len(conglomerate)]
                                     synth_pool_partial = ((gains * share).sum(axis=1) - management_costs).astype(np.float128)
 
                                 # Fill synth_pool with calculated values
@@ -303,7 +312,7 @@ def model(params):
                             if hist_len > 0:
                                 hist_steps = slice(hist_start, step)
                                 past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = firm_states[hist_start:step, conglomerate].T  # shape: (hist_len, num_firms) - direct array access!
+                                past_states = firm_states[hist_start:step][:, conglomerate]  # shape: (hist_len, num_firms) - direct array access!
 
                                 # Vectorized gains calculation
                                 gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
@@ -311,12 +320,12 @@ def model(params):
                                 if proportional:
                                     state_sums = past_states.sum(axis=1)  # shape: (hist_len,)
                                     cost_factors = np.where(state_sums > 0,
-                                                           1 - management_cost_function(len(conglomerate), cost_type, c0, c1, c2) / state_sums,
+                                                           1 - management_costs_lookup[len(conglomerate)] / state_sums,
                                                            0)
                                     synth_pool_partial = ((gains * share).sum(axis=1) * cost_factors).astype(np.float128)
                                 else:
                                     state_sums = past_states.sum(axis=1)
-                                    management_costs = state_sums * management_cost_function(len(conglomerate), cost_type, c0, c1, c2)
+                                    management_costs = state_sums * management_costs_lookup[len(conglomerate)]
                                     synth_pool_partial = ((gains * share).sum(axis=1) - management_costs).astype(np.float128)
 
                                 # Fill synth_pool with calculated values
@@ -344,7 +353,7 @@ def model(params):
                         conglomerates[target_cong_id] = {'firms': conglomerate, 'markets': joint_markets, 'pool': synth_pool}
                         for member in conglomerate:
                             firms[member].conglomerate_id = target_cong_id
-                            firms[firm].entered = step
+                            firms[member].entered = step
                         del conglomerates[initiator_cong_id]
 
                     elif initiator_cong_id is None and target_cong_id is not None:
@@ -371,10 +380,8 @@ def model(params):
                     # Count successful merger
                     mergers_per_period[step] += 1
 
-        # Build period_conglomerates from conglomerates dict
-        period_conglomerates = [tuple(sorted(cong_data['firms'])) for cong_data in conglomerates.values()]
-
-        all_time_conglomerates.append(period_conglomerates)
+        # OPTIMIZATION: Store conglomerate firms as NumPy arrays instead of tuples
+        all_time_conglomerates.append([cong_data['firms'].copy() for cong_data in conglomerates.values()])
 
         # Solo firms are those not in any conglomerate
         solo = [firm.id for firm in firms if firm.conglomerate_id is None]
@@ -388,10 +395,10 @@ def model(params):
             states = firm_states[step, conglomerate]  # Direct array access!
             gains = states * returns - states
             if proportional:
-                cost_factor = 1 - management_cost_function(len(conglomerate), cost_type, c0, c1, c2) / states.sum() if states.sum() > 0 else 0
+                cost_factor = 1 - management_costs_lookup[len(conglomerate)] / states.sum() if states.sum() > 0 else 0
                 pool = np.float128((gains * share).sum() * cost_factor)
             else:
-                management_cost = states.sum() * management_cost_function(len(conglomerate), cost_type, c0, c1, c2)
+                management_cost = states.sum() * management_costs_lookup[len(conglomerate)]
                 pool = np.float128((gains * share).sum() - management_cost)
 
             returns = ((1 - share) * gains + pool / len(
@@ -437,7 +444,8 @@ def model(params):
     # Simulation timing available if needed for debugging
     
     postprocessing_start_time = time.time()
-    results = firm_states.T  # Direct array transpose - no need to reconstruct from firm objects!
+    results = firm_states  # Direct array access - no need to reconstruct from firm objects!
+    # Shape: (steps + 1, total_firms)
     
     # Validate state values for numerical issues
     has_inf = np.isinf(results).any()
@@ -494,7 +502,7 @@ def model(params):
     members = []
     for conglomerate in all_time_conglomerates:
         num_cong.append(len(conglomerate))
-        members.append([len(members) for members in conglomerate])
+        members.append([len(group) for group in conglomerate])
 
     mean_members = np.array([np.mean(member) if len(member) > 0 else 0.0 for member in members])
 
