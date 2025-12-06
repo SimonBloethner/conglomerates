@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.stats import random_correlation
 
+
 class Firm:
     def __init__(self, firm_id, home_market):
         self.id = int(firm_id)  # Ensure Python int, not numpy int64
         self.home_market = home_market
         self.entered = None  # Timestamp when firm entered a conglomerate
-        self.conglomerate_id = None  # ID of conglomerate this firm belongs to (None if solo)
-        # Note: states and outside_profits are now stored in centralized arrays
+        self.conglomerate_id = None  # ID of conglomerate this firm belongs to (None if solo)  # Note: states and outside_profits are now stored in centralized arrays
 
 
 def logistic_cost(x, k, x_0):
@@ -21,45 +21,43 @@ def power_law_cost(size, b0, b1):
 
 def get_cost_function_defaults(cost_type):
     """Get default parameters for a specific cost function type"""
-    defaults = {
-        'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
-        'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001}, 
+    defaults = {'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
+        'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
         'quadratic': {'c0': 0.0001, 'c1': 0.000001, 'c2': 0.00000097},
-        'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}
-    }
+        'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}}
     return defaults.get(cost_type, defaults['power_law'])  # Default to power_law if unknown
+
 
 def management_cost_function(size, cost_type, c0=None, c1=None, c2=None):
     """
     Unified management cost function supporting multiple functional forms
-    
+
     Parameters:
     size: conglomerate size (number of firms)
     cost_type: 'linear', 'quadratic', 'exponential', 'power_law'
     c0: base cost parameter (constant term) - if None, uses cost-function-specific default
     c1: linear scaling parameter - if None, uses cost-function-specific default
     c2: quadratic scaling parameter - if None, uses cost-function-specific default
-    
+
     Default parameters are calibrated so all functions converge to ~0.0017 at size=40
     """
-    
+
     # Cost-function-specific default parameters (calibrated for convergence at size=40)
-    defaults = {
-        'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
-        'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001}, 
+    defaults = {'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
+        'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
         'quadratic': {'c0': 0.0001, 'c1': 0.000001, 'c2': 0.00000097},
-        'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}
-    }
-    
+        'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}}
+
     if cost_type not in defaults:
-        raise ValueError(f"Unknown cost_type: {cost_type}. Supported: 'linear', 'quadratic', 'exponential', 'power_law'")
-    
+        raise ValueError(
+            f"Unknown cost_type: {cost_type}. Supported: 'linear', 'quadratic', 'exponential', 'power_law'")
+
     # Use provided parameters or defaults
     func_defaults = defaults[cost_type]
     c0 = c0 if c0 is not None else func_defaults['c0']
     c1 = c1 if c1 is not None else func_defaults['c1']
     c2 = c2 if c2 is not None else func_defaults['c2']
-    
+
     if cost_type == 'linear':
         return c0 + c1 * size
     elif cost_type == 'quadratic':
@@ -144,11 +142,10 @@ def model(params):
 
     # Extract parameters - now including cost function parameters
     # Removed debug prints for cleaner output
-    
+
     if len(params) == 14:
         markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, cost_type, c0, c1, c2 = params
-        use_custom_cost = True
-        # Parameter extraction complete
+        use_custom_cost = True  # Parameter extraction complete
     elif len(params) == 13:
         # Backward compatibility with 13-parameter format (no c2)
         markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, cost_type, c0, c1 = params
@@ -195,7 +192,7 @@ def model(params):
 
     # Pre-generate random draws for entire simulation to avoid repeated random generation
     merger_draws = np.random.uniform(0, 1, (steps, total_firms))
-    
+
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
 
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
@@ -207,10 +204,8 @@ def model(params):
 
     # OPTIMIZATION: Precompute management costs for all possible conglomerate sizes
     # Max size = markets (one firm per market), called 50k+ times, lookup is 100x faster than compute
-    management_costs_lookup = np.array([
-        management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0
-        for size in range(markets + 1)
-    ])
+    management_costs_lookup = np.array(
+        [management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0 for size in range(markets + 1)])
 
     # OPTIMIZATION: Replace Firm objects with plain NumPy arrays (eliminates 50M+ attribute lookups)
     # Each firm_id corresponds to: market * firms_per_market + firm_num
@@ -268,76 +263,51 @@ def model(params):
                     conglomerate = np.sort(np.concatenate([target_firms, firm_firms]))
 
                     if len(conglomerate) > 2:
+                        # Calculate synthetic pool once for all merger cases
+                        hist_start = max(0, step - lookback)
+                        hist_len = step - hist_start
+
+                        # Initialize synth_pool (stays zeros if no history)
+                        synth_pool = np.zeros(lookback, dtype=np.float128)
+
+                        if hist_len > 0:
+                            hist_steps = slice(hist_start, step)
+                            past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
+                            past_states = firm_states[hist_start:step][:, conglomerate]  # shape: (hist_len, num_firms)
+
+                            # Vectorized gains calculation
+                            gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
+
+                            if proportional:
+                                state_sums = past_states.sum(axis=1)  # shape: (hist_len,)
+                                cost_factors = np.where(state_sums > 0,
+                                                        1 - management_costs_lookup[len(conglomerate)] / state_sums,
+                                                        0)
+                                synth_pool_partial = ((gains * share).sum(axis=1) * cost_factors).astype(np.float128)
+                            else:
+                                state_sums = past_states.sum(axis=1)
+                                management_costs = state_sums * management_costs_lookup[len(conglomerate)]
+                                synth_pool_partial = ((gains * share).sum(axis=1) - management_costs).astype(np.float128)
+
+                            # Fill synth_pool with calculated values
+                            synth_pool[-hist_len:] = synth_pool_partial
+
+                        # Compare synthetic pool to actual pool(s) - different logic for each case
+                        synth_pool_total = synth_pool.sum()
 
                         if initiator_cong_id == -1 or target_cong_id == -1:
+                            # One conglomerate + one solo: beat the one existing pool
                             conglomerate_id = initiator_cong_id if target_cong_id == -1 else target_cong_id
-                            true_pool = conglomerates[conglomerate_id]['pool']
+                            true_pool_total = conglomerates[conglomerate_id]['pool'].sum()
 
-                            # VECTORIZED: Get all historical returns and states at once
-                            hist_start = max(0, step - lookback)
-                            hist_len = step - hist_start  # Actual number of historical periods available
-
-                            # Initialize synth_pool (stays zeros if no history)
-                            synth_pool = np.zeros(lookback, dtype=np.float128)
-
-                            if hist_len > 0:
-                                hist_steps = slice(hist_start, step)
-                                past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = firm_states[hist_start:step][:, conglomerate]  # shape: (hist_len, num_firms) - direct array access!
-
-                                # Vectorized gains calculation
-                                gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
-
-                                if proportional:
-                                    state_sums = past_states.sum(axis=1)  # shape: (hist_len,)
-                                    cost_factors = np.where(state_sums > 0,
-                                                           1 - management_costs_lookup[len(conglomerate)] / state_sums,
-                                                           0)
-                                    synth_pool_partial = ((gains * share).sum(axis=1) * cost_factors).astype(np.float128)
-                                else:
-                                    state_sums = past_states.sum(axis=1)
-                                    management_costs = state_sums * management_costs_lookup[len(conglomerate)]
-                                    synth_pool_partial = ((gains * share).sum(axis=1) - management_costs).astype(np.float128)
-
-                                # Fill synth_pool with calculated values
-                                synth_pool[-hist_len:] = synth_pool_partial
-
-                            if synth_pool.sum() < true_pool.sum():
+                            if synth_pool_total < true_pool_total:
                                 continue
                         else:
-                            true_pool0 = conglomerates[initiator_cong_id]['pool']
-                            true_pool1 = conglomerates[target_cong_id]['pool']
+                            # Two conglomerates: beat BOTH existing pools
+                            true_pool0_total = conglomerates[initiator_cong_id]['pool'].sum()
+                            true_pool1_total = conglomerates[target_cong_id]['pool'].sum()
 
-                            # VECTORIZED: Same optimization for two-conglomerate case
-                            hist_start = max(0, step - lookback)
-                            hist_len = step - hist_start  # Actual number of historical periods available
-
-                            # Initialize synth_pool (stays zeros if no history)
-                            synth_pool = np.zeros(lookback, dtype=np.float128)
-
-                            if hist_len > 0:
-                                hist_steps = slice(hist_start, step)
-                                past_returns = realizations[hist_steps][:, conglomerate]  # shape: (hist_len, num_firms)
-                                past_states = firm_states[hist_start:step][:, conglomerate]  # shape: (hist_len, num_firms) - direct array access!
-
-                                # Vectorized gains calculation
-                                gains = past_states * past_returns - past_states  # shape: (hist_len, num_firms)
-
-                                if proportional:
-                                    state_sums = past_states.sum(axis=1)  # shape: (hist_len,)
-                                    cost_factors = np.where(state_sums > 0,
-                                                           1 - management_costs_lookup[len(conglomerate)] / state_sums,
-                                                           0)
-                                    synth_pool_partial = ((gains * share).sum(axis=1) * cost_factors).astype(np.float128)
-                                else:
-                                    state_sums = past_states.sum(axis=1)
-                                    management_costs = state_sums * management_costs_lookup[len(conglomerate)]
-                                    synth_pool_partial = ((gains * share).sum(axis=1) - management_costs).astype(np.float128)
-
-                                # Fill synth_pool with calculated values
-                                synth_pool[-hist_len:] = synth_pool_partial
-
-                            if synth_pool.sum() < true_pool0.sum() or synth_pool.sum() < true_pool1.sum():
+                            if synth_pool_total < true_pool0_total or synth_pool_total < true_pool1_total:
                                 continue
 
                     if target_cong_id == -1 and initiator_cong_id == -1:
@@ -356,7 +326,8 @@ def model(params):
                     # No need to update firm.markets and firm.conglomerate
 
                     if initiator_cong_id != -1 and target_cong_id != -1:
-                        conglomerates[target_cong_id] = {'firms': conglomerate, 'markets': joint_markets, 'pool': synth_pool}
+                        conglomerates[target_cong_id] = {'firms': conglomerate, 'markets': joint_markets,
+                                                         'pool': synth_pool}
                         firm_conglom[conglomerate] = target_cong_id
                         firm_entered[conglomerate] = step
                         del conglomerates[initiator_cong_id]
@@ -378,8 +349,7 @@ def model(params):
                         firm_conglom[target] = new_id
                         firm_entered[firm] = step
                         firm_entered[target] = step
-                        conglomerates[new_id] = {'firms': conglomerate,
-                                                 'markets': joint_markets,
+                        conglomerates[new_id] = {'firms': conglomerate, 'markets': joint_markets,
                                                  'pool': np.zeros(lookback, dtype=np.float128)}
 
                     # Count successful merger
@@ -414,7 +384,8 @@ def model(params):
                 firm_states[step + 1, firm] = firm_states[step, firm] + returns[partner]
                 if firm_states[step + 1, firm] < 0:
                     firm_states[step + 1, firm] = 1
-                    exit_(firm, firm_conglom, firm_entered, firm_home_market, conglomerates, to_delete=conglomerates_to_delete)
+                    exit_(firm, firm_conglom, firm_entered, firm_home_market, conglomerates,
+                          to_delete=conglomerates_to_delete)
 
             conglomerates[conglomerate_]['pool'][step % lookback] = pool
 
@@ -441,7 +412,8 @@ def model(params):
                 inside_profits = firm_states[step - lookback:step, firm_id]
                 inside_profits = np.prod(inside_profits[1:] / inside_profits[:-1]) ** (1 / lookback)
                 if outside_profit > inside_profits:
-                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, conglomerates, to_delete=exit_cleanup_to_delete)
+                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, conglomerates,
+                          to_delete=exit_cleanup_to_delete)
 
             # Clean up conglomerates marked for deletion
             for cong_id in exit_cleanup_to_delete:
@@ -450,16 +422,16 @@ def model(params):
 
     simulation_time = time.time() - model_start_time
     # Simulation timing available if needed for debugging
-    
+
     postprocessing_start_time = time.time()
     results = firm_states  # Direct array access - no need to reconstruct from firm objects!
     # Shape: (steps + 1, total_firms)
-    
+
     # Validate state values for numerical issues
     has_inf = np.isinf(results).any()
     has_nan = np.isnan(results).any()
     has_negative = (results < 0).any()
-    
+
     # Debug: Check if we have actual infinities vs display artifacts
     max_value_raw = results.max()  # Keep as float128
 
@@ -474,32 +446,32 @@ def model(params):
         error_msg = f"VALIDATION ERROR: Illegal values - inf: {has_inf}, nan: {has_nan}, negative: {has_negative}"
         pass  # Validation error - could log if needed
         raise ValueError(error_msg)
-    
+
     # Concise overflow summary
     largest = np.max(results)
     smallest = np.min(results[results > 0]) if np.any(results > 0) else 0
-    
+
     # State validation passed
 
     # Convert market_share to float32 in chunks to avoid memory spikes
     # Computing market share efficiently
-    
+
     # Pre-allocate the final array to avoid memory spikes during concatenation
     market_share = np.empty((markets, steps + 1, firms_per_market), dtype=np.float32)
-    
+
     for market in range(markets):
         # Process one market at a time to reduce memory pressure
         firm_indices = np.arange(market * firms_per_market, (market + 1) * firms_per_market)
         market_results = results[:, firm_indices]
         market_totals = market_results.sum(axis=1).reshape(steps + 1, 1)
         market_share[market, :, :] = (market_results / market_totals).astype(np.float32)
-        
+
         # Clear temporary variables for this market
         del market_results, market_totals
-    
+
     # Market share calculation complete
     # shape = markets x steps + 1 x firms_per_market
-    
+
     # Delete results array immediately to free 1.5GB of memory
     del results
     import gc
@@ -518,7 +490,7 @@ def model(params):
         [np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) if len(member) > 0 else np.zeros(5) for member in members])
 
     # Debug array saving removed for cleaner execution
-    
+
     # Computing summary statistics (mean_share removed - not used in analysis)
     # Computing quantiles (includes max at q=1)
     quantiles_shares = np.quantile(market_share, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=2)
@@ -529,47 +501,46 @@ def model(params):
     try:
         import time
         gini_start_time = time.time()
-        
+
         # Check for problematic values (used by market-by-market processing)
         has_problematic_values = np.any(np.isnan(market_share)) or np.any(np.isinf(market_share))
-        
+
         # MEMORY OPTIMIZATION: Replace batch processing with market-by-market processing
         # This produces mathematically identical results but uses much less memory
-        
+
         # Pre-allocate final result array (same shape as before)
         gini_coefficient = np.zeros((markets, steps + 1), dtype=np.float32)
-        
+
         # Process each market separately to reduce memory usage
         for market_idx in range(markets):
             # Extract one market's data: (steps+1) × firms_per_market
             market_data = market_share[market_idx, :, :]
-            
+
             # Apply identical cleaning and sorting (same as before)
             if has_problematic_values:
                 market_data_clean = np.nan_to_num(market_data, nan=0.0, posinf=1.0, neginf=0.0)
                 sorted_data = np.sort(market_data_clean, axis=1)
             else:
                 sorted_data = np.sort(market_data, axis=1)
-            
+
             # Identical Gini calculation for this market
             cum_data = np.cumsum(sorted_data, axis=1)
             sums = np.sum(sorted_data, axis=1, keepdims=True)
-            
+
             # Identical Lorenz curve calculation
             with np.errstate(divide='ignore', invalid='ignore'):
                 lorenz = cum_data / sums
                 lorenz = np.nan_to_num(lorenz)
-            
+
             # Identical area under curve and Gini formula
             area = np.trapz(y=lorenz, axis=1, dx=1 / firms_per_market)
             gini_coefficient[market_idx, :] = 1 - 2 * area
-            
+
             # Immediate cleanup for this market
             del market_data, sorted_data, cum_data, sums, lorenz, area
-        
-        total_gini_time = time.time() - gini_start_time
-        # Gini calculation complete (memory-optimized)
-        
+
+        total_gini_time = time.time() - gini_start_time  # Gini calculation complete (memory-optimized)
+
     except Exception as e:
         pass  # Critical error in Gini calculation
         import traceback
@@ -580,39 +551,38 @@ def model(params):
     try:
         import time
         from scipy.stats import rankdata
-        
+
         ranks_start_time = time.time()
-        
+
         # Pre-allocate ranks array with uint16 (ranks are integers 1 to firms_per_market)
         ranks = np.zeros((steps, markets, firms_per_market), dtype=np.uint16)
-        
+
         # Process each market separately (mathematically identical to batch processing)
         for market_idx in range(markets):
             # Extract one market's data: steps × firms_per_market
             market_data = market_share[market_idx, :steps, :]  # Exclude final timestep
-            
+
             # Process timesteps for this market
             for step_idx in range(steps):
                 step_data = market_data[step_idx, :]
-                
+
                 # Check for problematic values (same logic as before)
                 step_has_nan = np.any(np.isnan(step_data))
                 step_has_inf = np.any(np.isinf(step_data))
-                
+
                 if step_has_nan or step_has_inf:
                     step_data_clean = np.nan_to_num(step_data, nan=0.0, posinf=1.0, neginf=0.0)
                     step_ranks = rankdata(step_data_clean, method='min')
                 else:
                     step_ranks = rankdata(step_data, method='min')
-                
+
                 ranks[step_idx, market_idx, :] = step_ranks
-            
+
             # Clean up market data immediately
             del market_data
-        
-        ranks_time = time.time() - ranks_start_time
-        # Ranks calculation complete (market-by-market for memory efficiency)
-        
+
+        ranks_time = time.time() - ranks_start_time  # Ranks calculation complete (market-by-market for memory efficiency)
+
     except Exception as e:
         pass  # Critical error in ranks calculation
         import traceback
@@ -626,7 +596,7 @@ def model(params):
         conglomerate_start_time = time.time()
         avg_shares = []
         avg_ranks = []
-        
+
         # With memory optimizations, process all periods in single loop
         for period in range(steps):
             avg_share = []
@@ -640,9 +610,8 @@ def model(params):
 
             avg_shares.append(np.array(avg_share))
             avg_ranks.append(np.array(avg_rank))
-        
-        conglomerate_time = time.time() - conglomerate_start_time
-        # Conglomerate averages complete
+
+        conglomerate_time = time.time() - conglomerate_start_time  # Conglomerate averages complete
     except Exception as e:
         pass  # Critical error in conglomerate averages
         import traceback
@@ -650,33 +619,23 @@ def model(params):
         raise
 
     # Assembling final model results
-    
-    # Preparing hyperparameter storage
-    
-    # Add hyperparameter metadata for result organization
-    hyperparameters = {
-        'markets': markets,
-        'firms_per_market': firms_per_market,
-        'steps': steps,
-        'merge_thresh': merge_thresh,
-        'comparison': comparison,
-        'break_thresh': break_thresh,
-        'proportional': proportional,
-        'lookback': lookback,
-        'cost_type': cost_type,
-        'c0': c0,
-        'c1': c1,
-        'c2': c2
-    }
 
+    # Preparing hyperparameter storage
+
+    # Add hyperparameter metadata for result organization
+    hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
+        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
+        'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2}
 
     # Hyperparameters stored successfully
-    
+
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, market_share,
                      gini_coefficient, ranks, avg_ranks, mergers_per_period, hyperparameters]
     postprocessing_time = time.time() - postprocessing_start_time
     total_time = time.time() - model_start_time
     print(f"Post-processing: {postprocessing_time:.1f}s", flush=True)
-    print(f"Total runtime: {total_time:.1f}s (simulation: {simulation_time:.1f}s, post-processing: {postprocessing_time:.1f}s)", flush=True)
+    print(
+        f"Total runtime: {total_time:.1f}s (simulation: {simulation_time:.1f}s, post-processing: {postprocessing_time:.1f}s)",
+        flush=True)
 
     return model_results
