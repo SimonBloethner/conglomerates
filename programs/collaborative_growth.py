@@ -2,6 +2,8 @@ import numpy as np
 from scipy.stats import random_correlation
 from scipy.special import logsumexp, expm1
 
+from programs.counterfactuals import firms_per_market
+
 
 class Firm:
     def __init__(self, firm_id, home_market):
@@ -85,6 +87,32 @@ def cost(size, progression, degree=2):
 
 def format_func(value, tick_number):
     return f'{value:.2f}'
+
+
+def get_states_from_buffer(buffer, start_step, end_step, firms):
+    """
+    Extract states from circular buffer for given timesteps and firms.
+
+    Parameters:
+    - buffer: circular buffer (lookback+1, total_firms)
+    - start_step: first timestep (inclusive)
+    - end_step: last timestep (exclusive)
+    - firms: int (single firm) or array (multiple firms)
+
+    Returns:
+    - 1D array (n_steps,) if firms is scalar
+    - 2D array (n_steps, n_firms) if firms is array
+    """
+    lookback_plus_1 = buffer.shape[0]
+    timesteps = np.arange(start_step, end_step)
+    buffer_indices = timesteps % lookback_plus_1
+
+    # Scalar firm: direct indexing
+    if np.isscalar(firms):
+        return buffer[buffer_indices, firms]
+
+    # Array of firms: need broadcasting
+    return buffer[buffer_indices[:, None], firms]
 
 
 def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, conglomerates, to_delete=None):
@@ -183,20 +211,13 @@ def model(params):
     # market_corr = market_corr + market_corr.T - np.diag(np.ones(markets))
     market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr
 
-    realizations = np.random.multivariate_normal(growth_vars[:, 0], market_cov, size=(steps, firms_per_market))
-
-    realizations = realizations.transpose(0, 2, 1).reshape(steps, total_firms) + 1
-
-    log_realizations = np.log(realizations).astype(np.float64)
-
-    # Pre-generate random draws for entire simulation to avoid repeated random generation
-    merger_draws = np.random.uniform(0, 1, (steps, total_firms))
-
+    # MEMORY OPTIMIZATION: Store only what's needed for lookback windows (not full history)
     markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
-
     ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
 
-    firm_log_states = np.zeros((steps + 1, total_firms), dtype=np.float64)
+    # Circular buffers: only store lookback+1 timesteps instead of full history
+    firm_log_states_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
+    firm_log_returns_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
     firm_outside_log_profits = np.zeros((lookback, total_firms), dtype=np.float64)
 
     management_costs_lookup = np.array(
@@ -209,13 +230,48 @@ def model(params):
     conglomerate_snapshots = np.full((steps, total_firms), -1, dtype=np.int32)
     conglomerates = {}
 
+    # Pre-allocate output arrays (computed during simulation, not post-processing)
+    market_share = np.zeros((markets, steps, firms_per_market), dtype=np.float32)
+    gini_coefficient = np.zeros((markets, steps), dtype=np.float32)
+    ranks = np.zeros((steps, markets, firms_per_market), dtype=np.uint16)
+
+    # Pre-allocate quantiles array (computed on-the-fly)
+    quantiles_shares = np.zeros((7, markets, steps), dtype=np.float32)  # 7 quantiles
+
     # Track merger frequency per period
     mergers_per_period = np.zeros(steps)
+
+    # Pre-allocate lists for conglomerate metrics (computed on-the-fly)
+    avg_shares = []
+    avg_ranks = []
+    num_cong = []
+    members = []
+    mean_members = np.zeros(steps, dtype=np.float32)
+    quantiles_members = np.zeros((steps, 5), dtype=np.float32)  # 5 quantiles
+
+    # Helper arrays for fast conglomerate indexing
+    firm_to_market = markets_structure[:, 0]
+    firm_to_local_idx = markets_structure[:, 1]
 
     effective_merge_thresh = 0 if share == 0 else merge_thresh
 
     for step in range(steps):
-        draws = np.where(merger_draws[step] < effective_merge_thresh)[0]
+        # MEMORY OPTIMIZATION: Generate realizations for this step only (not all steps at once)
+        realizations_step = np.random.multivariate_normal(
+            growth_vars[:, 0], market_cov, size=firms_per_market
+        )
+        log_realizations_step = np.log(realizations_step.T.flatten() + 1).astype(np.float64)
+
+        # Generate merger draws for this step
+        merger_draws_step = np.random.uniform(0, 1, total_firms)
+        draws = np.where(merger_draws_step < effective_merge_thresh)[0]
+
+        # Calculate circular buffer indices for current and next timestep
+        curr_idx = step % (lookback + 1)
+        next_idx = (step + 1) % (lookback + 1)
+
+        # Store this step's log returns in circular buffer
+        firm_log_returns_buffer[curr_idx] = log_realizations_step
 
         if draws.shape[0] > 0:
             for firm_idx, firm in enumerate(draws):
@@ -263,9 +319,13 @@ def model(params):
                         synth_pool_over_S_time = np.zeros(lookback, dtype=np.float64)
 
                         if hist_len > 0:
-                            hist_steps = slice(hist_start, step)
-                            past_log_states = firm_log_states[hist_start:step][:, conglomerate]  # (hist_len, num_firms)
-                            past_log_returns = log_realizations[hist_steps][:, conglomerate]  # (hist_len, num_firms)
+                            # CIRCULAR BUFFER: Extract historical states and returns
+                            past_log_states = get_states_from_buffer(
+                                firm_log_states_buffer, hist_start, step, conglomerate
+                            )
+                            past_log_returns = get_states_from_buffer(
+                                firm_log_returns_buffer, hist_start, step, conglomerate
+                            )
 
                             # Compute pool for each historical period using log-space
                             for h_idx in range(hist_len):
@@ -360,8 +420,10 @@ def model(params):
         # LOG-SPACE: Process conglomerate firms
         for conglomerate_idx, conglomerate_ in enumerate(conglomerates.keys()):
             conglomerate = conglomerates[conglomerate_]['firms']
-            log_returns = log_realizations[step, conglomerate]
-            log_states = firm_log_states[step, conglomerate]
+
+            # CIRCULAR BUFFER: Get current states and returns
+            log_returns = log_realizations_step[conglomerate]
+            log_states = firm_log_states_buffer[curr_idx, conglomerate]
 
             # Compute log_S and weights
             log_S = logsumexp(log_states)
@@ -390,17 +452,17 @@ def model(params):
 
             # Update log states
             for idx_local, firm in enumerate(conglomerate):
-                log_old = firm_log_states[step, firm]
+                log_old = firm_log_states_buffer[curr_idx, firm]
                 d = delta_over_state[idx_local]
                 if not np.isfinite(d) or d <= -1.0:
-                    firm_log_states[step + 1, firm] = 0.0  # Reset to log(1)
+                    firm_log_states_buffer[next_idx, firm] = 0.0  # Reset to log(1)
                     exit_(firm, firm_conglom, firm_entered, firm_home_market, conglomerates,
                           to_delete=conglomerates_to_delete)
                 else:
-                    firm_log_states[step + 1, firm] = log_old + np.log1p(d)
+                    firm_log_states_buffer[next_idx, firm] = log_old + np.log1p(d)
 
                 # Store outside log-profits
-                firm_outside_log_profits[step % lookback, firm] = log_realizations[step, firm]
+                firm_outside_log_profits[step % lookback, firm] = log_realizations_step[firm]
 
             # Store pool
             conglomerates[conglomerate_]['pool'][step % lookback] = pool_over_S
@@ -411,8 +473,8 @@ def model(params):
                 del conglomerates[cong_id]
 
         # OPTIMIZATION: Vectorized solo firm updates (eliminates loop over potentially 1000s of firms)
-        firm_outside_log_profits[step % lookback, solo] = log_realizations[step, solo]
-        firm_log_states[step + 1, solo] = firm_log_states[step, solo] + log_realizations[step, solo]
+        firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
+        firm_log_states_buffer[next_idx, solo] = firm_log_states_buffer[curr_idx, solo] + log_realizations_step[solo]
 
         # LOG-SPACE: Exit checks using geometric means
         if step > lookback:
@@ -427,8 +489,11 @@ def model(params):
                 # Geometric mean in log space: exp(mean(log_returns))
                 log_outside_profit = np.mean(firm_outside_log_profits[:, firm_id])
 
-                # Inside geometric mean: mean of log-returns
-                log_inside_returns = np.diff(firm_log_states[step - lookback:step + 1, firm_id])
+                # CIRCULAR BUFFER: Get recent states to compute inside returns
+                recent_states = get_states_from_buffer(
+                    firm_log_states_buffer, step - lookback, step + 1, firm_id
+                )
+                log_inside_returns = np.diff(recent_states)
                 log_inside_profit = np.mean(log_inside_returns)
 
                 if log_outside_profit > log_inside_profit:
@@ -440,106 +505,62 @@ def model(params):
                 if cong_id in conglomerates:
                     del conglomerates[cong_id]
 
-    simulation_time = time.time() - model_start_time
+        # Reshape next_idx states for market-wise calculations
+        current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
 
-    postprocessing_start_time = time.time()
+        # Market share calculation
+        log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
+        log_market_share = current_log_states - log_market_totals
+        market_share[:, step, :] = np.exp(log_market_share).astype(np.float32)
 
-    log_states_reshaped = firm_log_states.reshape(steps + 1, markets, firms_per_market)
+        # VECTORIZED: Ranks and Gini for ALL markets at this timestep (not per-market loop)
+        shares_all_markets = market_share[:, step, :]  # Shape: (markets, firms_per_market)
 
-    # Vectorized logsumexp across all markets at once
-    log_market_totals = logsumexp(log_states_reshaped, axis=2, keepdims=True)
-    log_market_share = log_states_reshaped - log_market_totals
+        # Sort indices for all markets at once
+        sorted_idx = np.argsort(shares_all_markets, axis=1).astype(np.uint8 if firms_per_market <= 256 else np.uint16)
 
-    # Convert to level space and transpose to (markets, steps+1, firms_per_market)
-    market_share = np.exp(log_market_share).astype(np.float32).transpose(1, 0, 2)
+        # Get sorted shares using fancy indexing
+        sorted_shares = np.take_along_axis(shares_all_markets, sorted_idx, axis=1)
 
-    # OPTIMIZATION: Free large arrays immediately (saves ~800 MB)
-    del firm_log_states, log_states_reshaped, log_market_totals, log_market_share
-    import gc
-    gc.collect()
-
-    firm_to_market = markets_structure[:, 0]  # Which market each firm belongs to
-    firm_to_local_idx = markets_structure[:, 1]  # Local index within market
-
-    num_cong = []
-    members = []
-
-    for snapshot in conglomerate_snapshots:
-        # Get all firms in conglomerates (exclude solo firms where snapshot == -1)
-        in_cong = snapshot != -1
-        if in_cong.any():
-            # Get unique conglomerate IDs and their counts
-            unique_congs, counts = np.unique(snapshot[in_cong], return_counts=True)
-            num_cong.append(len(unique_congs))
-            members.append(counts)  # Already a numpy array!
-        else:
-            num_cong.append(0)
-            members.append(np.array([]))
-
-    mean_members = np.array([np.mean(member) if len(member) > 0 else 0.0 for member in members])
-
-    quantiles_members = np.array(
-        [np.quantile(member, q=[0.1, 0.25, 0.5, 0.75, 0.9]) if len(member) > 0 else np.zeros(5) for member in members])
-
-    # Debug array saving removed for cleaner execution
-
-    # Computing summary statistics (mean_share removed - not used in analysis)
-    # Computing quantiles (includes max at q=1)
-    quantiles_shares = np.quantile(market_share, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=2)
-
-    # Computing Gini coefficient and ranks - VECTORIZED with shared sorting
-    try:
-        import time
-        postproc_start_time = time.time()
-
-        # Use uint8 for indices since firms_per_market is typically << 256
-        sorted_indices = np.argsort(market_share, axis=2).astype(np.uint8 if firms_per_market <= 256 else np.uint16)
-
-        # Get sorted shares from indices (for Gini)
-        sorted_shares = np.take_along_axis(market_share, sorted_indices, axis=2)
-
-        # Gini calculation
-        cum_shares = np.cumsum(sorted_shares, axis=2)
-        del sorted_shares  # OPTIMIZATION: Free 400 MB immediately
-        sums = np.sum(cum_shares, axis=2, keepdims=True)
+        # Gini calculation (vectorized across all markets)
+        cum_shares = np.cumsum(sorted_shares, axis=1)
+        sums = cum_shares[:, -1:]  # Total for each market
 
         with np.errstate(divide='ignore', invalid='ignore'):
             lorenz = cum_shares / sums
             lorenz = np.nan_to_num(lorenz)
 
-        del cum_shares  # OPTIMIZATION: Free 400 MB
+        area = np.trapz(y=lorenz, axis=1, dx=1 / firms_per_market)
+        gini_coefficient[:, step] = (1 - 2 * area).astype(np.float32)
 
-        area = np.trapz(y=lorenz, axis=2, dx=1 / firms_per_market)
-        gini_coefficient = (1 - 2 * area).astype(np.float32)
-        del lorenz, area  # OPTIMIZATION: Free remaining intermediate arrays
+        # Ranks (double argsort trick, vectorized)
+        ranks[step, :, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
 
-        ranks = (np.argsort(sorted_indices[:, :steps, :], axis=2) + 1).astype(np.uint16)
+        # Quantiles of market share (computed per-market for this timestep)
+        quantiles_shares[:, :, step] = np.quantile(shares_all_markets, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
 
-        postproc_time = time.time() - postproc_start_time
+        # ON-THE-FLY: Compute conglomerate metrics for this timestep
+        snapshot = firm_conglom  # Already stored in conglomerate_snapshots[step]
+        in_cong = snapshot != -1
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise
+        if not in_cong.any():
+            # No conglomerates this timestep
+            num_cong.append(0)
+            members.append(np.array([]))
+            avg_shares.append(np.array([]))
+            avg_ranks.append(np.array([]))
+            mean_members[step] = 0.0
+            quantiles_members[step] = np.zeros(5)
+        else:
+            # Get unique conglomerates and their sizes
+            unique_congs, counts = np.unique(snapshot[in_cong], return_counts=True)
+            num_cong.append(len(unique_congs))
+            members.append(counts)  # Already a numpy array
 
-    # OPTIMIZATION: Computing conglomerate averages from snapshots (vectorized, no list conversions)
-    try:
-        conglomerate_start_time = time.time()
-        avg_shares = []
-        avg_ranks = []
+            # Compute mean and quantiles on-the-fly
+            mean_members[step] = np.mean(counts)
+            quantiles_members[step] = np.quantile(counts, q=[0.1, 0.25, 0.5, 0.75, 0.9])
 
-        # Process each period using snapshots
-        for period in range(steps):
-            snapshot = conglomerate_snapshots[period]
-            in_cong = snapshot != -1
-
-            if not in_cong.any():
-                # No conglomerates this period
-                avg_shares.append(np.array([]))
-                avg_ranks.append(np.array([]))
-                continue
-
-            unique_congs = np.unique(snapshot[in_cong])
             avg_share = []
             avg_rank = []
 
@@ -548,13 +569,13 @@ def model(params):
                 firm_ids = np.where(snapshot == cong_id)[0]
                 size = len(firm_ids)
 
-                # Get market and local indices (no list conversion!)
-                markets = firm_to_market[firm_ids]
+                # Get market and local indices
+                cong_markets = firm_to_market[firm_ids]
                 local_idxs = firm_to_local_idx[firm_ids]
 
-                # Direct indexing
-                avg_share_val = market_share[markets, period, local_idxs].mean()
-                avg_rank_val = ranks[period, markets, local_idxs].mean()
+                # Direct indexing using this timestep's data
+                avg_share_val = market_share[cong_markets, step, local_idxs].mean()
+                avg_rank_val = ranks[step, cong_markets, local_idxs].mean()
 
                 avg_share.append([size, avg_share_val])
                 avg_rank.append([size, avg_rank_val])
@@ -562,20 +583,14 @@ def model(params):
             avg_shares.append(np.array(avg_share))
             avg_ranks.append(np.array(avg_rank))
 
-        conglomerate_time = time.time() - conglomerate_start_time
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise
+    simulation_time = time.time() - model_start_time
 
-    # Assembling final model results
-
-    # Preparing hyperparameter storage
+    postprocessing_start_time = time.time()
 
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
-        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
-        'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2}
+                       'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
+                       'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2}
 
     # Hyperparameters stored successfully
 
