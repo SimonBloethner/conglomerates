@@ -2,8 +2,6 @@ import numpy as np
 from scipy.stats import random_correlation
 from scipy.special import logsumexp, expm1
 
-from programs.counterfactuals import firms_per_market
-
 
 class Firm:
     def __init__(self, firm_id, home_market):
@@ -115,25 +113,40 @@ def get_states_from_buffer(buffer, start_step, end_step, firms):
     return buffer[buffer_indices[:, None], firms]
 
 
-def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, conglomerates, to_delete=None):
+def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
+          cong_occupies_market, to_delete=None):
     """
-    OPTIMIZED: Array-based exit function (no Firm objects needed)
+    SoA: Array-based exit function using Structure-of-Arrays with occupancy flags
     """
     cong_id = firm_conglom[firm_id]
     if cong_id != -1:
-        # OPTIMIZATION: Use NumPy array operations for removal (faster than list.remove())
-        cong_firms = conglomerates[cong_id]['firms']
-        cong_markets = conglomerates[cong_id]['markets']
+        # SoA: Remove firm from array
+        n_firms = cong_size[cong_id]
 
-        conglomerates[cong_id]['firms'] = cong_firms[cong_firms != firm_id]
-        conglomerates[cong_id]['markets'] = cong_markets[cong_markets != firm_home_market[firm_id]]
+        # Get current firms
+        current_firms = cong_firms[cong_id, :n_firms]
+
+        # Remove firm
+        new_firms = current_firms[current_firms != firm_id]
+        new_n_firms = len(new_firms)
+
+        # Update SoA arrays
+        if new_n_firms > 0:
+            cong_firms[cong_id, :new_n_firms] = new_firms
+            # Update occupancy: rebuild from remaining firms
+            cong_occupies_market[cong_id, :] = False
+            cong_occupies_market[cong_id, firm_home_market[new_firms]] = True
+        else:
+            # No firms left - occupancy cleared in deallocate_cong_id
+            pass
+
+        cong_size[cong_id] = new_n_firms
 
         # Mark conglomerate for deletion if empty or only one firm remains
-        remaining_firms = conglomerates[cong_id]['firms']
-        if len(remaining_firms) <= 1:
+        if new_n_firms <= 1:
             # Clean up the remaining firm's state if there is one
-            if len(remaining_firms) == 1:
-                remaining_firm_id = remaining_firms[0]
+            if new_n_firms == 1:
+                remaining_firm_id = new_firms[0]
                 firm_conglom[remaining_firm_id] = -1
                 firm_entered[remaining_firm_id] = -1
 
@@ -227,11 +240,44 @@ def model(params):
     firm_conglom = np.full(total_firms, -1, dtype=np.int32)  # -1 = solo firm, otherwise conglomerate ID
     firm_entered = np.full(total_firms, -1, dtype=np.int32)  # -1 = never entered, otherwise entry timestep
 
-    conglomerate_snapshots = np.full((steps, total_firms), -1, dtype=np.int32)
-    conglomerates = {}
+    # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
+    # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
+    # Max conglomerates = total_firms/2 (each conglomerate has ≥2 firms, max 1 firm per market)
+    MAX_CONGLOMERATES = total_firms // 2
+
+    cong_firms = np.full((MAX_CONGLOMERATES, markets), -1, dtype=np.int32)
+    cong_size = np.zeros(MAX_CONGLOMERATES, dtype=np.int16)
+    cong_pool = np.zeros((MAX_CONGLOMERATES, lookback), dtype=np.float64)
+    cong_active = np.zeros(MAX_CONGLOMERATES, dtype=bool)
+    cong_occupies_market = np.zeros((MAX_CONGLOMERATES, markets), dtype=bool)  # Fast market occupancy lookup
+
+    # ID management for conglomerate slots
+    free_ids = []
+    next_cong_id = 0
+
+    def allocate_cong_id():
+        """Get next available conglomerate ID (reuse freed slots first)"""
+        nonlocal next_cong_id
+        if free_ids:
+            return free_ids.pop()  # LIFO reuse (good for cache locality)
+        else:
+            if next_cong_id >= MAX_CONGLOMERATES:
+                raise RuntimeError(f"Exceeded max conglomerates ({MAX_CONGLOMERATES})")
+            cid = next_cong_id
+            next_cong_id += 1
+            return cid
+
+    def deallocate_cong_id(cong_id):
+        """Mark conglomerate as inactive and return ID to pool"""
+        cong_active[cong_id] = False
+        cong_size[cong_id] = 0
+        cong_occupies_market[cong_id, :] = False  # Clear occupancy flags
+        # Don't zero arrays - just use size=0 as sentinel for performance
+        free_ids.append(cong_id)
 
     # Pre-allocate output arrays (computed during simulation, not post-processing)
-    market_share = np.zeros((markets, steps, firms_per_market), dtype=np.float32)
+    # MEMORY OPTIMIZATION: Only store current timestep snapshot, not full history
+    market_share_current = np.zeros((markets, firms_per_market), dtype=np.float32)
     gini_coefficient = np.zeros((markets, steps), dtype=np.float32)
     ranks = np.zeros((steps, markets, firms_per_market), dtype=np.uint16)
 
@@ -274,152 +320,181 @@ def model(params):
         firm_log_returns_buffer[curr_idx] = log_realizations_step
 
         if draws.shape[0] > 0:
-            for firm_idx, firm in enumerate(draws):
-                # Get active markets from conglomerates dict or home market for solo firms
-                initiator_cong_id = firm_conglom[firm]
-                if initiator_cong_id != -1:
-                    active_markets = conglomerates[initiator_cong_id]['markets']
-                else:
-                    active_markets = np.array([firm_home_market[firm]], dtype=np.int16)
+            # OPTIMIZATION: Shuffle draws to remove ordering artifacts
+            np.random.shuffle(draws)
 
-                if len(active_markets) == markets:
+            for firm in draws:
+                # OPTIMIZATION: Fast occupancy-based merger targeting
+                initiator_cong_id = firm_conglom[firm]
+
+                # Fast full-conglomerate check using size
+                if initiator_cong_id != -1 and cong_size[initiator_cong_id] == markets:
                     continue
 
-                target_markets = markets_structure[np.logical_not(np.in1d(markets_structure[:, 0], active_markets)), :]
-                target = target_markets[np.random.choice(np.arange(target_markets.shape[0]), 1)]
-                target = np.where((markets_structure == target).all(axis=1))[0][0]
-
-                # Get target's markets and firms
-                target_cong_id = firm_conglom[target]
-                if target_cong_id != -1:
-                    target_markets_list = conglomerates[target_cong_id]['markets']
-                    target_firms = conglomerates[target_cong_id]['firms']
-                else:
-                    target_markets_list = np.array([firm_home_market[target]], dtype=np.int16)
-                    target_firms = np.array([target], dtype=np.int16)
-
+                # OPTIMIZATION: O(markets) lookup instead of O(total_firms) filtering
                 if initiator_cong_id != -1:
-                    firm_markets_list = conglomerates[initiator_cong_id]['markets']
-                    firm_firms = conglomerates[initiator_cong_id]['firms']
+                    # Use occupancy bitmap for instant available market list
+                    available = np.where(~cong_occupies_market[initiator_cong_id])[0]
+                    if available.size == 0:
+                        continue
+                    target_market = np.random.choice(available)
+
+                    # Get initiator firms
+                    n_firms = cong_size[initiator_cong_id]
+                    firm_firms = cong_firms[initiator_cong_id, :n_firms]
                 else:
-                    firm_markets_list = np.array([firm_home_market[firm]], dtype=np.int16)
+                    # Solo firm: any market except home market
+                    firm_home = firm_home_market[firm]
+                    available = np.arange(markets)
+                    available = available[available != firm_home]
+                    if available.size == 0:
+                        continue
+                    target_market = np.random.choice(available)
                     firm_firms = np.array([firm], dtype=np.int16)
 
-                # Check for market overlap
-                if not np.isin(target_markets_list, firm_markets_list).any():
-                    joint_markets = np.sort(np.concatenate([target_markets_list, firm_markets_list]))
-                    conglomerate = np.sort(np.concatenate([target_firms, firm_firms]))
+                # Direct market-to-firm conversion (no np.where needed!)
+                target_firm = target_market * firms_per_market + np.random.randint(firms_per_market)
+
+                # Get target's firms
+                target_cong_id = firm_conglom[target_firm]
+                if target_cong_id != -1:
+                    n_target_firms = cong_size[target_cong_id]
+                    target_firms = cong_firms[target_cong_id, :n_target_firms]
+                else:
+                    target_firms = np.array([target_firm], dtype=np.int16)
+
+                # Merge firms - already know no overlap by construction
+                conglomerate = np.sort(np.concatenate([target_firms, firm_firms]))
+
+                if len(conglomerate) > 2:
+                    # VECTORIZED: Calculate synthetic pool for merger evaluation
+                    hist_start = max(0, step - lookback)
+                    hist_len = step - hist_start
+
+                    # Store pool_over_S instead of absolute pool
+                    synth_pool_over_S_time = np.zeros(lookback, dtype=np.float64)
+
+                    if hist_len > 0:
+                        # CIRCULAR BUFFER: Extract historical states and returns
+                        past_log_states = get_states_from_buffer(
+                            firm_log_states_buffer, hist_start, step, conglomerate
+                        )
+                        past_log_returns = get_states_from_buffer(
+                            firm_log_returns_buffer, hist_start, step, conglomerate
+                        )
+
+                        # VECTORIZED: Compute pool for ALL historical periods at once
+                        # Shape: past_log_states is (hist_len, n_firms)
+                        log_S = logsumexp(past_log_states, axis=1)  # (hist_len,)
+                        w = np.exp(past_log_states - log_S[:, None])  # (hist_len, n_firms)
+                        r_minus1 = expm1(past_log_returns)  # (hist_len, n_firms)
+                        avg_gain_weighted = np.sum(w * r_minus1, axis=1)  # (hist_len,)
+                        m = management_costs_lookup[len(conglomerate)]
+
+                        if proportional:
+                            mgmt_over_S = m * np.exp(-log_S)  # (hist_len,)
+                            cost_factor = 1.0 - mgmt_over_S
+                            synth_pool_over_S_time[-hist_len:] = share * avg_gain_weighted * cost_factor
+                        else:
+                            synth_pool_over_S_time[-hist_len:] = share * avg_gain_weighted - m
+
+                    # SoA: Compare synthetic pool to actual pool(s)
+                    synth_pool_total = synth_pool_over_S_time.sum()
+
+                    if initiator_cong_id == -1 or target_cong_id == -1:
+                        # One conglomerate + one solo: beat the one existing pool
+                        conglomerate_id = initiator_cong_id if target_cong_id == -1 else target_cong_id
+                        true_pool_total = cong_pool[conglomerate_id].sum()
+
+                        if synth_pool_total < true_pool_total:
+                            continue
+                    else:
+                        # Two conglomerates: beat BOTH existing pools
+                        true_pool0_total = cong_pool[initiator_cong_id].sum()
+                        true_pool1_total = cong_pool[target_cong_id].sum()
+
+                        if synth_pool_total < true_pool0_total or synth_pool_total < true_pool1_total:
+                            continue
+
+                # Get merged markets for occupancy update
+                merged_markets = firm_home_market[conglomerate]
+
+                # SoA: Handle four merger cases with occupancy flag maintenance
+                if initiator_cong_id != -1 and target_cong_id != -1:
+                    # Two conglomerates merge: keep target_cong_id, deallocate initiator
+                    n_firms = len(conglomerate)
+
+                    cong_firms[target_cong_id, :n_firms] = conglomerate
+                    cong_size[target_cong_id] = n_firms
+                    # Update occupancy: set all merged markets as occupied
+                    cong_occupies_market[target_cong_id, merged_markets] = True
 
                     if len(conglomerate) > 2:
-                        # LOG-SPACE: Calculate synthetic pool for merger evaluation
-                        hist_start = max(0, step - lookback)
-                        hist_len = step - hist_start
+                        cong_pool[target_cong_id] = synth_pool_over_S_time
 
-                        # Store pool_over_S instead of absolute pool
-                        synth_pool_over_S_time = np.zeros(lookback, dtype=np.float64)
+                    firm_conglom[conglomerate] = target_cong_id
+                    firm_entered[conglomerate] = step
 
-                        if hist_len > 0:
-                            # CIRCULAR BUFFER: Extract historical states and returns
-                            past_log_states = get_states_from_buffer(
-                                firm_log_states_buffer, hist_start, step, conglomerate
-                            )
-                            past_log_returns = get_states_from_buffer(
-                                firm_log_returns_buffer, hist_start, step, conglomerate
-                            )
+                    # Deallocate initiator (clears its occupancy flags)
+                    deallocate_cong_id(initiator_cong_id)
 
-                            # Compute pool for each historical period using log-space
-                            for h_idx in range(hist_len):
-                                log_states_row = past_log_states[h_idx]
-                                log_S = logsumexp(log_states_row)
-                                w = np.exp(log_states_row - log_S)  # Normalized weights
-                                r_minus1 = expm1(past_log_returns[h_idx])
-                                avg_gain_weighted = np.sum(w * r_minus1)
-                                m = management_costs_lookup[len(conglomerate)]
+                elif initiator_cong_id == -1 and target_cong_id != -1:
+                    # Solo + conglomerate: expand target conglomerate
+                    n_firms = len(conglomerate)
 
-                                if proportional:
-                                    mgmt_over_S = m * np.exp(-log_S)
-                                    cost_factor = 1.0 - mgmt_over_S
-                                    synth_pool_over_S_time[h_idx] = share * avg_gain_weighted * cost_factor
-                                else:
-                                    synth_pool_over_S_time[h_idx] = share * avg_gain_weighted - m
+                    cong_firms[target_cong_id, :n_firms] = conglomerate
+                    cong_size[target_cong_id] = n_firms
+                    # Update occupancy: add new market
+                    cong_occupies_market[target_cong_id, firm_home_market[firm]] = True
 
-                            # Shift to match lookback window
-                            synth_pool_over_S_full = np.zeros(lookback, dtype=np.float64)
-                            synth_pool_over_S_full[-hist_len:] = synth_pool_over_S_time[:hist_len]
-                            synth_pool_over_S_time = synth_pool_over_S_full
+                    firm_conglom[firm] = target_cong_id
+                    firm_entered[firm] = step
 
-                        # LOG-SPACE: Compare synthetic pool to actual pool(s)
-                        synth_pool_total = synth_pool_over_S_time.sum()
+                elif initiator_cong_id != -1 and target_cong_id == -1:
+                    # Conglomerate + solo: expand initiator conglomerate
+                    n_firms = len(conglomerate)
 
-                        if initiator_cong_id == -1 or target_cong_id == -1:
-                            # One conglomerate + one solo: beat the one existing pool
-                            conglomerate_id = initiator_cong_id if target_cong_id == -1 else target_cong_id
-                            true_pool_total = conglomerates[conglomerate_id]['pool'].sum()
+                    cong_firms[initiator_cong_id, :n_firms] = conglomerate
+                    cong_size[initiator_cong_id] = n_firms
+                    # Update occupancy: add new market
+                    cong_occupies_market[initiator_cong_id, firm_home_market[target_firm]] = True
 
-                            if synth_pool_total < true_pool_total:
-                                continue
-                        else:
-                            # Two conglomerates: beat BOTH existing pools
-                            true_pool0_total = conglomerates[initiator_cong_id]['pool'].sum()
-                            true_pool1_total = conglomerates[target_cong_id]['pool'].sum()
+                    firm_conglom[target_firm] = initiator_cong_id
+                    firm_entered[target_firm] = step
 
-                            if synth_pool_total < true_pool0_total or synth_pool_total < true_pool1_total:
-                                continue
+                elif initiator_cong_id == -1 and target_cong_id == -1:
+                    # Two solo firms: create new conglomerate
+                    new_id = allocate_cong_id()
+                    n_firms = len(conglomerate)
 
-                    if target_cong_id == -1 and initiator_cong_id == -1:
-                        existing = np.array(list(conglomerates.keys()))
-                        if len(existing) == 0:
-                            new_id = 0
-                        else:
-                            all_ = np.arange(len(conglomerates.keys()))
-                            lowest_new = all_[np.logical_not(np.isin(all_, existing))]
-                            if lowest_new.shape[0] == 0:
-                                new_id = np.max(all_) + 1
-                            else:
-                                new_id = np.min(lowest_new)
+                    cong_firms[new_id, :n_firms] = conglomerate
+                    cong_size[new_id] = n_firms
+                    cong_pool[new_id] = np.zeros(lookback, dtype=np.float64)
+                    cong_active[new_id] = True
+                    # Set occupancy for both markets
+                    cong_occupies_market[new_id, firm_home_market[firm]] = True
+                    cong_occupies_market[new_id, firm_home_market[target_firm]] = True
 
+                    firm_conglom[firm] = new_id
+                    firm_conglom[target_firm] = new_id
+                    firm_entered[firm] = step
+                    firm_entered[target_firm] = step
 
-                    if initiator_cong_id != -1 and target_cong_id != -1:
-                        conglomerates[target_cong_id] = {'firms': conglomerate, 'markets': joint_markets,
-                                                         'pool': synth_pool_over_S_time}
-                        firm_conglom[conglomerate] = target_cong_id
-                        firm_entered[conglomerate] = step
-                        del conglomerates[initiator_cong_id]
-
-                    elif initiator_cong_id == -1 and target_cong_id != -1:
-                        conglomerates[target_cong_id]['firms'] = conglomerate
-                        conglomerates[target_cong_id]['markets'] = joint_markets
-                        firm_conglom[firm] = target_cong_id
-                        firm_entered[firm] = step
-
-                    elif initiator_cong_id != -1 and target_cong_id == -1:
-                        conglomerates[initiator_cong_id]['firms'] = conglomerate
-                        conglomerates[initiator_cong_id]['markets'] = joint_markets
-                        firm_conglom[target] = initiator_cong_id
-                        firm_entered[target] = step
-
-                    elif initiator_cong_id == -1 and target_cong_id == -1:
-                        firm_conglom[firm] = new_id
-                        firm_conglom[target] = new_id
-                        firm_entered[firm] = step
-                        firm_entered[target] = step
-                        conglomerates[new_id] = {'firms': conglomerate, 'markets': joint_markets,
-                                                 'pool': np.zeros(lookback, dtype=np.float64)}
-
-                    # Count successful merger
-                    mergers_per_period[step] += 1
-
-        conglomerate_snapshots[step] = firm_conglom
+                # Count successful merger
+                mergers_per_period[step] += 1
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
 
-        # Track conglomerates to delete after pooling loop
+        # SoA: Track conglomerates to delete after pooling loop
         conglomerates_to_delete = set()
 
-        # LOG-SPACE: Process conglomerate firms
-        for conglomerate_idx, conglomerate_ in enumerate(conglomerates.keys()):
-            conglomerate = conglomerates[conglomerate_]['firms']
+        # SoA: Process conglomerate firms (iterate over active conglomerates)
+        active_cong_ids = np.where(cong_active)[0]
+        for cong_id in active_cong_ids:
+            # Extract firm list from SoA
+            n_firms = cong_size[cong_id]
+            conglomerate = cong_firms[cong_id, :n_firms]
 
             # CIRCULAR BUFFER: Get current states and returns
             log_returns = log_realizations_step[conglomerate]
@@ -456,27 +531,26 @@ def model(params):
                 d = delta_over_state[idx_local]
                 if not np.isfinite(d) or d <= -1.0:
                     firm_log_states_buffer[next_idx, firm] = 0.0  # Reset to log(1)
-                    exit_(firm, firm_conglom, firm_entered, firm_home_market, conglomerates,
-                          to_delete=conglomerates_to_delete)
+                    exit_(firm, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
+                          cong_occupies_market, to_delete=conglomerates_to_delete)
                 else:
                     firm_log_states_buffer[next_idx, firm] = log_old + np.log1p(d)
 
                 # Store outside log-profits
                 firm_outside_log_profits[step % lookback, firm] = log_realizations_step[firm]
 
-            # Store pool
-            conglomerates[conglomerate_]['pool'][step % lookback] = pool_over_S
+            # SoA: Store pool
+            cong_pool[cong_id, step % lookback] = pool_over_S
 
-        # Clean up conglomerates marked for deletion
+        # SoA: Clean up conglomerates marked for deletion
         for cong_id in conglomerates_to_delete:
-            if cong_id in conglomerates:
-                del conglomerates[cong_id]
+            deallocate_cong_id(cong_id)
 
         # OPTIMIZATION: Vectorized solo firm updates (eliminates loop over potentially 1000s of firms)
         firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
         firm_log_states_buffer[next_idx, solo] = firm_log_states_buffer[curr_idx, solo] + log_realizations_step[solo]
 
-        # LOG-SPACE: Exit checks using geometric means
+        # VECTORIZED: Exit checks using geometric means
         if step > lookback:
             exit_cleanup_to_delete = set()
 
@@ -485,42 +559,43 @@ def model(params):
             old_enough = firm_entered < step - lookback
             exit_candidates = np.where(in_cong & old_enough)[0]
 
-            for firm_id in exit_candidates:
-                # Geometric mean in log space: exp(mean(log_returns))
-                log_outside_profit = np.mean(firm_outside_log_profits[:, firm_id])
+            if len(exit_candidates) > 0:
+                # VECTORIZED: Compute all outside profits at once
+                log_outside_profits = np.mean(firm_outside_log_profits[:, exit_candidates], axis=0)
 
-                # CIRCULAR BUFFER: Get recent states to compute inside returns
+                # VECTORIZED: Get all recent states and compute inside returns
                 recent_states = get_states_from_buffer(
-                    firm_log_states_buffer, step - lookback, step + 1, firm_id
+                    firm_log_states_buffer, step - lookback, step + 1, exit_candidates
                 )
-                log_inside_returns = np.diff(recent_states)
-                log_inside_profit = np.mean(log_inside_returns)
+                log_inside_returns = np.diff(recent_states, axis=0)
+                log_inside_profits = np.mean(log_inside_returns, axis=0)
 
-                if log_outside_profit > log_inside_profit:
-                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, conglomerates,
-                          to_delete=exit_cleanup_to_delete)
+                # VECTORIZED: Find which firms should exit
+                exit_mask = log_outside_profits > log_inside_profits
 
-            # Clean up conglomerates marked for deletion
+                # Process exits for firms that should leave
+                for firm_id in exit_candidates[exit_mask]:
+                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
+                          cong_occupies_market, to_delete=exit_cleanup_to_delete)
+
+            # SoA: Clean up conglomerates marked for deletion
             for cong_id in exit_cleanup_to_delete:
-                if cong_id in conglomerates:
-                    del conglomerates[cong_id]
+                deallocate_cong_id(cong_id)
 
         # Reshape next_idx states for market-wise calculations
         current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
 
-        # Market share calculation
+        # Market share calculation (current timestep only)
         log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
         log_market_share = current_log_states - log_market_totals
-        market_share[:, step, :] = np.exp(log_market_share).astype(np.float32)
+        market_share_current[:, :] = np.exp(log_market_share).astype(np.float32)
 
         # VECTORIZED: Ranks and Gini for ALL markets at this timestep (not per-market loop)
-        shares_all_markets = market_share[:, step, :]  # Shape: (markets, firms_per_market)
-
         # Sort indices for all markets at once
-        sorted_idx = np.argsort(shares_all_markets, axis=1).astype(np.uint8 if firms_per_market <= 256 else np.uint16)
+        sorted_idx = np.argsort(market_share_current, axis=1).astype(np.uint8 if firms_per_market <= 256 else np.uint16)
 
         # Get sorted shares using fancy indexing
-        sorted_shares = np.take_along_axis(shares_all_markets, sorted_idx, axis=1)
+        sorted_shares = np.take_along_axis(market_share_current, sorted_idx, axis=1)
 
         # Gini calculation (vectorized across all markets)
         cum_shares = np.cumsum(sorted_shares, axis=1)
@@ -537,10 +612,10 @@ def model(params):
         ranks[step, :, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
 
         # Quantiles of market share (computed per-market for this timestep)
-        quantiles_shares[:, :, step] = np.quantile(shares_all_markets, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
+        quantiles_shares[:, :, step] = np.quantile(market_share_current, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
 
         # ON-THE-FLY: Compute conglomerate metrics for this timestep
-        snapshot = firm_conglom  # Already stored in conglomerate_snapshots[step]
+        snapshot = firm_conglom
         in_cong = snapshot != -1
 
         if not in_cong.any():
@@ -573,8 +648,8 @@ def model(params):
                 cong_markets = firm_to_market[firm_ids]
                 local_idxs = firm_to_local_idx[firm_ids]
 
-                # Direct indexing using this timestep's data
-                avg_share_val = market_share[cong_markets, step, local_idxs].mean()
+                # Direct indexing using this timestep's data (use current snapshot)
+                avg_share_val = market_share_current[cong_markets, local_idxs].mean()
                 avg_rank_val = ranks[step, cong_markets, local_idxs].mean()
 
                 avg_share.append([size, avg_share_val])
@@ -594,7 +669,8 @@ def model(params):
 
     # Hyperparameters stored successfully
 
-    model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, market_share,
+    # MEMORY OPTIMIZATION: Removed market_share from results (no longer needed)
+    model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
                      gini_coefficient, ranks, avg_ranks, mergers_per_period, hyperparameters]
     postprocessing_time = time.time() - postprocessing_start_time
     total_time = time.time() - model_start_time
