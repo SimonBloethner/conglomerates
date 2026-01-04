@@ -2874,7 +2874,18 @@ class ParametrizationComparator:
             'exponential': '#d62728'
         }
 
+        # Prepare data for LaTeX export - separate by cost type
+        cost_type_codes = {}
+        beta1_by_cost = {}  # {cost_type_id: [[alpha, median, q25, q75], ...]}
+        beta2_by_cost = {}
+        cost_idx = 0
+
         for cost_type, param_list in sorted(cost_groups.items()):
+            # Assign numeric code for this cost type
+            cost_type_codes[cost_type] = cost_idx
+            beta1_by_cost[cost_idx] = []
+            beta2_by_cost[cost_idx] = []
+
             # Collect data by alpha value for this cost function
             beta1_by_alpha = {}  # {alpha: [values...]}
             beta2_by_alpha = {}
@@ -2925,6 +2936,7 @@ class ParametrizationComparator:
             alpha_sorted = sorted(beta1_by_alpha.keys())
 
             if not alpha_sorted:
+                cost_idx += 1
                 continue
 
             # Compute statistics for β₁ (only for alphas with data)
@@ -2936,10 +2948,17 @@ class ParametrizationComparator:
             for alpha in alpha_sorted:
                 values = np.array(beta1_by_alpha[alpha])
                 if len(values) > 0:  # Only compute stats if we have data
-                    beta1_means.append(np.median(values))
-                    beta1_lower.append(np.percentile(values, 25))
-                    beta1_upper.append(np.percentile(values, 75))
+                    median_val = np.median(values)
+                    q25_val = np.percentile(values, 25)
+                    q75_val = np.percentile(values, 75)
+
+                    beta1_means.append(median_val)
+                    beta1_lower.append(q25_val)
+                    beta1_upper.append(q75_val)
                     valid_alphas_beta1.append(alpha)
+
+                    # Export row: alpha, median, q25, q75
+                    beta1_by_cost[cost_idx].append([alpha, median_val, q25_val, q75_val])
 
             # Compute statistics for β₂ (only for alphas with data)
             beta2_means = []
@@ -2950,10 +2969,17 @@ class ParametrizationComparator:
             for alpha in alpha_sorted:
                 values = np.array(beta2_by_alpha[alpha])
                 if len(values) > 0:  # Only compute stats if we have data
-                    beta2_means.append(np.median(values))
-                    beta2_lower.append(np.percentile(values, 25))
-                    beta2_upper.append(np.percentile(values, 75))
+                    median_val = np.median(values)
+                    q25_val = np.percentile(values, 25)
+                    q75_val = np.percentile(values, 75)
+
+                    beta2_means.append(median_val)
+                    beta2_lower.append(q25_val)
+                    beta2_upper.append(q75_val)
                     valid_alphas_beta2.append(alpha)
+
+                    # Export row: alpha, median, q25, q75
+                    beta2_by_cost[cost_idx].append([alpha, median_val, q25_val, q75_val])
 
             # Get color for this cost function
             color = cost_colors.get(cost_type, '#333333')
@@ -2971,6 +2997,8 @@ class ParametrizationComparator:
                              label=cost_type, color=color)
                 ax_beta2.fill_between(valid_alphas_beta2, beta2_lower, beta2_upper,
                                      alpha=0.2, color=color)
+
+            cost_idx += 1
 
         # Formatting for β₁ subplot
         ax_beta1.axhline(y=0, color='black', linestyle='--', alpha=0.3, linewidth=0.8)
@@ -2996,6 +3024,38 @@ class ParametrizationComparator:
             if save_path:
                 plt.savefig(save_path, dpi=300, bbox_inches='tight')
                 print(f"Saved panel polynomial estimates plot: {save_path}")
+
+                # Export data for LaTeX
+                out_dir = Path(save_path).parent
+                stem = Path(save_path).stem
+
+                # Create plots subdirectory
+                plots_dir = out_dir / "plots"
+                plots_dir.mkdir(exist_ok=True)
+
+                # Export separate CSV files for each cost type
+                for cost_id in range(cost_idx):
+                    # Beta1 data
+                    if beta1_by_cost[cost_id]:
+                        beta1_array = np.array(beta1_by_cost[cost_id])
+                        np.savetxt(plots_dir / f"poly_beta1_cost{cost_id}.csv",
+                                  beta1_array, delimiter=",",
+                                  header="alpha,median,q25,q75", comments="")
+
+                    # Beta2 data
+                    if beta2_by_cost[cost_id]:
+                        beta2_array = np.array(beta2_by_cost[cost_id])
+                        np.savetxt(plots_dir / f"poly_beta2_cost{cost_id}.csv",
+                                  beta2_array, delimiter=",",
+                                  header="alpha,median,q25,q75", comments="")
+
+                print(f"  Exported polynomial data to {plots_dir}")
+
+                # Export cost type codes
+                with open(out_dir / f"{stem}_cost_type_codes.txt", "w") as f:
+                    for name, code in cost_type_codes.items():
+                        f.write(f"{code}: {name}\n")
+
         else:
             print("No panel polynomial estimates data found to plot!")
 
@@ -3130,11 +3190,38 @@ class ParametrizationComparator:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            # Export combined CSV (keep this for reference/debugging)
             export_array = np.array(export_rows)
             np.savetxt(out_dir / f"{stem}.csv", export_array, delimiter=",",
-                header="quantile_id,cost_type_id,alpha,median,q25,q75", comments="")
-            print(f"Saved market share by quantile plot: {save_path}")
+                       header="quantile_id,cost_type_id,alpha,median,q25,q75", comments="")
+            print(f"Saved combined market share data: {out_dir / f'{stem}.csv'}")
 
+            # Create subdirectory for individual CSV files
+            plots_dir = out_dir / "plots"
+            plots_dir.mkdir(exist_ok=True)
+
+            # Export separate CSV files for each quantile-cost combination (for LaTeX)
+            unique_quantiles = np.unique(export_array[:, 0])  # Column 0 is quantile_id
+            unique_cost_types = np.unique(export_array[:, 1])  # Column 1 is cost_type_id
+
+            print(f"Creating {len(unique_quantiles)} × {len(unique_cost_types)} separate CSV files for LaTeX...")
+
+            for q_id in unique_quantiles:
+                for c_id in unique_cost_types:
+                    # Filter rows for this quantile-cost combination
+                    mask = (export_array[:, 0] == q_id) & (export_array[:, 1] == c_id)
+                    subset = export_array[mask]
+
+                    if len(subset) > 0:
+                        # Save as q{quantile}_cost{cost_type}.csv in plots subdirectory
+                        filename = plots_dir / f"q{int(q_id)}_cost{int(c_id)}.csv"
+
+                        np.savetxt(filename, subset, delimiter=",",
+                                   header="quantile_id,cost_type_id,alpha,median,q25,q75", comments="")
+
+            print(f"Created {len(unique_quantiles) * len(unique_cost_types)} LaTeX-ready CSV files in {plots_dir}")
+
+            # Save the code mappings
             with open(out_dir / f"{stem}_quantile_codes.txt", "w") as f:
                 for name, code in quantile_codes.items():
                     f.write(f"{code}: {name}\n")
@@ -3142,6 +3229,8 @@ class ParametrizationComparator:
             with open(out_dir / f"{stem}_cost_type_codes.txt", "w") as f:
                 for name, code in cost_type_codes.items():
                     f.write(f"{code}: {name}\n")
+
+            print(f"Saved market share by quantile plot: {save_path}")
 
         return fig, axes
 
@@ -3286,24 +3375,25 @@ class ParametrizationComparator:
     def visualize_mobility_ridge_plots(self, all_data, save_path=None):
         """Create ridge plots showing mobility distributions across α levels
 
-        Pools firm-level mobility data across all parametrizations within each cost function.
-        Shows the full distribution of individual firm mobility experiences using kernel density estimation.
-
-        Creates separate ridge plots for:
-        - Rank ranges (max rank - min rank for each firm)
-        - Rank standard deviation (temporal volatility of ranks)
-
-        Each ridge is one α level, stacked vertically with colors showing profit-sharing intensity.
+        Combines all cost types into a single figure with overlaid distributions.
+        Each ridge represents one α level, with different cost types shown in different colors.
 
         Args:
             all_data: Dictionary of all parametrization data (from load_data())
-            save_path: Optional base path to save figures (will create _ranges.pdf and _std.pdf)
+            save_path: Optional path to save the combined figure
 
         Returns:
-            (fig_ranges, fig_std): Tuple of matplotlib figure objects for ranges and std plots
+            fig: matplotlib figure object
         """
         from scipy.stats import gaussian_kde
         import matplotlib.pyplot as plt
+
+        # Define cost type colors (matching your LaTeX figure)
+        cost_colors = {'linear': '#1f77b4',  # blue
+            'quadratic': '#ff7f0e',  # orange
+            'power_law': '#2ca02c',  # green
+            'exponential': '#d62728'  # red
+        }
 
         # Group data by cost function type
         cost_groups = {}
@@ -3313,15 +3403,15 @@ class ParametrizationComparator:
                 cost_groups[cost_type] = []
             cost_groups[cost_type].append((param_name, param_data))
 
-        # Create one figure per cost function (2 subplots: ranges and std)
-        figures = {}
+        # Collect mobility data by alpha AND cost type
+        # Structure: {alpha: {cost_type: [all firm observations]}}
+        rank_ranges_by_alpha_cost = {}
+        rank_std_by_alpha_cost = {}
+
+        print("\nCollecting mobility data across all cost types...")
 
         for cost_type, param_list in sorted(cost_groups.items()):
-            print(f"\nCreating ridge plots for {cost_type} cost function...")
-
-            # Collect mobility data by alpha (Option 1: flatten everything)
-            rank_ranges_by_alpha = {}  # {alpha: [all firm observations]}
-            rank_std_by_alpha = {}
+            print(f"  Processing {cost_type} cost function...")
 
             for param_name, param_data in param_list:
                 shares = param_data['shares']
@@ -3329,147 +3419,160 @@ class ParametrizationComparator:
                 rank_std_data = param_data['metrics'].get('rank_std', {})
 
                 for alpha in shares:
+                    # Initialize nested dict if needed
+                    if alpha not in rank_ranges_by_alpha_cost:
+                        rank_ranges_by_alpha_cost[alpha] = {}
+                    if alpha not in rank_std_by_alpha_cost:
+                        rank_std_by_alpha_cost[alpha] = {}
+
                     # Collect rank ranges
                     if alpha in rank_ranges_data and rank_ranges_data[alpha] is not None:
-                        # Flatten to firm level: (n_exp, n_markets, n_firms) -> (n_exp * n_markets * n_firms,)
                         firm_ranges = rank_ranges_data[alpha].flatten()
-
-                        # Remove NaNs
                         firm_ranges = firm_ranges[~np.isnan(firm_ranges)]
 
-                        if alpha not in rank_ranges_by_alpha:
-                            rank_ranges_by_alpha[alpha] = []
-                        rank_ranges_by_alpha[alpha].extend(firm_ranges)
+                        if cost_type not in rank_ranges_by_alpha_cost[alpha]:
+                            rank_ranges_by_alpha_cost[alpha][cost_type] = []
+                        rank_ranges_by_alpha_cost[alpha][cost_type].extend(firm_ranges)
 
                     # Collect rank std
                     if alpha in rank_std_data and rank_std_data[alpha] is not None:
                         firm_std = rank_std_data[alpha].flatten()
-
-                        # Remove NaNs
                         firm_std = firm_std[~np.isnan(firm_std)]
 
-                        if alpha not in rank_std_by_alpha:
-                            rank_std_by_alpha[alpha] = []
-                        rank_std_by_alpha[alpha].extend(firm_std)
+                        if cost_type not in rank_std_by_alpha_cost[alpha]:
+                            rank_std_by_alpha_cost[alpha][cost_type] = []
+                        rank_std_by_alpha_cost[alpha][cost_type].extend(firm_std)
 
-            if not rank_ranges_by_alpha and not rank_std_by_alpha:
-                print(f"  No mobility data found for {cost_type}, skipping...")
-                continue
+        if not rank_ranges_by_alpha_cost and not rank_std_by_alpha_cost:
+            print("No mobility data found, skipping...")
+            return None
 
-            # Create figure with 2 subplots (ranges and std)
-            fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(16, 11))
+        # Create single figure with 2 subplots (ranges and std)
+        fig, axes = plt.subplots(1, 2, figsize=(16, 10), sharey=True)
 
-            # Ridge plot parameters (matching visualize_counterfactuals.py)
-            overlap = 0.8
-            offset = 0.8
+        # Ridge plot parameters
+        overlap = 1.0  # Height of each ridge
+        offset = 1.5  # Vertical spacing between ridges
 
-            # Get sorted alpha values
-            alphas_ranges = sorted(rank_ranges_by_alpha.keys())
-            alphas_std = sorted(rank_std_by_alpha.keys())
+        # Get sorted alpha values
+        alphas = sorted(rank_ranges_by_alpha_cost.keys())
 
-            # Create colormap for alpha values
-            if alphas_ranges:
-                min_alpha = min(alphas_ranges)
-                max_alpha = max(alphas_ranges)
-            elif alphas_std:
-                min_alpha = min(alphas_std)
-                max_alpha = max(alphas_std)
-            else:
-                continue
+        print(f"\nCreating combined ridge plot for {len(alphas)} α levels...")
 
-            from matplotlib.colors import Normalize
-            from matplotlib.cm import ScalarMappable
+        # LEFT PANEL: Rank Ranges
+        ax_ranges = axes[0]
 
-            normalize = Normalize(vmin=min_alpha, vmax=max_alpha)
-            colormap = plt.cm.viridis
+        for i, alpha in enumerate(alphas):
+            y_base = i * offset
 
-            # Plot rank ranges ridge plot
-            if rank_ranges_by_alpha:
-                for i, alpha in enumerate(alphas_ranges):
-                    ranges_data = np.array(rank_ranges_by_alpha[alpha])
+            # Plot each cost type at this alpha level
+            for cost_type in sorted(cost_colors.keys()):
+                if cost_type not in rank_ranges_by_alpha_cost[alpha]:
+                    continue
 
-                    if len(ranges_data) < 10:  # Need sufficient data
-                        continue
+                ranges_data = np.array(rank_ranges_by_alpha_cost[alpha][cost_type])
 
-                    # Get color for this alpha level
-                    color = colormap(normalize(alpha))
+                if len(ranges_data) < 10:
+                    continue
 
-                    # Compute histogram (much faster than KDE)
-                    try:
-                        hist, bin_edges = np.histogram(ranges_data, bins=150, density=True)
-                        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                color = cost_colors[cost_type]
 
-                        # Scale and offset for ridge effect
-                        y = hist / hist.max() * overlap
-                        y = y + i * offset
+                try:
+                    # Compute histogram
+                    hist, bin_edges = np.histogram(ranges_data, bins=150, density=True)
+                    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-                        # Fill between to create ridge
-                        axes[0].fill_between(bin_centers, y, i * offset, alpha=0.8, color=color)
+                    # Scale and offset for ridge effect
+                    y = hist / hist.max() * overlap
+                    y = y + y_base
 
-                        print(f"  Rank ranges α={alpha:.2f}: {len(ranges_data):,} firm observations")
-                    except Exception as e:
-                        print(f"  Warning: Could not create histogram for rank ranges α={alpha:.2f}: {e}")
-                        continue
+                    # Fill between to create ridge
+                    ax_ranges.fill_between(bin_centers, y, y_base, alpha=0.5, color=color, linewidth=1.5,
+                                           edgecolor=color)
 
-            # Plot rank std ridge plot
-            if rank_std_by_alpha:
-                for i, alpha in enumerate(alphas_std):
-                    std_data = np.array(rank_std_by_alpha[alpha])
+                except Exception as e:
+                    print(f"  Warning: Could not plot {cost_type} ranges α={alpha:.2f}: {e}")
+                    continue
 
-                    if len(std_data) < 10:  # Need sufficient data
-                        continue
+            # Add alpha label on the left
+            ax_ranges.text(-0.02, y_base + overlap / 2, f'α={alpha:.2f}', transform=ax_ranges.get_yaxis_transform(),
+                           ha='right', va='center', fontsize=12, fontweight='bold')
 
-                    # Get color for this alpha level
-                    color = colormap(normalize(alpha))
+        # RIGHT PANEL: Rank Std Dev
+        ax_std = axes[1]
 
-                    # Compute histogram (much faster than KDE)
-                    try:
-                        hist, bin_edges = np.histogram(std_data, bins=150, density=True)
-                        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        for i, alpha in enumerate(alphas):
+            y_base = i * offset
 
-                        # Scale and offset for ridge effect
-                        y = hist / hist.max() * overlap
-                        y = y + i * offset
+            # Plot each cost type at this alpha level
+            for cost_type in sorted(cost_colors.keys()):
+                if cost_type not in rank_std_by_alpha_cost[alpha]:
+                    continue
 
-                        # Fill between to create ridge
-                        axes[1].fill_between(bin_centers, y, i * offset, alpha=0.8, color=color)
+                std_data = np.array(rank_std_by_alpha_cost[alpha][cost_type])
 
-                        print(f"  Rank std α={alpha:.2f}: {len(std_data):,} firm observations")
-                    except Exception as e:
-                        print(f"  Warning: Could not create histogram for rank std α={alpha:.2f}: {e}")
-                        continue
+                if len(std_data) < 10:
+                    continue
 
-            # Format subplots
-            axes[0].set_yticks([])
-            axes[0].set_xlabel('Rank Range', fontsize=20)
-            axes[0].set_title(f'{cost_type.title()} - Rank Ranges', fontsize=22, fontweight='bold')
-            axes[0].tick_params(axis='x', which='major', labelsize=18)
+                color = cost_colors[cost_type]
 
-            axes[1].set_yticks([])
-            axes[1].set_xlabel('Rank Standard Deviation', fontsize=20)
-            axes[1].set_title(f'{cost_type.title()} - Rank Volatility', fontsize=22, fontweight='bold')
-            axes[1].tick_params(axis='x', which='major', labelsize=18)
+                try:
+                    # Compute histogram
+                    hist, bin_edges = np.histogram(std_data, bins=150, density=True)
+                    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-            # Add colorbar showing alpha values
-            sm = ScalarMappable(cmap=colormap, norm=normalize)
-            sm.set_array([])
-            cbar = fig.colorbar(sm, ax=axes, orientation='horizontal',
-                               pad=0.08, aspect=40, shrink=0.8)
-            cbar.set_label('α (Profit Sharing)', fontsize=20, labelpad=10)
-            cbar.ax.tick_params(labelsize=18)
+                    # Scale and offset for ridge effect
+                    y = hist / hist.max() * overlap
+                    y = y + y_base
 
-            plt.tight_layout()
+                    # Fill between to create ridge
+                    ax_std.fill_between(bin_centers, y, y_base, alpha=0.5, color=color, linewidth=1.5, edgecolor=color)
 
-            # Save if requested
-            if save_path:
-                # Create separate file for each cost function
-                cost_save_path = save_path.replace('.pdf', f'_{cost_type}.pdf')
-                plt.savefig(cost_save_path, dpi=300, bbox_inches='tight')
-                print(f"  Saved ridge plot: {cost_save_path}")
+                except Exception as e:
+                    print(f"  Warning: Could not plot {cost_type} std α={alpha:.2f}: {e}")
+                    continue
 
-            figures[cost_type] = fig
+        # Format left panel
+        ax_ranges.set_yticks([])
+        ax_ranges.set_xlabel('Rank Range', fontsize=20)
+        ax_ranges.set_title('Distribution of Rank Ranges by α', fontsize=22, fontweight='bold')
+        ax_ranges.tick_params(axis='x', which='major', labelsize=18)
+        ax_ranges.spines['left'].set_visible(False)
+        ax_ranges.spines['top'].set_visible(False)
+        ax_ranges.spines['right'].set_visible(False)
 
-        return figures
+        # Format right panel
+        ax_std.set_yticks([])
+        ax_std.set_xlabel('Rank Standard Deviation', fontsize=20)
+        ax_std.set_title('Distribution of Rank Volatility by α', fontsize=22, fontweight='bold')
+        ax_std.tick_params(axis='x', which='major', labelsize=18)
+        ax_std.spines['left'].set_visible(False)
+        ax_std.spines['top'].set_visible(False)
+        ax_std.spines['right'].set_visible(False)
+
+        # Create legend for cost types
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor=cost_colors['linear'], alpha=0.5, edgecolor=cost_colors['linear'], label='Linear'),
+            Patch(facecolor=cost_colors['quadratic'], alpha=0.5, edgecolor=cost_colors['quadratic'], label='Quadratic'),
+            Patch(facecolor=cost_colors['power_law'], alpha=0.5, edgecolor=cost_colors['power_law'], label='Power Law'),
+            Patch(facecolor=cost_colors['exponential'], alpha=0.5, edgecolor=cost_colors['exponential'],
+                  label='Exponential')]
+
+        fig.legend(handles=legend_elements, loc='lower center', ncol=4, bbox_to_anchor=(0.5, -0.02), fontsize=18,
+                   frameon=True)
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.08)  # Make room for legend
+
+        # Save if requested
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"\nSaved combined ridge plot: {save_path}")
+
+        print(f"\nCreated combined figure with {len(alphas)} α levels across 4 cost types")
+
+        return fig
 
     def create_sensitivity_dashboard(self, results, all_data, save_dir='sensitivity_plots'):
         """Create comprehensive temporal visualization dashboard with faceted plots
@@ -3605,13 +3708,12 @@ class ParametrizationComparator:
 
         # Ridge plots for mobility distributions (firm-level distributions across α)
         print("\nGenerating mobility ridge plots...")
-        ridge_figures = self.visualize_mobility_ridge_plots(
+        ridge_fig = self.visualize_mobility_ridge_plots(
             all_data,
             save_path=os.path.join(save_dir, 'mobility_ridge_plot.pdf')
         )
-        for cost_type, fig in ridge_figures.items():
-            if fig is not None:
-                plt.close(fig)
+        if ridge_fig is not None:
+            plt.close(ridge_fig)
 
         print(f"\nSensitivity dashboard saved to {save_dir}")
         print("\nPlot types created:")
