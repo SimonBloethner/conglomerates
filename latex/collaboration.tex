@@ -13,7 +13,22 @@
 \usepackage{setspace}
 
 \usepackage{pgfplots}
+\usepgfplotslibrary{groupplots,fillbetween}
 \pgfplotsset{compat=1.18}
+
+\usepackage{tikz}
+\usetikzlibrary{patterns,calc}
+
+
+% Define colors
+\definecolor{bargreen}{RGB}{76, 175, 80}
+\definecolor{darkbargreen}{RGB}{5, 73, 7}
+
+% Cost type colors (match paper style)
+\definecolor{cost0}{RGB}{31,119,180}   % linear
+\definecolor{cost1}{RGB}{255,127,14}   % quadratic
+\definecolor{cost2}{RGB}{44,160,44}    % power law
+\definecolor{cost3}{RGB}{214,39,40}    % exponential
 
 
 % Title information
@@ -33,24 +48,24 @@
 
 \maketitle
 \begin{abstract}
-{\noindent We examine the effects of conglomerate mergers on firm growth and the competitive landscape using an agent-based model. We provide evidence that resource sharing within conglomerates acts as a risk mitigation strategy in multiplicative growth processes, providing incentives for conglomerate formation. Our model shows that even small levels of resource sharing can significantly alter market dynamics, leading to more balanced market share distributions and increased firm mobility. Contrary to concerns about market concentration, our results suggest that conglomerate formation can enhance overall market competitiveness by reducing both static and dynamic inequality.}
+{\noindent We examine the effects of conglomerate mergers on firm growth and the competitive landscape using an agent-based model. We provide evidence that resource sharing within conglomerates acts as a risk mitigation strategy in multiplicative growth processes, providing incentives for conglomerate formation. Our model shows that even small levels of resource sharing can significantly alter market dynamics, leading to more balanced market share distributions and increased firm mobility. Contrary to concerns about market concentration, our results suggest that conglomerate formation can reduce both static and dynamic measures of market concentration.}
 \end{abstract}
 
-\textbf{\small{}JEL Classification Codes: C63, D21, D43, L11, L40} \\
+{\noindent \textbf{\small{}JEL Classification Codes: C63, D21, D43, L11, L40}} \\
 \textbf{\small{}Keywords:}{\small{}{} Conglomerate Merger, Competition, Growth Optimization, Risk, Agent-Based Modeling}{\small\par}
 
 \newpage
 
 \section{Introduction}
-Conglomerative mergers are important to many fields of economic inquiry, ranging from industrial organization \cite{audretsch1989determinants, goldberg1973effect, goldberg1974conglomerate}, international trade \cite{baltagi2007estimating, ramondo2010role,lind2023trade}, to finance \cite{lewellen1971pure,boguth2022dissecting} and even management studies \cite{amit1988concept, amihud1981risk}. However, unlike horizontal or vertical mergers, whose drivers have been studied thoroughly, the determinants of conglomerative mergers have not received nearly as much attention. Formally, it defines the merging of two businesses that operate in different markets and are not part of the same value chain. Many of these mergers take place across borders, which is why they are also known as complex foreign direct investment \cite{baltagi2007estimating}. For the purpose of this article, we will look at \textit{pure} conglomeration, omitting motivations of market or product extension \cite{felton1971conglomerate}. The determinants of such processes remain at once manifold and elusive. Among those brought forward are economies of scale, and increasing market power \cite{mueller1969theory}, taxation \cite{cohen1969conglomerate} or alignment with management salary risk preferences \cite{amihud1981risk}. One overarching theme, however, is the reduction in risk. For example, \cite{scherer1990industrial} points to a reduction in the standard deviation of profits by merging two firms operating in independent markets. Despite the fact that the standard deviation is neither technically, nor methodologically a good measure of risk \cite{taleb2020statistical}, it provides valuable insights into the determinants of conglomerative mergers. In this context \cite{mueller1969theory} introduces the concept of growth maximization as a reason for conglomeration, where diversifying across firms yields an increased rate of growth for the owning entity. Considering this in light of recent ideas by \cite{peters2019ergodicity} offers a new path forward. In particular, the notion of firm growth rate optimization dynamically through time by reducing losses seems both novel and established. Under this framework an agent (here a firm) searches for the most cost-effective means to reduce negative impacts on their growth rate. \cite{amihud1981risk} propose that mergers act to avoid disastrous outcomes, almost as some form of insurance, provided that the premium paid in terms of transaction costs is low enough. Adding more companies to a portfolio to reduce losses works best, of course, when these companies' outcomes are maximally independent. \cite{audretsch1989determinants} presents this thought by proposing that mergers happen at different stages of the firms' lifecycle, thus increasing the diversification potential. \\
-Just as unsolved remains the question of the impact that such mergers have on the competitive landscape. While \cite{waldman1983impact} finds that post acquisition companies grow at an above industry average rate, \cite{goldberg1974conglomerate} and \cite{goldberg1973effect} do not detect any consequences that would increase market concentration. The results in \cite{waldman1983impact} seem to depend on the acquiring company to financially support the acquired company as a necessary condition of out performance. Naturally, there is a limit to the size of a company as transaction cost, such as the coordination of all constituent businesses, increase \cite{coase19883}. This provides a natural drag on the effectiveness of conglomeration as a means to increase the growth rate. The direction of the effect on competitiveness is of course relevant to policymakers, wishing to optimize consumer welfare. \\
-We will offer evidence to help propel the answer to both of these questions. Section \ref{sec:Background} provides an introduction into growth rate optimization under multiplicative dynamics and their relevance in trying to understand competitive processes. Section \ref{sec:Model} presents the formal model, as well as the assumptions implied in it. Continuing in Section \ref{sec:Results}, we show the results of the simulation, and introduce and discuss the metrics used in our arguments. We put these into context in Section \ref{sec:Discussion} before concluding in Section \ref{sec:Conclusion}.
-
+Conglomerative mergers are important to many fields of economic inquiry, ranging from industrial organization \cite{audretsch1989determinants, goldberg1973effect, goldberg1974conglomerate}, international trade \cite{baltagi2007estimating, ramondo2010role,lind2023trade}, to finance \cite{lewellen1971pure,boguth2022dissecting} and even management studies \cite{amit1988concept, amihud1981risk}. However, unlike horizontal or vertical mergers, whose drivers have been studied thoroughly, the determinants of conglomerative mergers have not received nearly as much attention. Formally, it defines the merging of two businesses that operate in different markets and are not part of the same value chain. Many of these mergers take place across borders, which is why they are also known as complex foreign direct investment \cite{baltagi2007estimating}. We note that market and product extension mergers \cite{felton1971conglomerate} may also be partially motivated by the pooling mechanism we identify, since gaining additional growth streams aids the diversification process. By isolating pure conglomeration, we identify the independent contribution of resource pooling to merger incentives, which may operate alongside other motivations in more complex merger types. The determinants of such processes remain both manifold and elusive. Among those brought forward are economies of scale, and increasing market power \cite{mueller1969theory}, taxation \cite{cohen1969conglomerate} or alignment with management salary risk preferences \cite{amihud1981risk}. One overarching theme, however, is the reduction in risk. For example, \cite{scherer1990industrial} points to a reduction in the standard deviation of profits by merging two firms operating in independent markets. Despite the fact that the standard deviation is neither technically, nor methodologically a good measure of risk \cite{taleb2020statistical}, it provides valuable insights into the determinants of conglomerative mergers. In this context \cite{mueller1969theory} introduces the concept of growth maximization as a reason for conglomeration, where diversifying across firms yields an increased rate of growth for the owning entity. Considering this in light of recent ideas by \cite{peters2019ergodicity} offers a new path forward. In particular, the notion of firm growth rate optimization dynamically through time by reducing losses seems both novel and established. Under this framework an agent (here a firm) searches for the most cost-effective means to reduce negative impacts on their growth rate. \cite{amihud1981risk} propose that mergers act to avoid disastrous outcomes, almost as some form of insurance, provided that the premium paid in terms of management costs is low enough. Adding more companies to a portfolio to reduce losses works best, of course, when these companies' outcomes are maximally independent. \cite{audretsch1989determinants} presents this thought by proposing that mergers happen at different stages of the firms' lifecycle, thus increasing the diversification potential. \\
+Just as unsolved remains the question of the impact that such mergers have on the competitive landscape. While \cite{waldman1983impact} finds that post acquisition companies grow at an above industry average rate, \cite{goldberg1974conglomerate} and \cite{goldberg1973effect} do not detect any consequences that would increase market concentration. The results in \cite{waldman1983impact} seem to depend on the acquiring company to financially support the acquired company as a necessary condition of out performance. Naturally, there is a limit to the size of a company as management cost, such as the coordination of all constituent businesses, increase \cite{coase19883}. This provides a natural drag on the effectiveness of conglomeration as a means to increase the growth rate. The direction of the effect on competitiveness is of course relevant to policymakers, wishing to optimize consumer welfare. \\
+We will offer evidence to help propel the answer to both of these questions. First, we demonstrate that under multiplicative dynamics, resource sharing within conglomerates is positive-sum rather than zero-sum, providing a novel theoretical foundation for conglomerate formation. Second, we distinguish between portfolio diversification and what we term 'true diversification' through pooling, showing that the latter offers superior growth rate optimization. Third, we provide simulation evidence that these incentives, if acted upon, would reduce rather than increase market concentration. Section \ref{sec:Background} provides an introduction into growth rate optimization under multiplicative dynamics and their relevance in trying to understand competitive processes. Section \ref{sec:Model} presents the formal model, as well as the assumptions implied in it. Continuing in Section \ref{sec:Results}, we show the results of the simulation, and introduce and discuss the metrics used in our arguments. Finally, we put these into context in Section \ref{sec:Discussion} before concluding in Section \ref{sec:Conclusion}.
 
 \section{Background}
 \label{sec:Background}
 Conventional economic models had great success explaining the formation of vertical and horizontal mergers. Despite this, conglomerative mergers have escaped such reasoning so far. Many explanations are based on cost sharing arguments \cite{mueller1969theory}, whereby firms split up expenses among themselves. One point often made against such an explanation is 
 that this is in effect zero-sum, given that one firm's gain is another's loss. However, this critique only holds under the assumption of additive growth. In a setting of multiplicative dynamics, where the next state $s_{t+1}$ of some variable (e.g. market share, reputation, size) is dependent on the previous one $s_t$ \cite{gibrat1931,sutton1997gibrat}, the objective is to maximize the growth rate $g$, the geometric average of periodic increments $\delta_t \in \left(0, \infty \right)$, sometimes also referred to as the Compound Annual Growth Rate in investment circles
+
 
 \begin{gather}
     g = \left(\prod_{t=1}^{T} \delta_t \right)^\frac{1}{T}
@@ -102,23 +117,21 @@ One can think of this as raising the base of the state $s_{t+1}$ such that the n
     g = \mu - \frac{\sigma^2}{2}
 \end{gather}
 
-In addition to the mean $\mu$, the fluctuation of the increments $\frac{\sigma^2}{2}$ has an outsized impact on the growth rate, as the negative fluctuations outweigh the positive ones even though they are symmetric.\footnote{Even when gaining and losing at the same rate $\delta_t$: $(1 - \delta_t)(1 + \delta_t) = 1 - \delta_t^2 < 1$.} This dynamic is sometimes referred to as \textit{variance drain} \cite{messmore1995variance} or \textit{volatility drag} \cite{spitznagel2021safe}. 
+In addition to the mean $\mu$, the fluctuation of the increments $\frac{\sigma^2}{2}$ has an outsized impact on the growth rate, as the negative fluctuations outweigh the positive ones even though they are symmetric. We can easily demonstrate this since even when gaining and losing at the same rate the overall outcome will be net negative $\delta_t$: $(1 - \delta_t)(1 + \delta_t) = 1 - \delta_t^2 < 1$. This dynamic is sometimes referred to as \textit{variance drain} \cite{messmore1995variance} or \textit{volatility drag} \cite{spitznagel2021safe}. 
 Thus, as outlined, reducing the magnitude of fluctuations is the largest lever to increase the growth rate.  
 
-Again, we can link this to sharing, where conglomerate formation increases $g$ for all firms within the entity. Under multiplicative dynamics, sharing can be shown to be growth optimal in the following way \cite{peters2022ergodicity}. With $N$ firms, whose growth increments $\delta_i$ are independently drawn from the same distribution $\mathcal{N} \sim (\mu, \sigma)$, the \textit{sharing} or \textit{pooling} of their increments increases their individual growth rates such that
+Again, we can link this to sharing, where conglomerate formation increases $g$ for all firms within the entity. Under multiplicative dynamics, sharing can be shown to be growth optimal. Following \cite{peters2022ergodicity}, with $N$ firms, whose growth increments $\delta_i$ are independently drawn from the same distribution $\mathcal{N} \sim (\mu, \sigma)$, the \textit{sharing} or \textit{pooling} of their increments increases their individual growth rates such that
 
 \begin{gather}
     g = \mu - \frac{\sigma^2}{2N}
 \end{gather}
 
-As the number of firms $N$ in a conglomerate increases, the drag imposed by the fluctuations decreases. In the extreme case of $N \to \infty$ each firm is able to realize the ensemble average $\mu$ with every increment. Of course there are limits to how big a firm and thus a conglomerate can grow, given that transaction cost, especially for coordination increase \cite{coase19883}. Any increase in conglomerate size will increase transaction cost, while at the same time increasing the growth rate for all firms included. Thus, one can imagine this kind of cooperation as a hedge, or an insurance against unfavorable growth increments, the premium for which is the cost of coordination. Clearly, there is a trade-off involved, and a conglomerate size, though certainly varying, which optimizes it. This concept is somewhat related to that of diversification, as applied to financial portfolios. However, in contrast to the latter, pooling also improves the growth rates of the entities that make up the portfolio, while offering even greater growth prospects than diversification to the portfolio itself. It is, in this sense, \textit{true diversification}. 
+As the number of firms $N$ in a conglomerate increases, the drag imposed by the fluctuations decreases. In the extreme case of $N \to \infty$ each firm is able to realize the ensemble average $\mu$ with every increment. Of course there are limits to how big a firm and thus a conglomerate can grow, given that management cost, especially for coordination increase \cite{coase19883}. Any increase in conglomerate size will increase management cost, while at the same time increasing the growth rate for all firms included. Thus, one can imagine this kind of cooperation as a hedge, or an insurance against unfavorable growth increments, the premium for which is the cost of coordination. Clearly, there is a trade-off involved, and a conglomerate size, though certainly varying, which optimizes it. This concept is somewhat related to that of diversification, as applied to financial portfolios. However, in contrast to the latter, pooling also improves the growth rates of the entities that make up the portfolio, while offering even greater growth prospects than diversification to the portfolio itself. It is, in this sense, \textit{true diversification}, which we define as a cooperative arrangement that increases the time-average growth rate of each constituent unit under multiplicative dynamics, rather than merely reducing variance at the portfolio level
 
 
 \section{Model}
 \label{sec:Model}
-\subsection{Random Multiplicative Growth}
-\label{sec:mult_growth}
-\subsubsection{Growth Process}
+\subsection{Growth Process}
 Agent-based models (ABMs) have become increasingly useful in the context of economic modelling \cite{axtell2025agent}. However, they have not been employed to model conglomerative merging behavior of firms. To investigate how growth rate optimization influences the incentives in conglomerate formation, we set up an ABM with $M$ markets that are uncorrelated between each other, each containing an amount of $N$ firms.
 Firms face random multiplicative growth that is unique to their market. Each increment $\delta_{it}$ is drawn from a normal distribution $\mathcal{N}(\mu_m, \sigma_m)$ with positive ensemble average $\mu_m$. In this framework each firm's periodic state, which can be seen as its size, is multiplicatively linked to its previous one. 
 
@@ -128,24 +141,35 @@ Firms face random multiplicative growth that is unique to their market. Each inc
 
 We model markets such that the mean and the standard deviation of the distribution over their growth increments are positively correlated, meaning that a higher mean $\mu_m$ comes 
 with a higher standard deviation $\sigma_m$. As explained in section \ref{sec:Background}, in multiplicative processes one is not just maximizing for the ensemble average $\mu_m$, but for the growth rate $g$. Hence, a higher scale $\sigma_m$ decreases the growth rate, through the volatility tax. \\
-Each firm thus realizes an absolute period gain of $\Delta_{it} = s_{it-1} \delta_{it} - s_{it-1}$. For any firm not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates $C$ pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$, with $\alpha \in [0, 1]$. However, as conglomerates grow in size, maintaining them becomes ever more difficult as transaction costs increase. We model these as a logistic function of the form
+Each firm thus realizes an absolute period gain of $\Delta_{it} = s_{it-1} \delta_{it} - s_{it-1}$. For any firm not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates $C$ pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$, with $\alpha \in [0, 1]$. The growth process is multiplicative at the shock level but additive at the accounting level. Firms experience multiplicative shocks to size, but pooling operates on realized absolute gains, which are naturally additive. This reflects the institutional reality that internal capital markets redistribute realized resources rather than growth rates themselves. As conglomerates grow in size, maintaining them becomes ever more difficult as management costs increase. We model these using four different functional forms:
 
 \begin{gather}
-    \label{eq:transaction}
-    \Phi (O_c, M) = \frac{1}{1 + e^{-|O_c| + 0.4 M}}
+    \label{eq:power_law}
+    \Phi (O_c) = b_{0p} |O_c| ^ {b_{1p}}
+\end{gather}
+\begin{gather}
+    \label{eq:linear}
+    \Phi (O_c) = b_{0l} + b_{1l} |O_c|
+\end{gather}
+\begin{gather}
+    \label{eq:quadratic}
+    \Phi (O_c) = b_{0q} + b_{1q} |O_c| + b_{2q} |O_c|^2 
+\end{gather}
+\begin{gather}
+    \label{eq:exponential}
+    \Phi (O_c) = b_{0e} e^{b_{1e} |O_c|}
 \end{gather}
 
-This factor scales the cost according to conglomerate size $\sum_{i \in c} s_{it}$ such that the pool size is given by
+The parameters $b$ are management cost scaling hyperparameters for the power law ($p$), linear ($l$), quadratic ($q$), and exponential ($e$) cost functions. The literature on management diseconomies provides theoretical foundations \cite{coase19883,williamson1967hierarchical} but limited empirical guidance on the precise functional form of coordination costs. \cite{williamson1967hierarchical} suggests that diseconomies arise from communication distortion, bureaucratic insularity, and incentive limits, but these mechanisms could plausibly generate linear, convex, or even initially concave cost structures depending on organizational form and industry context. \cite{canback2006diseconomies} find empirically that diseconomies and scale economies tend to offset each other, making the functional form difficult to identify directly. Given this theoretical and empirical ambiguity, we test four functional forms representing the main possibilities: power law (initially concave), linear, quadratic (convex), and exponential (strongly convex). Rather than treating this as purely a robustness check, we treat the cost structure as a parameter of interest: while the direction of pooling effects is robust across specifications, the magnitude varies substantially, which has implications for optimal conglomerate size. We calibrate the cost function parameters such that all four specifications yield equivalent costs at a conglomerate size of 40 members, which represents a mid-range conglomerate in our setup with $M \in \{50, 100, 150\}$ markets. We also vary these parameters around these baseline values across simulations to ensure our results are not driven by a particular calibration choice. Once computed, this cost factor scales the cost according to conglomerate size $\sum_{i \in c} s_{it}$ such that the pool size is given by
 
 \begin{gather}
-    \Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}
+    \Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c) \sum_{i \in c} s_{it}
+    \label{eq:comp_pool}
 \end{gather}
-where the set of markets a conglomerate operates in is defined as $O_c \subseteq M$.
-Notice that the factor $0.4$ in the logistic function scales the costs such that a conglomerate operating in 40\,\% of all markets would lose 50\,\% of their market value in transaction cost every round.
-Lastly, this pool will be shared equally, determining a member's profit by
-$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_{c_i}|}$\,. Consequently, any firm's next state is given by $s_{it+1} = s_{it} + \Pi_{it}$\,.
+where the set of markets a conglomerate operates in is defined as $O_c \subseteq M$. Lastly, this pool will be shared equally, determining a member's profit by
+$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_{c_i}|}$\,. Consequently, any firm's next state is given by $s_{it+1} = s_{it} + \Pi_{it}$.
 
-\subsubsection{Merging and Splitting}
+\subsection{Merging and Splitting}
 
 At the beginning of every time step $t$ each firm $i \in M \times N$  gets a chance to choose another with probability $p$. If successful, it will select a random other firm $j$, among the remaining $(M \times N) - 1$ firms. 
 We allow conglomerates to only operate one firm per market, meaning it can have a maximum of $M$ members. Hence, conglomeration is only \textit{feasible} if firm $j$ and $i$: 
@@ -156,7 +180,9 @@ We allow conglomerates to only operate one firm per market, meaning it can have 
 \end{enumerate}
 
 We assume that if both firms are in conglomerates that these will merge as well. After confirming \textit{feasibility}, merging firms determine \textit{desirability}, meaning that they would both benefit from joining forces.
-They do so by comparing the realized pool $\Omega$ size over the last $l$ periods, against a ``synthetic'' pool $\hat{\Omega}$ size if they had merged. If $\hat{\Omega} > \Omega$ the merger will be implemented. One could think of this as some form of due diligence. 
+They do so by comparing the realized pool $\Omega$ size over the last $l$ periods, against a ``synthetic'' pool $\hat{\Omega}$ size if they had merged.
+
+Specifically, firms compute $\hat{\Omega}$ by applying the pooling formula \ref{eq:comp_pool} to their combined historical increments $\{ \Delta_{it}, \Delta_{jt} \}_{t=t_l}$ over the lookback period, using the management cost that would apply to the combined entity. This assumes firms have access to each other's historical performance data, which could be interpreted as the due diligence process preceding merger negotiations. If $\hat{\Omega} > \Omega$ the merger will be implemented. 
 
 After an initial $l$ periods each firm that is part of a conglomerate evaluates its performance within it by comparing its growth rate $g_{i(t-l):t}$ being part of the conglomerate against the potential rate $\hat{g}_{i(t-l):t}$ it had
 realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone until it gets the chance to join another conglomerate. The full model can be seen in algorithm \ref{alg:rand_growth}. \par
@@ -171,7 +197,7 @@ realized, had it remained outside. Upon being worse off, a firm exits the conglo
         Merge with $j$ if $(m_i \neq m_j)$ and $(O_{c_i} \cap O_{c_j} = \emptyset)$ and $\hat{\Omega} > \Omega$  
       }
       \ForEach{$c \in C$}{
-        $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c, M) \sum_{i \in c} s_{it}$ \\
+        $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c) \sum_{i \in c} s_{it}$ \\
         \ForEach{$i \in c$}{$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_c|}$} 
       }
       \ForEach{$i \notin c \text{ for all } c \in C$}{$\Pi_{it} = \Delta_{it}$}   
@@ -181,7 +207,7 @@ realized, had it remained outside. Upon being worse off, a firm exits the conglo
       }
 
     }
-    \caption{Model flow with random growth.}
+    \caption{Model flow}
 \end{algorithm}
 
 
@@ -241,19 +267,20 @@ realized, had it remained outside. Upon being worse off, a firm exits the conglo
 
 \section{Results}
 \label{sec:Results}
-We implemented the models outlined in the previous section in Python with a parameter specification that can be found in Table \ref{tab:model_params}. Note that we conducted extensive robustness testing, none of which 
-altered the central findings of this section. 
+We implemented the model outlined in the previous Section in Python with extensive robustness testing. For each of our hyperparameters, to be found in Table \ref{tab:model_params}, we chose a set of values to analyze whether they influence the key results. In addition to these, we also vary the parameters of our cost functions. For each of the four cost function types we ran a counterfactual altering one of the hyperparameters. Within each counterfactual we gradually increase the parameter of interest, the sharing rate $\alpha$, by $0.02$ to investigate the response of our model. To gain statistical confidence in our results, each counterfactual is run 50 times per level of $\alpha$ in a Monte Carlo setting, which leaves us with a total of $70,200$ simulations. 
+
 \begin{table}[h]
     \centering
     \begin{tabular}{|c|c|}
     \hline
     \textbf{Parameter} & \textbf{Value} \\
     \hline
-    $M$ & 100  \\
-    $N$ & 100 \\
-    $T$ & 1000 \\
-    $l$ & 50 \\
-    $p$ & 0.05 \\
+    $M$ & \{50, 100, 150\} \\
+    $N$ & \{50, 100, 150\} \\
+    $T$ & 10000 \\
+    $l$ & \{10, 50, 100\} \\
+    $p$ & \{0.01, 0.05, 0.1\} \\
+    $\Phi$ & {$l, e, p, q$ } \\
     $\alpha$ & $\left[0, 0.5 \right]$ \\
     \hline
     \end{tabular}
@@ -261,41 +288,273 @@ altered the central findings of this section.
     \label{tab:model_params}
 \end{table}
 
-To answer the questions outlined in Section \ref{sec:Background}, we analyze certain outputs of our model. We gradually increase the parameter of interest, the sharing rate $\alpha$, by $0.02$ to investigate the behavior of our model. To gain further confidence in our result, we ran each experimental setup (each level of $\alpha$) 10 times in a Monte Carlo type setting and averaged them. \par
+Given the high-dimensionality of our results, we estimate several panel regressions, controlling for the counterfactual heterogeneity to isolate the effect of our variable of interest $\alpha$ on the question outlined in Section \ref{sec:Background}. Table \ref{tab:dynamics} shows the impact of a change in pooling on the per period number of average members per conglomerate, number of conglomerates, mergers, and exits (defined as a firm leaving a conglomerate). Importantly, we estimate a quadratic model to capture any non-linear effects, which are clearly relevant and statistically significant, meaning that pooling increases all metrics up to a point before impacting them negatively. When looking at the effect sizes of periodic mergers and exits, we see that increasing $\alpha$ increases mergers slightly more than exits indicating stable formation of conglomerates. Additionally, we observe that increasing $\alpha$ produces more conglomerates with fewer members on average, indicating stronger market fragmentation. These effects are, however, not homogenous across cost structures. Figure \ref{fig:metrics} shows that power law cost scaling leads to comparatively larger, but fewer conglomerates. It also produces merging and exit patterns that are much less dynamic than those of rest of the cost structures. Since costs scale initially slower in the power law case, conglomerates can form more reliably, lowering the number of exits and consequently also the number of firms able to join new ones. 
 
-Firstly, Figure \ref{fig:sizes} indicates a stable tendency to form conglomerates, which after initial fluctuations, partially due the review period $l$, settles to a stable level up until the final number of iterations $T$ is reached. Note that we omit the no-sharing case in this figure. Both the number of conglomerates, and their size converge to a regular pattern. Interestingly, while initially increasing the sharing rate leads to larger conglomerates, there seems to be an optimum sharing level between $0.2$ and $0.3$ that maximizes conglomerate size. This is also reflected, though not as strongly, in the number of conglomerates, which bottoms out at the same level. This is not a surprising result, given that one would expect an inverse relationship between the size and the number of conglomerates. Both of these findings, lend support to the idea of collaborative growth being able to explain incentives to merge in a conglomerative manner. Any firm not benefitting from it being part of a conglomerate would either split off or not join in the first place. Given our proposed transaction cost function in Equation \ref{eq:transaction}, a conglomerate of size $20$ experiences a per period drain of roughly $2.06 \times 10^{-9}$ on their combined size by pooling their resources. 
-
-\begin{figure}
+\begin{table}
     \centering
-    \includegraphics[trim={0cm 0.1cm 0cm 0.4cm}, clip, width=.91\textwidth]{figures/sizes.pdf}
-    \caption{Conglomerate sizes and number of conglomerates.}
-    \label{fig:sizes}
-\end{figure}
+    \begin{tabular}{lcccc}
+        \hline\hline \\
+        [-1.8ex]
+
+        & (1) & (2) & (3) & (4) \\
+
+        & Avg. Members & Num. Conglomerates &  Mergers &  Exits \\
+
+        \hline
+        \\[-1.8ex]
+
+        $\alpha$ & 11.45*** & 4603.32*** & 226.25*** & 225.09*** \\
+
+        & (0.01) & (3.74) & (0.36) & (0.37) \\
+
+        $\alpha^2$ & -12.87*** & -7857.29*** & -483.93*** & -482.74*** \\
+
+        & (0.02) & (7.23) & (0.70) & (0.71) \\
+
+        \hline
+        \\[-1.8ex]
+        Obs. & 14040000 & 14040000 & 14040000 & 14040000 \\
+        R$^{2}$ & 0.70 & 0.63 & 0.35 & 0.34 \\
+        \multicolumn{5}{l}{\footnotesize \textit{Note:} Standard errors in parentheses.} \\
+        \multicolumn{5}{l}{\footnotesize $^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\
+        
+    \end{tabular}
+
+    \caption{Panel regression results showing how pooling affects conglomerate size and count}
+    \label{tab:dynamics}
+\end{table}
 
 
-To examine the impact of mergers on the competitive landscape and to deepen our understanding of the role that transaction cost play, we fit a polynomial of degree two in Equation \ref{eq:reg_model} to the relation between conglomerate size and average market share of firms within a given conglomerate for each step in the model and display the result in Figure \ref{fig:ests}. 
+\input{figures/metric_plots/metrics_figure.tex}
+
+To further examine the impact of mergers on the competitive landscape and to deepen our understanding of the role that management cost play, we fit a polynomial of degree two in a panel setting in Equation \ref{eq:reg_model} to the relation between conglomerate size and average market share of firms within a given conglomerate within each simulation. Afterwards we aggregate these results per hyperparameter. 
 \begin{gather}
     \label{eq:reg_model}
     \bar{\Omega}_{ct} = \beta_{0t} + \beta_{1t} |O_{ct}| + \beta_{2t} |O_{ct}|^2
 \end{gather}
-We expect the conglomerate size to have a positive impact on the average market share ($\beta_{1t} > 0$). However, we expect transaction costs to impose a drag high enough to negatively influence the average market share ($\beta_{2t} < 0$). For all levels of $\alpha$ these hypotheses hold once the initial fluctuations pass, that are due to the  prevention of splitting during the initial look back period. Note that, as expected, $\beta_{2t}$ is negative in the same region, meaning that growing too large will decrease competitiveness, thus highlighting the impact of transaction costs on the conglomerate size. Both of these variables initially increase in effect size before stabilizing asymptotically. Importantly, the scale of $\beta_{1t}$ is many times larger than that of $\beta_{2t}$, meaning that even though the latter is multiplied by the square of conglomerate size, it would take conglomerates of sizes between $75$ (for $\alpha = 0.02$) and $43$ (for $\alpha = 0.5$) for conglomeration to reduce the average market share to 0. In our lowest sharing case these estimates predict a conglomerate of average size to have an average market share of $2.2\,\%$, more than double the perfectly equal case. As we increase the sharing rate, these effects become ever more muted, pushing the estimates for both $\beta_{1t}$ and $\beta_{2t}$ towards $0$. This is a direct consequence of a decrease in the variability and scale of market share inequality.
 
-\begin{figure}
-    \centering
-    \includegraphics[trim={0cm 0.1cm 0cm 0.45cm}, clip, width=.9\textwidth]{figures/ests.pdf}
-    \caption{Average estimates for the impact of conglomerate size on market share.}
-    \label{fig:ests}
+
+We expect the conglomerate size to have a positive impact on the average market share ($\beta_{1t} > 0$). However, we expect management costs to impose a drag high enough to negatively influence the average market share ($\beta_{2t} < 0$). Figure \ref{fig:panel_poly} shows that this hypothesis holds only to a certain extent. Initially, for all cost types except the power law one, we see $\beta_1 > 0 > \beta_2$. As we increase the level of pooling, this relation flips, however, the magnitude is much less pronounced, since the scale of the two estimates differs by an order of magnitude. Interestingly, this trend is shifted near identically across cost types, first experienced by the exponential, followed by the linear, and finally by the quadratic type. Again, we notice a pattern where initial sharing increases market share while further increases reverse this effect. For high levels of $\alpha$ all the cost types, bar the quadratic, tend to 0 for both $\beta_1$ and $\beta_2$. This is a direct consequence of a decrease in the variability and scale of market share inequality. 
+
+\begin{figure}[htbp]
+  \centering
+    \begin{tikzpicture}
+        \begin{groupplot}[
+            group style={
+                group size=2 by 1,
+                horizontal sep=2cm
+            },
+            width=0.45\textwidth,
+            height=0.35\textwidth,
+            xmin=0,
+            xmax=0.5,
+            xlabel={$\alpha$ (Profit Sharing)},
+            grid=both,
+            tick label style={font=\small},
+            label style={font=\small},
+            scaled ticks=false,
+            xticklabel style={/pgf/number format/fixed, /pgf/number format/precision=2},
+            yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=3},
+            % Define plot styles for cost types
+            /pgfplots/cost0/.style={color=cost0},
+            /pgfplots/cost1/.style={color=cost1},
+            /pgfplots/cost2/.style={color=cost2},
+            /pgfplots/cost3/.style={color=cost3},
+        ]
+
+        % Left panel: β₁
+            \nextgroupplot[ylabel={$\beta_1$ (Linear Coefficient)}, legend to name=polylegend, legend columns=4]
+            \input{figures/poly_ests/poly_beta1_plot.tex}
+
+            % Right panel: β₂
+            \nextgroupplot[ylabel={$\beta_2$ (Quadratic Coefficient)}]
+            \input{figures/poly_ests/poly_beta2_plot.tex}
+
+        \end{groupplot}
+
+        % Place legend below both plots, centered
+        \node at ($(group c1r1.south)!0.5!(group c2r1.south) - (0,1.5cm)$) [anchor=north] {%
+            \pgfplotslegendfromname{polylegend}%
+        };
+    \end{tikzpicture}
+    \caption{Panel polynomial estimates showing the relationship between conglomerate size and average market share across profit-sharing levels.}
+    \label{fig:panel_poly}
 \end{figure}
 
 
-Figure \ref{fig:shares} provides an initial insight into this dynamic by illustrating the market share distribution for which we collect the quantiles of market shares \textbf{within} markets and average over these \textbf{across} markets and Monte Carlo simulations. In our setup with $100$ firms per market a perfectly equal result would assign every firm a market share of $0.01$. As expected, the case without pooling (the dashed line) returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the 90th percentile eventually dropping to $0\,\%$ share \cite{gibrat1931}. Increasing $\alpha$ just ever so slightly already changes this dynamic fundamentally for the largest firm, while allowing it to still capture market share. Furthermore, all quantiles become more equal in market share until they eventually remain close to equality for the entirety of the simulation. As already alluded to, this also explains why conglomerate size becomes ever less predictive with an increase in sharing as the variation within the market shares becomes ever smaller. \par
 
-\begin{figure}
-    \centering
-    \includegraphics[trim={0cm 0cm 0cm 0.38cm}, clip, width=.9\textwidth]{figures/shares.pdf}
-    \caption{Market share of a given quantile.}
-    \label{fig:shares}
+
+
+Figure \ref{fig:market_shares} provides an initial insight into this dynamic by illustrating the market share distribution for which we collect the quantiles of market shares \textbf{within} markets and average over these \textbf{across} markets and Monte Carlo simulations and time steps. In our setup with $N$ firms per market a perfectly equal result would assign every firm a market share of $\frac{1}{N}$. In line with expectations, increasing the pooling rate decreases the market share inequality. However, this process is non-linear and proceeds different across quantiles, with market shares not moving at all initially for the largest firms, decreasing at a decelerating rate afterwards.  Lower quantiles grow with an increasing pooling rate, while the $99th$ quantile experiences an initial boost followed by a decline. The overall trend is towards more homogeneity in market shares, which explains the decreasing magnitude of the estimates shows in Figure \ref{fig:panel_poly}, which are heavily influenced by the largest firms. Again, we observe the same pattern, that simulations under the power law cost structure react first, followed by the linear, quadratic, and exponential ones. This reflects the scaling of management cost and the subsequent ability to form larger conglomerates that improve the growth path for each constituent firm in the conglomerate. Ultimately, scenarios with larger conglomerates lead to less inequality. Note that the case of no pooling with $\alpha = 0$ returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the $90th$ percentile dropping to a $0\,\%$ share \cite{gibrat1931}.
+
+%Figure \ref{fig:ginis} provides an initial insight into this dynamic by illustrating the market share distribution for which we collect the quantiles of market shares \textbf{within} markets and average over these \textbf{across} markets and Monte Carlo simulations. In our setup with $N$ firms per market a perfectly equal result would assign every firm a market share of $\frac{1}{N}$ leading to a Gini coefficient of $0$. Again, we estimate a panel regression of $\alpha$ on the calculated Gini coefficients controlling for the cost function type. Increasing the pooling rate outright decreases inequality in the market shares for all lower quantiles with $\beta_1$ and $\beta_2$ smaller than 0. The higher quantiles experience a small initial increase in inequality after falling continuously with $\alpha$. As already alluded to, this also explains why conglomerate size becomes ever less predictive with an increase in sharing as the variation within the market shares becomes ever smaller.
+
+%As expected, the case without pooling (the dashed line) returns the standard result of random multiplicative growth, exhibiting extreme inequality with the largest firm making up almost the entirety of the market and even the 90th percentile eventually dropping to $0\,\%$ share \cite{gibrat1931}. Increasing $\alpha$ just ever so slightly already changes this dynamic fundamentally for the largest firm, while allowing it to still capture market share. Furthermore, all quantiles become more equal in market share until they eventually remain close to equality for the entirety of the simulation. As already alluded to, this also explains why conglomerate size becomes ever less predictive with an increase in sharing as the variation within the market shares becomes ever smaller. \par
+
+
+% \begin{figure}
+%     \centering
+%     \scalebox{0.8}{
+%     \begin{tikzpicture}
+% \begin{axis}[
+%     width=15cm,
+%     height=13cm,
+%     ybar=12pt, % gap between bars
+%     bar width=10pt,
+%     ylabel style={font=\large},
+%     ylabel={Controlled Coefficient},
+%     xlabel style={font=\large},
+%     xlabel={Quantile},
+%     ymin=-0.75,
+%     ymax=0.2,
+%     xtick={1,2,3,4,5,6,7},
+%     xticklabels={10th, 25th, 50th, 75th, 90th, 99th, 100th},
+%     x tick label style={font=\normalsize},
+%     y tick label style={font=\normalsize},
+%     ytick={-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1},
+%     ymajorgrids=true,
+%     grid style={dashed, gray!25, line width=0.5pt},
+%     legend style={
+%         at={(0.12,0.98)}, 
+%         anchor=north west, 
+%         draw=black!50,
+%         fill=white,
+%         legend cell align=left,
+%         font=\normalsize,
+%         row sep=2pt
+%     },
+%     enlarge x limits=0.12,
+%     clip=false, % Allow labels outside plot area
+% ]
+
+% % Linear coefficients (solid bars)
+% \addplot[
+%     ybar,
+%     bar width=11pt,
+%     fill=bargreen!80,
+%     draw=black!60,
+%     line width=0.5pt,
+% ] coordinates {
+%     (1, -0.1861)
+%     (2, -0.1185)
+%     (3, -0.0434)
+%     (4, 0.0244)
+%     (5, 0.0736)
+%     (6, 0.1121)
+%     (7, 0.1089)
+% };
+
+% % Quadratic coefficients (patterned bars)
+% \addplot[
+%     ybar,
+%     bar width=11pt,
+%     fill=darkbargreen!80,
+%     draw=black!60,
+%     line width=0.5pt,
+%     postaction={pattern=north east lines, pattern color=black!40},
+% ] coordinates {
+%     (1, -0.5905)
+%     (2, -0.6278)
+%     (3, -0.6633)
+%     (4, -0.6807)
+%     (5, -0.6746)
+%     (6, -0.5896)
+%     (7, -0.5233)
+% };
+
+% \newlength{\bargap}
+% \setlength{\bargap}{12pt}
+
+% % Linear coefficient labels (positioned on/above bars)
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-5pt] at ([xshift=-\bargap]axis cs:1,-0.21) {\begin{tabular}{c} -0.1861 \\[-3pt] {\scriptsize (0.0006)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-5pt] at ([xshift=-\bargap]axis cs:2,-0.14) {\begin{tabular}{c} -0.1185 \\[-3pt] {\scriptsize (0.0006)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-5pt] at ([xshift=-\bargap]axis cs:3,-0.07) {\begin{tabular}{c} -0.0434 \\[-3pt] {\scriptsize (0.0006)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=5pt] at ([xshift=-\bargap]axis cs:4,0.05) {\begin{tabular}{c} 0.0244 \\[-3pt] {\scriptsize (0.0006)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=5pt] at ([xshift=-\bargap]axis cs:5,0.10) {\begin{tabular}{c} 0.0736 \\[-3pt] {\scriptsize (0.0006)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=5pt] at ([xshift=-\bargap]axis cs:6,0.14) {\begin{tabular}{c} 0.1121 \\[-3pt] {\scriptsize (0.0005)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=5pt] at ([xshift=-\bargap]axis cs:7,0.14) {\begin{tabular}{c} 0.1089 \\[-3pt] {\scriptsize (0.0005)} \end{tabular}};
+
+% % Quadratic coefficient labels (positioned on bars)
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:1,-0.55) {\begin{tabular}{c} -0.5905 \\[-3pt] {\scriptsize (0.0012)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:2,-0.59) {\begin{tabular}{c} -0.6278 \\[-3pt] {\scriptsize (0.0012)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:3,-0.62) {\begin{tabular}{c} -0.6633 \\[-3pt] {\scriptsize (0.0012)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:4,-0.64) {\begin{tabular}{c} -0.6807 \\[-3pt] {\scriptsize (0.0012)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:5,-0.64) {\begin{tabular}{c} -0.6746 \\[-3pt] {\scriptsize (0.0011)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:6,-0.55) {\begin{tabular}{c} -0.5896 \\[-3pt] {\scriptsize (0.0010)} \end{tabular}};
+% \node[fill=white, fill opacity=0, text opacity=1, inner sep=2pt, rounded corners=1pt, font=\small, yshift=-25pt] at ([xshift=\bargap]axis cs:7,-0.49) {\begin{tabular}{c} -0.5233 \\[-3pt] {\scriptsize (0.0010)} \end{tabular}};
+
+% \legend{$\beta_1$ (linear), $\beta_2$ (quadratic)}
+
+% \end{axis}
+% \end{tikzpicture}
+%     }
+%     \caption{Estimated coefficients of the impact of increasing $\alpha$ on the Gini coefficient by quantile. The standard errors are given in parentheses below.}
+%     \label{fig:ginis}
+% \end{figure}
+
+
+% Quantile titles
+\def\QuantileTitle#1{%
+  \ifcase#1
+    Quantile: 10th\or
+    Quantile: 50th\or
+    Quantile: 90th\or
+    Quantile: 99th\or
+    Quantile: 100th%
+  \fi
+}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={
+        group size=2 by 2,
+        vertical sep=1.2cm,
+        horizontal sep=1.5cm
+    },
+    width=0.45\textwidth,
+    height=0.35\textwidth,
+    xmin=0,
+    xmax=0.5,
+    ylabel={Market Share},
+    grid=both,
+    tick label style={font=\small},
+    label style={font=\small},
+    yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=3},
+    xticklabel style={/pgf/number format/fixed, /pgf/number format/precision=3},
+]
+
+% -------- Quantile loop (manual, explicit) --------
+
+%\nextgroupplot[title=\QuantileTitle{0}, legend to name=mainlegend, legend columns=4]
+%\input{figures/share_plots/quantile_plot_0.tex}
+
+\nextgroupplot[title=\QuantileTitle{1}, legend to name=mainlegend, legend columns=4]
+\input{figures/share_plots/quantile_plot_1.tex}
+
+\nextgroupplot[title=\QuantileTitle{2}]
+\input{figures/share_plots/quantile_plot_2.tex}
+
+\nextgroupplot[title=\QuantileTitle{3}, xlabel={$\alpha$ (Pooling Rate)}]
+\input{figures/share_plots/quantile_plot_3.tex}
+
+\nextgroupplot[title=\QuantileTitle{4}, xlabel={$\alpha$ (Pooling Rate)}]
+\input{figures/share_plots/quantile_plot_4.tex}
+
+\end{groupplot}
+
+
+% Place legend below both plots, centered
+\node at ($(group c1r2.south)!0.5!(group c2r2.south) - (0,1.5cm)$) [anchor=north] {%
+    \pgfplotslegendfromname{mainlegend}%
+};
+
+\end{tikzpicture}
+\label{fig:market_shares}
+\caption{Market share by cooperation level across quantiles and cost structures. The solid line indicates the median and the shaded region is between the 25th and 75th percentile.}
 \end{figure}
+
 
 
 % This finding is being confounded by Figure \ref{fig:ginis}, for which we calculate the Gini coefficient for every market, divide these into quantiles over which we can then average across simulations. Firstly, we can see that higher quantiles reach their maximum inequality earlier than lower ones. More importantly though, larger values of $\alpha$ slow the increase and cap the maximum level of inequality for all quantiles. Again, as the sharing rate reaches its maximum, inequality as measured by the Gini coefficient is minimized, mirroring the finding of the previous analysis. 
@@ -307,26 +566,23 @@ Figure \ref{fig:shares} provides an initial insight into this dynamic by illustr
 %     \label{fig:ginis}
 % \end{figure}
 
-So far we have only looked at a static measure for a distribution, meaning that it can only provide information on the aggregate. To address this, we follow each firm throughout each simulation and tally both the difference between its maximum and minimum rank and the standard deviation of its ranks, and plot the resulting distributions over all firms and counterfactuals in Figure \ref{fig:mobility}. Given that there are 100 firms per market, this sets an upper limit on mobility as measured by both metrics. The range shows that even in the no-pooling case the theoretical upper bounds of mobility are reached. However, we observe again that introducing just a small amount of sharing changes the dynamic drastically, as both measures shift completely in their pattern, raising mobility noticeably. In addition, increasing the sharing rate increases the variability of ranks, shifting the distribution to the right. Interestingly, given that the maximum range is already reached for any sharing level, we only see more mass of the distribution moving to the right. This means that with larger degrees of sharing more firms experience the chance to climb through the ranks. Similarly, while the no-sharing case displays only low levels of rank variation, increasing sharing seems to improve mobility greatly. We could interpret this a having decreasing barriers to entry into a market, or in general a lower ability of incumbents to prevent others from increasing their market share. 
+So far we have only looked at a static measure for market shares, meaning that it can only provide information on the distribution of market shares, but not which firms are within them. To address this, we follow each firm throughout a simulation and record both the difference between its maximum and minimum rank and the standard deviation of its ranks. Figure \ref{fig:mobility_ridges} demonstrates how the distribution over both of these metrics changes as we increase the pooling rate $\alpha$. Note, that given that there are $N \in \{75, 100, 150 \}$ firms per market, there is an upper limit to the limit of the mobility measure. The range shows that even in the no-pooling case the theoretical upper bounds of mobility are reached. However, we observe again that introducing just a small amount of sharing changes the dynamic drastically, as both measures shift completely in their pattern, raising the body of the mobility considerably. In addition, increasing the sharing rate increases the variability of ranks, shifting the distribution to the right. We interpret this as reduced persistence of market positions. The baseline case $(\alpha = 0)$ represents pure Gibrat's law dynamics, which are known to produce extreme concentration and lock-in of market leaders \cite{gibrat1931,sutton1997gibrat}. Any deviation from this baseline through pooling therefore represents an improvement in dynamic competition. Note that the theoretical maximum of the range metric (equal to $N-1$) is reached even at $\alpha = 0$, but the mass of the distribution shifts rightward with increased pooling, indicating that more firms experience rank mobility rather than just a few outliers. Expectedly, there is also variability in the response depending on the cost structure, mirroring the sequence of converge observed above. While simulations based on the power law cost structure reach their maximum mobility for the smallest of $\alpha > 0$, increasing it to higher levels actually decreases mobility slightly, shifting the body of the distribution for both metrics leftwards and increasing spread. 
 
-\begin{figure}
-    \centering
-    \includegraphics[trim={1cm 1.1cm 1cm 1.8cm}, clip, width=.9\textwidth]{figures/mobility.pdf}
-    \caption{Distribution over ranks.}
-    \label{fig:mobility}
-\end{figure}
+\input{figures/ridge_plots/ridge_plot_mobility.tex}
 
 \section{Discussion}
 \label{sec:Discussion}
-A recurring theme in the search for determinants of conglomerate formation is diversification to mitigate risks. As specialization of the Smitihian \cite{smith1776inquiry} and Ricardian \cite{ricardo1817principles} nature allows us to increase our returns to scale, and as we tend to increase in ever greater manner the degree of roundaboutness of production \cite{bawerk1921kapital}, the potential downsides from miscalculation or shocks looms ever larger. Mitigating these, however, is also becoming simpler \cite{felton1971conglomerate}, as both internal and external means of diversification \cite{goldberg1973effect} compete to be the most cost-effective insurance against adverse events. As demonstrated above, true diversification from conglomerate formation offers a reliable mitigation pathway and is applicable to many risk vectors. \par
+A recurring theme in the search for determinants of conglomerate formation is diversification to mitigate risks. As specialization of the Smithian \cite{smith1776inquiry} and Ricardian \cite{ricardo1817principles} nature allows us to increase our efficiency, and as we tend to increase in ever greater manner the degree of roundaboutness of production \cite{bawerk1921kapital}, the potential downsides from miscalculation or shocks looms ever larger. Mitigating these, however, is also becoming simpler \cite{felton1971conglomerate}, as both internal and external means of diversification \cite{goldberg1973effect} compete to be the most cost-effective insurance against adverse events. As demonstrated above, true diversification from conglomerate formation offers a reliable mitigation pathway and is applicable to many risk vectors. \par
 Among these are macroeconomic or political shocks that are specific to certain geographic regions or sectors of the economy. The literature on international trade has picked up this theme arguing that cross-country foreign direct investment reduces country-specific risks \cite{ramondo2010role} and even increases between less correlated markets \cite{ramondo2013proximity}. Similarly, \cite{amit1988concept} argue that conglomeration can diversify across business cycles, while \cite{audretsch1989determinants} proposes that it can even be used to match different product life cycles. \par
+Our model assumes independence of growth increments across markets, which maximizes the pooling benefit. In practice, markets exhibit varying degrees of correlation, particularly during economic crises when correlations tend to spike \cite{forbes2002no}. \cite{peters2022ergodicity} show that positive correlation reduces but does not eliminate pooling benefits, unless they are perfectly correlated. Our results therefore represent an upper bound on the incentives for conglomerate formation. This has two implications: first, conglomerates will preferentially form across markets with lower correlation structures; second, the competitive effects we identify will be attenuated in highly correlated environments. Testing these predictions empirically—for instance, by examining whether conglomerate mergers are more common across industries with historically lower return correlations—represents a promising avenue for future research. \par
 On the other hand, \cite{lewellen1971pure} offers a purely financial rational for conglomeration, where firms merge in order to mitigate financing frictions, and to provide internal capital markets \cite{boguth2022dissecting}. In addition, pooling can be used to reduce the highly volatile returns on investments that are inherent to R\&D efforts, or share the costs associated with them \cite{felton1971conglomerate}. \par
 In fact, many of these effects are already being employed in the businesses seed financing of start-ups, where venture capital firms enforce a low pooling rate for their portfolio companies or those that are part of incubation batches in accelerator programs \cite{boys2023ergodic}. Interestingly, this concept is being extended to resources, other than financial, such as physical and human capital, and even reputation. It is thus evident, that pooling can be used to smooth any multiplicative processes, of which there are many that are of interest to economic inquiry \cite{pietronero2001explaining, sibani2020human}. \par
+We emphasize that our model speaks to market structure outcomes rather than welfare. While reduced concentration is often associated with improved consumer welfare in standard models, this connection requires assumptions about pricing, demand, and allocative efficiency that our framework does not incorporate. The welfare implications of the dynamics we identify therefore remain an open question requiring models that integrate our growth-rate-optimization mechanism with explicit market interactions.
 
 \section{Conclusion}
 \label{sec:Conclusion}
-Pooling is not only beneficial to the conglomerate, as well as the constituent companies, but also to the competitive landscape as a whole, decreasing both static and dynamic inequality. We arrived at this result by showing that the standard perspective of the zero-sum nature of resource sharing misses critical details in a world of multiplicative growth. Secondly, we emphasize the difference between portfolio diversification and collaborative resource sharing, allowing us to go further than standard arguments of diversification. We find strong incentives to use conglomerate formation as an insurance mechanism, that if made widely available, would promote competition, from which especially new types of business models could benefit. \par
-We see further possible refinements to our approach. Firstly, one could include a pricing mechanism that would allow for more far-reaching statements on the impact on consumers. This would come with a great deal of assumptions such as the nature and interaction of the prices, profits and the underlying growth dynamics. Beyond this, we are aware that the premise of normally distributed growth increments mischaracterizes the process of business growth \cite{lahr2023fat, stanley1996scaling}. In one respect, negative impacts on firm development tend to be heavy-tailed, meaning that impactful events occur much more frequently than normality would predict them \cite{cont2001empirical, viscusi2014shifting}. This also holds, though arguably to a lesser degree, for positive impacts, such as the strong growth potential observed in start-ups \cite{peneder2012firm}. Given that large negative developments have an outsized impact on the overall performance, this seems like a strong use-case for the framework developed herein.
+Our results suggest that conglomerate formation, when combined with resource pooling, may be beneficial not only to the conglomerate and its constituent firms, but also to market dynamics more broadly, decreasing both static and dynamic inequality. We arrived at this result by showing that the standard perspective of the zero-sum nature of resource sharing misses critical details in a world of multiplicative growth. Secondly, we emphasize the difference between portfolio diversification and collaborative resource sharing, allowing us to go further than standard arguments of diversification. We find strong incentives to use conglomerate formation as an insurance mechanism, that if made widely available, would promote competitive dynamics by reducing persistence of market dominance, from which especially new types of business models could benefit. \par
+We see further possible refinements to our approach. Firstly, one could include a pricing mechanism that would allow for more far-reaching statements on the impact on consumers. This would come with a great deal of assumptions such as the nature and interaction of the prices, profits and the underlying growth dynamics. Beyond this, we are aware that the premise of normally distributed growth increments mischaracterizes the process of business growth \cite{lahr2023fat, stanley1996scaling}. In one respect, negative impacts on firm development tend to be heavy-tailed, meaning that impactful events occur much more frequently than normality would predict them \cite{cont2001empirical, viscusi2014shifting}. This also holds, though arguably to a lesser degree, for positive impacts, such as the strong growth potential observed in start-ups \cite{peneder2012firm}. Given that large negative developments have an outsized impact on the overall performance, this seems like a strong use-case for the framework developed herein. 
 
 \clearpage
 \bibliographystyle{plain}

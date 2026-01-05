@@ -27,8 +27,12 @@ class CounterfactualVisualizer:
         self.results_file = Path(results_file)
         self.results = None
         self.shares = None
+        self.hyperparameters = None
         
-        # Set up output directory
+        # Load results first to get hyperparameters
+        self.load_results()
+        
+        # Set up output directory based on hyperparameters
         self.setup_output_paths()
         
         # Color mapping
@@ -36,16 +40,25 @@ class CounterfactualVisualizer:
         self.colormap = cm.viridis
         
     def setup_output_paths(self):
-        """Set up output paths based on environment"""
+        """Set up output paths based on environment and hyperparameters"""
         is_mac = os.getcwd().find('Simon') > 0
         is_windows = os.getcwd().find('nomis') > 0
         
+        # Base paths
         if is_mac:
-            self.path_figures = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/figures'
+            base_path = '/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/figures'
         elif is_windows:
-            self.path_figures = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\figures'
+            base_path = 'C:\\Users\\nomis\\PycharmProjects\\conglomerates\\conglomerates\\figures'
         else:
-            self.path_figures = 'counterfactual_figures'
+            base_path = 'counterfactual_figures'
+        
+        # Create hyperparameter-based subdirectory
+        if self.hyperparameters:
+            hp = self.hyperparameters
+            folder_name = f"m{hp.get('markets', 100)}_f{hp.get('firms_per_market', 100)}_s{hp.get('steps', 10000)}_t{hp.get('merge_thresh', 0.05):.3f}_b0_{hp.get('b0', 1e-5):.1e}_b1_{hp.get('b1', 1.2):.1f}"
+            self.path_figures = Path(base_path) / folder_name
+        else:
+            self.path_figures = Path(base_path) / 'default'
         
         # Create output directory
         Path(self.path_figures).mkdir(parents=True, exist_ok=True)
@@ -64,6 +77,15 @@ class CounterfactualVisualizer:
         
         # Extract share values and sort
         self.shares = np.array(sorted(self.results.keys()))
+        
+        # Extract hyperparameters from first share (should be same for all)
+        first_share = self.shares[0]
+        if 'hyperparameters' in self.results[first_share]:
+            self.hyperparameters = self.results[first_share]['hyperparameters']
+            print(f"Extracted hyperparameters: {self.hyperparameters}")
+        else:
+            print("No hyperparameters found in results, using defaults")
+            self.hyperparameters = {}
         
         # Set up color normalization
         self.normalize = mcolors.Normalize(vmin=self.shares.min(), vmax=self.shares.max())

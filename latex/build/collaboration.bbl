@@ -36,6 +36,12 @@ Graham Boyd and Jack Reardon.
 \newblock {\em The Ergodic Investor and Entrepreneur}.
 \newblock Evolutesix Books, 2023.
 
+\bibitem{canback2006diseconomies}
+Staffan Canback, Phillip Samouel, and David Price.
+\newblock Do diseconomies of scale impact firm size and performance? a
+  theoretical and empirical overview.
+\newblock {\em ICFAI Journal of Managerial Economics}, 4(1):27--70, 2006.
+
 \bibitem{coase19883}
 Ronald~H Coase.
 \newblock 3. the nature of the firm: Influence.
@@ -58,6 +64,12 @@ John~Richard Felton.
 \newblock Conglomerate mergers, concentration and competition.
 \newblock {\em The American Journal of Economics and Sociology},
   30(3):225--242, 1971.
+
+\bibitem{forbes2002no}
+Kristin~J Forbes and Roberto Rigobon.
+\newblock No contagion, only interdependence: measuring stock market
+  comovements.
+\newblock {\em The journal of Finance}, 57(5):2223--2261, 2002.
 
 \bibitem{gibrat1931}
 Robert Gibrat.
@@ -193,5 +205,10 @@ Eugen von B\"ohm-Bawerk.
 Don~E Waldman.
 \newblock The impact of conglomerate mergers on acquired firms' growth rates.
 \newblock {\em Nebraska Journal of Economics and Business}, 22(3):24--43, 1983.
+
+\bibitem{williamson1967hierarchical}
+Oliver~E Williamson.
+\newblock Hierarchical control and optimum firm size.
+\newblock {\em Journal of political economy}, 75(2):123--138, 1967.
 
 \end{thebibliography}

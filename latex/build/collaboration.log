@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  19 OCT 2025 08:32
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.3.21)  5 JAN 2026 15:57
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -520,43 +520,56 @@ File: tikzlibrarytopaths.code.tex 2021/05/15 v3.1.9a (3.1.9a)
 File: tikzlibraryplotmarks.code.tex 2021/05/15 v3.1.9a (3.1.9a)
  (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/libraries/pgflibraryplotmarks.code.tex
 File: pgflibraryplotmarks.code.tex 2021/05/15 v3.1.9a (3.1.9a)
-))) (/usr/local/texlive/2022/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+))) (/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/libs/tikzlibrarypgfplots.groupplots.code.tex
+\pgfplots@group@current@plot=\count322
+\pgfplots@group@current@row=\count323
+\pgfplots@group@current@column=\count324
+ (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarycalc.code.tex
+File: tikzlibrarycalc.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+))
+(/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/libs/tikzlibrarypgfplots.fillbetween.code.tex (/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/pgfcontrib/tikzlibraryfillbetween.code.tex (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryintersections.code.tex (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/libraries/pgflibraryintersections.code.tex
+\pgf@intersect@solutions=\count325
+)) (/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/pgfcontrib/tikzlibrarydecorations.softclip.code.tex (/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/pgfcontrib/pgflibraryfillbetween.code.tex))) (/usr/local/texlive/2022/texmf-dist/tex/generic/pgfplots/libs/tikzlibrarypgfplots.decorations.softclip.code.tex)) (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarypatterns.code.tex
+File: tikzlibrarypatterns.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+ (/usr/local/texlive/2022/texmf-dist/tex/generic/pgf/libraries/pgflibrarypatterns.code.tex
+File: pgflibrarypatterns.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)) (/usr/local/texlive/2022/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2022-02-07 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count322
+\l__color_backend_stack_int=\count326
 \l__pdf_internal_box=\box74
 ) (build/collaboration.aux)
 \openout1 = `collaboration.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 31.
-LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
  (/usr/local/texlive/2022/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count323
+\scratchcounter=\count327
 \scratchdimen=\dimen280
 \scratchbox=\box75
-\nofMPsegments=\count324
-\nofMParguments=\count325
+\nofMPsegments=\count328
+\nofMParguments=\count329
 \everyMPshowfont=\toks42
-\MPscratchCnt=\count326
+\MPscratchCnt=\count330
 \MPscratchDim=\dimen281
-\MPnumerator=\count327
-\makeMPintoPDFobject=\count328
+\MPnumerator=\count331
+\makeMPintoPDFobject=\count332
 \everyMPtoPDFconversion=\toks43
 ) (/usr/local/texlive/2022/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
@@ -564,7 +577,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/usr/local/texlive/2022/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring OFF on input line 31.
+Package hyperref Info: Link coloring OFF on input line 46.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
  (/usr/local/texlive/2022/texmf-dist/tex/latex/refcount/refcount.sty
@@ -572,11 +585,11 @@ Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
 ) (/usr/local/texlive/2022/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
-\c@section@level=\count329
+\c@section@level=\count333
 )
-LaTeX Info: Redefining \ref on input line 31.
-LaTeX Info: Redefining \pageref on input line 31.
-LaTeX Info: Redefining \nameref on input line 31.
+LaTeX Info: Redefining \ref on input line 46.
+LaTeX Info: Redefining \pageref on input line 46.
+LaTeX Info: Redefining \nameref on input line 46.
  (build/collaboration.out) (build/collaboration.out)
 \@outlinefile=\write4
 \openout4 = `collaboration.out'.
@@ -584,106 +597,478 @@ LaTeX Info: Redefining \nameref on input line 31.
 
 Package pgfplots notification 'compat/show suggested version=true': document has been generated with the most recent feature set (\pgfplotsset{compat=1.18}).
 
-LaTeX Font Info:    Trying to load font information for U+msa on input line 35.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 50.
 (/usr/local/texlive/2022/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 35.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 50.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Overfull \hbox (10.56023pt too wide) in paragraph at lines 39--40
+Overfull \hbox (10.56023pt too wide) in paragraph at lines 54--55
 \T1/cmr/bx/n/10.95 Keywords: \T1/cmr/m/n/10.95 Con-glom-er-ate Merger, Com-pe-ti-tion, Growth Op-ti-miza-tion, Risk, Agent-
  []
 
 [1
 
-{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4
+{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.100 
-      ] [5] [6] [7] [8
+l.124 
+      ] [6] [7] [8] [9]
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[10
 pdfTeX warning (ext4): destination with the same identifier (name{algocf.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.263 
-      ] [9
+l.292 
+      ] (./figures/metric_plots/metrics_figure.tex (./figures/metric_plots/metric_plot_0.tex
+PGFPlots: reading {figures/plots/m0_cost0.csv}
+PGFPlots: reading {figures/plots/m0_cost0.csv}
+PGFPlots: reading {figures/plots/m0_cost0.csv}
+PGFPlots: reading {figures/plots/m0_cost1.csv}
+PGFPlots: reading {figures/plots/m0_cost1.csv}
+PGFPlots: reading {figures/plots/m0_cost1.csv}
+PGFPlots: reading {figures/plots/m0_cost2.csv}
+PGFPlots: reading {figures/plots/m0_cost2.csv}
+PGFPlots: reading {figures/plots/m0_cost2.csv}
+PGFPlots: reading {figures/plots/m0_cost3.csv}
+PGFPlots: reading {figures/plots/m0_cost3.csv}
+PGFPlots: reading {figures/plots/m0_cost3.csv}
+)
+Package pgfplots info on input line 34: fill between: activating layered graphics
+\pgf@layerbox@axis background=\box76
+\pgf@layerboxsaved@axis background=\box77
+\pgf@layerbox@axis grid=\box78
+\pgf@layerboxsaved@axis grid=\box79
+\pgf@layerbox@axis ticks=\box80
+\pgf@layerboxsaved@axis ticks=\box81
+\pgf@layerbox@axis lines=\box82
+\pgf@layerboxsaved@axis lines=\box83
+\pgf@layerbox@axis tick labels=\box84
+\pgf@layerboxsaved@axis tick labels=\box85
+\pgf@layerbox@pre main=\box86
+\pgf@layerboxsaved@pre main=\box87
+\pgf@layerbox@axis descriptions=\box88
+\pgf@layerboxsaved@axis descriptions=\box89
+\pgf@layerbox@axis foreground=\box90
+\pgf@layerboxsaved@axis foreground=\box91
+Package pgfplots info on input line 34: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/metric_plots/metric_plot_1.tex
+PGFPlots: reading {figures/plots/m1_cost0.csv}
+PGFPlots: reading {figures/plots/m1_cost0.csv}
+PGFPlots: reading {figures/plots/m1_cost0.csv}
+PGFPlots: reading {figures/plots/m1_cost1.csv}
+PGFPlots: reading {figures/plots/m1_cost1.csv}
+PGFPlots: reading {figures/plots/m1_cost1.csv}
+PGFPlots: reading {figures/plots/m1_cost2.csv}
+PGFPlots: reading {figures/plots/m1_cost2.csv}
+PGFPlots: reading {figures/plots/m1_cost2.csv}
+PGFPlots: reading {figures/plots/m1_cost3.csv}
+PGFPlots: reading {figures/plots/m1_cost3.csv}
+PGFPlots: reading {figures/plots/m1_cost3.csv}
+)
+Package pgfplots info on input line 38: fill between: activating layered graphics
+Package pgfplots info on input line 38: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/metric_plots/metric_plot_2.tex
+PGFPlots: reading {figures/plots/m2_cost0.csv}
+PGFPlots: reading {figures/plots/m2_cost0.csv}
+PGFPlots: reading {figures/plots/m2_cost0.csv}
+PGFPlots: reading {figures/plots/m2_cost1.csv}
+PGFPlots: reading {figures/plots/m2_cost1.csv}
+PGFPlots: reading {figures/plots/m2_cost1.csv}
+PGFPlots: reading {figures/plots/m2_cost2.csv}
+PGFPlots: reading {figures/plots/m2_cost2.csv}
+PGFPlots: reading {figures/plots/m2_cost2.csv}
+PGFPlots: reading {figures/plots/m2_cost3.csv}
+PGFPlots: reading {figures/plots/m2_cost3.csv}
+PGFPlots: reading {figures/plots/m2_cost3.csv}
+)
+Package pgfplots info on input line 42: fill between: activating layered graphics
+Package pgfplots info on input line 42: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/metric_plots/metric_plot_3.tex
+PGFPlots: reading {figures/plots/m3_cost0.csv}
+PGFPlots: reading {figures/plots/m3_cost0.csv}
+PGFPlots: reading {figures/plots/m3_cost0.csv}
+PGFPlots: reading {figures/plots/m3_cost1.csv}
+PGFPlots: reading {figures/plots/m3_cost1.csv}
+PGFPlots: reading {figures/plots/m3_cost1.csv}
+PGFPlots: reading {figures/plots/m3_cost2.csv}
+PGFPlots: reading {figures/plots/m3_cost2.csv}
+PGFPlots: reading {figures/plots/m3_cost2.csv}
+PGFPlots: reading {figures/plots/m3_cost3.csv}
+PGFPlots: reading {figures/plots/m3_cost3.csv}
+PGFPlots: reading {figures/plots/m3_cost3.csv}
+)
+Package pgfplots info on input line 45: fill between: activating layered graphics
+Package pgfplots info on input line 45: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+) [11
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.267 
-      ]
-<figures/sizes.pdf, id=196, 1110.06725pt x 776.38954pt>
-File: figures/sizes.pdf Graphic file (type pdf)
-<use figures/sizes.pdf>
-Package pdftex.def Info: figures/sizes.pdf  used on input line 270.
-(pdftex.def)             Requested size: 354.90143pt x 243.66461pt.
- [10
+l.331 \begin{gather}
+                    
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.331 \begin{gather}
+                    ] [12
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.282 
-       <./figures/sizes.pdf>]
-<figures/ests.pdf, id=221, 1097.22594pt x 848.65953pt>
-File: figures/ests.pdf Graphic file (type pdf)
-<use figures/ests.pdf>
-Package pdftex.def Info: figures/ests.pdf  used on input line 285.
-(pdftex.def)             Requested size: 350.99762pt x 266.4671pt.
- [11
+l.331 \begin{gather}
+                    ] (./figures/poly_ests/poly_beta1_plot.tex
+PGFPlots: reading {figures/plots/poly_beta1_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
+PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
+)
+Package pgfplots info on input line 370: fill between: activating layered graphics
+Package pgfplots info on input line 370: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/poly_ests/poly_beta2_plot.tex
+PGFPlots: reading {figures/plots/poly_beta2_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost0.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost1.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost2.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
+PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
+)
+Package pgfplots info on input line 373: fill between: activating layered graphics
+Package pgfplots info on input line 373: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ [13] (./figures/share_plots/quantile_plot_1.tex
+PGFPlots: reading {figures/plots/q1_cost0.csv}
+PGFPlots: reading {figures/plots/q1_cost0.csv}
+PGFPlots: reading {figures/plots/q1_cost0.csv}
+PGFPlots: reading {figures/plots/q1_cost1.csv}
+PGFPlots: reading {figures/plots/q1_cost1.csv}
+PGFPlots: reading {figures/plots/q1_cost1.csv}
+PGFPlots: reading {figures/plots/q1_cost2.csv}
+PGFPlots: reading {figures/plots/q1_cost2.csv}
+PGFPlots: reading {figures/plots/q1_cost2.csv}
+PGFPlots: reading {figures/plots/q1_cost3.csv}
+PGFPlots: reading {figures/plots/q1_cost3.csv}
+PGFPlots: reading {figures/plots/q1_cost3.csv}
+)
+Package pgfplots info on input line 536: fill between: activating layered graphics
+Package pgfplots info on input line 536: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/share_plots/quantile_plot_2.tex
+PGFPlots: reading {figures/plots/q2_cost0.csv}
+PGFPlots: reading {figures/plots/q2_cost0.csv}
+PGFPlots: reading {figures/plots/q2_cost0.csv}
+PGFPlots: reading {figures/plots/q2_cost1.csv}
+PGFPlots: reading {figures/plots/q2_cost1.csv}
+PGFPlots: reading {figures/plots/q2_cost1.csv}
+PGFPlots: reading {figures/plots/q2_cost2.csv}
+PGFPlots: reading {figures/plots/q2_cost2.csv}
+PGFPlots: reading {figures/plots/q2_cost2.csv}
+PGFPlots: reading {figures/plots/q2_cost3.csv}
+PGFPlots: reading {figures/plots/q2_cost3.csv}
+PGFPlots: reading {figures/plots/q2_cost3.csv}
+)
+Package pgfplots info on input line 539: fill between: activating layered graphics
+Package pgfplots info on input line 539: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/share_plots/quantile_plot_3.tex
+PGFPlots: reading {figures/plots/q3_cost0.csv}
+PGFPlots: reading {figures/plots/q3_cost0.csv}
+PGFPlots: reading {figures/plots/q3_cost0.csv}
+PGFPlots: reading {figures/plots/q3_cost1.csv}
+PGFPlots: reading {figures/plots/q3_cost1.csv}
+PGFPlots: reading {figures/plots/q3_cost1.csv}
+PGFPlots: reading {figures/plots/q3_cost2.csv}
+PGFPlots: reading {figures/plots/q3_cost2.csv}
+PGFPlots: reading {figures/plots/q3_cost2.csv}
+PGFPlots: reading {figures/plots/q3_cost3.csv}
+PGFPlots: reading {figures/plots/q3_cost3.csv}
+PGFPlots: reading {figures/plots/q3_cost3.csv}
+)
+Package pgfplots info on input line 542: fill between: activating layered graphics
+Package pgfplots info on input line 542: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ (./figures/share_plots/quantile_plot_4.tex
+PGFPlots: reading {figures/plots/q4_cost0.csv}
+PGFPlots: reading {figures/plots/q4_cost0.csv}
+PGFPlots: reading {figures/plots/q4_cost0.csv}
+PGFPlots: reading {figures/plots/q4_cost1.csv}
+PGFPlots: reading {figures/plots/q4_cost1.csv}
+PGFPlots: reading {figures/plots/q4_cost1.csv}
+PGFPlots: reading {figures/plots/q4_cost2.csv}
+PGFPlots: reading {figures/plots/q4_cost2.csv}
+PGFPlots: reading {figures/plots/q4_cost2.csv}
+PGFPlots: reading {figures/plots/q4_cost3.csv}
+PGFPlots: reading {figures/plots/q4_cost3.csv}
+PGFPlots: reading {figures/plots/q4_cost3.csv}
+)
+Package pgfplots info on input line 545: fill between: activating layered graphics
+Package pgfplots info on input line 545: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+ [14
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.291 ... market shares becomes ever smaller. \par
-                                                   <./figures/ests.pdf>]
-<figures/shares.pdf, id=246, 1122.90855pt x 848.65953pt>
-File: figures/shares.pdf Graphic file (type pdf)
-<use figures/shares.pdf>
-Package pdftex.def Info: figures/shares.pdf  used on input line 295.
-(pdftex.def)             Requested size: 350.99762pt x 261.89058pt.
- [12
+l.570 
+      ] [15
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.311 
-       <./figures/shares.pdf>]
-<figures/mobility.pdf, id=264, 914.11514pt x 717.62788pt>
-File: figures/mobility.pdf Graphic file (type pdf)
-<use figures/mobility.pdf>
-Package pdftex.def Info: figures/mobility.pdf  used on input line 314.
-(pdftex.def)             Requested size: 350.99762pt x 260.05951pt.
- [13
+l.570 
+      ] (./figures/ridge_plots/ridge_plot_mobility.tex
+PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_ranges_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha00.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha01.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha02.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha03.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha04.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha05.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha06.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha07.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha08.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha09.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha10.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha11.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha12.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha13.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha14.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha15.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha16.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha17.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha18.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha19.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha20.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha21.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha22.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha23.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha24.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha25.csv}
+PGFPlots: reading {figures/plots/ridge_std_alpha25.csv}
+
+Overfull \hbox (40.90991pt too wide) in paragraph at lines 129--130
+ [][] 
+ []
+
+) [16] [17
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.321 ... is applicable to many risk vectors. \par
-                                                   <./figures/mobility.pdf>] [14] [15] (build/collaboration.bbl [16
+l.576 ...match different product life cycles. \par
+                                                  ] [18] [19] [20] (build/collaboration.bbl [21
 
-] [17]
-Underfull \hbox (badness 1014) in paragraph at lines 133--136
+] [22]
+Underfull \hbox (badness 1014) in paragraph at lines 145--148
 []\T1/cmr/m/n/12 Natalia Ra-mondo, Veron-ica Rap-poport, and Kim J Ruhl.  The
  []
 
-[18]) [19] (build/collaboration.aux)
+[23]) [24] (build/collaboration.aux)
 Package rerunfilecheck Info: File `collaboration.out' has not changed.
-(rerunfilecheck)             Checksum: 3E19E7A0B8615DBB80FEFFC1F8999634;1049.
+(rerunfilecheck)             Checksum: 86F963BFC3AA45A486AE1A3AD03C45A7;826.
  ) 
 Here is how much of TeX's memory you used:
- 32232 strings out of 478268
- 755585 string characters out of 5846347
- 1160182 words of memory out of 5000000
- 49839 multiletter control sequences out of 15000+600000
- 490578 words of font info for 79 fonts, out of 8000000 for 9000
+ 33678 strings out of 478268
+ 796556 string characters out of 5846347
+ 3954686 words of memory out of 5000000
+ 51016 multiletter control sequences out of 15000+600000
+ 492126 words of font info for 85 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,18n,94p,2957b,2140s stack positions out of 10000i,1000n,20000p,200000b,200000s
-
-pdfTeX warning (dest): name{Hfootnote.1} has been referenced but does not exist, replaced by a fixed one
-
-{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on build/collaboration.pdf (19 pages, 2060347 bytes).
+ 99i,19n,94p,7060b,2489s stack positions out of 10000i,1000n,20000p,200000b,200000s
+{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
+Output written on build/collaboration.pdf (24 pages, 638290 bytes).
 PDF statistics:
- 475 PDF objects out of 1000 (max. 8388607)
- 383 compressed objects within 4 object streams
- 84 named destinations out of 1000 (max. 500000)
- 129 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 445 PDF objects out of 1000 (max. 8388607)
+ 364 compressed objects within 4 object streams
+ 98 named destinations out of 1000 (max. 500000)
+ 77 words of extra memory for PDF output out of 10000 (max. 10000000)
 

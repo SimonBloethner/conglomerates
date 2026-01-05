@@ -3234,6 +3234,192 @@ class ParametrizationComparator:
 
         return fig, axes
 
+    def visualize_conglomerate_dynamics(self, all_data, save_path=None):
+        """Create faceted plot showing conglomerate dynamics metrics across α levels
+
+        Plots four scalar metrics: average conglomerate size, number of conglomerates,
+        mergers per period, and exits per period.
+
+        Args:
+            all_data: Dictionary of all parametrization data (from load_data())
+            save_path: Optional path to save the figure
+
+        Returns:
+            (fig, axes): Matplotlib figure and axes objects
+        """
+        # Define metrics to plot
+        metrics_info = [
+            ('mean_members_avg', 'Average Conglomerate Size', 'Members'),
+            ('num_cong_avg', 'Number of Conglomerates', 'Count'),
+            ('mergers_per_period_avg', 'Mergers per Period', 'Mergers'),
+            ('exits_per_period_avg', 'Exits per Period', 'Exits')
+        ]
+
+        export_rows = []
+
+        save_path = Path(save_path)
+        out_dir = save_path.parent
+        stem = save_path.stem
+
+        # Create vertically stacked subplots
+        fig, axes = plt.subplots(len(metrics_info), 1, figsize=(12, 18), sharex=True)
+
+        # Group data by cost function type
+        cost_groups = {}
+        for param_name, param_data in all_data.items():
+            cost_type = param_data['cost_type']
+            if cost_type not in cost_groups:
+                cost_groups[cost_type] = []
+            cost_groups[cost_type].append((param_name, param_data))
+
+        metric_codes = {metric_key: i for i, (metric_key, _, _) in enumerate(metrics_info)}
+        cost_type_codes = {cost: i for i, cost in enumerate(sorted(cost_groups.keys()))}
+
+        # For each cost function, collect data for each metric
+        for cost_type, param_list in sorted(cost_groups.items()):
+            color = self.cost_function_colors.get(cost_type, '#333333')
+
+            # Collect data aggregated by alpha and metric
+            # Structure: {metric_key: {alpha: [values from different scenarios]}}
+            metrics_by_alpha = {metric_key: {} for metric_key, _, _ in metrics_info}
+
+            for param_name, param_data in param_list:
+                shares = param_data['shares']
+
+                for metric_key, _, _ in metrics_info:
+                    metric_data = param_data['metrics'].get(metric_key, {})
+
+                    if not metric_data:
+                        continue
+
+                    # For each alpha value
+                    for alpha in shares:
+                        if alpha not in metric_data or metric_data[alpha] is None:
+                            continue
+
+                        data_array = metric_data[alpha]
+
+                        # data_array shape: (n_timesteps,) - scalar time series
+                        if alpha not in metrics_by_alpha[metric_key]:
+                            metrics_by_alpha[metric_key][alpha] = []
+
+                        # Take time average
+                        time_avg = np.nanmean(data_array)
+                        metrics_by_alpha[metric_key][alpha].append(time_avg)
+
+            # Plot for each metric subplot
+            for subplot_idx, (metric_key, metric_name, y_label) in enumerate(metrics_info):
+                ax = axes[subplot_idx]
+
+                # Collect data for this metric
+                alpha_data = metrics_by_alpha[metric_key]
+
+                if not alpha_data:
+                    continue
+
+                alphas_sorted = sorted(alpha_data.keys())
+
+                medians = []
+                lower_bounds = []
+                upper_bounds = []
+
+                for alpha in alphas_sorted:
+                    values = np.array(alpha_data[alpha])
+                    if len(values) > 0:
+                        median = np.median(values)
+                        q25 = np.percentile(values, 25)
+                        q75 = np.percentile(values, 75)
+
+                        medians.append(median)
+                        lower_bounds.append(q25)
+                        upper_bounds.append(q75)
+
+                        export_rows.append([
+                            metric_codes[metric_key],  # metric_id
+                            cost_type_codes[cost_type],  # cost_type_id
+                            alpha,
+                            median,
+                            q25,
+                            q75
+                        ])
+
+                if medians:
+                    # Plot line with confidence band
+                    ax.plot(alphas_sorted, medians, color=color, linewidth=2,
+                           label=cost_type, marker='o', markersize=4)
+                    ax.fill_between(alphas_sorted, lower_bounds, upper_bounds,
+                                   color=color, alpha=0.2)
+
+        # Format subplots
+        for subplot_idx, (metric_key, metric_name, y_label) in enumerate(metrics_info):
+            ax = axes[subplot_idx]
+
+            # Add metric label
+            ax.text(0.02, 0.95, metric_name,
+                   transform=ax.transAxes, fontsize=14, fontweight='bold',
+                   verticalalignment='top',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+            ax.set_ylabel(y_label, fontsize=16)
+            ax.tick_params(axis='both', which='major', labelsize=14)
+            ax.grid(True, alpha=0.3)
+
+            # Add legend to first subplot
+            if subplot_idx == 0:
+                ax.legend(fontsize=12, loc='best')
+
+        # X-label only on bottom subplot
+        axes[-1].set_xlabel('α (Profit Sharing)', fontsize=16)
+
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+
+            # Export combined CSV (keep this for reference/debugging)
+            export_array = np.array(export_rows)
+            np.savetxt(out_dir / f"{stem}.csv", export_array, delimiter=",",
+                       header="metric_id,cost_type_id,alpha,median,q25,q75", comments="")
+            print(f"Saved combined conglomerate dynamics data: {out_dir / f'{stem}.csv'}")
+
+            # Create subdirectory for individual CSV files
+            plots_dir = out_dir / "plots"
+            plots_dir.mkdir(exist_ok=True)
+
+            # Export separate CSV files for each metric-cost combination (for LaTeX)
+            unique_metrics = np.unique(export_array[:, 0])  # Column 0 is metric_id
+            unique_cost_types = np.unique(export_array[:, 1])  # Column 1 is cost_type_id
+
+            print(f"Creating {len(unique_metrics)} × {len(unique_cost_types)} separate CSV files for LaTeX...")
+
+            for m_id in unique_metrics:
+                for c_id in unique_cost_types:
+                    # Filter rows for this metric-cost combination
+                    mask = (export_array[:, 0] == m_id) & (export_array[:, 1] == c_id)
+                    subset = export_array[mask]
+
+                    if len(subset) > 0:
+                        # Save as m{metric}_cost{cost_type}.csv in plots subdirectory
+                        filename = plots_dir / f"m{int(m_id)}_cost{int(c_id)}.csv"
+
+                        np.savetxt(filename, subset, delimiter=",",
+                                   header="metric_id,cost_type_id,alpha,median,q25,q75", comments="")
+
+            print(f"Created {len(unique_metrics) * len(unique_cost_types)} LaTeX-ready CSV files in {plots_dir}")
+
+            # Save the code mappings
+            with open(out_dir / f"{stem}_metric_codes.txt", "w") as f:
+                for name, code in metric_codes.items():
+                    f.write(f"{code}: {name}\n")
+
+            with open(out_dir / f"{stem}_cost_type_codes.txt", "w") as f:
+                for name, code in cost_type_codes.items():
+                    f.write(f"{code}: {name}\n")
+
+            print(f"Saved conglomerate dynamics plot: {save_path}")
+
+        return fig, axes
+
     def export_panel_polynomial_statistics(self, all_data, save_path=None):
         """Export panel polynomial estimate statistics to CSV and TXT files
 
@@ -3574,6 +3760,154 @@ class ParametrizationComparator:
 
         return fig
 
+    def export_mobility_ridge_data_latex(self, all_data, out_dir='../latex/figures', n_bins=150):
+        """Export histogram data for ridge plots in LaTeX format
+
+        Creates one CSV per alpha level per panel with all cost types in columns.
+        This is more efficient than separate files per cost type.
+
+        Args:
+            all_data: Dictionary of all parametrization data (from load_data())
+            out_dir: Output directory for CSV files
+            n_bins: Number of histogram bins
+        """
+        print("\nExporting mobility ridge plot data for LaTeX...")
+
+        # Define cost type colors and mapping
+        cost_type_order = ['linear', 'quadratic', 'power_law', 'exponential']
+
+        # Group data by cost function type
+        cost_groups = {}
+        for param_name, param_data in all_data.items():
+            cost_type = param_data['cost_type']
+            if cost_type not in cost_groups:
+                cost_groups[cost_type] = []
+            cost_groups[cost_type].append((param_name, param_data))
+
+        # Collect mobility data by alpha AND cost type
+        rank_ranges_by_alpha_cost = {}
+        rank_std_by_alpha_cost = {}
+
+        for cost_type, param_list in sorted(cost_groups.items()):
+            for param_name, param_data in param_list:
+                shares = param_data['shares']
+                rank_ranges_data = param_data['metrics'].get('rank_ranges', {})
+                rank_std_data = param_data['metrics'].get('rank_std', {})
+
+                for alpha in shares:
+                    if alpha not in rank_ranges_by_alpha_cost:
+                        rank_ranges_by_alpha_cost[alpha] = {}
+                    if alpha not in rank_std_by_alpha_cost:
+                        rank_std_by_alpha_cost[alpha] = {}
+
+                    # Collect rank ranges
+                    if alpha in rank_ranges_data and rank_ranges_data[alpha] is not None:
+                        firm_ranges = rank_ranges_data[alpha].flatten()
+                        firm_ranges = firm_ranges[~np.isnan(firm_ranges)]
+
+                        if cost_type not in rank_ranges_by_alpha_cost[alpha]:
+                            rank_ranges_by_alpha_cost[alpha][cost_type] = []
+                        rank_ranges_by_alpha_cost[alpha][cost_type].extend(firm_ranges)
+
+                    # Collect rank std
+                    if alpha in rank_std_data and rank_std_data[alpha] is not None:
+                        firm_std = rank_std_data[alpha].flatten()
+                        firm_std = firm_std[~np.isnan(firm_std)]
+
+                        if cost_type not in rank_std_by_alpha_cost[alpha]:
+                            rank_std_by_alpha_cost[alpha][cost_type] = []
+                        rank_std_by_alpha_cost[alpha][cost_type].extend(firm_std)
+
+        # Create output directory
+        out_path = Path(out_dir) / "plots"
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        # Get sorted alpha values
+        alphas = sorted(rank_ranges_by_alpha_cost.keys())
+
+        # Find global x-range for each metric to ensure consistent bins
+        all_range_data = []
+        all_std_data = []
+
+        for alpha in alphas:
+            for cost_type in cost_type_order:
+                if cost_type in rank_ranges_by_alpha_cost.get(alpha, {}):
+                    all_range_data.extend(rank_ranges_by_alpha_cost[alpha][cost_type])
+                if cost_type in rank_std_by_alpha_cost.get(alpha, {}):
+                    all_std_data.extend(rank_std_by_alpha_cost[alpha][cost_type])
+
+        # Define consistent bins across all ridges
+        if all_range_data:
+            range_bins = np.linspace(np.min(all_range_data), np.max(all_range_data), n_bins + 1)
+        if all_std_data:
+            std_bins = np.linspace(np.min(all_std_data), np.max(all_std_data), n_bins + 1)
+
+        # Export data for each alpha level
+        for i, alpha in enumerate(alphas):
+            # RANGES panel
+            if alpha in rank_ranges_by_alpha_cost and all_range_data:
+                # Compute bin centers
+                bin_centers = (range_bins[:-1] + range_bins[1:]) / 2
+
+                # Prepare data array: bin_center, density_cost0, density_cost1, density_cost2, density_cost3
+                ridge_data = np.zeros((len(bin_centers), 5))
+                ridge_data[:, 0] = bin_centers
+
+                for j, cost_type in enumerate(cost_type_order):
+                    if cost_type in rank_ranges_by_alpha_cost[alpha]:
+                        ranges_data = np.array(rank_ranges_by_alpha_cost[alpha][cost_type])
+
+                        if len(ranges_data) >= 10:
+                            # Compute histogram with consistent bins
+                            hist, _ = np.histogram(ranges_data, bins=range_bins, density=True)
+                            # Normalize to max=1
+                            if hist.max() > 0:
+                                hist = hist / hist.max()
+                            ridge_data[:, j + 1] = hist
+
+                # Save to CSV
+                filename = out_path / f"ridge_ranges_alpha{i:02d}.csv"
+                np.savetxt(filename, ridge_data, delimiter=",",
+                          header="x,cost0,cost1,cost2,cost3", comments="")
+                print(f"  Exported {filename}")
+
+            # STD panel
+            if alpha in rank_std_by_alpha_cost and all_std_data:
+                # Compute bin centers
+                bin_centers = (std_bins[:-1] + std_bins[1:]) / 2
+
+                # Prepare data array
+                ridge_data = np.zeros((len(bin_centers), 5))
+                ridge_data[:, 0] = bin_centers
+
+                for j, cost_type in enumerate(cost_type_order):
+                    if cost_type in rank_std_by_alpha_cost[alpha]:
+                        std_data = np.array(rank_std_by_alpha_cost[alpha][cost_type])
+
+                        if len(std_data) >= 10:
+                            # Compute histogram with consistent bins
+                            hist, _ = np.histogram(std_data, bins=std_bins, density=True)
+                            # Normalize to max=1
+                            if hist.max() > 0:
+                                hist = hist / hist.max()
+                            ridge_data[:, j + 1] = hist
+
+                # Save to CSV
+                filename = out_path / f"ridge_std_alpha{i:02d}.csv"
+                np.savetxt(filename, ridge_data, delimiter=",",
+                          header="x,cost0,cost1,cost2,cost3", comments="")
+                print(f"  Exported {filename}")
+
+        # Export alpha values mapping
+        alpha_file = out_path / "ridge_alpha_values.csv"
+        alpha_data = np.column_stack([np.arange(len(alphas)), alphas])
+        np.savetxt(alpha_file, alpha_data, delimiter=",",
+                  header="index,alpha", comments="")
+        print(f"  Exported {alpha_file}")
+
+        print(f"\nExported ridge plot data for {len(alphas)} α levels")
+        print(f"Files saved to: {out_path}")
+
     def create_sensitivity_dashboard(self, results, all_data, save_dir='sensitivity_plots'):
         """Create comprehensive temporal visualization dashboard with faceted plots
 
@@ -3706,6 +4040,15 @@ class ParametrizationComparator:
             save_path=os.path.join(save_dir, 'panel_polynomial_statistics')
         )
 
+        # Conglomerate dynamics (average size, number, mergers, exits)
+        print("\nGenerating conglomerate dynamics plots...")
+        fig, axes = self.visualize_conglomerate_dynamics(
+            all_data,
+            save_path=os.path.join(save_dir, 'descriptive_conglomerate_dynamics.pdf')
+        )
+        if fig is not None:
+            plt.close(fig)
+
         # Ridge plots for mobility distributions (firm-level distributions across α)
         print("\nGenerating mobility ridge plots...")
         ridge_fig = self.visualize_mobility_ridge_plots(
@@ -3714,6 +4057,10 @@ class ParametrizationComparator:
         )
         if ridge_fig is not None:
             plt.close(ridge_fig)
+
+        # Export ridge plot data for LaTeX
+        print("\nExporting ridge plot data for LaTeX...")
+        self.export_mobility_ridge_data_latex(all_data, out_dir=save_dir, n_bins=150)
 
         print(f"\nSensitivity dashboard saved to {save_dir}")
         print("\nPlot types created:")

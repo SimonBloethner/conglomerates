@@ -1,0 +1,55 @@
+% Metrics by cooperation level across cost structures
+% This file is \input into the main document
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={
+        group size=2 by 2,
+        horizontal sep=1.5cm,
+        vertical sep=1.5cm
+    },
+    width=0.45\textwidth,
+    height=0.35\textwidth,
+    xmin=0,
+    xmax=0.5,
+    grid=both,
+    tick label style={font=\small},
+    label style={font=\small},
+    scaled ticks=false,
+    xticklabel style={
+        /pgf/number format/.cd,
+            fixed,
+            fixed zerofill,
+            precision=2,
+    },
+]
+
+% -------- Metric 0 (top left) --------
+\nextgroupplot[title={Conglomerate Size}, legend to name=metricslegend, legend columns=4]
+\input{figures/metric_plots/metric_plot_0.tex}
+
+% -------- Metric 1 (top right) --------
+\nextgroupplot[title={Conglomerate Count}]
+\input{figures/metric_plots/metric_plot_1.tex}
+
+% -------- Metric 2 (bottom left) --------
+\nextgroupplot[title={Periodic Mergers}, xlabel={$\alpha$ (Pooling Rate)}]
+\input{figures/metric_plots/metric_plot_2.tex}
+
+% -------- Metric 3 (bottom right) --------
+\nextgroupplot[title={Periodic Exits}, xlabel={$\alpha$ (Pooling Rate)}]
+\input{figures/metric_plots/metric_plot_3.tex}
+
+\end{groupplot}
+
+% Add legend at the bottom of the entire figure
+\node at ($(group c1r2.south)!0.5!(group c2r2.south) - (0,1.5cm)$) [anchor=north] {%
+    \pgfplotslegendfromname{metricslegend}%
+};
+
+\end{tikzpicture}
+\label{fig:metrics}
+\caption{Conglomerate metrics by pooling level across cost structures. The solid line indicates the median and the shaded region is between the 25th and 75th percentile.}
+\end{figure}

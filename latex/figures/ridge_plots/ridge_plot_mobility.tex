@@ -1,0 +1,132 @@
+% Ridge plot for mobility distributions
+% This file is \input into the main document
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}
+    \begin{groupplot}[
+      group style={
+        group size=2 by 1,
+        horizontal sep=1cm
+      },
+      width=0.58\textwidth,
+      height=0.75\textheight,
+      xlabel style={font=\small},
+      ylabel style={font=\small},
+      tick label style={font=\scriptsize},
+      ytick=\empty,  % No y-ticks for ridge plots
+      grid=none,
+      % Define plot styles for cost types
+      /pgfplots/cost0/.style={color=cost0, fill=cost0, fill opacity=0.5, draw opacity=1},
+      /pgfplots/cost1/.style={color=cost1, fill=cost1, fill opacity=0.5, draw opacity=1},
+      /pgfplots/cost2/.style={color=cost2, fill=cost2, fill opacity=0.5, draw opacity=1},
+      /pgfplots/cost3/.style={color=cost3, fill=cost3, fill opacity=0.5, draw opacity=1},
+    ]
+
+    % LEFT PANEL: Rank Ranges
+    \nextgroupplot[
+      xlabel={Rank Range},
+      legend to name=ridgelegend,
+      legend columns=4,
+      clip=false,
+      ymin=-0.5,
+      ymax=39.5,
+      ytick={0.5,2,3.5,5,6.5,8,9.5,11,12.5,14,15.5,17,18.5,20,21.5,23,24.5,26,27.5,29,30.5,32,33.5,35,36.5,38},
+      yticklabels={$\alpha$=0.00,$\alpha$=0.02,$\alpha$=0.04,$\alpha$=0.06,$\alpha$=0.08,$\alpha$=0.10,$\alpha$=0.12,$\alpha$=0.14,$\alpha$=0.16,$\alpha$=0.18,$\alpha$=0.20,$\alpha$=0.22,$\alpha$=0.24,$\alpha$=0.26,$\alpha$=0.28,$\alpha$=0.30,$\alpha$=0.32,$\alpha$=0.34,$\alpha$=0.36,$\alpha$=0.38,$\alpha$=0.40,$\alpha$=0.42,$\alpha$=0.44,$\alpha$=0.46,$\alpha$=0.48,$\alpha$=0.50},
+      yticklabel style={font=\scriptsize}
+    ]
+
+    % Define ridge spacing parameters (directly in the preamble so they're accessible)
+    \pgfmathsetmacro{\ridgeoffset}{1.5}
+    \pgfmathsetmacro{\ridgeheight}{1.0}
+
+    % Loop through alpha indices using pgfplotsinvokeforeach (better than foreach for pgfplots)
+    \pgfplotsinvokeforeach{0,...,25}{
+      % Numeric index (SAFE for math)
+      \pgfmathsetmacro{\alphaindex}{#1}
+      \pgfmathsetmacro{\ybasenum}{\alphaindex * 1.5}
+      \pgfmathsetmacro{\ridgeheightnum}{1.0}
+
+      \pgfmathtruncatemacro{\tmpindex}{\alphaindex}
+      \ifnum\tmpindex<10
+        \edef\alphafileindex{0\tmpindex}
+      \else
+        \edef\alphafileindex{\tmpindex}
+      \fi
+
+      % Compute alpha value directly (0.00, 0.02, 0.04, ..., 0.50)
+      \pgfmathsetmacro{\alphaval}{\alphaindex * 0.02}
+
+      % Cost type 0
+      \edef\temp{\noexpand\addplot[cost0, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost0} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_ranges_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 1
+      \edef\temp{\noexpand\addplot[cost1, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost1} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_ranges_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 2
+      \edef\temp{\noexpand\addplot[cost2, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost2} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_ranges_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 3
+      \edef\temp{\noexpand\addplot[cost3, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost3} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_ranges_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+    }
+
+    % Add legend entries (using dummy plots)
+    \addlegendimage{cost0, mark=square*, only marks}
+    \addlegendimage{cost1, mark=square*, only marks}
+    \addlegendimage{cost2, mark=square*, only marks}
+    \addlegendimage{cost3, mark=square*, only marks}
+    \legend{Linear, Quadratic, Power law, Exponential}
+
+
+    % RIGHT PANEL: Rank Standard Deviation
+    \nextgroupplot[
+      xlabel={Rank Standard Deviation},
+      clip=true,
+      ymin=-0.5,
+      ymax=39.5,
+      ytick=\empty
+    ]
+
+    % Loop through alpha indices for std panel
+    \pgfplotsinvokeforeach{0,...,25}{
+      % Numeric index (safe for math)
+      \pgfmathsetmacro{\alphaindex}{#1}
+      \pgfmathsetmacro{\ybasenum}{\alphaindex * 1.5}
+      \pgfmathsetmacro{\ridgeheightnum}{1.0}
+
+      \pgfmathtruncatemacro{\tmpindex}{\alphaindex}
+      \ifnum\tmpindex<10
+        \edef\alphafileindex{0\tmpindex}
+      \else
+        \edef\alphafileindex{\tmpindex}
+      \fi
+
+      % Compute alpha value directly (0.00, 0.02, 0.04, ..., 0.50)
+      \pgfmathsetmacro{\alphaval}{\alphaindex * 0.02}
+
+      % Cost type 0
+      \edef\temp{\noexpand\addplot[cost0, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost0} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_std_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 1
+      \edef\temp{\noexpand\addplot[cost1, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost1} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_std_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 2
+      \edef\temp{\noexpand\addplot[cost2, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost2} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_std_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+      % Cost type 3
+      \edef\temp{\noexpand\addplot[cost3, forget plot, fill] table[col sep=comma, header=true, x=x, y expr=\noexpand\thisrow{cost3} * \ridgeheightnum + \ybasenum] {figures/plots/ridge_std_alpha\alphafileindex.csv} |- (axis cs:0,\ybasenum) -| cycle;}\temp
+
+    }
+
+    \end{groupplot}
+
+    % Place legend below both plots, centered
+    \node at ($(group c1r1.south)!0.5!(group c2r1.south) - (0,1.5cm)$) [anchor=north] {%
+      \pgfplotslegendfromname{ridgelegend}%
+    };
+
+  \end{tikzpicture}
+  \caption{Mobility distributions across profit-sharing levels. Each ridge represents a different $\alpha$ level, with distributions overlaid for all four cost function types. Left panel shows the distribution of rank ranges (maximum minus minimum rank), while the right panel shows rank standard deviation. Higher values indicate greater firm mobility within markets.}
+  \label{fig:mobility_ridges}
+\end{figure}

@@ -16,6 +16,20 @@ import collaborative_growth
 from sklearn.cluster import DBSCAN
 import signal
 import time
+import subprocess
+
+def log_memory_usage(label):
+    """Log current memory usage using ps command"""
+    try:
+        import os
+        pid = os.getpid()
+        result = subprocess.run(['ps', '-o', 'rss=', '-p', str(pid)], 
+                              capture_output=True, text=True)
+        memory_kb = int(result.stdout.strip())
+        memory_gb = memory_kb / 1024 / 1024
+        print(f"MEMORY_LOG {label}: {memory_gb:.2f}GB", flush=True)
+    except Exception as e:
+        print(f"MEMORY_LOG {label}: Unable to measure ({e})", flush=True)
 
 class ParallelCounterfactualRunner:
     def __init__(self, n_cores=64, counterfactuals=50):
@@ -44,12 +58,18 @@ class ParallelCounterfactualRunner:
         # Share values to test
         self.shares = np.arange(0, 0.52, 0.02)
         
-        # Power law parameters (use optimal values from hyperparameter validation)
-        self.b0 = 0.00001  # Adjust based on your optimal parameters
-        self.b1 = 1.2      # Adjust based on your optimal parameters
+        # Cost function parameters
+        self.cost_type = 'power_law'  # Default cost function type
+        self.c0 = None  # Will use cost-function-specific defaults
+        self.c1 = None
+        self.c2 = None
+        
+        # Backward compatibility - Power law parameters
+        self.b0 = 0.00001  # Deprecated
+        self.b1 = 1.2      # Deprecated
         
         # Timeout settings
-        self.experiment_timeout = 4000  # ~67 minutes per experiment
+        self.experiment_timeout = 3600 * 3  # 75 minutes per experiment (increased to allow reaching post-processing)
     
     def timeout_handler(self, signum, frame):
         """Handle timeout signal"""
@@ -70,49 +90,65 @@ class ParallelCounterfactualRunner:
         # Set random seed for reproducibility
         np.random.seed(seed)
         
-        # Model parameters (including power law parameters from hyperparameter validation)
+        # Get cost function defaults if parameters not specified
+        from collaborative_growth import get_cost_function_defaults
+        defaults = get_cost_function_defaults(self.cost_type)
+        
+        c0 = self.c0 if self.c0 is not None else defaults['c0']
+        c1 = self.c1 if self.c1 is not None else defaults['c1']
+        c2 = self.c2 if self.c2 is not None else defaults['c2']
+        
+        # Model parameters (14-parameter format with cost function support)
         params = [self.markets, self.firms_per_market, self.steps, share, 
                  self.total_firms, self.merge_thresh, self.comparison, 
                  self.break_thresh, self.proportional, self.lookback, 
-                 self.b0, self.b1]
+                 self.cost_type, c0, c1, c2]
         
+        # DEBUG: Print parameters being passed to model
+        print(f"DEBUG PARAMS: share={share}, cost_type={self.cost_type}, c0={c0}, c1={c1}, c2={c2}")
         try:
             # Run the model
             res = collaborative_growth.model(params=params)
+            # Updated for new model output (11 elements: added exits_per_period, keeping avg_shares)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
-            max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, mergers_per_period = res
-            
+            gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters = res
+
             # Extract only essential data for aggregation (much smaller memory footprint)
             results = {
                 'share': share,
                 'experiment_id': experiment_id,
-                
+
+                # Store hyperparameters BEFORE they get deleted
+                'hyperparameters': hyperparameters.copy() if hyperparameters else None,
+
                 # Time series data (keep these for averaging)
                 'mean_members': mean_members,
                 'num_cong': num_cong,
-                'gini_coefficient': gini_coefficient,
-                
-                # Pre-computed quantiles (smaller than raw data)
-                'market_share_quantiles': np.quantile(market_share, q=[0.5, 0.9, 0.99, 1], axis=2).mean(axis=1),
-                'gini_quantiles': np.quantile(gini_coefficient, q=[0.1, 0.25, 0.5, 0.75, 0.9], axis=0).T,
-                
-                # Polynomial estimates (computed like in counterfactuals.py)
-                'poly_estimates': self._calculate_polynomial_estimates(avg_shares, share),
-                
+
+                # Pre-computed quantiles (already computed by model, average across markets)
+                # quantiles_shares shape: (7_quantiles, markets, steps)
+                'market_share_quantiles': quantiles_shares.mean(axis=1),  # Average over markets -> (7_quantiles, steps)
+                'gini_quantiles': np.quantile(gini_coefficient, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=0).T,
+
+                # Size-market share relationship analysis
+                'temporal_poly_estimates': self._calculate_temporal_polynomial_estimates(avg_shares),
+                'panel_poly_estimates': self._calculate_panel_polynomial_estimates(avg_shares),
+
                 # Mobility metrics (pre-computed to avoid storing full ranks)
                 'rank_ranges': self._calculate_single_run_mobility(ranks),
                 'rank_std': self._calculate_single_run_std(ranks),
-                
-                # Merger frequency per period
+
+                # Merger and exit frequency per period
                 'mergers_per_period': mergers_per_period,
-                
+                'exits_per_period': exits_per_period,
+
                 # DBSCAN merger clusters
                 'merger_clusters': self.detect_merger_clusters_dbscan(mergers_per_period)
             }
-            
+
             # Explicitly delete large arrays to free memory immediately
             del res, mean_members, quantiles_members, avg_shares, quantiles_shares
-            del max_shares, market_share, hhi, gini_coefficient, ranks, percentile_ranks, avg_ranks, mergers_per_period
+            del gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters
             
             # Log successful completion
             runtime = time.time() - start_time
@@ -132,8 +168,42 @@ class ParallelCounterfactualRunner:
             # Always cancel the timeout alarm
             signal.alarm(0)
     
-    def _calculate_polynomial_estimates(self, avg_shares, share_value):
-        """Calculate polynomial estimates exactly like in counterfactuals.py"""
+    def run_single_experiment_to_disk(self, params_and_seed):
+        """Run single experiment and save result directly to disk to avoid memory accumulation"""
+        import pickle
+        import os
+        
+        share, experiment_id, seed = params_and_seed
+        
+        # Run the experiment
+        result = self.run_single_experiment(params_and_seed)
+        
+        if result is not None:
+            # Save result directly to disk
+            filename = f'{self.results_dir}/share_{share:.2f}_exp_{experiment_id}.pkl'
+            try:
+                with open(filename, 'wb') as f:
+                    pickle.dump(result, f)
+                print(f"Saved: share={share:.2f}, exp={experiment_id} to {filename}", flush=True)
+                
+                # Immediate memory cleanup after saving
+                del result
+                import gc
+                gc.collect()
+                
+                return experiment_id  # Return only experiment ID, not the full result
+            except Exception as e:
+                print(f"Failed to save experiment {experiment_id}: {e}", flush=True)
+                return None
+        else:
+            print(f"Experiment failed: share={share:.2f}, exp={experiment_id}", flush=True)
+            return None
+    
+    def _calculate_temporal_polynomial_estimates(self, avg_shares):
+        """
+        Calculate timestep-by-timestep polynomial estimates.
+        This gives us temporal evolution of the size-market share relationship.
+        """
         # Initialize estimates array with FULL steps size, like original (first ramp entries stay NaN)
         estimates = np.full([self.steps, 3], np.nan)
         
@@ -169,11 +239,36 @@ class ParallelCounterfactualRunner:
                 failed_fits += 1
                 continue
         
-        # Always show polynomial estimation summary  
-        print(f"POLY_DEBUG: share={share_value}, successful_fits={successful_fits}, empty_steps={empty_steps}, insufficient_points={insufficient_points}, failed_fits={failed_fits}")
-                
         return estimates
-    
+
+    def _calculate_panel_polynomial_estimates(self, avg_shares):
+        """
+        Calculate panel (pooled across timesteps) polynomial estimates.
+        This pools all conglomerates across all timesteps within a single realization.
+        Returns a single set of coefficients [β₀, β₁, β₂] for this realization.
+        """
+        # Pool all data across timesteps
+        all_sizes = []
+        all_market_shares = []
+
+        for step in range(self.ramp, self.steps):
+            if len(avg_shares[step]) > 0:
+                all_sizes.extend(avg_shares[step][:, 0])
+                all_market_shares.extend(avg_shares[step][:, 1])
+
+        # Need at least 3 points for quadratic fit
+        if len(all_sizes) < 3:
+            return np.array([np.nan, np.nan, np.nan])
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                coeffs = np.polyfit(all_sizes, all_market_shares, 2)
+            return coeffs
+        except Exception as e:
+            print(f"Warning: Panel polynomial fit failed: {e}")
+            return np.array([np.nan, np.nan, np.nan])
+
     def _aggregate_poly_estimates(self, results):
         """Aggregate polynomial estimates with debugging"""
         if not results:
@@ -308,6 +403,9 @@ class ParallelCounterfactualRunner:
             experiments = experiments[chunk_start:chunk_end]
             print(f"Processing experiments {chunk_start}-{chunk_end} for share {share_value}")
         
+        total_experiments = len(experiments)
+        print(f"COUNTER: Starting {total_experiments} experiments for share {share_value:.2f}")
+        
         # Generate seeds for reproducibility
         base_seed = int(share_value * 10000) % 10000
         experiment_params = []
@@ -315,18 +413,56 @@ class ParallelCounterfactualRunner:
             seed = base_seed + exp_id * 1000
             experiment_params.append((share_value, exp_id, seed))
         
-        # Run experiments in parallel
-        with mp.Pool(processes=self.n_cores) as pool:
-            results = list(tqdm(
-                pool.imap(self.run_single_experiment, experiment_params),
+        # Run experiments in parallel with disk-based results
+        # Force worker cleanup after each experiment to prevent memory accumulation
+        log_memory_usage(f"BEFORE_POOL_{share_value:.2f}")
+        
+        with mp.Pool(processes=self.n_cores, maxtasksperchild=1) as pool:
+            experiment_ids = list(tqdm(
+                pool.imap(self.run_single_experiment_to_disk, experiment_params),
                 total=len(experiment_params),
                 desc=f"Share {share_value:.2f}"
             ))
         
-        # Filter out failed experiments
-        results = [r for r in results if r is not None]
+        log_memory_usage(f"AFTER_POOL_{share_value:.2f}")
         
-        return results
+        # Load results from disk sequentially with immediate memory cleanup
+        log_memory_usage(f"BEFORE_LOADING_{share_value:.2f}")
+        successful_results = []
+        failed_experiments = 0
+        
+        for exp_id in experiment_ids:
+            if exp_id is not None:
+                filename = f'{self.results_dir}/share_{share_value:.2f}_exp_{exp_id}.pkl'
+                try:
+                    with open(filename, 'rb') as f:
+                        result = pickle.load(f)
+                        successful_results.append(result)
+                    
+                    # Immediate memory cleanup after each experiment
+                    import gc
+                    gc.collect()
+                    
+                except Exception as e:
+                    print(f"Failed to load experiment {exp_id}: {e}")
+                    failed_experiments += 1
+            else:
+                failed_experiments += 1
+        
+        log_memory_usage(f"AFTER_LOADING_{share_value:.2f}")
+        
+        print(f"COUNTER: Share {share_value:.2f} completed: {len(successful_results)}/{total_experiments} successful, {failed_experiments} failed")
+        
+        # Clean up individual experiment files after loading (optional - saves disk space)
+        for exp_id in experiment_ids:
+            if exp_id is not None:
+                filename = f'{self.results_dir}/share_{share_value:.2f}_exp_{exp_id}.pkl'
+                try:
+                    os.remove(filename)
+                except:
+                    pass  # Ignore cleanup errors
+        
+        return successful_results
     
     def aggregate_share_results(self, results):
         """Aggregate results across experiments for a single share value"""
@@ -336,32 +472,62 @@ class ParallelCounterfactualRunner:
         share_value = results[0]['share']
         n_experiments = len(results)
         
+        # Get hyperparameters from first successful experiment (they should be the same for all)
+        # Use the actual hyperparameters from the model results instead of overriding them
+        if results and 'hyperparameters' in results[0]:
+            hyperparameters = results[0]['hyperparameters'].copy()
+            print(f"DEBUG AGG: Using hyperparameters from model results: cost_type={hyperparameters.get('cost_type')}")
+        else:
+            # Fallback to constructed hyperparameters if model results don't have them
+            hyperparameters = {
+                'markets': self.markets,
+                'firms_per_market': self.firms_per_market,
+                'steps': self.steps,
+                'merge_thresh': self.merge_thresh,
+                'comparison': self.comparison,
+                'break_thresh': self.break_thresh,
+                'proportional': self.proportional,
+                'lookback': self.lookback,
+                'cost_type': self.cost_type,
+                'c0': self.c0,
+                'c1': self.c1,
+                'c2': self.c2,
+                'scenario_name': getattr(self, 'scenario_name', None)
+            }
+            print(f"DEBUG AGG: Using fallback hyperparameters: cost_type={hyperparameters.get('cost_type')}")
+        
         # Initialize aggregated arrays
         aggregated = {
             'share': share_value,
             'n_experiments': n_experiments,
-            
+            'hyperparameters': hyperparameters,
+
             # Time series averages
             'mean_members_avg': np.mean([r['mean_members'] for r in results], axis=0),
             'num_cong_avg': np.mean([r['num_cong'] for r in results], axis=0),
-            'gini_coefficient_avg': np.mean([r['gini_coefficient'] for r in results], axis=0),
-            
+
             # Quantile averages
             'market_share_quantiles_avg': np.mean([r['market_share_quantiles'] for r in results], axis=0),
             'gini_quantiles_avg': np.mean([r['gini_quantiles'] for r in results], axis=0),
-            
-            # Polynomial estimates (with debugging)
-            'poly_estimates_avg': self._aggregate_poly_estimates(results),
-            
+
+            # Size-market share relationship (temporal and panel regression coefficients)
+            'temporal_poly_estimates_avg': np.nanmean([r['temporal_poly_estimates'] for r in results], axis=0),
+            'temporal_poly_estimates_std': np.nanstd([r['temporal_poly_estimates'] for r in results], axis=0),
+            'panel_poly_estimates_all': np.array([r['panel_poly_estimates'] for r in results]),  # shape: (n_realizations, 3)
+
             # Mobility analysis (concatenate pre-computed metrics)
             'rank_ranges': np.array([r['rank_ranges'] for r in results]),
             'rank_std': np.array([r['rank_std'] for r in results]),
-            
-            # Merger frequency analysis
+
+            # Merger and exit frequency analysis
             'mergers_per_period_avg': np.mean([r['mergers_per_period'] for r in results], axis=0),
             'mergers_per_period_std': np.std([r['mergers_per_period'] for r in results], axis=0),
             'mergers_per_period_all': np.array([r['mergers_per_period'] for r in results]),
-            
+
+            'exits_per_period_avg': np.mean([r['exits_per_period'] for r in results], axis=0),
+            'exits_per_period_std': np.std([r['exits_per_period'] for r in results], axis=0),
+            'exits_per_period_all': np.array([r['exits_per_period'] for r in results]),
+
             # Merger cluster analysis
             'merger_clusters_all': [r['merger_clusters'] for r in results],
             'n_clusters_per_experiment': [len(r['merger_clusters']) for r in results],
@@ -414,7 +580,47 @@ def main():
     parser.add_argument('--counterfactuals', type=int, default=50,
                        help='Number of replications per share value (default: 50)')
     
+    # Hyperparameter arguments
+    parser.add_argument('--markets', type=int, default=100,
+                       help='Number of markets (default: 100)')
+    parser.add_argument('--firms_per_market', type=int, default=100,
+                       help='Number of firms per market (default: 100)')
+    parser.add_argument('--steps', type=int, default=10000,
+                       help='Number of simulation steps (default: 10000)')
+    parser.add_argument('--merge_thresh', type=float, default=0.05,
+                       help='Merger threshold (default: 0.05)')
+    parser.add_argument('--comparison', type=int, default=4,
+                       help='Comparison parameter (default: 4)')
+    parser.add_argument('--break_thresh', type=float, default=0.85,
+                       help='Breakup threshold (default: 0.85)')
+    parser.add_argument('--lookback', type=int, default=50,
+                       help='Lookback period for exit decisions (default: 50)')
+    parser.add_argument('--proportional', action='store_true',
+                       help='Use proportional sharing (default: False)')
+    parser.add_argument('--cost_type', type=str, default='power_law',
+                       choices=['linear', 'quadratic', 'exponential', 'power_law'],
+                       help='Management cost function type (default: power_law)')
+    parser.add_argument('--c0', type=float, default=None,
+                       help='Base cost parameter c0 (default: cost-function-specific)')
+    parser.add_argument('--c1', type=float, default=None,
+                       help='Scaling cost parameter c1 (default: cost-function-specific)')
+    parser.add_argument('--c2', type=float, default=None,
+                       help='Quadratic cost parameter c2 (default: cost-function-specific)')
+    # Backward compatibility
+    parser.add_argument('--b0', type=float, default=0.00001,
+                       help='DEPRECATED: Use --c0 instead. Power law parameter b0 (default: 0.00001)')
+    parser.add_argument('--b1', type=float, default=1.2,
+                       help='DEPRECATED: Use --c1 instead. Power law parameter b1 (default: 1.2)')
+    
+    # Robustness analysis scenario naming
+    parser.add_argument('--scenario_name', type=str, default=None,
+                       help='Name for robustness analysis scenario')
+    
     args = parser.parse_args()
+    
+    # DEBUG: Print actual parsed arguments
+    print(f"DEBUG ARGS: cost_type={args.cost_type}, c0={args.c0}, c1={args.c1}, c2={args.c2}")
+    print(f"DEBUG ARGS: Full command line args: {args}")
     
     # Parse chunk parameters
     chunk_start, chunk_end = None, None
@@ -425,12 +631,42 @@ def main():
             print("Error: --chunk must be in format start_end (e.g., 0_25)")
             return
     
-    # Initialize runner
+    # Initialize runner with command-line hyperparameters
     runner = ParallelCounterfactualRunner(n_cores=args.n_cores, 
                                         counterfactuals=args.counterfactuals)
     
-    # Create results directory
-    os.makedirs('counterfactual_results', exist_ok=True)
+    # Override default hyperparameters with command-line arguments
+    runner.markets = args.markets
+    runner.firms_per_market = args.firms_per_market
+    runner.total_firms = runner.markets * runner.firms_per_market
+    runner.steps = args.steps
+    runner.merge_thresh = args.merge_thresh
+    runner.comparison = args.comparison
+    runner.break_thresh = args.break_thresh
+    runner.lookback = args.lookback
+    runner.proportional = args.proportional
+    
+    # Cost function parameters
+    runner.cost_type = args.cost_type
+    runner.c0 = args.c0
+    runner.c1 = args.c1  
+    runner.c2 = args.c2
+    
+    # Backward compatibility
+    runner.b0 = args.b0
+    runner.b1 = args.b1
+    
+    # Robustness scenario naming
+    runner.scenario_name = args.scenario_name
+    
+    # Create results directory (organized by scenario if provided)
+    results_dir = 'counterfactual_results'
+    if args.scenario_name:
+        results_dir = f'robustness_results/{args.scenario_name}'
+    os.makedirs(results_dir, exist_ok=True)
+    
+    # Set results directory in runner
+    runner.results_dir = results_dir
     
     if args.share is not None:
         # Process single share value
@@ -438,7 +674,7 @@ def main():
         aggregated = runner.aggregate_share_results(results)
         
         # Save with share-specific filename
-        filename = f'counterfactual_results/share_{args.share:.2f}'
+        filename = f'{results_dir}/share_{args.share:.2f}'
         if args.chunk:
             filename += f'_chunk_{args.chunk}'
         
@@ -449,17 +685,59 @@ def main():
         all_results = {}
         
         for share in runner.shares:
+            log_memory_usage(f"BEFORE_ALPHA_{share:.2f}")
+            
             print(f"\nProcessing share = {share:.2f}")
             results = runner.run_share_experiments(share, chunk_start, chunk_end)
+            
+            log_memory_usage(f"AFTER_EXPERIMENTS_{share:.2f}")
+            
             aggregated = runner.aggregate_share_results(results)
-            all_results[share] = aggregated
+            
+            log_memory_usage(f"AFTER_AGGREGATION_{share:.2f}")
+            
+            # Save each alpha's results immediately to disk to reduce memory pressure
+            alpha_filename = f'{results_dir}/share_{share:.2f}'
+            if args.chunk:
+                alpha_filename += f'_chunk_{args.chunk}'
+            alpha_filename += '_aggregated.pkl'
+            with open(alpha_filename, 'wb') as f:
+                pickle.dump(aggregated, f)
+            
+            # Store reference instead of full data
+            all_results[share] = alpha_filename
+            
+            # Aggressive memory cleanup between alpha values
+            del results, aggregated
+            import gc
+            gc.collect()
+            
+            log_memory_usage(f"AFTER_CLEANUP_{share:.2f}")
+            print(f"Memory flushed after share {share:.2f}, saved to {alpha_filename}")
+        
+        # Load and combine results from disk for final save (only when needed)
+        print("Loading individual alpha results for final aggregation...")
+        combined_results = {}
+        for share, alpha_filename in all_results.items():
+            try:
+                with open(alpha_filename, 'rb') as f:
+                    combined_results[share] = pickle.load(f)
+                # Clean up individual alpha files to save disk space
+                os.remove(alpha_filename)
+            except Exception as e:
+                print(f"Warning: Could not load {alpha_filename}: {e}")
         
         # Save combined results
-        filename = 'counterfactual_results/all_shares'
+        filename = f'{results_dir}/all_shares'
         if args.chunk:
             filename += f'_chunk_{args.chunk}'
             
-        runner.save_results(all_results, filename)
+        runner.save_results(combined_results, filename)
+        
+        # Final memory cleanup
+        del combined_results
+        import gc
+        gc.collect()
     
     # Calculate and display runtime
     end_time = time.time()

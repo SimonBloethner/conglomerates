@@ -1,0 +1,4 @@
+0: exponential
+1: linear
+2: power_law
+3: quadratic
