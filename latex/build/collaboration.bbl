@@ -15,10 +15,14 @@ David~B Audretsch.
 \newblock The determinants of conglomerate mergers.
 \newblock {\em The American Economist}, 33(1):52--60, 1989.
 
+\bibitem{axtell2001zipf}
+Robert~L Axtell.
+\newblock Zipf distribution of us firm sizes.
+\newblock {\em science}, 293(5536):1818--1820, 2001.
+
 \bibitem{axtell2025agent}
 Robert~L Axtell and J~Doyne Farmer.
-\newblock Agent-based modeling in economics and finance: Past, present, and
-  future.
+\newblock Agent-based modeling in economics and finance: Past, present, and future.
 \newblock {\em Journal of Economic Literature}, 63(1):197--287, 2025.
 
 \bibitem{baltagi2007estimating}
@@ -26,27 +30,50 @@ Badi~H Baltagi, Peter Egger, and Michael Pfaffermayr.
 \newblock Estimating models of complex fdi: Are there third-country effects?
 \newblock {\em Journal of econometrics}, 140(1):260--281, 2007.
 
+\bibitem{bekaert1997emerging}
+Geert Bekaert and Campbell~R Harvey.
+\newblock Emerging equity market volatility.
+\newblock {\em Journal of Financial economics}, 43(1):29--77, 1997.
+
+\bibitem{berger1995diversification}
+Philip~G Berger and Eli Ofek.
+\newblock Diversification's effect on firm value.
+\newblock {\em Journal of financial economics}, 37(1):39--65, 1995.
+
+\bibitem{bernard2010multiple}
+Andrew~B Bernard, Stephen~J Redding, and Peter~K Schott.
+\newblock Multiple-product firms and product switching.
+\newblock {\em American economic review}, 100(1):70--97, 2010.
+
 \bibitem{boguth2022dissecting}
 Oliver Boguth, Ran Duchin, and Mikhail Simutin.
 \newblock Dissecting conglomerate valuations.
 \newblock {\em The Journal of Finance}, 77(2):1097--1131, 2022.
+
+\bibitem{bottazzi2006explaining}
+Giulio Bottazzi and Angelo Secchi.
+\newblock Explaining the distribution of firm growth rates.
+\newblock {\em The RAND Journal of Economics}, 37(2):235--256, 2006.
 
 \bibitem{boys2023ergodic}
 Graham Boyd and Jack Reardon.
 \newblock {\em The Ergodic Investor and Entrepreneur}.
 \newblock Evolutesix Books, 2023.
 
+\bibitem{campa2002explaining}
+Jose~Manuel Campa and Simi Kedia.
+\newblock Explaining the diversification discount.
+\newblock {\em The journal of finance}, 57(4):1731--1762, 2002.
+
 \bibitem{canback2006diseconomies}
 Staffan Canback, Phillip Samouel, and David Price.
-\newblock Do diseconomies of scale impact firm size and performance? a
-  theoretical and empirical overview.
+\newblock Do diseconomies of scale impact firm size and performance? a theoretical and empirical overview.
 \newblock {\em ICFAI Journal of Managerial Economics}, 4(1):27--70, 2006.
 
 \bibitem{coase19883}
 Ronald~H Coase.
 \newblock 3. the nature of the firm: Influence.
-\newblock {\em The Journal of Law, Economics, and Organization}, 4(1):33--47,
-  1988.
+\newblock {\em The Journal of Law, Economics, and Organization}, 4(1):33--47, 1988.
 
 \bibitem{cohen1969conglomerate}
 Sheldon~S Cohen.
@@ -55,21 +82,48 @@ Sheldon~S Cohen.
 
 \bibitem{cont2001empirical}
 Rama Cont.
-\newblock Empirical properties of asset returns: stylized facts and statistical
-  issues.
+\newblock Empirical properties of asset returns: stylized facts and statistical issues.
 \newblock {\em Quantitative finance}, 1(2):223, 2001.
+
+\bibitem{dang2018measuring}
+Chongyu Dang, Zhichuan~Frank Li, and Chen Yang.
+\newblock Measuring firm size in empirical corporate finance.
+\newblock {\em Journal of banking \& finance}, 86:159--176, 2018.
+
+\bibitem{dixit1980role}
+Avinash Dixit.
+\newblock The role of investment in entry-deterrence.
+\newblock {\em The economic journal}, 90(357):95--106, 1980.
+
+\bibitem{fama1992cross}
+Eugene~F Fama and Kenneth~R French.
+\newblock The cross-section of expected stock returns.
+\newblock {\em the Journal of Finance}, 47(2):427--465, 1992.
+
+\bibitem{fama1993common}
+Eugene~F Fama and Kenneth~R French.
+\newblock Common risk factors in the returns on stocks and bonds.
+\newblock {\em Journal of financial economics}, 33(1):3--56, 1993.
 
 \bibitem{felton1971conglomerate}
 John~Richard Felton.
 \newblock Conglomerate mergers, concentration and competition.
-\newblock {\em The American Journal of Economics and Sociology},
-  30(3):225--242, 1971.
+\newblock {\em The American Journal of Economics and Sociology}, 30(3):225--242, 1971.
 
 \bibitem{forbes2002no}
 Kristin~J Forbes and Roberto Rigobon.
-\newblock No contagion, only interdependence: measuring stock market
-  comovements.
+\newblock No contagion, only interdependence: measuring stock market comovements.
 \newblock {\em The journal of Finance}, 57(5):2223--2261, 2002.
+
+\bibitem{gabaix1999zipf}
+Xavier Gabaix.
+\newblock Zipf's law for cities: an explanation.
+\newblock {\em The Quarterly journal of economics}, 114(3):739--767, 1999.
+
+\bibitem{gertner1994internal}
+Robert~H Gertner, David~S Scharfstein, and Jeremy~C Stein.
+\newblock Internal versus external capital markets.
+\newblock {\em The quarterly journal of economics}, 109(4):1211--1230, 1994.
 
 \bibitem{gibrat1931}
 Robert Gibrat.
@@ -86,11 +140,50 @@ Lawrence~G Goldberg.
 \newblock Conglomerate mergers and concentration ratios.
 \newblock {\em The Review of Economics and Statistics}, pages 303--309, 1974.
 
+\bibitem{hann2013corporate}
+Rebecca~N Hann, Maria Ogneva, and Oguzhan Ozbas.
+\newblock Corporate diversification and the cost of capital.
+\newblock {\em The journal of finance}, 68(5):1961--1999, 2013.
+
+\bibitem{jensen1986agency}
+Michael~C Jensen.
+\newblock Agency costs of free cash flow, corporate finance, and takeovers.
+\newblock {\em The American economic review}, 76(2):323--329, 1986.
+
+\bibitem{klepper1996entry}
+Steven Klepper.
+\newblock Entry, exit, growth, and innovation over the product life cycle.
+\newblock {\em The American economic review}, pages 562--583, 1996.
+
+\bibitem{klepper1997industry}
+Steven Klepper.
+\newblock Industry life cycles.
+\newblock {\em Industrial and corporate change}, 6(1):145--182, 1997.
+
+\bibitem{kreps1983quantity}
+David~M Kreps and Jose~A Scheinkman.
+\newblock Quantity precommitment and bertrand competition yield cournot outcomes.
+\newblock {\em The Bell Journal of Economics}, pages 326--337, 1983.
+
+\bibitem{kuppuswamy2016does}
+Venkat Kuppuswamy and Bel{\'e}n Villalonga.
+\newblock Does diversification create value in the presence of external financing constraints? evidence from the 2007--2009 financial crisis.
+\newblock {\em Management Science}, 62(4):905--923, 2016.
+
+\bibitem{kwon2024100}
+Spencer~Y Kwon, Yueran Ma, and Kaspar Zimmermann.
+\newblock 100 years of rising corporate concentration.
+\newblock {\em American Economic Review}, 114(7):2111--2140, 2024.
+
 \bibitem{lahr2023fat}
 Henry Lahr.
-\newblock Fat tails in private equity fund returns: The smooth double pareto
-  distribution.
+\newblock Fat tails in private equity fund returns: The smooth double pareto distribution.
 \newblock {\em International Review of Financial Analysis}, 86:102471, 2023.
+
+\bibitem{lang1994tobins}
+Larry~HP Lang and Rene~M Stulz.
+\newblock Tobin's q, corporate diversification, and firm performance.
+\newblock {\em Journal of political economy}, 102(6):1248--1280, 1994.
 
 \bibitem{lewellen1971pure}
 Wilbur~G. Lewellen.
@@ -102,6 +195,11 @@ Nelson Lind and Natalia Ramondo.
 \newblock Trade with correlation.
 \newblock {\em American Economic Review}, 113(2):317--353, 2023.
 
+\bibitem{lotti2009defending}
+Francesca Lotti, Enrico Santarelli, and Marco Vivarelli.
+\newblock Defending gibrat’s law as a long-run regularity.
+\newblock {\em Small business economics}, 32(1):31--44, 2009.
+
 \bibitem{messmore1995variance}
 Tom Messmore.
 \newblock Variance drain.
@@ -112,11 +210,20 @@ Dennis~C Mueller.
 \newblock A theory of conglomerate mergers.
 \newblock {\em The Quarterly Journal of Economics}, 83(4):643--659, 1969.
 
-\bibitem{peneder2012firm}
-Michael Peneder.
-\newblock Firm growth, schumpeterian entrepreneurship and venture capital.
-\newblock {\em Oxford handbook of entrepreneurial finance. Oxford University
-  Press, Oxford}, pages 424--466, 2012.
+\bibitem{mundt2022survival}
+Philipp Mundt, Simone Alfarano, and Mishael Milakovi{\'c}.
+\newblock Survival and the ergodicity of corporate profitability.
+\newblock {\em Management Science}, 68(5):3726--3734, 2022.
+
+\bibitem{nair2022fundamentals}
+Jayakrishnan Nair, Adam Wierman, and Bert Zwart.
+\newblock {\em The fundamentals of heavy tails: Properties, emergence, and estimation}, volume~53.
+\newblock Cambridge University Press, 2022.
+
+\bibitem{nocke2014globalization}
+Volker Nocke and Stephen Yeaple.
+\newblock Globalization and multiproduct firms.
+\newblock {\em International Economic Review}, 55(4):993--1018, 2014.
 
 \bibitem{peters2019ergodicity}
 Ole Peters.
@@ -126,15 +233,17 @@ Ole Peters.
 \bibitem{peters2022ergodicity}
 Ole Peters and Alexander Adamou.
 \newblock The ergodicity solution of the cooperation puzzle.
-\newblock {\em Philosophical Transactions of the Royal Society A},
-  380(2227):20200425, 2022.
+\newblock {\em Philosophical Transactions of the Royal Society A}, 380(2227):20200425, 2022.
 
 \bibitem{pietronero2001explaining}
 Luciano Pietronero, Erio Tosatti, Valentino Tosatti, and Alessandro Vespignani.
-\newblock Explaining the uneven distribution of numbers in nature: the laws of
-  benford and zipf.
-\newblock {\em Physica A: Statistical Mechanics and its Applications},
-  293(1-2):297--304, 2001.
+\newblock Explaining the uneven distribution of numbers in nature: the laws of benford and zipf.
+\newblock {\em Physica A: Statistical Mechanics and its Applications}, 293(1-2):297--304, 2001.
+
+\bibitem{rajan2000cost}
+Raghuram Rajan, Henri Servaes, and Luigi Zingales.
+\newblock The cost of diversity: The diversification discount and inefficient investment.
+\newblock {\em The journal of Finance}, 55(1):35--80, 2000.
 
 \bibitem{ramondo2010role}
 Natalia Ramondo and Veronica Rappoport.
@@ -146,22 +255,50 @@ Natalia Ramondo, Veronica Rappoport, and Kim~J Ruhl.
 \newblock The proximity-concentration tradeoff under uncertainty.
 \newblock {\em Review of Economic Studies}, 80(4):1582--1621, 2013.
 
+\bibitem{ramondo2013trade}
+Natalia Ramondo and Andr{\'e}s Rodr{\'\i}guez-Clare.
+\newblock Trade, multinational production, and the gains from openness.
+\newblock {\em Journal of Political Economy}, 121(2):273--322, 2013.
+
 \bibitem{ricardo1817principles}
 David Ricardo.
 \newblock {\em On the Principles of Political Economy and Taxation}.
 \newblock John Murray, London, 1817.
 
+\bibitem{roach2002measuring}
+Craig~R Roach.
+\newblock Measuring market power in the us electricity business.
+\newblock {\em Energy LJ}, 23:51, 2002.
+
+\bibitem{santarelli2006gibrat}
+Enrico Santarelli, Luuk Klomp, and A~Roy Thurik.
+\newblock Gibrat’s law: An overview of the empirical literature.
+\newblock {\em Entrepreneurship, growth, and innovation: The dynamics of firms and industries}, pages 41--73, 2006.
+
+\bibitem{scharfstein2000dark}
+David~S Scharfstein and Jeremy~C Stein.
+\newblock The dark side of internal capital markets: Divisional rent-seeking and inefficient investment.
+\newblock {\em The journal of finance}, 55(6):2537--2564, 2000.
+
 \bibitem{scherer1990industrial}
 Frederic~M Scherer.
 \newblock Industrial market structure and economic performance.
-\newblock {\em University of Illinois at Urbana-Champaign's Academy for
-  Entrepreneurial Leadership Historical Research Reference in
-  Entrepreneurship}, 1990.
+\newblock {\em University of Illinois at Urbana-Champaign's Academy for Entrepreneurial Leadership Historical Research Reference in Entrepreneurship}, 1990.
+
+\bibitem{scitovsky1955economic}
+Tibor Scitovsky.
+\newblock Economic theory and the measurement of concentration.
+\newblock In {\em Business concentration and price policy}, pages 101--118. Princeton University Press, 1955.
 
 \bibitem{sibani2020human}
 Paolo Sibani and Steen Rasmussen.
 \newblock Human wealth evolution: trends and fluctuations.
 \newblock {\em arXiv preprint arXiv:2003.11502}, 2020.
+
+\bibitem{simon1955behavioral}
+Herbert~A Simon.
+\newblock A behavioral model of rational choice.
+\newblock {\em The quarterly journal of economics}, pages 99--118, 1955.
 
 \bibitem{smith1776inquiry}
 Adam Smith.
@@ -174,26 +311,33 @@ Mark Spitznagel.
 \newblock John Wiley \& Sons, 2021.
 
 \bibitem{stanley1996scaling}
-Michael~HR Stanley, Luis~AN Amaral, Sergey~V Buldyrev, Shlomo Havlin, Heiko
-  Leschhorn, Philipp Maass, Michael~A Salinger, and H~Eugene Stanley.
+Michael~HR Stanley, Luis~AN Amaral, Sergey~V Buldyrev, Shlomo Havlin, Heiko Leschhorn, Philipp Maass, Michael~A Salinger, and H~Eugene Stanley.
 \newblock Scaling behaviour in the growth of companies.
 \newblock {\em Nature}, 379(6568):804--806, 1996.
+
+\bibitem{stein1997internal}
+Jeremy~C Stein.
+\newblock Internal capital markets and the competition for corporate resources.
+\newblock {\em The journal of finance}, 52(1):111--133, 1997.
+
+\bibitem{sutton1991sunk}
+John Sutton.
+\newblock {\em Sunk costs and market structure: Price competition, advertising, and the evolution of concentration}.
+\newblock MIT press, 1991.
 
 \bibitem{sutton1997gibrat}
 John Sutton.
 \newblock Gibrat's legacy.
 \newblock {\em Journal of economic literature}, 35(1):40--59, 1997.
 
-\bibitem{taleb2020statistical}
-Nassim~Nicholas Taleb.
-\newblock Statistical consequences of fat tails: Real world preasymptotics,
-  epistemology, and applications.
-\newblock {\em arXiv preprint arXiv:2001.10488}, 2020.
+\bibitem{villalonga2004diversification}
+Belen Villalonga.
+\newblock Diversification discount or premium? new evidence from the business information tracking series.
+\newblock {\em The Journal of Finance}, 59(2):479--506, 2004.
 
 \bibitem{viscusi2014shifting}
 W~Kip Viscusi and Benjamin~J McMichael.
-\newblock Shifting the fat-tailed distribution of blockbuster punitive damages
-  awards.
+\newblock Shifting the fat-tailed distribution of blockbuster punitive damages awards.
 \newblock {\em Journal of Empirical Legal Studies}, 11(2):350--377, 2014.
 
 \bibitem{bawerk1921kapital}
