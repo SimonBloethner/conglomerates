@@ -730,12 +730,13 @@ class ParametrizationComparator:
             
             # Extract key hyperparameters for controls
             markets = hyperparams.get('markets', 100)
-            firms_per_market = hyperparams.get('firms_per_market', 100) 
+            firms_per_market = hyperparams.get('firms_per_market', 100)
             steps = hyperparams.get('steps', 10000)
             merge_thresh = hyperparams.get('merge_thresh', 0.05)
             break_thresh = hyperparams.get('break_thresh', 0.85)
+            lookback = hyperparams.get('lookback', 50)
             cost_type = param_data['cost_type']
-            
+
             # For each metric, collect panel data
             for metric_name in ['gini_quantiles_avg', 'market_share_quantiles_avg']:
                 metric_data = param_data['metrics'].get(metric_name, {})
@@ -770,7 +771,8 @@ class ParametrizationComparator:
                                             'total_firms': markets * firms_per_market,
                                             'steps': steps,
                                             'merge_thresh': merge_thresh,
-                                            'break_thresh': break_thresh
+                                            'break_thresh': break_thresh,
+                                            'lookback': lookback
                                         })
 
         # Add scalar metrics (pool across timesteps)
@@ -784,6 +786,7 @@ class ParametrizationComparator:
             steps = hyperparams.get('steps', 10000)
             merge_thresh = hyperparams.get('merge_thresh', 0.05)
             break_thresh = hyperparams.get('break_thresh', 0.85)
+            lookback = hyperparams.get('lookback', 50)
             cost_type = param_data['cost_type']
 
             # Process scalar metrics (mean_members_avg, num_cong_avg, mergers_per_period_avg, exits_per_period_avg)
@@ -814,7 +817,8 @@ class ParametrizationComparator:
                                             'total_firms': markets * firms_per_market,
                                             'steps': steps,
                                             'merge_thresh': merge_thresh,
-                                            'break_thresh': break_thresh
+                                            'break_thresh': break_thresh,
+                                            'lookback': lookback
                                         })
 
         # Add mobility metrics (no timestep dimension - already averaged over time)
@@ -824,6 +828,7 @@ class ParametrizationComparator:
 
             # Extract key hyperparameters for controls
             markets = hyperparams.get('markets', 100)
+            lookback = hyperparams.get('lookback', 50)
             firms_per_market = hyperparams.get('firms_per_market', 100)
             steps = hyperparams.get('steps', 10000)
             merge_thresh = hyperparams.get('merge_thresh', 0.05)
@@ -856,7 +861,8 @@ class ParametrizationComparator:
                                     'total_firms': markets * firms_per_market,
                                     'steps': steps,
                                     'merge_thresh': merge_thresh,
-                                    'break_thresh': break_thresh
+                                    'break_thresh': break_thresh,
+                                    'lookback': lookback
                                 })
 
         # Add polynomial metrics (pool across timesteps)
@@ -870,6 +876,7 @@ class ParametrizationComparator:
             steps = hyperparams.get('steps', 10000)
             merge_thresh = hyperparams.get('merge_thresh', 0.05)
             break_thresh = hyperparams.get('break_thresh', 0.85)
+            lookback = hyperparams.get('lookback', 50)
             cost_type = param_data['cost_type']
 
             # Process polynomial estimates
@@ -901,7 +908,8 @@ class ParametrizationComparator:
                                                 'total_firms': markets * firms_per_market,
                                                 'steps': steps,
                                                 'merge_thresh': merge_thresh,
-                                                'break_thresh': break_thresh
+                                                'break_thresh': break_thresh,
+                                                'lookback': lookback
                                             })
 
         if not panel_data:
@@ -926,6 +934,19 @@ class ParametrizationComparator:
 
                 if len(quantile_df) < 50:  # Need sufficient observations
                     continue
+
+                # Debug: Check variation in interaction variables (only print once)
+                if metric_name == 'mean_members_avg' and quantile == 'overall':
+                    print(f"  DEBUG - Unique values in quantile_df:")
+                    print(f"    lookback: {quantile_df['lookback'].nunique() if 'lookback' in quantile_df.columns else 'NOT IN COLUMNS'}")
+                    print(f"    markets: {quantile_df['markets'].nunique() if 'markets' in quantile_df.columns else 'NOT IN COLUMNS'}")
+                    print(f"    firms_per_market: {quantile_df['firms_per_market'].nunique() if 'firms_per_market' in quantile_df.columns else 'NOT IN COLUMNS'}")
+                    if 'lookback' in quantile_df.columns:
+                        print(f"    lookback values: {sorted(quantile_df['lookback'].unique())}")
+                    if 'markets' in quantile_df.columns:
+                        print(f"    markets values: {sorted(quantile_df['markets'].unique())}")
+                    if 'firms_per_market' in quantile_df.columns:
+                        print(f"    firms_per_market values: {sorted(quantile_df['firms_per_market'].unique())}")
 
                 # Run both linear and quadratic regressions with hyperparameter controls
                 linear_results = self._run_controlled_regression(quantile_df, control_hyperparams, model_type='linear')
@@ -1214,6 +1235,14 @@ class ParametrizationComparator:
                     X_vars.append(var)
                     X_data.append(df[var].values)
 
+            # Add interaction terms: lookback x alpha, markets x alpha, firms_per_market x alpha
+            interaction_vars = ['lookback', 'markets', 'firms_per_market']
+            for var in interaction_vars:
+                if var in df.columns and df[var].nunique() > 1:  # Only add if there's variation
+                    interaction_name = f'{var}_x_alpha'
+                    X_vars.append(interaction_name)
+                    X_data.append(df[var].values * df['alpha'].values)
+
             # Add cost function fixed effects (dummy variables)
             cost_types = df['cost_type'].unique()
             if len(cost_types) > 1:
@@ -1263,6 +1292,16 @@ class ParametrizationComparator:
             result['alpha_sq_coeff'] = model.coef_[alpha_sq_idx]
             result['alpha_sq_se'] = standard_errors[alpha_sq_idx]
             result['alpha_sq_tstat'] = t_statistics[alpha_sq_idx]
+
+        # Add interaction term coefficients if applicable
+        if control_hyperparams:
+            for var in ['lookback', 'markets', 'firms_per_market']:
+                interaction_name = f'{var}_x_alpha'
+                if interaction_name in var_names:
+                    idx = var_names.index(interaction_name)
+                    result[f'{interaction_name}_coeff'] = model.coef_[idx]
+                    result[f'{interaction_name}_se'] = standard_errors[idx]
+                    result[f'{interaction_name}_tstat'] = t_statistics[idx]
 
         return result
 
@@ -1426,6 +1465,15 @@ class ParametrizationComparator:
                 'Quadratic SE(β₂)': quadratic_res.get('alpha_sq_se', np.nan),
                 'Quadratic t(β₁)': quadratic_res.get('alpha_tstat', np.nan),
                 'Quadratic t(β₂)': quadratic_res.get('alpha_sq_tstat', np.nan),
+                'Lookback×α': quadratic_res.get('lookback_x_alpha_coeff', np.nan),
+                'Lookback×α SE': quadratic_res.get('lookback_x_alpha_se', np.nan),
+                'Lookback×α t': quadratic_res.get('lookback_x_alpha_tstat', np.nan),
+                'Markets×α': quadratic_res.get('markets_x_alpha_coeff', np.nan),
+                'Markets×α SE': quadratic_res.get('markets_x_alpha_se', np.nan),
+                'Markets×α t': quadratic_res.get('markets_x_alpha_tstat', np.nan),
+                'Firms/Mkt×α': quadratic_res.get('firms_per_market_x_alpha_coeff', np.nan),
+                'Firms/Mkt×α SE': quadratic_res.get('firms_per_market_x_alpha_se', np.nan),
+                'Firms/Mkt×α t': quadratic_res.get('firms_per_market_x_alpha_tstat', np.nan),
                 'R² (Quadratic)': quadratic_res.get('r2', np.nan),
                 'N': quadratic_res.get('n_obs', 0)
             }
@@ -1445,16 +1493,17 @@ class ParametrizationComparator:
                 df[col] = df[col].apply(lambda x: f"{x:.4f}" if not np.isnan(x) else "—")
 
         # Print to console
-        print("\n" + "="*120)
+        print("\n" + "="*140)
         print("SCALAR METRICS PANEL REGRESSION RESULTS")
         print("Dependent Variable: Metric value (pooled across timesteps)")
-        print("Independent Variables: α (profit-sharing), α² (quadratic term), + hyperparameter controls")
-        print("="*120)
+        print("Independent Variables: α (profit-sharing), α² (quadratic term), interaction terms, + hyperparameter controls")
+        print("="*140)
         print(df.to_string(index=False))
-        print("="*120)
+        print("="*140)
         print(f"\nNote: Results pool observations across timesteps and parametrizations.")
         print(f"Controls include: markets, firms_per_market, merge_thresh, cost_type fixed effects")
-        print("="*120 + "\n")
+        print(f"Interaction terms: lookback×α, markets×α, firms_per_market×α")
+        print("="*140 + "\n")
 
         # Save if requested
         if save_path:
@@ -1473,14 +1522,15 @@ class ParametrizationComparator:
 
             else:  # Default to text
                 with open(save_path, 'w') as f:
-                    f.write("="*120 + "\n")
+                    f.write("="*140 + "\n")
                     f.write("SCALAR METRICS PANEL REGRESSION RESULTS\n")
-                    f.write("="*120 + "\n\n")
+                    f.write("="*140 + "\n\n")
                     f.write(df.to_string(index=False))
-                    f.write("\n\n" + "="*120 + "\n")
+                    f.write("\n\n" + "="*140 + "\n")
                     f.write("Note: Results pool observations across timesteps and parametrizations.\n")
                     f.write("Controls include: markets, firms_per_market, merge_thresh, cost_type fixed effects\n")
-                    f.write("="*120 + "\n")
+                    f.write("Interaction terms: lookback×α, markets×α, firms_per_market×α\n")
+                    f.write("="*140 + "\n")
                 print(f"Text table saved to {save_path}")
 
         return df
@@ -1530,6 +1580,17 @@ class ParametrizationComparator:
                 alpha_sq_tstat = quad_res.get('alpha_sq_tstat', np.nan)
                 r2 = quad_res.get('r2', np.nan)
 
+                # Extract interaction term coefficients
+                lookback_x_alpha_coeff = quad_res.get('lookback_x_alpha_coeff', np.nan)
+                lookback_x_alpha_se = quad_res.get('lookback_x_alpha_se', np.nan)
+                lookback_x_alpha_tstat = quad_res.get('lookback_x_alpha_tstat', np.nan)
+                markets_x_alpha_coeff = quad_res.get('markets_x_alpha_coeff', np.nan)
+                markets_x_alpha_se = quad_res.get('markets_x_alpha_se', np.nan)
+                markets_x_alpha_tstat = quad_res.get('markets_x_alpha_tstat', np.nan)
+                firms_per_market_x_alpha_coeff = quad_res.get('firms_per_market_x_alpha_coeff', np.nan)
+                firms_per_market_x_alpha_se = quad_res.get('firms_per_market_x_alpha_se', np.nan)
+                firms_per_market_x_alpha_tstat = quad_res.get('firms_per_market_x_alpha_tstat', np.nan)
+
                 if n_obs is None:
                     n_obs = quad_res.get('n_obs', 0)
 
@@ -1541,6 +1602,15 @@ class ParametrizationComparator:
                     'alpha_sq_coeff': alpha_sq_coeff,
                     'alpha_sq_se': alpha_sq_se,
                     'alpha_sq_tstat': alpha_sq_tstat,
+                    'lookback_x_alpha_coeff': lookback_x_alpha_coeff,
+                    'lookback_x_alpha_se': lookback_x_alpha_se,
+                    'lookback_x_alpha_tstat': lookback_x_alpha_tstat,
+                    'markets_x_alpha_coeff': markets_x_alpha_coeff,
+                    'markets_x_alpha_se': markets_x_alpha_se,
+                    'markets_x_alpha_tstat': markets_x_alpha_tstat,
+                    'firms_per_market_x_alpha_coeff': firms_per_market_x_alpha_coeff,
+                    'firms_per_market_x_alpha_se': firms_per_market_x_alpha_se,
+                    'firms_per_market_x_alpha_tstat': firms_per_market_x_alpha_tstat,
                     'r2': r2
                 })
                 r2_values.append(r2)
@@ -1554,6 +1624,15 @@ class ParametrizationComparator:
                     'alpha_sq_coeff': np.nan,
                     'alpha_sq_se': np.nan,
                     'alpha_sq_tstat': np.nan,
+                    'lookback_x_alpha_coeff': np.nan,
+                    'lookback_x_alpha_se': np.nan,
+                    'lookback_x_alpha_tstat': np.nan,
+                    'markets_x_alpha_coeff': np.nan,
+                    'markets_x_alpha_se': np.nan,
+                    'markets_x_alpha_tstat': np.nan,
+                    'firms_per_market_x_alpha_coeff': np.nan,
+                    'firms_per_market_x_alpha_se': np.nan,
+                    'firms_per_market_x_alpha_tstat': np.nan,
                     'r2': np.nan
                 })
                 r2_values.append(np.nan)
@@ -1627,6 +1706,81 @@ class ParametrizationComparator:
 
         alpha_sq_se_row = ' & '.join(alpha_sq_ses)
         latex.append(f'        & {alpha_sq_se_row} \\\\')
+        latex.append('')
+
+        # Lookback x Alpha interaction coefficient row
+        lookback_x_alpha_coeffs = []
+        for r in results_data:
+            if not np.isnan(r['lookback_x_alpha_coeff']):
+                stars = add_stars(r['lookback_x_alpha_tstat'])
+                lookback_x_alpha_coeffs.append(f"{r['lookback_x_alpha_coeff']:.4f}{stars}")
+            else:
+                lookback_x_alpha_coeffs.append('---')
+
+        lookback_x_alpha_row = ' & '.join(lookback_x_alpha_coeffs)
+        latex.append(f'        Lookback $\\times$ $\\alpha$ & {lookback_x_alpha_row} \\\\')
+        latex.append('')
+
+        # Lookback x Alpha standard errors row
+        lookback_x_alpha_ses = []
+        for r in results_data:
+            if not np.isnan(r['lookback_x_alpha_se']):
+                lookback_x_alpha_ses.append(f"({r['lookback_x_alpha_se']:.4f})")
+            else:
+                lookback_x_alpha_ses.append('---')
+
+        lookback_x_alpha_se_row = ' & '.join(lookback_x_alpha_ses)
+        latex.append(f'        & {lookback_x_alpha_se_row} \\\\')
+        latex.append('')
+
+        # Markets x Alpha interaction coefficient row
+        markets_x_alpha_coeffs = []
+        for r in results_data:
+            if not np.isnan(r['markets_x_alpha_coeff']):
+                stars = add_stars(r['markets_x_alpha_tstat'])
+                markets_x_alpha_coeffs.append(f"{r['markets_x_alpha_coeff']:.4f}{stars}")
+            else:
+                markets_x_alpha_coeffs.append('---')
+
+        markets_x_alpha_row = ' & '.join(markets_x_alpha_coeffs)
+        latex.append(f'        Markets $\\times$ $\\alpha$ & {markets_x_alpha_row} \\\\')
+        latex.append('')
+
+        # Markets x Alpha standard errors row
+        markets_x_alpha_ses = []
+        for r in results_data:
+            if not np.isnan(r['markets_x_alpha_se']):
+                markets_x_alpha_ses.append(f"({r['markets_x_alpha_se']:.4f})")
+            else:
+                markets_x_alpha_ses.append('---')
+
+        markets_x_alpha_se_row = ' & '.join(markets_x_alpha_ses)
+        latex.append(f'        & {markets_x_alpha_se_row} \\\\')
+        latex.append('')
+
+        # Firms per Market x Alpha interaction coefficient row
+        firms_x_alpha_coeffs = []
+        for r in results_data:
+            if not np.isnan(r['firms_per_market_x_alpha_coeff']):
+                stars = add_stars(r['firms_per_market_x_alpha_tstat'])
+                firms_x_alpha_coeffs.append(f"{r['firms_per_market_x_alpha_coeff']:.4f}{stars}")
+            else:
+                firms_x_alpha_coeffs.append('---')
+
+        firms_x_alpha_row = ' & '.join(firms_x_alpha_coeffs)
+        latex.append(f'        Firms/Market $\\times$ $\\alpha$ & {firms_x_alpha_row} \\\\')
+        latex.append('')
+
+        # Firms per Market x Alpha standard errors row
+        firms_x_alpha_ses = []
+        for r in results_data:
+            if not np.isnan(r['firms_per_market_x_alpha_se']):
+                firms_x_alpha_ses.append(f"({r['firms_per_market_x_alpha_se']:.4f})")
+            else:
+                firms_x_alpha_ses.append('---')
+
+        firms_x_alpha_se_row = ' & '.join(firms_x_alpha_ses)
+        latex.append(f'        & {firms_x_alpha_se_row} \\\\')
         latex.append('')
 
         # Separator

@@ -127,6 +127,8 @@ INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics/mathcolor.ltx
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics/mathcolor.ltx
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/booktabs/booktabs.sty
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/booktabs/booktabs.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/pgfplots/pgfplots.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/pgfplots/pgfplots.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/generic/pgfplots/pgfplots.revision.tex

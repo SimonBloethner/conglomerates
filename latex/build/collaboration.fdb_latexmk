@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex build/collaboration"] 1770310094.72283 "build/collaboration.aux" "build/collaboration.bbl" "build/collaboration" 1770310117.41258 0
-  "./references.bib" 1770306537.2596 25113 b8302146747aaa1a92b5a3ba9bd0efc4 ""
+["bibtex build/collaboration"] 1770475140.6265 "build/collaboration.aux" "build/collaboration.bbl" "build/collaboration" 1770475394.39065 0
+  "./references.bib" 1770475140.32567 25381 b5716ccefa94aa6f8d3af3a8c8418acc ""
   "/usr/local/texlive/2025/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "build/collaboration.aux" 1770310117.02977 38989 eaa413df27715725553cbcb894bdbbf1 "pdflatex"
+  "build/collaboration.aux" 1770475393.93139 39956 06d676dc5fbe10475a200ea923488d09 "pdflatex"
   (generated)
   "build/collaboration.bbl"
   "build/collaboration.blg"
   (rewritten before read)
-["pdflatex"] 1770310094.83577 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "collaboration.pdf" "collaboration" 1770310117.41288 0
-  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1770310067.8952 75294 d104157edfd720ad20759a74e356cbde ""
+["pdflatex"] 1770475369.3848 "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" "collaboration.pdf" "collaboration" 1770475394.39137 0
+  "/Users/Simon/Documents/Projects/EWF/Research/PhD/Ergodicity Economics/IOxEE/latex/collaboration.tex" 1770475369.15537 79976 ce6ae297ce315abe435514e81bff8549 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -215,6 +215,7 @@
   "/usr/local/texlive/2025/texmf-dist/tex/latex/base/ifthen.sty" 1738182759 5525 9dced5929f36b19fa837947f5175b331 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/base/inputenc.sty" 1738182759 5048 0270515b828149155424600fd2d58ac5 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/base/size12.clo" 1738182759 8449 ffe4ba2166a344827c3a832d1d5e0a91 ""
+  "/usr/local/texlive/2025/texmf-dist/tex/latex/booktabs/booktabs.sty" 1579038678 6078 f1cb470c9199e7110a27851508ed7a5c ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty" 1579991033 13886 d1306dcf79a944f6988e688c1785f9ce ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/etoolbox/etoolbox.sty" 1739306980 46850 d87daedc2abdc653769a6f1067849fe0 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/float/float.sty" 1137110151 6749 16d2656a1984957e674b149555f1ea1d ""
@@ -259,15 +260,15 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1767769791 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1767769773 3345743 48c2cf7fc9e9dcff489784f6801ac583 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "build/collaboration.aux" 1770310117.02977 38989 eaa413df27715725553cbcb894bdbbf1 "pdflatex"
-  "build/collaboration.bbl" 1770310094.82916 13911 fb10b86f9650088bb9286f27e3cea768 "bibtex build/collaboration"
-  "build/collaboration.out" 1770310117.03198 826 86f963bfc3aa45a486ae1a3ad03c45a7 "pdflatex"
-  "collaboration.tex" 1770310067.8952 75294 d104157edfd720ad20759a74e356cbde ""
+  "build/collaboration.aux" 1770475393.93139 39956 06d676dc5fbe10475a200ea923488d09 "pdflatex"
+  "build/collaboration.bbl" 1770475140.88057 13946 4342961055ed92d79fa0c3b68e2381b1 "bibtex build/collaboration"
+  "build/collaboration.out" 1770475393.93401 826 86f963bfc3aa45a486ae1a3ad03c45a7 "pdflatex"
+  "collaboration.tex" 1770475369.15537 79976 ce6ae297ce315abe435514e81bff8549 ""
   "figures/metric_plots/metric_plot_0.tex" 1767596089.17691 1898 d4385a3f706c42faee00e2dd17cc2bae ""
   "figures/metric_plots/metric_plot_1.tex" 1767596267.42 1846 4032da76385fddd7ae087f07194dd87e ""
   "figures/metric_plots/metric_plot_2.tex" 1767596347.63974 1846 b60541adb1c155863522e887249b8a5d ""
   "figures/metric_plots/metric_plot_3.tex" 1767596370.6116 1846 4b7259911ed32e2fd322fa6dc74faaae ""
-  "figures/metric_plots/metrics_figure.tex" 1767597668.41335 1663 730fc071ec8311a16b8a1b9ac02fdce9 ""
+  "figures/metric_plots/metrics_figure.tex" 1770446428.53233 1877 01c21d4c3237905ac2f13a4de8b89ada ""
   "figures/plots/m0_cost0.csv" 1767594329.45116 3944 8e8ef216d2cbe5b1c2c4a341160048b4 ""
   "figures/plots/m0_cost1.csv" 1767594323.40746 3944 091c64942ca12e6d10a5fa41f4d5c0e5 ""
   "figures/plots/m0_cost2.csv" 1767594334.63084 3944 8e67a6060b8ff76454cf2918c51cdf4e ""
