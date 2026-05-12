@@ -1,358 +1,2783 @@
-\begin{thebibliography}{10}
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global/global}
+    \entry{amihud1981risk}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=fd253d257e16edd4bdace17cf72df10c}{%
+           family={Amihud},
+           familyi={A\bibinitperiod},
+           given={Yakov},
+           giveni={Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=72e786092b3416e19c453e5468db862d}{%
+           family={Lev},
+           familyi={L\bibinitperiod},
+           given={Baruch},
+           giveni={B\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {[RAND Corporation, Wiley]}%
+      }
+      \strng{namehash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{fullhash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{fullhashraw}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{bibnamehash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{authorbibnamehash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{authornamehash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{authorfullhash}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \strng{authorfullhashraw}{706a4bb6467f1c38dc6c8a531eafa40e}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Bell Journal of Economics}
+      \field{number}{2}
+      \field{title}{Risk Reduction as a Managerial Motive for Conglomerate Mergers}
+      \field{urlday}{6}
+      \field{urlmonth}{2}
+      \field{urlyear}{2026}
+      \field{volume}{12}
+      \field{year}{1981}
+      \field{urldateera}{ce}
+      \field{pages}{605\bibrangedash 617}
+      \range{pages}{13}
+    \endentry
+    \entry{amit1988concept}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=8075c027b5c5c5fc12a2cd3ee98742e2}{%
+           family={Amit},
+           familyi={A\bibinitperiod},
+           given={Raphael},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4da9292952dadc3b6ef23d4c91a49ec5}{%
+           family={Livnat},
+           familyi={L\bibinitperiod},
+           given={Joshua},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Sage Publications Sage CA: Thousand Oaks, CA}%
+      }
+      \strng{namehash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{fullhash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{fullhashraw}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{bibnamehash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{authorbibnamehash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{authornamehash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{authorfullhash}{b8b41dbb9cedbb360b1c96103f632591}
+      \strng{authorfullhashraw}{b8b41dbb9cedbb360b1c96103f632591}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Management}
+      \field{number}{4}
+      \field{title}{A concept of conglomerate diversification}
+      \field{volume}{14}
+      \field{year}{1988}
+      \field{pages}{593\bibrangedash 604}
+      \range{pages}{12}
+    \endentry
+    \entry{audretsch1989determinants}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=ae483d0f62cdbc5de714cc500d708a8a}{%
+           family={Audretsch},
+           familyi={A\bibinitperiod},
+           given={David\bibnamedelima B},
+           giveni={D\bibinitperiod\bibinitdelim B\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Sage Publications Sage CA: Los Angeles, CA}%
+      }
+      \strng{namehash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{fullhash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{fullhashraw}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{bibnamehash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{authorbibnamehash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{authornamehash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{authorfullhash}{ae483d0f62cdbc5de714cc500d708a8a}
+      \strng{authorfullhashraw}{ae483d0f62cdbc5de714cc500d708a8a}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The American Economist}
+      \field{number}{1}
+      \field{title}{The determinants of conglomerate mergers}
+      \field{volume}{33}
+      \field{year}{1989}
+      \field{pages}{52\bibrangedash 60}
+      \range{pages}{9}
+    \endentry
+    \entry{axtell2001zipf}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=c0e713804b3965a0fa2e5cb3bc9fe66e}{%
+           family={Axtell},
+           familyi={A\bibinitperiod},
+           given={Robert\bibnamedelima L},
+           giveni={R\bibinitperiod\bibinitdelim L\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Association for the Advancement of Science}%
+      }
+      \strng{namehash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{fullhash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{fullhashraw}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{bibnamehash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{authorbibnamehash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{authornamehash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{authorfullhash}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \strng{authorfullhashraw}{c0e713804b3965a0fa2e5cb3bc9fe66e}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Science}
+      \field{number}{5536}
+      \field{title}{Zipf distribution of US firm sizes}
+      \field{volume}{293}
+      \field{year}{2001}
+      \field{pages}{1818\bibrangedash 1820}
+      \range{pages}{3}
+    \endentry
+    \entry{axtell2025agent}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=c0e713804b3965a0fa2e5cb3bc9fe66e}{%
+           family={Axtell},
+           familyi={A\bibinitperiod},
+           given={Robert\bibnamedelima L},
+           giveni={R\bibinitperiod\bibinitdelim L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8989d3ee480656dd3eb385ab19b9d332}{%
+           family={Farmer},
+           familyi={F\bibinitperiod},
+           given={J\bibnamedelima Doyne},
+           giveni={J\bibinitperiod\bibinitdelim D\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Economic Association 2014 Broadway, Suite 305, Nashville, TN 37203-2425}%
+      }
+      \strng{namehash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{fullhash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{fullhashraw}{d26270aa6558f46896f1733b0b51266f}
+      \strng{bibnamehash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{authorbibnamehash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{authornamehash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{authorfullhash}{d26270aa6558f46896f1733b0b51266f}
+      \strng{authorfullhashraw}{d26270aa6558f46896f1733b0b51266f}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Economic Literature}
+      \field{number}{1}
+      \field{title}{Agent-based modeling in economics and finance: Past, present, and future}
+      \field{volume}{63}
+      \field{year}{2025}
+      \field{pages}{197\bibrangedash 287}
+      \range{pages}{91}
+    \endentry
+    \entry{baltagi2007estimating}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=1f21d8e74849c2eaf7c9bee7786534b7}{%
+           family={Baltagi},
+           familyi={B\bibinitperiod},
+           given={Badi\bibnamedelima H},
+           giveni={B\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b5a9420a0030ac4766b606d868b6308f}{%
+           family={Egger},
+           familyi={E\bibinitperiod},
+           given={Peter},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=a8c651e1dce08de9a137cd2cb2ab59a4}{%
+           family={Pfaffermayr},
+           familyi={P\bibinitperiod},
+           given={Michael},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{fullhash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{fullhashraw}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{bibnamehash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{authorbibnamehash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{authornamehash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{authorfullhash}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \strng{authorfullhashraw}{32af6cdac715f1073fcb1cb33f6d15fe}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of econometrics}
+      \field{number}{1}
+      \field{title}{Estimating models of complex FDI: Are there third-country effects?}
+      \field{volume}{140}
+      \field{year}{2007}
+      \field{pages}{260\bibrangedash 281}
+      \range{pages}{22}
+    \endentry
+    \entry{bekaert1997emerging}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=5f02243009236b8ee0fdd66fc193586e}{%
+           family={Bekaert},
+           familyi={B\bibinitperiod},
+           given={Geert},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=0bf0f19775c07a4b41c994dde24f6ecc}{%
+           family={Harvey},
+           familyi={H\bibinitperiod},
+           given={Campbell\bibnamedelima R},
+           giveni={C\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{fullhash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{fullhashraw}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{bibnamehash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{authorbibnamehash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{authornamehash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{authorfullhash}{219b23a8194fd7459d0ad86ce995a331}
+      \strng{authorfullhashraw}{219b23a8194fd7459d0ad86ce995a331}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Financial economics}
+      \field{number}{1}
+      \field{title}{Emerging equity market volatility}
+      \field{volume}{43}
+      \field{year}{1997}
+      \field{pages}{29\bibrangedash 77}
+      \range{pages}{49}
+    \endentry
+    \entry{berger1995diversification}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=71bfcee5db12fcce3b1c978f64855c78}{%
+           family={Berger},
+           familyi={B\bibinitperiod},
+           given={Philip\bibnamedelima G},
+           giveni={P\bibinitperiod\bibinitdelim G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2942102455d71f43437a1fab9aa0ac26}{%
+           family={Ofek},
+           familyi={O\bibinitperiod},
+           given={Eli},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{fullhash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{fullhashraw}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{bibnamehash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{authorbibnamehash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{authornamehash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{authorfullhash}{24a8ecf50bfedc5be33232d0c8815486}
+      \strng{authorfullhashraw}{24a8ecf50bfedc5be33232d0c8815486}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of financial economics}
+      \field{number}{1}
+      \field{title}{Diversification's effect on firm value}
+      \field{volume}{37}
+      \field{year}{1995}
+      \field{pages}{39\bibrangedash 65}
+      \range{pages}{27}
+    \endentry
+    \entry{bernard2010multiple}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=a2b53cbf24e89538c9907b8381cc913f}{%
+           family={Bernard},
+           familyi={B\bibinitperiod},
+           given={Andrew\bibnamedelima B},
+           giveni={A\bibinitperiod\bibinitdelim B\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=29db3ac8f93041c5506aa68eca7e6163}{%
+           family={Redding},
+           familyi={R\bibinitperiod},
+           given={Stephen\bibnamedelima J},
+           giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=67f8a9504db0daa8978a8516c0d39234}{%
+           family={Schott},
+           familyi={S\bibinitperiod},
+           given={Peter\bibnamedelima K},
+           giveni={P\bibinitperiod\bibinitdelim K\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Economic Association}%
+      }
+      \strng{namehash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{fullhash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{fullhashraw}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{bibnamehash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{authorbibnamehash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{authornamehash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{authorfullhash}{e87d22a612aed83d7f9d44017f1c899d}
+      \strng{authorfullhashraw}{e87d22a612aed83d7f9d44017f1c899d}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{American economic review}
+      \field{number}{1}
+      \field{title}{Multiple-product firms and product switching}
+      \field{volume}{100}
+      \field{year}{2010}
+      \field{pages}{70\bibrangedash 97}
+      \range{pages}{28}
+    \endentry
+    \entry{boguth2022dissecting}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=6ef3798a0a18f5b10020a8a00ca7b42f}{%
+           family={Boguth},
+           familyi={B\bibinitperiod},
+           given={Oliver},
+           giveni={O\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=fcd21fe7e6497f6315be5c6298e15bb0}{%
+           family={Duchin},
+           familyi={D\bibinitperiod},
+           given={Ran},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=e0bb0266f47798d76c43816507d8bf2f}{%
+           family={Simutin},
+           familyi={S\bibinitperiod},
+           given={Mikhail},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{05fed969592a424a3dff0ec832b947da}
+      \strng{fullhash}{05fed969592a424a3dff0ec832b947da}
+      \strng{fullhashraw}{05fed969592a424a3dff0ec832b947da}
+      \strng{bibnamehash}{05fed969592a424a3dff0ec832b947da}
+      \strng{authorbibnamehash}{05fed969592a424a3dff0ec832b947da}
+      \strng{authornamehash}{05fed969592a424a3dff0ec832b947da}
+      \strng{authorfullhash}{05fed969592a424a3dff0ec832b947da}
+      \strng{authorfullhashraw}{05fed969592a424a3dff0ec832b947da}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Journal of Finance}
+      \field{number}{2}
+      \field{title}{Dissecting conglomerate valuations}
+      \field{volume}{77}
+      \field{year}{2022}
+      \field{pages}{1097\bibrangedash 1131}
+      \range{pages}{35}
+    \endentry
+    \entry{bawerk1921kapital}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=f0266596c53bd1956cc05559fade539e}{%
+           family={Böhm-Bawerk},
+           familyi={B\bibinithyphendelim B\bibinitperiod},
+           given={Eugen},
+           giveni={E\bibinitperiod},
+           givenun=0,
+           prefix={von},
+           prefixi={v\bibinitperiod},
+           prefixun=0}}%
+      }
+      \list{location}{1}{%
+        {Jena}%
+      }
+      \list{publisher}{1}{%
+        {Gustav Fischer}%
+      }
+      \strng{namehash}{f0266596c53bd1956cc05559fade539e}
+      \strng{fullhash}{f0266596c53bd1956cc05559fade539e}
+      \strng{fullhashraw}{f0266596c53bd1956cc05559fade539e}
+      \strng{bibnamehash}{f0266596c53bd1956cc05559fade539e}
+      \strng{authorbibnamehash}{f0266596c53bd1956cc05559fade539e}
+      \strng{authornamehash}{f0266596c53bd1956cc05559fade539e}
+      \strng{authorfullhash}{f0266596c53bd1956cc05559fade539e}
+      \strng{authorfullhashraw}{f0266596c53bd1956cc05559fade539e}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{4.}
+      \field{title}{Kapital und Kapitalzins II: Positive Theorie des Kapitals}
+      \field{year}{1921}
+    \endentry
+    \entry{bottazzi2006explaining}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=873013cbe83259d603dd4f0b1de2a088}{%
+           family={Bottazzi},
+           familyi={B\bibinitperiod},
+           given={Giulio},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=e031a02ae7fff7e35563ad9712260e22}{%
+           family={Secchi},
+           familyi={S\bibinitperiod},
+           given={Angelo},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{fullhash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{fullhashraw}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{bibnamehash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{authorbibnamehash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{authornamehash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{authorfullhash}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \strng{authorfullhashraw}{d556b40cd5089f3b0196b9543c2e1ae0}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The RAND Journal of Economics}
+      \field{number}{2}
+      \field{title}{Explaining the distribution of firm growth rates}
+      \field{volume}{37}
+      \field{year}{2006}
+      \field{pages}{235\bibrangedash 256}
+      \range{pages}{22}
+    \endentry
+    \entry{boys2023ergodic}{book}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=44c229e934427ca4e488d3164263575f}{%
+           family={Boyd},
+           familyi={B\bibinitperiod},
+           given={Graham},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=730a09f24b64dc0b088fdc6d62efca47}{%
+           family={Reardon},
+           familyi={R\bibinitperiod},
+           given={Jack},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Evolutesix Books}%
+      }
+      \strng{namehash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{fullhash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{fullhashraw}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{bibnamehash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{authorbibnamehash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{authornamehash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{authorfullhash}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \strng{authorfullhashraw}{aa57dab6d19d8f34a33e99d0b4ab6322}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{The Ergodic Investor and Entrepreneur}
+      \field{year}{2023}
+    \endentry
+    \entry{campa2002explaining}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=69bad85a4ca91736921c932b79c5e00f}{%
+           family={Campa},
+           familyi={C\bibinitperiod},
+           given={Jose\bibnamedelima Manuel},
+           giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=d3d3a3af542e0cffceefad257b0c9b57}{%
+           family={Kedia},
+           familyi={K\bibinitperiod},
+           given={Simi},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{fullhash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{fullhashraw}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{bibnamehash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{authorbibnamehash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{authornamehash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{authorfullhash}{945915d90e773e7c1f0c54cdb7524692}
+      \strng{authorfullhashraw}{945915d90e773e7c1f0c54cdb7524692}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of finance}
+      \field{number}{4}
+      \field{title}{Explaining the diversification discount}
+      \field{volume}{57}
+      \field{year}{2002}
+      \field{pages}{1731\bibrangedash 1762}
+      \range{pages}{32}
+    \endentry
+    \entry{canback2006diseconomies}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=e70579c0019ff16a36f32914758c0cee}{%
+           family={Canback},
+           familyi={C\bibinitperiod},
+           given={Staffan},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b33a20ffb5f39b2ef8b04635b14533dc}{%
+           family={Samouel},
+           familyi={S\bibinitperiod},
+           given={Phillip},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=c51a3304892c54c68570c9dea5a0b9cd}{%
+           family={Price},
+           familyi={P\bibinitperiod},
+           given={David},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{fullhash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{fullhashraw}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{bibnamehash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{authorbibnamehash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{authornamehash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{authorfullhash}{fb6edf0aafef8facdb37dc119536d031}
+      \strng{authorfullhashraw}{fb6edf0aafef8facdb37dc119536d031}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{ICFAI Journal of Managerial Economics}
+      \field{number}{1}
+      \field{title}{Do diseconomies of scale impact firm size and performance? A theoretical and empirical overview}
+      \field{volume}{4}
+      \field{year}{2006}
+      \field{pages}{27\bibrangedash 70}
+      \range{pages}{44}
+    \endentry
+    \entry{coase19883}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=c77488c9ac6b47edf5cc870bf9a6d8fe}{%
+           family={Coase},
+           familyi={C\bibinitperiod},
+           given={Ronald\bibnamedelima H},
+           giveni={R\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Oxford University Press}%
+      }
+      \strng{namehash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{fullhash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{fullhashraw}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{bibnamehash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{authorbibnamehash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{authornamehash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{authorfullhash}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \strng{authorfullhashraw}{c77488c9ac6b47edf5cc870bf9a6d8fe}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Journal of Law, Economics, and Organization}
+      \field{number}{1}
+      \field{title}{3. The nature of the firm: Influence}
+      \field{volume}{4}
+      \field{year}{1988}
+      \field{pages}{33\bibrangedash 47}
+      \range{pages}{15}
+    \endentry
+    \entry{cohen1969conglomerate}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=8cacd07d326ea22eba2f944b636f6c08}{%
+           family={Cohen},
+           familyi={C\bibinitperiod},
+           given={Sheldon\bibnamedelima S.},
+           giveni={S\bibinitperiod\bibinitdelim S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Bar Association}%
+      }
+      \strng{namehash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{fullhash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{fullhashraw}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{bibnamehash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{authorbibnamehash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{authornamehash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{authorfullhash}{8cacd07d326ea22eba2f944b636f6c08}
+      \strng{authorfullhashraw}{8cacd07d326ea22eba2f944b636f6c08}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{American Bar Association Journal}
+      \field{number}{1}
+      \field{title}{Conglomerate Mergers and Taxation}
+      \field{urlday}{6}
+      \field{urlmonth}{2}
+      \field{urlyear}{2026}
+      \field{volume}{55}
+      \field{year}{1969}
+      \field{urldateera}{ce}
+      \field{pages}{40\bibrangedash 44}
+      \range{pages}{5}
+    \endentry
+    \entry{cont2001empirical}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=4adbb1a85104895dfcc25d4e2cac8cce}{%
+           family={Cont},
+           familyi={C\bibinitperiod},
+           given={Rama},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {IOP Publishing}%
+      }
+      \strng{namehash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{fullhash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{fullhashraw}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{bibnamehash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{authorbibnamehash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{authornamehash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{authorfullhash}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \strng{authorfullhashraw}{4adbb1a85104895dfcc25d4e2cac8cce}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Quantitative finance}
+      \field{number}{2}
+      \field{title}{Empirical properties of asset returns: stylized facts and statistical issues}
+      \field{volume}{1}
+      \field{year}{2001}
+      \field{pages}{223}
+      \range{pages}{1}
+    \endentry
+    \entry{dang2018measuring}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=4b3facba08f730656ce29402851121db}{%
+           family={Dang},
+           familyi={D\bibinitperiod},
+           given={Chongyu},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f9468c0e8281ed10e0bc8ba8c395d8ce}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Zhichuan\bibnamedelima Frank},
+           giveni={Z\bibinitperiod\bibinitdelim F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7c12c6bb81a430b19d464d25687cbb9c}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Chen},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{fullhash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{fullhashraw}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{bibnamehash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{authorbibnamehash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{authornamehash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{authorfullhash}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \strng{authorfullhashraw}{ab31c07f1ebe3b572b36401e2ce2b28d}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of banking \& finance}
+      \field{title}{Measuring firm size in empirical corporate finance}
+      \field{volume}{86}
+      \field{year}{2018}
+      \field{pages}{159\bibrangedash 176}
+      \range{pages}{18}
+    \endentry
+    \entry{dixit1980role}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=f84da1f0789e9be1355e60ec6c608482}{%
+           family={Dixit},
+           familyi={D\bibinitperiod},
+           given={Avinash},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Oxford University Press Oxford, UK}%
+      }
+      \strng{namehash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{fullhash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{fullhashraw}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{bibnamehash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{authorbibnamehash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{authornamehash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{authorfullhash}{f84da1f0789e9be1355e60ec6c608482}
+      \strng{authorfullhashraw}{f84da1f0789e9be1355e60ec6c608482}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The economic journal}
+      \field{number}{357}
+      \field{title}{The role of investment in entry-deterrence}
+      \field{volume}{90}
+      \field{year}{1980}
+      \field{pages}{95\bibrangedash 106}
+      \range{pages}{12}
+    \endentry
+    \entry{fama1992cross}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=cf1dad75742cba1f00261a0ee70e7ba2}{%
+           family={Fama},
+           familyi={F\bibinitperiod},
+           given={Eugene\bibnamedelima F},
+           giveni={E\bibinitperiod\bibinitdelim F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4ca55f4db61ae3245d066a218dca72c8}{%
+           family={French},
+           familyi={F\bibinitperiod},
+           given={Kenneth\bibnamedelima R},
+           giveni={K\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{fullhash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{fullhashraw}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{bibnamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorbibnamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authornamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorfullhash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorfullhashraw}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \field{extraname}{1}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{the Journal of Finance}
+      \field{number}{2}
+      \field{title}{The cross-section of expected stock returns}
+      \field{volume}{47}
+      \field{year}{1992}
+      \field{pages}{427\bibrangedash 465}
+      \range{pages}{39}
+    \endentry
+    \entry{fama1993common}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=cf1dad75742cba1f00261a0ee70e7ba2}{%
+           family={Fama},
+           familyi={F\bibinitperiod},
+           given={Eugene\bibnamedelima F},
+           giveni={E\bibinitperiod\bibinitdelim F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4ca55f4db61ae3245d066a218dca72c8}{%
+           family={French},
+           familyi={F\bibinitperiod},
+           given={Kenneth\bibnamedelima R},
+           giveni={K\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{fullhash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{fullhashraw}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{bibnamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorbibnamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authornamehash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorfullhash}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \strng{authorfullhashraw}{ac5c181ffbfa45c593cd5483bcb59bd3}
+      \field{extraname}{2}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of financial economics}
+      \field{number}{1}
+      \field{title}{Common risk factors in the returns on stocks and bonds}
+      \field{volume}{33}
+      \field{year}{1993}
+      \field{pages}{3\bibrangedash 56}
+      \range{pages}{54}
+    \endentry
+    \entry{felton1971conglomerate}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=84232d0cc326929474d1d9d7e24c55ff}{%
+           family={Felton},
+           familyi={F\bibinitperiod},
+           given={John\bibnamedelima Richard},
+           giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{2}{%
+        {[American Journal of Economics}%
+        {Sociology, Inc., Wiley]}%
+      }
+      \strng{namehash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{fullhash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{fullhashraw}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{bibnamehash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{authorbibnamehash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{authornamehash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{authorfullhash}{84232d0cc326929474d1d9d7e24c55ff}
+      \strng{authorfullhashraw}{84232d0cc326929474d1d9d7e24c55ff}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The American Journal of Economics and Sociology}
+      \field{number}{3}
+      \field{title}{Conglomerate Mergers, Concentration and Competition}
+      \field{urlday}{6}
+      \field{urlmonth}{2}
+      \field{urlyear}{2026}
+      \field{volume}{30}
+      \field{year}{1971}
+      \field{urldateera}{ce}
+      \field{pages}{225\bibrangedash 242}
+      \range{pages}{18}
+    \endentry
+    \entry{forbes2002no}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=f5dde46697707f4f99acec677c7bc564}{%
+           family={Forbes},
+           familyi={F\bibinitperiod},
+           given={Kristin\bibnamedelima J},
+           giveni={K\bibinitperiod\bibinitdelim J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5b740473a6551bdcef519ff2919ec27f}{%
+           family={Rigobon},
+           familyi={R\bibinitperiod},
+           given={Roberto},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{fullhash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{fullhashraw}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{bibnamehash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{authorbibnamehash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{authornamehash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{authorfullhash}{3c16b3fc5844b5bdb55f85c831351626}
+      \strng{authorfullhashraw}{3c16b3fc5844b5bdb55f85c831351626}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of Finance}
+      \field{number}{5}
+      \field{title}{No contagion, only interdependence: measuring stock market comovements}
+      \field{volume}{57}
+      \field{year}{2002}
+      \field{pages}{2223\bibrangedash 2261}
+      \range{pages}{39}
+    \endentry
+    \entry{gabaix1999zipf}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b53634e8226ff6b3b6e290047a5cb42c}{%
+           family={Gabaix},
+           familyi={G\bibinitperiod},
+           given={Xavier},
+           giveni={X\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {MIT Press}%
+      }
+      \strng{namehash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{fullhash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{fullhashraw}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{bibnamehash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{authorbibnamehash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{authornamehash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{authorfullhash}{b53634e8226ff6b3b6e290047a5cb42c}
+      \strng{authorfullhashraw}{b53634e8226ff6b3b6e290047a5cb42c}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Quarterly journal of economics}
+      \field{number}{3}
+      \field{title}{Zipf's law for cities: an explanation}
+      \field{volume}{114}
+      \field{year}{1999}
+      \field{pages}{739\bibrangedash 767}
+      \range{pages}{29}
+    \endentry
+    \entry{gertner1994internal}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=0fa7c76e88b52dcdb4a1486bc4b0ba11}{%
+           family={Gertner},
+           familyi={G\bibinitperiod},
+           given={Robert\bibnamedelima H},
+           giveni={R\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=aec4a44daee76b5fe87178d609192f7e}{%
+           family={Scharfstein},
+           familyi={S\bibinitperiod},
+           given={David\bibnamedelima S},
+           giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=575642568e62a6731db350819c4f4dc2}{%
+           family={Stein},
+           familyi={S\bibinitperiod},
+           given={Jeremy\bibnamedelima C},
+           giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {MIT Press}%
+      }
+      \strng{namehash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{fullhash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{fullhashraw}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{bibnamehash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{authorbibnamehash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{authornamehash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{authorfullhash}{fda930e8b1e62478c23360c064bb6d53}
+      \strng{authorfullhashraw}{fda930e8b1e62478c23360c064bb6d53}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The quarterly journal of economics}
+      \field{number}{4}
+      \field{title}{Internal versus external capital markets}
+      \field{volume}{109}
+      \field{year}{1994}
+      \field{pages}{1211\bibrangedash 1230}
+      \range{pages}{20}
+    \endentry
+    \entry{gibrat1931}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=bb1e41ba73a609c017421c5f3b5169ec}{%
+           family={Gibrat},
+           familyi={G\bibinitperiod},
+           given={Robert},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{location}{1}{%
+        {Paris}%
+      }
+      \list{publisher}{1}{%
+        {Librairie du Recueil Sirey}%
+      }
+      \strng{namehash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{fullhash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{fullhashraw}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{bibnamehash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{authorbibnamehash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{authornamehash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{authorfullhash}{bb1e41ba73a609c017421c5f3b5169ec}
+      \strng{authorfullhashraw}{bb1e41ba73a609c017421c5f3b5169ec}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Les inégalités économiques}
+      \field{year}{1931}
+    \endentry
+    \entry{goldberg1973effect}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=40e0ea25d9d10db48c72e27e2dc4ee25}{%
+           family={Goldberg},
+           familyi={G\bibinitperiod},
+           given={Lawrence\bibnamedelima G},
+           giveni={L\bibinitperiod\bibinitdelim G\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {The University of Chicago Law School}%
+      }
+      \strng{namehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{fullhash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{fullhashraw}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{bibnamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorbibnamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authornamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorfullhash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorfullhashraw}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \field{extraname}{1}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Journal of Law and Economics}
+      \field{number}{1}
+      \field{title}{The effect of conglomerate mergers on competition}
+      \field{volume}{16}
+      \field{year}{1973}
+      \field{pages}{137\bibrangedash 158}
+      \range{pages}{22}
+    \endentry
+    \entry{goldberg1974conglomerate}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=40e0ea25d9d10db48c72e27e2dc4ee25}{%
+           family={Goldberg},
+           familyi={G\bibinitperiod},
+           given={Lawrence\bibnamedelima G},
+           giveni={L\bibinitperiod\bibinitdelim G\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{fullhash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{fullhashraw}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{bibnamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorbibnamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authornamehash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorfullhash}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \strng{authorfullhashraw}{40e0ea25d9d10db48c72e27e2dc4ee25}
+      \field{extraname}{2}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Review of Economics and Statistics}
+      \field{title}{Conglomerate mergers and concentration ratios}
+      \field{year}{1974}
+      \field{pages}{303\bibrangedash 309}
+      \range{pages}{7}
+    \endentry
+    \entry{hann2013corporate}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=1bd96a969a7e2f0a320be2d082f54825}{%
+           family={Hann},
+           familyi={H\bibinitperiod},
+           given={Rebecca\bibnamedelima N},
+           giveni={R\bibinitperiod\bibinitdelim N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8a2bf68e64addfa4d4f3abf8b9656061}{%
+           family={Ogneva},
+           familyi={O\bibinitperiod},
+           given={Maria},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=06fc1a84f15435c30aaa952437ec567b}{%
+           family={Ozbas},
+           familyi={O\bibinitperiod},
+           given={Oguzhan},
+           giveni={O\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{fullhash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{fullhashraw}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{bibnamehash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{authorbibnamehash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{authornamehash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{authorfullhash}{8da546f7b558fcf282d8a1e1ed637090}
+      \strng{authorfullhashraw}{8da546f7b558fcf282d8a1e1ed637090}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of finance}
+      \field{number}{5}
+      \field{title}{Corporate diversification and the cost of capital}
+      \field{volume}{68}
+      \field{year}{2013}
+      \field{pages}{1961\bibrangedash 1999}
+      \range{pages}{39}
+    \endentry
+    \entry{jensen1986agency}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=db9155adcca41b20795e0ca0bbbc007c}{%
+           family={Jensen},
+           familyi={J\bibinitperiod},
+           given={Michael\bibnamedelima C},
+           giveni={M\bibinitperiod\bibinitdelim C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{fullhash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{fullhashraw}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{bibnamehash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{authorbibnamehash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{authornamehash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{authorfullhash}{db9155adcca41b20795e0ca0bbbc007c}
+      \strng{authorfullhashraw}{db9155adcca41b20795e0ca0bbbc007c}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The American economic review}
+      \field{number}{2}
+      \field{title}{Agency costs of free cash flow, corporate finance, and takeovers}
+      \field{volume}{76}
+      \field{year}{1986}
+      \field{pages}{323\bibrangedash 329}
+      \range{pages}{7}
+    \endentry
+    \entry{klepper1996entry}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b84852b43f73ba25ffb2ff82296e9a34}{%
+           family={Klepper},
+           familyi={K\bibinitperiod},
+           given={Steven},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{fullhash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{fullhashraw}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{bibnamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorbibnamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authornamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorfullhash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorfullhashraw}{b84852b43f73ba25ffb2ff82296e9a34}
+      \field{extraname}{1}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The American economic review}
+      \field{title}{Entry, exit, growth, and innovation over the product life cycle}
+      \field{year}{1996}
+      \field{pages}{562\bibrangedash 583}
+      \range{pages}{22}
+    \endentry
+    \entry{klepper1997industry}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b84852b43f73ba25ffb2ff82296e9a34}{%
+           family={Klepper},
+           familyi={K\bibinitperiod},
+           given={Steven},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Oxford University Press}%
+      }
+      \strng{namehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{fullhash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{fullhashraw}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{bibnamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorbibnamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authornamehash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorfullhash}{b84852b43f73ba25ffb2ff82296e9a34}
+      \strng{authorfullhashraw}{b84852b43f73ba25ffb2ff82296e9a34}
+      \field{extraname}{2}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Industrial and corporate change}
+      \field{number}{1}
+      \field{title}{Industry life cycles}
+      \field{volume}{6}
+      \field{year}{1997}
+      \field{pages}{145\bibrangedash 182}
+      \range{pages}{38}
+    \endentry
+    \entry{kreps1983quantity}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=6d5c6824b3d5f70b654a2f85953e2033}{%
+           family={Kreps},
+           familyi={K\bibinitperiod},
+           given={David\bibnamedelima M},
+           giveni={D\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=df5b233d05eb5295d85e91f6cd9991c0}{%
+           family={Scheinkman},
+           familyi={S\bibinitperiod},
+           given={Jose\bibnamedelima A},
+           giveni={J\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{fullhash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{fullhashraw}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{bibnamehash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{authorbibnamehash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{authornamehash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{authorfullhash}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \strng{authorfullhashraw}{7e2dd4b88c3fb70e037db9cc29fda59f}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Bell Journal of Economics}
+      \field{title}{Quantity precommitment and Bertrand competition yield Cournot outcomes}
+      \field{year}{1983}
+      \field{pages}{326\bibrangedash 337}
+      \range{pages}{12}
+    \endentry
+    \entry{kuppuswamy2016does}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=a471415b818dd1afcbe3f57e15f3ee44}{%
+           family={Kuppuswamy},
+           familyi={K\bibinitperiod},
+           given={Venkat},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+        {{un=2,uniquepart=given,hash=37363bba3223a545bdb382121089203c}{%
+           family={Villalonga},
+           familyi={V\bibinitperiod},
+           given={Belén},
+           giveni={B\bibinitperiod},
+           givenun=2}}%
+      }
+      \list{publisher}{1}{%
+        {INFORMS}%
+      }
+      \strng{namehash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{fullhash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{fullhashraw}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{bibnamehash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{authorbibnamehash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{authornamehash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{authorfullhash}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \strng{authorfullhashraw}{c68d972b997bc7ee1a9bbe457cc53cda}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Management Science}
+      \field{number}{4}
+      \field{title}{Does diversification create value in the presence of external financing constraints? Evidence from the 2007--2009 financial crisis}
+      \field{volume}{62}
+      \field{year}{2016}
+      \field{pages}{905\bibrangedash 923}
+      \range{pages}{19}
+    \endentry
+    \entry{kwon2024100}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=e5c012dac8ffc6e2510e3a260d4e85f3}{%
+           family={Kwon},
+           familyi={K\bibinitperiod},
+           given={Spencer\bibnamedelima Y},
+           giveni={S\bibinitperiod\bibinitdelim Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5d6ceebb38d5424b8c2b681f7a049441}{%
+           family={Ma},
+           familyi={M\bibinitperiod},
+           given={Yueran},
+           giveni={Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=99329fab5807f1c1cddc960e56e8cf97}{%
+           family={Zimmermann},
+           familyi={Z\bibinitperiod},
+           given={Kaspar},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Economic Association 2014 Broadway, Suite 305, Nashville, TN 37203}%
+      }
+      \strng{namehash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{fullhash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{fullhashraw}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{bibnamehash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{authorbibnamehash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{authornamehash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{authorfullhash}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \strng{authorfullhashraw}{7989c9d165c9dbf2c371b04ad81ec88a}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{American Economic Review}
+      \field{number}{7}
+      \field{title}{100 years of rising corporate concentration}
+      \field{volume}{114}
+      \field{year}{2024}
+      \field{pages}{2111\bibrangedash 2140}
+      \range{pages}{30}
+    \endentry
+    \entry{lahr2023fat}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=34a7b549f885fbb42c6199baa56f7827}{%
+           family={Lahr},
+           familyi={L\bibinitperiod},
+           given={Henry},
+           giveni={H\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{fullhash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{fullhashraw}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{bibnamehash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{authorbibnamehash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{authornamehash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{authorfullhash}{34a7b549f885fbb42c6199baa56f7827}
+      \strng{authorfullhashraw}{34a7b549f885fbb42c6199baa56f7827}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{International Review of Financial Analysis}
+      \field{title}{Fat tails in private equity fund returns: The smooth double Pareto distribution}
+      \field{volume}{86}
+      \field{year}{2023}
+      \field{pages}{102471}
+      \range{pages}{1}
+    \endentry
+    \entry{lang1994tobins}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=7365569ef70d8f51ac2a36dd44f4c368}{%
+           family={Lang},
+           familyi={L\bibinitperiod},
+           given={Larry\bibnamedelima HP},
+           giveni={L\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f7a28b9330451d3ed4d95e9ca290b65c}{%
+           family={Stulz},
+           familyi={S\bibinitperiod},
+           given={Rene\bibnamedelima M},
+           giveni={R\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {The University of Chicago Press}%
+      }
+      \strng{namehash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{fullhash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{fullhashraw}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{bibnamehash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{authorbibnamehash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{authornamehash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{authorfullhash}{3a23893746ad39bcc23a0e41fee41f1a}
+      \strng{authorfullhashraw}{3a23893746ad39bcc23a0e41fee41f1a}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of political economy}
+      \field{number}{6}
+      \field{title}{Tobin's q, corporate diversification, and firm performance}
+      \field{volume}{102}
+      \field{year}{1994}
+      \field{pages}{1248\bibrangedash 1280}
+      \range{pages}{33}
+    \endentry
+    \entry{lewellen1971pure}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=9eeafdd83bfe253cf9a9a0fd5258e39a}{%
+           family={Lewellen},
+           familyi={L\bibinitperiod},
+           given={Wilbur\bibnamedelima G.},
+           giveni={W\bibinitperiod\bibinitdelim G\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {[American Finance Association, Wiley]}%
+      }
+      \strng{namehash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{fullhash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{fullhashraw}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{bibnamehash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{authorbibnamehash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{authornamehash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{authorfullhash}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \strng{authorfullhashraw}{9eeafdd83bfe253cf9a9a0fd5258e39a}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{00221082, 15406261}
+      \field{journaltitle}{The Journal of Finance}
+      \field{number}{2}
+      \field{title}{A Pure Financial Rationale for the Conglomerate Merger}
+      \field{urlday}{13}
+      \field{urlmonth}{10}
+      \field{urlyear}{2024}
+      \field{volume}{26}
+      \field{year}{1971}
+      \field{urldateera}{ce}
+      \field{pages}{521\bibrangedash 537}
+      \range{pages}{17}
+      \verb{urlraw}
+      \verb http://www.jstor.org/stable/2326063
+      \endverb
+      \verb{url}
+      \verb http://www.jstor.org/stable/2326063
+      \endverb
+    \endentry
+    \entry{lind2023trade}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=6b22cc321aa48c928c94469cd417e427}{%
+           family={Lind},
+           familyi={L\bibinitperiod},
+           given={Nelson},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8a005c2f8e78693b14c0f2a4bbfef940}{%
+           family={Ramondo},
+           familyi={R\bibinitperiod},
+           given={Natalia},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Economic Association 2014 Broadway, Suite 305, Nashville, TN 37203}%
+      }
+      \strng{namehash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{fullhash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{fullhashraw}{48347009ebb498196f1f6d3361c515e1}
+      \strng{bibnamehash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{authorbibnamehash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{authornamehash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{authorfullhash}{48347009ebb498196f1f6d3361c515e1}
+      \strng{authorfullhashraw}{48347009ebb498196f1f6d3361c515e1}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{American Economic Review}
+      \field{number}{2}
+      \field{title}{Trade with correlation}
+      \field{volume}{113}
+      \field{year}{2023}
+      \field{pages}{317\bibrangedash 353}
+      \range{pages}{37}
+    \endentry
+    \entry{lotti2009defending}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=c52b9287efc4ae8f06c43a7a36ad9331}{%
+           family={Lotti},
+           familyi={L\bibinitperiod},
+           given={Francesca},
+           giveni={F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2a2b1df6718ad61fbac5d652ba4d6258}{%
+           family={Santarelli},
+           familyi={S\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=bcf1a3191287f28e3a2cf03b12ce0edd}{%
+           family={Vivarelli},
+           familyi={V\bibinitperiod},
+           given={Marco},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{fullhash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{fullhashraw}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{bibnamehash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{authorbibnamehash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{authornamehash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{authorfullhash}{f729d20d140a6d57069d65368b6c78e0}
+      \strng{authorfullhashraw}{f729d20d140a6d57069d65368b6c78e0}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Small business economics}
+      \field{number}{1}
+      \field{title}{Defending Gibrat’s Law as a long-run regularity}
+      \field{volume}{32}
+      \field{year}{2009}
+      \field{pages}{31\bibrangedash 44}
+      \range{pages}{14}
+    \endentry
+    \entry{messmore1995variance}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=1e26e5a6a55d773b78a0ae6b841422fa}{%
+           family={Messmore},
+           familyi={M\bibinitperiod},
+           given={Tom},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Pageant Media}%
+      }
+      \strng{namehash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{fullhash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{fullhashraw}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{bibnamehash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{authorbibnamehash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{authornamehash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{authorfullhash}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \strng{authorfullhashraw}{1e26e5a6a55d773b78a0ae6b841422fa}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Portfolio Management}
+      \field{number}{4}
+      \field{title}{Variance drain}
+      \field{volume}{21}
+      \field{year}{1995}
+      \field{pages}{104}
+      \range{pages}{1}
+    \endentry
+    \entry{mueller1969theory}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=1a4954b1661b2e1aaae5b05aa4d99d2d}{%
+           family={Mueller},
+           familyi={M\bibinitperiod},
+           given={Dennis\bibnamedelima C},
+           giveni={D\bibinitperiod\bibinitdelim C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {MIT Press}%
+      }
+      \strng{namehash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{fullhash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{fullhashraw}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{bibnamehash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{authorbibnamehash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{authornamehash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{authorfullhash}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \strng{authorfullhashraw}{1a4954b1661b2e1aaae5b05aa4d99d2d}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Quarterly Journal of Economics}
+      \field{number}{4}
+      \field{title}{A theory of conglomerate mergers}
+      \field{volume}{83}
+      \field{year}{1969}
+      \field{pages}{643\bibrangedash 659}
+      \range{pages}{17}
+    \endentry
+    \entry{mundt2022survival}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=719d73b81d129d14dbd96251396124ca}{%
+           family={Mundt},
+           familyi={M\bibinitperiod},
+           given={Philipp},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b2327ef2cd96d1f99a42d233ac2a6553}{%
+           family={Alfarano},
+           familyi={A\bibinitperiod},
+           given={Simone},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=43bdc4a705835d83948fa3b257024d0f}{%
+           family={Milaković},
+           familyi={M\bibinitperiod},
+           given={Mishael},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {INFORMS}%
+      }
+      \strng{namehash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{fullhash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{fullhashraw}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{bibnamehash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{authorbibnamehash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{authornamehash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{authorfullhash}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \strng{authorfullhashraw}{a32e45f99bdcc5aa0081e260ac40ba8d}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Management Science}
+      \field{number}{5}
+      \field{title}{Survival and the ergodicity of corporate profitability}
+      \field{volume}{68}
+      \field{year}{2022}
+      \field{pages}{3726\bibrangedash 3734}
+      \range{pages}{9}
+    \endentry
+    \entry{nair2022fundamentals}{book}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=bd57263242ea37a2f4ef7fb8d3e2fb84}{%
+           family={Nair},
+           familyi={N\bibinitperiod},
+           given={Jayakrishnan},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=43cf19c9e9341b5f01b187c2ec2281e2}{%
+           family={Wierman},
+           familyi={W\bibinitperiod},
+           given={Adam},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=045b28fab961a4e65281b243da99f49e}{%
+           family={Zwart},
+           familyi={Z\bibinitperiod},
+           given={Bert},
+           giveni={B\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Cambridge University Press}%
+      }
+      \strng{namehash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{fullhash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{fullhashraw}{685366e29a79da0793271c28f0f6fde9}
+      \strng{bibnamehash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{authorbibnamehash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{authornamehash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{authorfullhash}{685366e29a79da0793271c28f0f6fde9}
+      \strng{authorfullhashraw}{685366e29a79da0793271c28f0f6fde9}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{The fundamentals of heavy tails: Properties, emergence, and estimation}
+      \field{volume}{53}
+      \field{year}{2022}
+    \endentry
+    \entry{nocke2014globalization}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=6b82e59cf42d780499e12e7d9a035ffa}{%
+           family={Nocke},
+           familyi={N\bibinitperiod},
+           given={Volker},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=21945b908647a96595f717e3d5274eda}{%
+           family={Yeaple},
+           familyi={Y\bibinitperiod},
+           given={Stephen},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{fullhash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{fullhashraw}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{bibnamehash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{authorbibnamehash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{authornamehash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{authorfullhash}{1baa075ba755341e313f8aff19ec8d50}
+      \strng{authorfullhashraw}{1baa075ba755341e313f8aff19ec8d50}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{International Economic Review}
+      \field{number}{4}
+      \field{title}{Globalization and multiproduct firms}
+      \field{volume}{55}
+      \field{year}{2014}
+      \field{pages}{993\bibrangedash 1018}
+      \range{pages}{26}
+    \endentry
+    \entry{peters2019ergodicity}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=d00f6967abd0f2ccb4295c47bcdc1df6}{%
+           family={Peters},
+           familyi={P\bibinitperiod},
+           given={Ole},
+           giveni={O\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Nature Publishing Group}%
+      }
+      \strng{namehash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{fullhash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{fullhashraw}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{bibnamehash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{authorbibnamehash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{authornamehash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{authorfullhash}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \strng{authorfullhashraw}{d00f6967abd0f2ccb4295c47bcdc1df6}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nature Physics}
+      \field{number}{12}
+      \field{title}{The ergodicity problem in economics}
+      \field{volume}{15}
+      \field{year}{2019}
+      \field{pages}{1216\bibrangedash 1221}
+      \range{pages}{6}
+    \endentry
+    \entry{peters2022ergodicity}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=d00f6967abd0f2ccb4295c47bcdc1df6}{%
+           family={Peters},
+           familyi={P\bibinitperiod},
+           given={Ole},
+           giveni={O\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=af4f4bb86830ac343c1d8532e1391814}{%
+           family={Adamou},
+           familyi={A\bibinitperiod},
+           given={Alexander},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {The Royal Society}%
+      }
+      \strng{namehash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{fullhash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{fullhashraw}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{bibnamehash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{authorbibnamehash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{authornamehash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{authorfullhash}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \strng{authorfullhashraw}{c7f02cdb2b03a4df0f8a34f6fe243e6a}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Philosophical Transactions of the Royal Society A}
+      \field{number}{2227}
+      \field{title}{The ergodicity solution of the cooperation puzzle}
+      \field{volume}{380}
+      \field{year}{2022}
+      \field{pages}{20200425}
+      \range{pages}{1}
+    \endentry
+    \entry{pietronero2001explaining}{article}{}{}
+      \name{author}{4}{}{%
+        {{un=0,uniquepart=base,hash=bedcbf2fd34926bb7ce32c6d59918e0a}{%
+           family={Pietronero},
+           familyi={P\bibinitperiod},
+           given={Luciano},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=cefcc1a75ec814a8cc610bb80a565cd6}{%
+           family={Tosatti},
+           familyi={T\bibinitperiod},
+           given={Erio},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=0e02fa2663eb4e8c185c2f0620313719}{%
+           family={Tosatti},
+           familyi={T\bibinitperiod},
+           given={Valentino},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8f9932ed1839be02bb53a62b258449a8}{%
+           family={Vespignani},
+           familyi={V\bibinitperiod},
+           given={Alessandro},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{aa29cfb0e992cf53220a70876da97c9e}
+      \strng{fullhash}{700a8e5d6da5deb829229ea2f62c466d}
+      \strng{fullhashraw}{700a8e5d6da5deb829229ea2f62c466d}
+      \strng{bibnamehash}{aa29cfb0e992cf53220a70876da97c9e}
+      \strng{authorbibnamehash}{aa29cfb0e992cf53220a70876da97c9e}
+      \strng{authornamehash}{aa29cfb0e992cf53220a70876da97c9e}
+      \strng{authorfullhash}{700a8e5d6da5deb829229ea2f62c466d}
+      \strng{authorfullhashraw}{700a8e5d6da5deb829229ea2f62c466d}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Physica A: Statistical Mechanics and its Applications}
+      \field{number}{1-2}
+      \field{title}{Explaining the uneven distribution of numbers in nature: the laws of Benford and Zipf}
+      \field{volume}{293}
+      \field{year}{2001}
+      \field{pages}{297\bibrangedash 304}
+      \range{pages}{8}
+    \endentry
+    \entry{rajan2000cost}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=4c82f0a55d854288c1191278603d8887}{%
+           family={Rajan},
+           familyi={R\bibinitperiod},
+           given={Raghuram},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5f461755dd81e2eaa9194dba46d73929}{%
+           family={Servaes},
+           familyi={S\bibinitperiod},
+           given={Henri},
+           giveni={H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ff7dd11bc1b387030b4a145f988a70a6}{%
+           family={Zingales},
+           familyi={Z\bibinitperiod},
+           given={Luigi},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{fullhash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{fullhashraw}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{bibnamehash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{authorbibnamehash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{authornamehash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{authorfullhash}{043110f52dc98a3b0324cf9b16e49f5d}
+      \strng{authorfullhashraw}{043110f52dc98a3b0324cf9b16e49f5d}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of Finance}
+      \field{number}{1}
+      \field{title}{The cost of diversity: The diversification discount and inefficient investment}
+      \field{volume}{55}
+      \field{year}{2000}
+      \field{pages}{35\bibrangedash 80}
+      \range{pages}{46}
+    \endentry
+    \entry{ramondo2010role}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=8a005c2f8e78693b14c0f2a4bbfef940}{%
+           family={Ramondo},
+           familyi={R\bibinitperiod},
+           given={Natalia},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=206b66e9be88eba4b65d57188f650d02}{%
+           family={Rappoport},
+           familyi={R\bibinitperiod},
+           given={Veronica},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{9eb43e793683a541a841bd75a264f125}
+      \strng{fullhash}{9eb43e793683a541a841bd75a264f125}
+      \strng{fullhashraw}{9eb43e793683a541a841bd75a264f125}
+      \strng{bibnamehash}{9eb43e793683a541a841bd75a264f125}
+      \strng{authorbibnamehash}{9eb43e793683a541a841bd75a264f125}
+      \strng{authornamehash}{9eb43e793683a541a841bd75a264f125}
+      \strng{authorfullhash}{9eb43e793683a541a841bd75a264f125}
+      \strng{authorfullhashraw}{9eb43e793683a541a841bd75a264f125}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of International Economics}
+      \field{number}{2}
+      \field{title}{The role of multinational production in a risky environment}
+      \field{volume}{81}
+      \field{year}{2010}
+      \field{pages}{240\bibrangedash 252}
+      \range{pages}{13}
+    \endentry
+    \entry{ramondo2013proximity}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=8a005c2f8e78693b14c0f2a4bbfef940}{%
+           family={Ramondo},
+           familyi={R\bibinitperiod},
+           given={Natalia},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=206b66e9be88eba4b65d57188f650d02}{%
+           family={Rappoport},
+           familyi={R\bibinitperiod},
+           given={Veronica},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=fc8f971922f9521fbff2ffedd87f8809}{%
+           family={Ruhl},
+           familyi={R\bibinitperiod},
+           given={Kim\bibnamedelima J},
+           giveni={K\bibinitperiod\bibinitdelim J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Oxford University Press}%
+      }
+      \strng{namehash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{fullhash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{fullhashraw}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{bibnamehash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{authorbibnamehash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{authornamehash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{authorfullhash}{786a6e583c9957c85d4c038a7f2e20a3}
+      \strng{authorfullhashraw}{786a6e583c9957c85d4c038a7f2e20a3}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Review of Economic Studies}
+      \field{number}{4}
+      \field{title}{The proximity-concentration tradeoff under uncertainty}
+      \field{volume}{80}
+      \field{year}{2013}
+      \field{pages}{1582\bibrangedash 1621}
+      \range{pages}{40}
+    \endentry
+    \entry{ramondo2013trade}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=8a005c2f8e78693b14c0f2a4bbfef940}{%
+           family={Ramondo},
+           familyi={R\bibinitperiod},
+           given={Natalia},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8f369a3d29c2023d1d03833c045904d3}{%
+           family={Rodríguez-Clare},
+           familyi={R\bibinithyphendelim C\bibinitperiod},
+           given={Andrés},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {University of Chicago Press Chicago, IL}%
+      }
+      \strng{namehash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{fullhash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{fullhashraw}{293954fbabbf4e07c6425257e63e95af}
+      \strng{bibnamehash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{authorbibnamehash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{authornamehash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{authorfullhash}{293954fbabbf4e07c6425257e63e95af}
+      \strng{authorfullhashraw}{293954fbabbf4e07c6425257e63e95af}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Political Economy}
+      \field{number}{2}
+      \field{title}{Trade, multinational production, and the gains from openness}
+      \field{volume}{121}
+      \field{year}{2013}
+      \field{pages}{273\bibrangedash 322}
+      \range{pages}{50}
+    \endentry
+    \entry{ricardo1817principles}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=9ae7096449cb2bea3208e1ea7e4f5b2b}{%
+           family={Ricardo},
+           familyi={R\bibinitperiod},
+           given={David},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{location}{1}{%
+        {London}%
+      }
+      \list{publisher}{1}{%
+        {John Murray}%
+      }
+      \strng{namehash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{fullhash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{fullhashraw}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{bibnamehash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{authorbibnamehash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{authornamehash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{authorfullhash}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \strng{authorfullhashraw}{9ae7096449cb2bea3208e1ea7e4f5b2b}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{On the Principles of Political Economy and Taxation}
+      \field{year}{1817}
+    \endentry
+    \entry{roach2002measuring}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=5d44bd5b544394d0bdabd526ea091bab}{%
+           family={Roach},
+           familyi={R\bibinitperiod},
+           given={Craig\bibnamedelima R},
+           giveni={C\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {HeinOnline}%
+      }
+      \strng{namehash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{fullhash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{fullhashraw}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{bibnamehash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{authorbibnamehash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{authornamehash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{authorfullhash}{5d44bd5b544394d0bdabd526ea091bab}
+      \strng{authorfullhashraw}{5d44bd5b544394d0bdabd526ea091bab}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Energy LJ}
+      \field{title}{Measuring market power in the US electricity business}
+      \field{volume}{23}
+      \field{year}{2002}
+      \field{pages}{51}
+      \range{pages}{1}
+    \endentry
+    \entry{santarelli2006gibrat}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=2a2b1df6718ad61fbac5d652ba4d6258}{%
+           family={Santarelli},
+           familyi={S\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=362b1d1c1263cc78668bca0c46325be3}{%
+           family={Klomp},
+           familyi={K\bibinitperiod},
+           given={Luuk},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=e5ce2bc64c65ed624062f422e5ae7573}{%
+           family={Thurik},
+           familyi={T\bibinitperiod},
+           given={A\bibnamedelima Roy},
+           giveni={A\bibinitperiod\bibinitdelim R\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{fullhash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{fullhashraw}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{bibnamehash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{authorbibnamehash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{authornamehash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{authorfullhash}{bcae64710105d637c1b30c5a41a0f341}
+      \strng{authorfullhashraw}{bcae64710105d637c1b30c5a41a0f341}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Entrepreneurship, growth, and innovation: The dynamics of firms and industries}
+      \field{title}{Gibrat’s law: An overview of the empirical literature}
+      \field{year}{2006}
+      \field{pages}{41\bibrangedash 73}
+      \range{pages}{33}
+    \endentry
+    \entry{scharfstein2000dark}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=aec4a44daee76b5fe87178d609192f7e}{%
+           family={Scharfstein},
+           familyi={S\bibinitperiod},
+           given={David\bibnamedelima S},
+           giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=575642568e62a6731db350819c4f4dc2}{%
+           family={Stein},
+           familyi={S\bibinitperiod},
+           given={Jeremy\bibnamedelima C},
+           giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{fullhash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{fullhashraw}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{bibnamehash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{authorbibnamehash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{authornamehash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{authorfullhash}{34328bb79daf8cf579e82f5be2855c49}
+      \strng{authorfullhashraw}{34328bb79daf8cf579e82f5be2855c49}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of finance}
+      \field{number}{6}
+      \field{title}{The dark side of internal capital markets: Divisional rent-seeking and inefficient investment}
+      \field{volume}{55}
+      \field{year}{2000}
+      \field{pages}{2537\bibrangedash 2564}
+      \range{pages}{28}
+    \endentry
+    \entry{scherer1990industrial}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=3c3f25cf9f34221fcf013049fef5b3a4}{%
+           family={Scherer},
+           familyi={S\bibinitperiod},
+           given={Frederic\bibnamedelima M},
+           giveni={F\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{fullhash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{fullhashraw}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{bibnamehash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{authorbibnamehash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{authornamehash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{authorfullhash}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \strng{authorfullhashraw}{3c3f25cf9f34221fcf013049fef5b3a4}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{University of Illinois at Urbana-Champaign's Academy for Entrepreneurial Leadership Historical Research Reference in Entrepreneurship}
+      \field{title}{Industrial market structure and economic performance}
+      \field{year}{1990}
+    \endentry
+    \entry{scitovsky1955economic}{incollection}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=47c44edf29c5004b1a16031cc65d53ef}{%
+           family={Scitovsky},
+           familyi={S\bibinitperiod},
+           given={Tibor},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Princeton University Press}%
+      }
+      \strng{namehash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{fullhash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{fullhashraw}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{bibnamehash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{authorbibnamehash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{authornamehash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{authorfullhash}{47c44edf29c5004b1a16031cc65d53ef}
+      \strng{authorfullhashraw}{47c44edf29c5004b1a16031cc65d53ef}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Business concentration and price policy}
+      \field{title}{Economic theory and the measurement of concentration}
+      \field{year}{1955}
+      \field{pages}{101\bibrangedash 118}
+      \range{pages}{18}
+    \endentry
+    \entry{sibani2020human}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=724d914bbeb6dbf7ccb77504861b139a}{%
+           family={Sibani},
+           familyi={S\bibinitperiod},
+           given={Paolo},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3ebe78930e80e15fccdb4c2d0b714e56}{%
+           family={Rasmussen},
+           familyi={R\bibinitperiod},
+           given={Steen},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{fullhash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{fullhashraw}{8908db30b6178c6f0a315f84feb40389}
+      \strng{bibnamehash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{authorbibnamehash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{authornamehash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{authorfullhash}{8908db30b6178c6f0a315f84feb40389}
+      \strng{authorfullhashraw}{8908db30b6178c6f0a315f84feb40389}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Physica A: Statistical Mechanics and its Applications}
+      \field{title}{Human wealth evolution: Trends and fluctuations}
+      \field{volume}{558}
+      \field{year}{2020}
+      \field{pages}{124985}
+      \range{pages}{1}
+    \endentry
+    \entry{simon1955behavioral}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=09c462602325128c408aa39c70c6ae62}{%
+           family={Simon},
+           familyi={S\bibinitperiod},
+           given={Herbert\bibnamedelima A},
+           giveni={H\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{09c462602325128c408aa39c70c6ae62}
+      \strng{fullhash}{09c462602325128c408aa39c70c6ae62}
+      \strng{fullhashraw}{09c462602325128c408aa39c70c6ae62}
+      \strng{bibnamehash}{09c462602325128c408aa39c70c6ae62}
+      \strng{authorbibnamehash}{09c462602325128c408aa39c70c6ae62}
+      \strng{authornamehash}{09c462602325128c408aa39c70c6ae62}
+      \strng{authorfullhash}{09c462602325128c408aa39c70c6ae62}
+      \strng{authorfullhashraw}{09c462602325128c408aa39c70c6ae62}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The quarterly journal of economics}
+      \field{title}{A behavioral model of rational choice}
+      \field{year}{1955}
+      \field{pages}{99\bibrangedash 118}
+      \range{pages}{20}
+    \endentry
+    \entry{smith1776inquiry}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=5ccecf114bbd51a1a2979a23dd69c78c}{%
+           family={Smith},
+           familyi={S\bibinitperiod},
+           given={Adam},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{location}{1}{%
+        {London}%
+      }
+      \list{publisher}{2}{%
+        {W. Strahan}%
+        {T. Cadell}%
+      }
+      \strng{namehash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{fullhash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{fullhashraw}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{bibnamehash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{authorbibnamehash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{authornamehash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{authorfullhash}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \strng{authorfullhashraw}{5ccecf114bbd51a1a2979a23dd69c78c}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{An Inquiry into the Nature and Causes of the Wealth of Nations}
+      \field{year}{1776}
+    \endentry
+    \entry{spitznagel2021safe}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=a57248650b73cb75545cfbe9eaadff4b}{%
+           family={Spitznagel},
+           familyi={S\bibinitperiod},
+           given={Mark},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {John Wiley \& Sons}%
+      }
+      \strng{namehash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{fullhash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{fullhashraw}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{bibnamehash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{authorbibnamehash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{authornamehash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{authorfullhash}{a57248650b73cb75545cfbe9eaadff4b}
+      \strng{authorfullhashraw}{a57248650b73cb75545cfbe9eaadff4b}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Safe Haven: Investing for Financial Storms}
+      \field{year}{2021}
+    \endentry
+    \entry{stanley1996scaling}{article}{}{}
+      \name{author}{8}{}{%
+        {{un=0,uniquepart=base,hash=c4093c299b3560a0a7368bb69dad3b4c}{%
+           family={Stanley},
+           familyi={S\bibinitperiod},
+           given={Michael\bibnamedelima HR},
+           giveni={M\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=22c61ac7a4c1cfb66b48ed8f90dd69d7}{%
+           family={Amaral},
+           familyi={A\bibinitperiod},
+           given={Luis\bibnamedelima AN},
+           giveni={L\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=bef1eaaad80422d923c69f8a0a492540}{%
+           family={Buldyrev},
+           familyi={B\bibinitperiod},
+           given={Sergey\bibnamedelima V},
+           giveni={S\bibinitperiod\bibinitdelim V\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=742d135a5dd9af879149ba57bf45774c}{%
+           family={Havlin},
+           familyi={H\bibinitperiod},
+           given={Shlomo},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7dea69e4dfc58c548134c91d5f8b3e4f}{%
+           family={Leschhorn},
+           familyi={L\bibinitperiod},
+           given={Heiko},
+           giveni={H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=cacbbe09c6a97519576b875b228f6ca8}{%
+           family={Maass},
+           familyi={M\bibinitperiod},
+           given={Philipp},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ed4cf9fff0f7e7ef9073a371ac5989c2}{%
+           family={Salinger},
+           familyi={S\bibinitperiod},
+           given={Michael\bibnamedelima A},
+           giveni={M\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5f5c56c0c8f34aa567709e10df5afd57}{%
+           family={Stanley},
+           familyi={S\bibinitperiod},
+           given={H\bibnamedelima Eugene},
+           giveni={H\bibinitperiod\bibinitdelim E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Nature Publishing Group UK London}%
+      }
+      \strng{namehash}{26ed34715a46a3e193cb7deb7b117f93}
+      \strng{fullhash}{856c133009179830ec403abcc7907796}
+      \strng{fullhashraw}{856c133009179830ec403abcc7907796}
+      \strng{bibnamehash}{26ed34715a46a3e193cb7deb7b117f93}
+      \strng{authorbibnamehash}{26ed34715a46a3e193cb7deb7b117f93}
+      \strng{authornamehash}{26ed34715a46a3e193cb7deb7b117f93}
+      \strng{authorfullhash}{856c133009179830ec403abcc7907796}
+      \strng{authorfullhashraw}{856c133009179830ec403abcc7907796}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nature}
+      \field{number}{6568}
+      \field{title}{Scaling behaviour in the growth of companies}
+      \field{volume}{379}
+      \field{year}{1996}
+      \field{pages}{804\bibrangedash 806}
+      \range{pages}{3}
+    \endentry
+    \entry{stein1997internal}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=575642568e62a6731db350819c4f4dc2}{%
+           family={Stein},
+           familyi={S\bibinitperiod},
+           given={Jeremy\bibnamedelima C},
+           giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{575642568e62a6731db350819c4f4dc2}
+      \strng{fullhash}{575642568e62a6731db350819c4f4dc2}
+      \strng{fullhashraw}{575642568e62a6731db350819c4f4dc2}
+      \strng{bibnamehash}{575642568e62a6731db350819c4f4dc2}
+      \strng{authorbibnamehash}{575642568e62a6731db350819c4f4dc2}
+      \strng{authornamehash}{575642568e62a6731db350819c4f4dc2}
+      \strng{authorfullhash}{575642568e62a6731db350819c4f4dc2}
+      \strng{authorfullhashraw}{575642568e62a6731db350819c4f4dc2}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The journal of finance}
+      \field{number}{1}
+      \field{title}{Internal capital markets and the competition for corporate resources}
+      \field{volume}{52}
+      \field{year}{1997}
+      \field{pages}{111\bibrangedash 133}
+      \range{pages}{23}
+    \endentry
+    \entry{sutton1991sunk}{book}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b8a77986ccc09698614b35578f1457bd}{%
+           family={Sutton},
+           familyi={S\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {MIT press}%
+      }
+      \strng{namehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{fullhash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{fullhashraw}{b8a77986ccc09698614b35578f1457bd}
+      \strng{bibnamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorbibnamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authornamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorfullhash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorfullhashraw}{b8a77986ccc09698614b35578f1457bd}
+      \field{extraname}{1}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Sunk costs and market structure: Price competition, advertising, and the evolution of concentration}
+      \field{year}{1991}
+    \endentry
+    \entry{sutton1997gibrat}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b8a77986ccc09698614b35578f1457bd}{%
+           family={Sutton},
+           familyi={S\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{fullhash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{fullhashraw}{b8a77986ccc09698614b35578f1457bd}
+      \strng{bibnamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorbibnamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authornamehash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorfullhash}{b8a77986ccc09698614b35578f1457bd}
+      \strng{authorfullhashraw}{b8a77986ccc09698614b35578f1457bd}
+      \field{extraname}{2}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of economic literature}
+      \field{number}{1}
+      \field{title}{Gibrat's legacy}
+      \field{volume}{35}
+      \field{year}{1997}
+      \field{pages}{40\bibrangedash 59}
+      \range{pages}{20}
+    \endentry
+    \entry{villalonga2004diversification}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=2,uniquepart=given,hash=0737df5225718da86904d34e0746babc}{%
+           family={Villalonga},
+           familyi={V\bibinitperiod},
+           given={Belen},
+           giveni={B\bibinitperiod},
+           givenun=2}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{0737df5225718da86904d34e0746babc}
+      \strng{fullhash}{0737df5225718da86904d34e0746babc}
+      \strng{fullhashraw}{0737df5225718da86904d34e0746babc}
+      \strng{bibnamehash}{0737df5225718da86904d34e0746babc}
+      \strng{authorbibnamehash}{0737df5225718da86904d34e0746babc}
+      \strng{authornamehash}{0737df5225718da86904d34e0746babc}
+      \strng{authorfullhash}{0737df5225718da86904d34e0746babc}
+      \strng{authorfullhashraw}{0737df5225718da86904d34e0746babc}
+      \field{sortinit}{V}
+      \field{sortinithash}{afb52128e5b4dc4b843768c0113d673b}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The Journal of Finance}
+      \field{number}{2}
+      \field{title}{Diversification discount or premium? New evidence from the business information tracking series}
+      \field{volume}{59}
+      \field{year}{2004}
+      \field{pages}{479\bibrangedash 506}
+      \range{pages}{28}
+    \endentry
+    \entry{viscusi2014shifting}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=840df9f6bf566f73714cff78d3a45cf1}{%
+           family={Viscusi},
+           familyi={V\bibinitperiod},
+           given={W\bibnamedelima Kip},
+           giveni={W\bibinitperiod\bibinitdelim K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=70a1fc6bf21a45488db2f9b9d1d7ad5e}{%
+           family={McMichael},
+           familyi={M\bibinitperiod},
+           given={Benjamin\bibnamedelima J},
+           giveni={B\bibinitperiod\bibinitdelim J\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley Online Library}%
+      }
+      \strng{namehash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{fullhash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{fullhashraw}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{bibnamehash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{authorbibnamehash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{authornamehash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{authorfullhash}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \strng{authorfullhashraw}{1ad5f5bc3adb2f888bd8302df6e4d237}
+      \field{sortinit}{V}
+      \field{sortinithash}{afb52128e5b4dc4b843768c0113d673b}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Empirical Legal Studies}
+      \field{number}{2}
+      \field{title}{Shifting the Fat-Tailed Distribution of Blockbuster Punitive Damages Awards}
+      \field{volume}{11}
+      \field{year}{2014}
+      \field{pages}{350\bibrangedash 377}
+      \range{pages}{28}
+    \endentry
+    \entry{waldman1983impact}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=acf89875401cde87aa10f1c3a32c7026}{%
+           family={Waldman},
+           familyi={W\bibinitperiod},
+           given={Don\bibnamedelima E},
+           giveni={D\bibinitperiod\bibinitdelim E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {JSTOR}%
+      }
+      \strng{namehash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{fullhash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{fullhashraw}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{bibnamehash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{authorbibnamehash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{authornamehash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{authorfullhash}{acf89875401cde87aa10f1c3a32c7026}
+      \strng{authorfullhashraw}{acf89875401cde87aa10f1c3a32c7026}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nebraska Journal of Economics and Business}
+      \field{number}{3}
+      \field{title}{The Impact of Conglomerate Mergers on Acquired Firms' Growth Rates}
+      \field{volume}{22}
+      \field{year}{1983}
+      \field{pages}{24\bibrangedash 43}
+      \range{pages}{20}
+    \endentry
+    \entry{williamson1967hierarchical}{article}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=a27b30647ad1e11097cc9c246b11d146}{%
+           family={Williamson},
+           familyi={W\bibinitperiod},
+           given={Oliver\bibnamedelima E},
+           giveni={O\bibinitperiod\bibinitdelim E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {The University of Chicago Press}%
+      }
+      \strng{namehash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{fullhash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{fullhashraw}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{bibnamehash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{authorbibnamehash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{authornamehash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{authorfullhash}{a27b30647ad1e11097cc9c246b11d146}
+      \strng{authorfullhashraw}{a27b30647ad1e11097cc9c246b11d146}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of political economy}
+      \field{number}{2}
+      \field{title}{Hierarchical control and optimum firm size}
+      \field{volume}{75}
+      \field{year}{1967}
+      \field{pages}{123\bibrangedash 138}
+      \range{pages}{16}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
 
-\bibitem{amihud1981risk}
-Yakov Amihud and Baruch Lev.
-\newblock Risk reduction as a managerial motive for conglomerate mergers.
-\newblock {\em The Bell Journal of Economics}, 12(2):605--617, 1981.
-
-\bibitem{amit1988concept}
-Raphael Amit and Joshua Livnat.
-\newblock A concept of conglomerate diversification.
-\newblock {\em Journal of Management}, 14(4):593--604, 1988.
-
-\bibitem{audretsch1989determinants}
-David~B Audretsch.
-\newblock The determinants of conglomerate mergers.
-\newblock {\em The American Economist}, 33(1):52--60, 1989.
-
-\bibitem{axtell2001zipf}
-Robert~L Axtell.
-\newblock Zipf distribution of us firm sizes.
-\newblock {\em Science}, 293(5536):1818--1820, 2001.
-
-\bibitem{axtell2025agent}
-Robert~L Axtell and J~Doyne Farmer.
-\newblock Agent-based modeling in economics and finance: Past, present, and future.
-\newblock {\em Journal of Economic Literature}, 63(1):197--287, 2025.
-
-\bibitem{baltagi2007estimating}
-Badi~H Baltagi, Peter Egger, and Michael Pfaffermayr.
-\newblock Estimating models of complex fdi: Are there third-country effects?
-\newblock {\em Journal of econometrics}, 140(1):260--281, 2007.
-
-\bibitem{bekaert1997emerging}
-Geert Bekaert and Campbell~R Harvey.
-\newblock Emerging equity market volatility.
-\newblock {\em Journal of Financial economics}, 43(1):29--77, 1997.
-
-\bibitem{berger1995diversification}
-Philip~G Berger and Eli Ofek.
-\newblock Diversification's effect on firm value.
-\newblock {\em Journal of financial economics}, 37(1):39--65, 1995.
-
-\bibitem{bernard2010multiple}
-Andrew~B Bernard, Stephen~J Redding, and Peter~K Schott.
-\newblock Multiple-product firms and product switching.
-\newblock {\em American economic review}, 100(1):70--97, 2010.
-
-\bibitem{boguth2022dissecting}
-Oliver Boguth, Ran Duchin, and Mikhail Simutin.
-\newblock Dissecting conglomerate valuations.
-\newblock {\em The Journal of Finance}, 77(2):1097--1131, 2022.
-
-\bibitem{bottazzi2006explaining}
-Giulio Bottazzi and Angelo Secchi.
-\newblock Explaining the distribution of firm growth rates.
-\newblock {\em The RAND Journal of Economics}, 37(2):235--256, 2006.
-
-\bibitem{boys2023ergodic}
-Graham Boyd and Jack Reardon.
-\newblock {\em The Ergodic Investor and Entrepreneur}.
-\newblock Evolutesix Books, 2023.
-
-\bibitem{campa2002explaining}
-Jose~Manuel Campa and Simi Kedia.
-\newblock Explaining the diversification discount.
-\newblock {\em The journal of finance}, 57(4):1731--1762, 2002.
-
-\bibitem{canback2006diseconomies}
-Staffan Canback, Phillip Samouel, and David Price.
-\newblock Do diseconomies of scale impact firm size and performance? a theoretical and empirical overview.
-\newblock {\em ICFAI Journal of Managerial Economics}, 4(1):27--70, 2006.
-
-\bibitem{coase19883}
-Ronald~H Coase.
-\newblock 3. the nature of the firm: Influence.
-\newblock {\em The Journal of Law, Economics, and Organization}, 4(1):33--47, 1988.
-
-\bibitem{cohen1969conglomerate}
-Sheldon~S. Cohen.
-\newblock Conglomerate mergers and taxation.
-\newblock {\em American Bar Association Journal}, 55(1):40--44, 1969.
-
-\bibitem{cont2001empirical}
-Rama Cont.
-\newblock Empirical properties of asset returns: stylized facts and statistical issues.
-\newblock {\em Quantitative finance}, 1(2):223, 2001.
-
-\bibitem{dang2018measuring}
-Chongyu Dang, Zhichuan~Frank Li, and Chen Yang.
-\newblock Measuring firm size in empirical corporate finance.
-\newblock {\em Journal of banking \& finance}, 86:159--176, 2018.
-
-\bibitem{dixit1980role}
-Avinash Dixit.
-\newblock The role of investment in entry-deterrence.
-\newblock {\em The economic journal}, 90(357):95--106, 1980.
-
-\bibitem{fama1992cross}
-Eugene~F Fama and Kenneth~R French.
-\newblock The cross-section of expected stock returns.
-\newblock {\em the Journal of Finance}, 47(2):427--465, 1992.
-
-\bibitem{fama1993common}
-Eugene~F Fama and Kenneth~R French.
-\newblock Common risk factors in the returns on stocks and bonds.
-\newblock {\em Journal of financial economics}, 33(1):3--56, 1993.
-
-\bibitem{felton1971conglomerate}
-John~Richard Felton.
-\newblock Conglomerate mergers, concentration and competition.
-\newblock {\em The American Journal of Economics and Sociology}, 30(3):225--242, 1971.
-
-\bibitem{forbes2002no}
-Kristin~J Forbes and Roberto Rigobon.
-\newblock No contagion, only interdependence: measuring stock market comovements.
-\newblock {\em The journal of Finance}, 57(5):2223--2261, 2002.
-
-\bibitem{gabaix1999zipf}
-Xavier Gabaix.
-\newblock Zipf's law for cities: an explanation.
-\newblock {\em The Quarterly journal of economics}, 114(3):739--767, 1999.
-
-\bibitem{gertner1994internal}
-Robert~H Gertner, David~S Scharfstein, and Jeremy~C Stein.
-\newblock Internal versus external capital markets.
-\newblock {\em The quarterly journal of economics}, 109(4):1211--1230, 1994.
-
-\bibitem{gibrat1931}
-Robert Gibrat.
-\newblock {\em Les in{\'e}galit{\'e}s {\'e}conomiques}.
-\newblock Librairie du Recueil Sirey, Paris, 1931.
-
-\bibitem{goldberg1973effect}
-Lawrence~G Goldberg.
-\newblock The effect of conglomerate mergers on competition.
-\newblock {\em The Journal of Law and Economics}, 16(1):137--158, 1973.
-
-\bibitem{goldberg1974conglomerate}
-Lawrence~G Goldberg.
-\newblock Conglomerate mergers and concentration ratios.
-\newblock {\em The Review of Economics and Statistics}, pages 303--309, 1974.
-
-\bibitem{hann2013corporate}
-Rebecca~N Hann, Maria Ogneva, and Oguzhan Ozbas.
-\newblock Corporate diversification and the cost of capital.
-\newblock {\em The journal of finance}, 68(5):1961--1999, 2013.
-
-\bibitem{jensen1986agency}
-Michael~C Jensen.
-\newblock Agency costs of free cash flow, corporate finance, and takeovers.
-\newblock {\em The American economic review}, 76(2):323--329, 1986.
-
-\bibitem{klepper1996entry}
-Steven Klepper.
-\newblock Entry, exit, growth, and innovation over the product life cycle.
-\newblock {\em The American economic review}, pages 562--583, 1996.
-
-\bibitem{klepper1997industry}
-Steven Klepper.
-\newblock Industry life cycles.
-\newblock {\em Industrial and corporate change}, 6(1):145--182, 1997.
-
-\bibitem{kreps1983quantity}
-David~M Kreps and Jose~A Scheinkman.
-\newblock Quantity precommitment and bertrand competition yield cournot outcomes.
-\newblock {\em The Bell Journal of Economics}, pages 326--337, 1983.
-
-\bibitem{kuppuswamy2016does}
-Venkat Kuppuswamy and Bel{\'e}n Villalonga.
-\newblock Does diversification create value in the presence of external financing constraints? evidence from the 2007--2009 financial crisis.
-\newblock {\em Management Science}, 62(4):905--923, 2016.
-
-\bibitem{kwon2024100}
-Spencer~Y Kwon, Yueran Ma, and Kaspar Zimmermann.
-\newblock 100 years of rising corporate concentration.
-\newblock {\em American Economic Review}, 114(7):2111--2140, 2024.
-
-\bibitem{lahr2023fat}
-Henry Lahr.
-\newblock Fat tails in private equity fund returns: The smooth double pareto distribution.
-\newblock {\em International Review of Financial Analysis}, 86:102471, 2023.
-
-\bibitem{lang1994tobins}
-Larry~HP Lang and Rene~M Stulz.
-\newblock Tobin's q, corporate diversification, and firm performance.
-\newblock {\em Journal of political economy}, 102(6):1248--1280, 1994.
-
-\bibitem{lewellen1971pure}
-Wilbur~G. Lewellen.
-\newblock A pure financial rationale for the conglomerate merger.
-\newblock {\em The Journal of Finance}, 26(2):521--537, 1971.
-
-\bibitem{lind2023trade}
-Nelson Lind and Natalia Ramondo.
-\newblock Trade with correlation.
-\newblock {\em American Economic Review}, 113(2):317--353, 2023.
-
-\bibitem{lotti2009defending}
-Francesca Lotti, Enrico Santarelli, and Marco Vivarelli.
-\newblock Defending gibrat’s law as a long-run regularity.
-\newblock {\em Small business economics}, 32(1):31--44, 2009.
-
-\bibitem{messmore1995variance}
-Tom Messmore.
-\newblock Variance drain.
-\newblock {\em Journal of Portfolio Management}, 21(4):104, 1995.
-
-\bibitem{mueller1969theory}
-Dennis~C Mueller.
-\newblock A theory of conglomerate mergers.
-\newblock {\em The Quarterly Journal of Economics}, 83(4):643--659, 1969.
-
-\bibitem{mundt2022survival}
-Philipp Mundt, Simone Alfarano, and Mishael Milakovi{\'c}.
-\newblock Survival and the ergodicity of corporate profitability.
-\newblock {\em Management Science}, 68(5):3726--3734, 2022.
-
-\bibitem{nair2022fundamentals}
-Jayakrishnan Nair, Adam Wierman, and Bert Zwart.
-\newblock {\em The fundamentals of heavy tails: Properties, emergence, and estimation}, volume~53.
-\newblock Cambridge University Press, 2022.
-
-\bibitem{nocke2014globalization}
-Volker Nocke and Stephen Yeaple.
-\newblock Globalization and multiproduct firms.
-\newblock {\em International Economic Review}, 55(4):993--1018, 2014.
-
-\bibitem{peters2019ergodicity}
-Ole Peters.
-\newblock The ergodicity problem in economics.
-\newblock {\em Nature Physics}, 15(12):1216--1221, 2019.
-
-\bibitem{peters2022ergodicity}
-Ole Peters and Alexander Adamou.
-\newblock The ergodicity solution of the cooperation puzzle.
-\newblock {\em Philosophical Transactions of the Royal Society A}, 380(2227):20200425, 2022.
-
-\bibitem{pietronero2001explaining}
-Luciano Pietronero, Erio Tosatti, Valentino Tosatti, and Alessandro Vespignani.
-\newblock Explaining the uneven distribution of numbers in nature: the laws of benford and zipf.
-\newblock {\em Physica A: Statistical Mechanics and its Applications}, 293(1-2):297--304, 2001.
-
-\bibitem{rajan2000cost}
-Raghuram Rajan, Henri Servaes, and Luigi Zingales.
-\newblock The cost of diversity: The diversification discount and inefficient investment.
-\newblock {\em The journal of Finance}, 55(1):35--80, 2000.
-
-\bibitem{ramondo2010role}
-Natalia Ramondo and Veronica Rappoport.
-\newblock The role of multinational production in a risky environment.
-\newblock {\em Journal of International Economics}, 81(2):240--252, 2010.
-
-\bibitem{ramondo2013proximity}
-Natalia Ramondo, Veronica Rappoport, and Kim~J Ruhl.
-\newblock The proximity-concentration tradeoff under uncertainty.
-\newblock {\em Review of Economic Studies}, 80(4):1582--1621, 2013.
-
-\bibitem{ramondo2013trade}
-Natalia Ramondo and Andr{\'e}s Rodr{\'\i}guez-Clare.
-\newblock Trade, multinational production, and the gains from openness.
-\newblock {\em Journal of Political Economy}, 121(2):273--322, 2013.
-
-\bibitem{ricardo1817principles}
-David Ricardo.
-\newblock {\em On the Principles of Political Economy and Taxation}.
-\newblock John Murray, London, 1817.
-
-\bibitem{roach2002measuring}
-Craig~R Roach.
-\newblock Measuring market power in the us electricity business.
-\newblock {\em Energy LJ}, 23:51, 2002.
-
-\bibitem{santarelli2006gibrat}
-Enrico Santarelli, Luuk Klomp, and A~Roy Thurik.
-\newblock Gibrat’s law: An overview of the empirical literature.
-\newblock {\em Entrepreneurship, growth, and innovation: The dynamics of firms and industries}, pages 41--73, 2006.
-
-\bibitem{scharfstein2000dark}
-David~S Scharfstein and Jeremy~C Stein.
-\newblock The dark side of internal capital markets: Divisional rent-seeking and inefficient investment.
-\newblock {\em The journal of finance}, 55(6):2537--2564, 2000.
-
-\bibitem{scherer1990industrial}
-Frederic~M Scherer.
-\newblock Industrial market structure and economic performance.
-\newblock {\em University of Illinois at Urbana-Champaign's Academy for Entrepreneurial Leadership Historical Research Reference in Entrepreneurship}, 1990.
-
-\bibitem{scitovsky1955economic}
-Tibor Scitovsky.
-\newblock Economic theory and the measurement of concentration.
-\newblock In {\em Business concentration and price policy}, pages 101--118. Princeton University Press, 1955.
-
-\bibitem{sibani2020human}
-Paolo Sibani and Steen Rasmussen.
-\newblock Human wealth evolution: Trends and fluctuations.
-\newblock {\em Physica A: Statistical Mechanics and its Applications}, 558:124985, 2020.
-
-\bibitem{simon1955behavioral}
-Herbert~A Simon.
-\newblock A behavioral model of rational choice.
-\newblock {\em The quarterly journal of economics}, pages 99--118, 1955.
-
-\bibitem{smith1776inquiry}
-Adam Smith.
-\newblock {\em An Inquiry into the Nature and Causes of the Wealth of Nations}.
-\newblock W. Strahan and T. Cadell, London, 1776.
-
-\bibitem{spitznagel2021safe}
-Mark Spitznagel.
-\newblock {\em Safe Haven: Investing for Financial Storms}.
-\newblock John Wiley \& Sons, 2021.
-
-\bibitem{stanley1996scaling}
-Michael~HR Stanley, Luis~AN Amaral, Sergey~V Buldyrev, Shlomo Havlin, Heiko Leschhorn, Philipp Maass, Michael~A Salinger, and H~Eugene Stanley.
-\newblock Scaling behaviour in the growth of companies.
-\newblock {\em Nature}, 379(6568):804--806, 1996.
-
-\bibitem{stein1997internal}
-Jeremy~C Stein.
-\newblock Internal capital markets and the competition for corporate resources.
-\newblock {\em The journal of finance}, 52(1):111--133, 1997.
-
-\bibitem{sutton1991sunk}
-John Sutton.
-\newblock {\em Sunk costs and market structure: Price competition, advertising, and the evolution of concentration}.
-\newblock MIT press, 1991.
-
-\bibitem{sutton1997gibrat}
-John Sutton.
-\newblock Gibrat's legacy.
-\newblock {\em Journal of economic literature}, 35(1):40--59, 1997.
-
-\bibitem{villalonga2004diversification}
-Belen Villalonga.
-\newblock Diversification discount or premium? new evidence from the business information tracking series.
-\newblock {\em The Journal of Finance}, 59(2):479--506, 2004.
-
-\bibitem{viscusi2014shifting}
-W~Kip Viscusi and Benjamin~J McMichael.
-\newblock Shifting the fat-tailed distribution of blockbuster punitive damages awards.
-\newblock {\em Journal of Empirical Legal Studies}, 11(2):350--377, 2014.
-
-\bibitem{bawerk1921kapital}
-Eugen von B\"ohm-Bawerk.
-\newblock {\em Kapital und Kapitalzins II: Positive Theorie des Kapitals}.
-\newblock Gustav Fischer, Jena, 4. edition, 1921.
-
-\bibitem{waldman1983impact}
-Don~E Waldman.
-\newblock The impact of conglomerate mergers on acquired firms' growth rates.
-\newblock {\em Nebraska Journal of Economics and Business}, 22(3):24--43, 1983.
-
-\bibitem{williamson1967hierarchical}
-Oliver~E Williamson.
-\newblock Hierarchical control and optimum firm size.
-\newblock {\em Journal of political economy}, 75(2):123--138, 1967.
-
-\end{thebibliography}

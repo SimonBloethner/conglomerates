@@ -1,46 +1,15 @@
-This is BibTeX, Version 0.99d (TeX Live 2025)
-Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
-The top-level auxiliary file: collaboration.aux
-The style file: plain.bst
-Database file #1: references.bib
-You've used 71 entries,
-            2118 wiz_defined-function locations,
-            952 strings with 14614 characters,
-and the built_in function-call counts, 22769 in all, are:
-= -- 2350
-> -- 835
-< -- 7
-+ -- 351
-- -- 262
-* -- 1651
-:= -- 3772
-add.period$ -- 214
-call.type$ -- 71
-change.case$ -- 337
-chr.to.int$ -- 0
-cite$ -- 71
-duplicate$ -- 842
-empty$ -- 1883
-format.name$ -- 262
-if$ -- 4700
-int.to.chr$ -- 0
-int.to.str$ -- 71
-missing$ -- 79
-newline$ -- 358
-num.names$ -- 142
-pop$ -- 261
-preamble$ -- 1
-purify$ -- 273
-quote$ -- 0
-skip$ -- 576
-stack$ -- 0
-substring$ -- 1883
-swap$ -- 122
-text.length$ -- 7
-text.prefix$ -- 0
-top$ -- 0
-type$ -- 268
-warning$ -- 0
-while$ -- 266
-width$ -- 73
-write$ -- 781
+[0] Config.pm:308> INFO - This is Biber 2.20
+[0] Config.pm:311> INFO - Logfile is 'build/collaboration.blg'
+[41] biber-darwin:340> INFO - === Sun Feb 15, 2026, 17:24:05
+[51] Biber.pm:420> INFO - Reading 'build/collaboration.bcf'
+[108] Biber.pm:994> INFO - Found 71 citekeys in bib section 0
+[116] Biber.pm:4463> INFO - Processing section 0
+[122] Biber.pm:4654> INFO - Looking for bibtex file 'references.bib' for section 0
+[124] bibtex.pm:1713> INFO - LaTeX decoding ...
+[168] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
+[395] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[395] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[395] Biber.pm:4283> INFO - Sorting list 'nyt/global//global/global/global' of type 'entry' with template 'nyt' and locale 'en-US'
+[395] Biber.pm:4289> INFO - No sort tailoring available for locale 'en-US'
+[432] bbl.pm:676> INFO - Writing 'build/collaboration.bbl' with encoding 'UTF-8'
+[450] bbl.pm:779> INFO - Output to build/collaboration.bbl

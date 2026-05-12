@@ -2,3 +2,5 @@ programs/models/price_tensor.npy
 latex/build
 latex/collaboration.synctex.gz
 programs/__pycache__
+data/
+output/
