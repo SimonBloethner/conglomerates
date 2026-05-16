@@ -177,7 +177,6 @@ If you use this code, please cite:
 @article{blothner2025conglomerate,
   title={Conglomerate Mergers: Effects on Growth and Competition},
   author={Bl{\"o}thner, Simon},
-  journal={Journal of Behavioral and Experimental Economics},
   year={2026}
 }
 ```
