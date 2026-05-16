@@ -505,7 +505,7 @@
       \field{pages}{235\bibrangedash 256}
       \range{pages}{22}
     \endentry
-    \entry{boys2023ergodic}{book}{}{}
+    \entry{boyd2023ergodic}{book}{}{}
       \name{author}{2}{}{%
         {{un=0,uniquepart=base,hash=44c229e934427ca4e488d3164263575f}{%
            family={Boyd},
@@ -1538,6 +1538,52 @@
       \verb{url}
       \verb http://www.jstor.org/stable/2326063
       \endverb
+    \endentry
+    \entry{liebmann2017sharing}{article}{}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=4446cf50cf172647df7cc2940d887e7c}{%
+           family={Liebmann},
+           familyi={L\bibinitperiod},
+           given={Thomas},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=9857b61284cd7bbb4d7a83670f29d57f}{%
+           family={Kassberger},
+           familyi={K\bibinitperiod},
+           given={Stefan},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4b6d912c71a19db222a3710519153701}{%
+           family={Hellmich},
+           familyi={H\bibinitperiod},
+           given={Martin},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{fullhash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{fullhashraw}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{bibnamehash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{authorbibnamehash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{authornamehash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{authorfullhash}{dfd5c6eca7253aa295e9206aedd279e9}
+      \strng{authorfullhashraw}{dfd5c6eca7253aa295e9206aedd279e9}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{European Journal of Operational Research}
+      \field{number}{1}
+      \field{title}{Sharing and growth in general random multiplicative environments}
+      \field{volume}{258}
+      \field{year}{2017}
+      \field{pages}{193\bibrangedash 206}
+      \range{pages}{14}
     \endentry
     \entry{lind2023trade}{article}{}{}
       \name{author}{2}{}{%
@@ -2776,6 +2822,46 @@
       \field{year}{1967}
       \field{pages}{123\bibrangedash 138}
       \range{pages}{16}
+    \endentry
+    \entry{yaari2010cooperation}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=9fe18ffc83102586bc030d262b471751}{%
+           family={Yaari},
+           familyi={Y\bibinitperiod},
+           given={Gur},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=a7ca7b3b891d8be9cbe2070a6867700e}{%
+           family={Solomon},
+           familyi={S\bibinitperiod},
+           given={Sorin},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{fullhash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{fullhashraw}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{bibnamehash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{authorbibnamehash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{authornamehash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{authorfullhash}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \strng{authorfullhashraw}{4e7d2d9cc137f419fc389649b4f6fa4d}
+      \field{sortinit}{Y}
+      \field{sortinithash}{fd67ad5a9ef0f7456bdd9aab10fe1495}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{The European Physical Journal B}
+      \field{number}{4}
+      \field{title}{Cooperation evolution in random multiplicative environments}
+      \field{volume}{73}
+      \field{year}{2010}
+      \field{pages}{625\bibrangedash 632}
+      \range{pages}{8}
     \endentry
   \enddatalist
 \endrefsection

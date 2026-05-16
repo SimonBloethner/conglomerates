@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.1.7)  15 FEB 2026 17:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.1.7)  16 MAY 2026 07:29
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -891,41 +891,26 @@ Overfull \hbox (1.1494pt too wide) in paragraph at lines 64--65
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 64--65
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 66--67
-
+Overfull \hbox (5.07967pt too wide) in paragraph at lines 68--69
+[]\T1/cmr/m/n/12 Firm growth is em-pir-i-cally mul-ti-plica-tive, a reg-u-lar-ity for-mal-ized by []Gibrat
  []
 
 
 
 [2]
-Underfull \hbox (badness 10000) in paragraph at lines 68--69
-
+Overfull \hbox (5.31248pt too wide) in paragraph at lines 72--73
+[]\T1/cmr/m/n/12 This is qual-i-ta-tively dif-fer-ent from stan-dard port-fo-lio di-ver-si-fi-ca-tion. When
  []
 
 
 
 [3]
-Underfull \hbox (badness 10000) in paragraph at lines 70--71
-
- []
-
-
 
 [4]
-Underfull \hbox (badness 10000) in paragraph at lines 72--73
-
- []
-
-
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 74--75
-
+Overfull \hbox (4.44247pt too wide) in paragraph at lines 80--81
+\T1/cmr/m/n/12 not be repli-cated by share-hold-ers di-ver-si-fy-ing their own portfolios---connecting
  []
 
 
@@ -939,15 +924,30 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 
 [8]
+Overfull \hbox (0.74008pt too wide) in paragraph at lines 149--150
+[]\T1/cmr/m/n/12 This con-nects di-rectly to the pool-ing re-sult. Fol-low-ing []Pe-ters and Adamou
+ []
+
+
 
 [9
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.150 
-      ]
+l.154 \end{gather}
+                  ]
 
 [10]
+Underfull \hbox (badness 10000) in paragraph at lines 167--167
+[][]\T1/cmr/m/n/10 All code, cal-i-brated pa-ram-e-ter val-ues, and in-struc-tions for re-pro-duc-
+ []
+
+
+Underfull \hbox (badness 5578) in paragraph at lines 167--167
+\T1/cmr/m/n/10 ing the sim-u-la-tions and fig-ures are avail-able in the repli-ca-tion pack-age at
+ []
+
+
 
 [11]
 
@@ -960,7 +960,7 @@ l.150
 [15]
 
 [16]
-Underfull \hbox (badness 10000) in paragraph at lines 212--214
+Underfull \hbox (badness 10000) in paragraph at lines 224--225
 
  []
 
@@ -970,15 +970,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 212--214
 
 [18]
 
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-
-
 [19
 pdfTeX warning (ext4): destination with the same identifier (name{algocf.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.265 
+l.276 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.276 
       ] (./figures/metric_plots/metrics_figure.tex (./figures/metric_plots/metric_plot_0.tex
 PGFPlots: reading {figures/plots/m0_cost0.csv}
 PGFPlots: reading {figures/plots/m0_cost0.csv}
@@ -1061,25 +1062,20 @@ Package pgfplots info on input line 45: fill between: activating layered graphic
 Package pgfplots info on input line 45: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
 )
 
-[20
-pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.310 \begin{gather}
-                    ]
+[20]
 
 [21
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.310 \begin{gather}
+l.321 \begin{gather}
                     ]
 
 [22
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.310 \begin{gather}
+l.321 \begin{gather}
                     ]
 
 [23] (./figures/poly_ests/poly_beta1_plot.tex
@@ -1096,8 +1092,8 @@ PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
 PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
 PGFPlots: reading {figures/plots/poly_beta1_cost3.csv}
 )
-Package pgfplots info on input line 349: fill between: activating layered graphics
-Package pgfplots info on input line 349: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 366: fill between: activating layered graphics
+Package pgfplots info on input line 366: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
  (./figures/poly_ests/poly_beta2_plot.tex
 PGFPlots: reading {figures/plots/poly_beta2_cost0.csv}
 PGFPlots: reading {figures/plots/poly_beta2_cost0.csv}
@@ -1112,15 +1108,15 @@ PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
 PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
 PGFPlots: reading {figures/plots/poly_beta2_cost3.csv}
 )
-Package pgfplots info on input line 352: fill between: activating layered graphics
-Package pgfplots info on input line 352: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 369: fill between: activating layered graphics
+Package pgfplots info on input line 369: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
 
 
 [24
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.368 
+l.385 
       ] (./figures/share_plots/quantile_plot_1.tex
 PGFPlots: reading {figures/plots/q1_cost0.csv}
 PGFPlots: reading {figures/plots/q1_cost0.csv}
@@ -1135,8 +1131,8 @@ PGFPlots: reading {figures/plots/q1_cost3.csv}
 PGFPlots: reading {figures/plots/q1_cost3.csv}
 PGFPlots: reading {figures/plots/q1_cost3.csv}
 )
-Package pgfplots info on input line 515: fill between: activating layered graphics
-Package pgfplots info on input line 515: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 534: fill between: activating layered graphics
+Package pgfplots info on input line 534: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
  (./figures/share_plots/quantile_plot_2.tex
 PGFPlots: reading {figures/plots/q2_cost0.csv}
 PGFPlots: reading {figures/plots/q2_cost0.csv}
@@ -1151,8 +1147,8 @@ PGFPlots: reading {figures/plots/q2_cost3.csv}
 PGFPlots: reading {figures/plots/q2_cost3.csv}
 PGFPlots: reading {figures/plots/q2_cost3.csv}
 )
-Package pgfplots info on input line 518: fill between: activating layered graphics
-Package pgfplots info on input line 518: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 537: fill between: activating layered graphics
+Package pgfplots info on input line 537: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
  (./figures/share_plots/quantile_plot_3.tex
 PGFPlots: reading {figures/plots/q3_cost0.csv}
 PGFPlots: reading {figures/plots/q3_cost0.csv}
@@ -1167,8 +1163,8 @@ PGFPlots: reading {figures/plots/q3_cost3.csv}
 PGFPlots: reading {figures/plots/q3_cost3.csv}
 PGFPlots: reading {figures/plots/q3_cost3.csv}
 )
-Package pgfplots info on input line 521: fill between: activating layered graphics
-Package pgfplots info on input line 521: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 540: fill between: activating layered graphics
+Package pgfplots info on input line 540: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
  (./figures/share_plots/quantile_plot_4.tex
 PGFPlots: reading {figures/plots/q4_cost0.csv}
 PGFPlots: reading {figures/plots/q4_cost0.csv}
@@ -1183,15 +1179,17 @@ PGFPlots: reading {figures/plots/q4_cost3.csv}
 PGFPlots: reading {figures/plots/q4_cost3.csv}
 PGFPlots: reading {figures/plots/q4_cost3.csv}
 )
-Package pgfplots info on input line 524: fill between: activating layered graphics
-Package pgfplots info on input line 524: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
+Package pgfplots info on input line 543: fill between: activating layered graphics
+Package pgfplots info on input line 543: Setting layers 'axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground'...
 
 
-[25
+[25]
+
+[26
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.549 
+l.568 
       ] (./figures/ridge_plots/ridge_plot_mobility.tex
 PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
 PGFPlots: reading {figures/plots/ridge_ranges_alpha00.csv}
@@ -1408,16 +1406,14 @@ Overfull \hbox (40.90991pt too wide) in paragraph at lines 129--130
 
 )
 
-[26]
+[27]
 
-[27
+[28
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.554 ... is applicable to many risk vectors. \par
+l.573 ... is applicable to many risk vectors. \par
                                                   ]
-
-[28]
 
 [29]
 
@@ -1428,35 +1424,39 @@ l.554 ... is applicable to many risk vectors. \par
 [32]
 
 [33]
-Overfull \hbox (4.66771pt too wide) in paragraph at lines 574--574
+
+[34]
+
+[35]
+Overfull \hbox (4.66771pt too wide) in paragraph at lines 607--607
 [][]\T1/cmr/m/n/12 Bernard, An-drew B, Stephen J Red-ding, and Pe-ter K Schott (2010). ``Multiple-
  []
 
 
 
-[34
+[36
 
 ]
 
-[35]
-Overfull \hbox (1.11041pt too wide) in paragraph at lines 574--574
+[37]
+Overfull \hbox (1.11041pt too wide) in paragraph at lines 607--607
 \T1/cmr/m/n/12 ate Merger''. In: \T1/cmr/m/it/12 The Jour-nal of Fi-nance \T1/cmr/m/n/12 26.2, pp. 521^^U537. \T1/cmr/m/sc/12 issn\T1/cmr/m/n/12 : 00221082,
  []
 
 
 
-[36]
-Overfull \hbox (19.1903pt too wide) in paragraph at lines 574--574
+[38]
+
+[39]
+Overfull \hbox (19.1903pt too wide) in paragraph at lines 607--607
 [][]\T1/cmr/m/n/12 Ramondo, Na-talia, Veron-ica Rap-poport, and Kim J Ruhl (2013). ``The proximity-
  []
 
 
 
-[37]
+[40]
 
-[38]
-
-[39] (build/collaboration.aux)
+[41] (build/collaboration.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -1468,21 +1468,27 @@ Package logreq Info: Writing requests to 'collaboration.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 41869 strings out of 473190
- 962874 string characters out of 5715801
- 4482283 words of memory out of 5000000
- 64146 multiletter control sequences out of 15000+600000
- 582692 words of font info for 95 fonts, out of 8000000 for 9000
+ 41889 strings out of 473190
+ 963385 string characters out of 5715801
+ 4484998 words of memory out of 5000000
+ 64159 multiletter control sequences out of 15000+600000
+ 581319 words of font info for 93 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,19n,101p,7060b,2486s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
+pdfTeX warning (dest): name{Hfootnote.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{Hfootnote.2} has been referenced but does not exist, replaced by a fixed one
+
+
 pdfTeX warning (dest): name{Hfootnote.1} has been referenced but does not exist, replaced by a fixed one
 
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on build/collaboration.pdf (39 pages, 716855 bytes).
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
+Output written on build/collaboration.pdf (41 pages, 748453 bytes).
 PDF statistics:
- 658 PDF objects out of 1000 (max. 8388607)
- 555 compressed objects within 6 object streams
- 146 named destinations out of 1000 (max. 500000)
+ 703 PDF objects out of 1000 (max. 8388607)
+ 594 compressed objects within 6 object streams
+ 155 named destinations out of 1000 (max. 500000)
  77 words of extra memory for PDF output out of 10000 (max. 10000000)
 
