@@ -657,12 +657,10 @@ def main():
     parser.add_argument('--pool_window', type=int, default=None,
                        help='Rolling window size (default: same as --lookback)')
     # §3 Correlation structure
-    parser.add_argument('--rho', type=str, default='uncorr',
-                       choices=['uncorr', 'pos', 'neg'],
-                       help='Within-market correlation: uncorr (ρ=0), pos (ρ=0.3), neg (ρ=-0.3)')
-    parser.add_argument('--cross_corr', type=str, default='none',
-                       choices=['block', 'ar1', 'none'],
-                       help='Cross-market correlation: block (industry), ar1 (distance decay), none')
+    parser.add_argument('--rho', type=float, default=0.0,
+                       help='Within-market correlation coefficient (default: 0.0)')
+    parser.add_argument('--cross_corr', type=float, default=0.0,
+                       help='Cross-market correlation coefficient (default: 0.0)')
     parser.add_argument('--cost_type', type=str, default='power_law',
                        choices=['linear', 'quadratic', 'exponential', 'power_law'],
                        help='Management cost function type (default: power_law)')

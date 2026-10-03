@@ -7,9 +7,9 @@ Generates factorial design for Phase B experiments:
 - α values: [0.00, 0.02, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
 - Replications: configurable (default 5 per scenario)
 
-Full factorial: 2 × 2 × 3 × 3 = 36 scenarios
-With α values: 36 × 12 = 432 cells
-With replications: 432 × 5 = 2160 experiments
+Full factorial: 2 × 2 × 2 × 2 = 16 scenarios
+With α values: 16 × 12 = 192 cells
+With replications: 192 × 5 = 960 experiments
 
 Usage:
     # Generate design table
@@ -32,8 +32,8 @@ import pandas as pd
 FACTORS = {
     'growth_process': ['normal_net', 'lognormal'],
     'sharing_rule': ['equal', 'proportional'],
-    'rho': ['uncorr', 'pos', 'neg'],
-    'cross_corr': ['none', 'block', 'ar1'],
+    'rho': [0.0, 0.3],
+    'cross_corr': [0.0, 0.3],
 }
 
 # α values from updated grid
@@ -68,7 +68,7 @@ def generate_factorial_design(include_cost=False):
     for i, combo in enumerate(itertools.product(*factor_levels)):
         scenario = {
             'scenario_id': i,
-            'scenario_name': '_'.join(combo),
+            'scenario_name': '_'.join(str(v) for v in combo),
         }
         for name, level in zip(factor_names, combo):
             scenario[name] = level

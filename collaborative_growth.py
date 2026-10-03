@@ -661,7 +661,7 @@ def process_conglomerate_pooling_numba(
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
           sharing_rule="equal", pool_history="rolling", pool_window=None,
-          rho="uncorr", cross_corr="none", mobility_csv=None):
+          rho=0.0, cross_corr=0.0, mobility_csv=None):
     """
     Main simulation model.
 
@@ -689,10 +689,10 @@ def model(params, seed=None, market_corr="identity",
         Pool history mode: 'rolling' (default) or 'full'
     pool_window : int, optional
         Rolling window size (default: same as lookback)
-    rho : str
-        Within-market correlation: 'uncorr' (ρ=0), 'pos' (ρ=0.3), 'neg' (ρ=-0.3)
-    cross_corr : str
-        Cross-market correlation: 'block' (industry groups), 'ar1' (distance decay), 'none'
+    rho : float
+        Within-market correlation coefficient (default 0.0)
+    cross_corr : float
+        Cross-market correlation coefficient (default 0.0)
     mobility_csv : str, optional
         Path to write online mobility metrics (rank autocorrelation per step)
     """
@@ -774,33 +774,16 @@ def model(params, seed=None, market_corr="identity",
     if pool_window is None:
         pool_window = lookback
 
-    # Correlation structure: convert rho to numeric value
-    rho_values = {'uncorr': 0.0, 'pos': 0.3, 'neg': -0.3}
-    rho_val = rho_values.get(rho, 0.0)
+    # Correlation structure: rho is now a float directly
+    rho_val = float(rho)
 
-    # Cross-market correlation: modify market_corr_matrix
-    if cross_corr == "block":
-        # Industry block structure: divide markets into 4 groups with high within-group correlation
-        n_blocks = min(4, markets)
-        block_size = markets // n_blocks
-        block_corr_matrix = np.eye(markets)
-        for b in range(n_blocks):
-            start = b * block_size
-            end = start + block_size if b < n_blocks - 1 else markets
-            for i in range(start, end):
-                for j in range(start, end):
-                    if i != j:
-                        block_corr_matrix[i, j] = 0.5  # Within-block correlation
-        market_corr_matrix = block_corr_matrix
-    elif cross_corr == "ar1":
-        # AR(1) decay: correlation decays with "distance" between markets
-        ar1_matrix = np.zeros((markets, markets))
-        decay = 0.7  # AR(1) coefficient
-        for i in range(markets):
-            for j in range(markets):
-                ar1_matrix[i, j] = decay ** abs(i - j)
-        market_corr_matrix = ar1_matrix
-    # else: cross_corr == "none", keep existing market_corr_matrix (identity or random)
+    # Cross-market correlation: apply constant off-diagonal correlation
+    if cross_corr != 0.0:
+        # Create correlation matrix with cross_corr as off-diagonal elements
+        cross_corr_matrix = np.full((markets, markets), cross_corr)
+        np.fill_diagonal(cross_corr_matrix, 1.0)
+        market_corr_matrix = cross_corr_matrix
+    # else: keep existing market_corr_matrix (identity or random)
 
     market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr_matrix
 
