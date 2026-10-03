@@ -143,6 +143,7 @@ class ParallelCounterfactualRunner:
 
                 # Merger and exit frequency per period
                 'mergers_per_period': mergers_per_period,
+                'proposals_per_period': proposals_per_period,
                 'exits_per_period': exits_per_period,
 
                 # DBSCAN merger clusters
@@ -150,7 +151,7 @@ class ParallelCounterfactualRunner:
             }
 
             # Explicitly delete large arrays to free memory immediately
-            del res, mean_members, quantiles_members, avg_shares, quantiles_shares
+            del res, mean_members, quantiles_members, avg_shares, quantiles_shares, proposals_per_period
             del gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters
             
             # Log successful completion
@@ -526,6 +527,11 @@ class ParallelCounterfactualRunner:
             'mergers_per_period_avg': np.mean([r['mergers_per_period'] for r in results], axis=0),
             'mergers_per_period_std': np.std([r['mergers_per_period'] for r in results], axis=0),
             'mergers_per_period_all': np.array([r['mergers_per_period'] for r in results]),
+
+            # Proposals frequency analysis
+            'proposals_per_period_avg': np.mean([r['proposals_per_period'] for r in results], axis=0),
+            'proposals_per_period_std': np.std([r['proposals_per_period'] for r in results], axis=0),
+            'proposals_per_period_all': np.array([r['proposals_per_period'] for r in results]),
 
             'exits_per_period_avg': np.mean([r['exits_per_period'] for r in results], axis=0),
             'exits_per_period_std': np.std([r['exits_per_period'] for r in results], axis=0),

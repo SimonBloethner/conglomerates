@@ -226,14 +226,16 @@ def merger_kernel_numba(
     """
     FULLY NUMBA-ACCELERATED merger step.
 
-    Returns number of successful mergers in this step.
+    Returns tuple: (mergers_this_step, proposals_this_step)
+    - proposals: feasible matches that reached the desirability test
+    - mergers: proposals that were accepted
     """
     # Generate merger draws
     draws = np.random.random(total_firms) < merge_thresh
     candidates = np.where(draws)[0]
 
     if len(candidates) == 0:
-        return 0
+        return 0, 0
 
     # Shuffle candidates
     n = len(candidates)
@@ -242,6 +244,7 @@ def merger_kernel_numba(
         candidates[i], candidates[j] = candidates[j], candidates[i]
 
     mergers_this_step = 0
+    proposals_this_step = 0
 
     for init_idx in range(len(candidates)):
         initiator = candidates[init_idx]
@@ -343,6 +346,9 @@ def merger_kernel_numba(
                     for i in range(len(avg_gain)):
                         synth_pool[lookback - hist_len + i] = share * avg_gain[i] - m
 
+        # This is a feasible proposal reaching the desirability test
+        proposals_this_step += 1
+        
         # Acceptance test
         accept = True
         if merged_size > 2:
@@ -429,7 +435,7 @@ def merger_kernel_numba(
 
         mergers_this_step += 1
 
-    return mergers_this_step
+    return mergers_this_step, proposals_this_step
 
 
 @nb.njit(cache=True)
@@ -729,6 +735,7 @@ def model(params, seed=None, market_corr="identity"):
 
     # Track merger frequency per period
     mergers_per_period = np.zeros(steps)
+    proposals_per_period = np.zeros(steps)
 
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(steps)
@@ -745,7 +752,6 @@ def model(params, seed=None, market_corr="identity"):
     firm_to_market = markets_structure[:, 0]
     firm_to_local_idx = markets_structure[:, 1]
 
-    effective_merge_thresh = 0 if share == 0 else merge_thresh
 
     for step in range(steps):
         # PERFORMANCE OPTIMIZATION: Use precomputed Cholesky decomposition for random generation
@@ -762,9 +768,9 @@ def model(params, seed=None, market_corr="identity"):
         firm_log_returns_buffer[curr_idx] = log_realizations_step
 
         # NUMBA OPTIMIZATION: Full merger pipeline in compiled code
-        if effective_merge_thresh > 0:
-            num_mergers = merger_kernel_numba(
-                step, lookback, share, proportional, effective_merge_thresh,
+        if merge_thresh > 0:
+            num_mergers, num_proposals = merger_kernel_numba(
+                step, lookback, share, proportional, merge_thresh,
                 firm_conglom, firm_home_market, firm_entered,
                 cong_firms, cong_size, cong_active, cong_occupies_market,
                 cong_pool, management_costs_lookup,
@@ -772,6 +778,7 @@ def model(params, seed=None, market_corr="identity"):
                 total_firms, markets, firms_per_market
             )
             mergers_per_period[step] = num_mergers
+            proposals_per_period[step] = num_proposals
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
@@ -938,8 +945,8 @@ def model(params, seed=None, market_corr="identity"):
     # MEMORY OPTIMIZATION: Removed market_share from results (no longer needed)
     # Now includes: avg_shares (firm-level size/market-share data) and exits_per_period
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
-                     gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period,
-                     hyperparameters]
+                     gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period,
+                     exits_per_period, hyperparameters]
     total_time = time.time() - model_start_time
     print(f"Runtime: {total_time:.1f}s", flush=True)
 
