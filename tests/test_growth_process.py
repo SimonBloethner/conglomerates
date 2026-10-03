@@ -54,11 +54,11 @@ def test_normal_net_backward_compatible():
     # Run with default (should be normal_net)
     result2 = model(params, seed=12345, market_corr='identity')
 
-    # Should be identical
+    # Should be identical - 11 elements (ranks removed)
     (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,
-     gini1, ranks1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
+     gini1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
     (mean_members2, quantiles_members2, num_cong2, avg_shares2, quantiles_shares2,
-     gini2, ranks2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
+     gini2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
 
     assert np.array_equal(mean_members1, mean_members2), "mean_members differs"
     assert np.array_equal(gini1, gini2), "gini differs"

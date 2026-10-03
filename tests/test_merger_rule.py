@@ -17,17 +17,17 @@ def test_alpha_zero_no_mergers():
     # Small run for speed
     params = [20, 20, 300, 0.0, 400, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]  # α=0
-    
+
     result = model(params, seed=42, market_corr='identity')
-    
-    # Unpack results - note the new format includes proposals_per_period
+
+    # Unpack results - 11 elements (ranks removed)
     (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
-     gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period,
+     gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
      exits_per_period, hyperparameters) = result
-    
+
     total_mergers = mergers_per_period.sum()
     total_proposals = proposals_per_period.sum()
-    
+
     assert total_mergers == 0, f"Expected 0 mergers at α=0, got {total_mergers}"
     assert total_proposals > 0, f"Expected some proposals at α=0, got {total_proposals}"
     print(f"α=0: {total_proposals:.0f} proposals, {total_mergers:.0f} mergers")
@@ -42,13 +42,13 @@ def test_M_not_equals_N_completes():
     N = 25
     params = [M, N, 200, 0.2, M * N, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]
-    
+
     # Should complete without error
     result = model(params, seed=42, market_corr='identity')
-    
+
     # Verify we got valid output
     assert result is not None
-    assert len(result) == 12  # Expected number of return values
+    assert len(result) == 11  # Expected number of return values (ranks removed)
     print(f"M={M}, N={N} run completed successfully")
 
 
@@ -58,16 +58,17 @@ def test_positive_alpha_has_mergers():
     """
     params = [30, 30, 500, 0.2, 900, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]  # α=0.2
-    
+
     result = model(params, seed=42, market_corr='identity')
-    
+
+    # Unpack results - 11 elements (ranks removed)
     (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
-     gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period,
+     gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
      exits_per_period, hyperparameters) = result
-    
+
     total_mergers = mergers_per_period.sum()
     total_proposals = proposals_per_period.sum()
-    
+
     assert total_proposals > 0, "Expected some proposals"
     # With calibrated costs, should have some mergers at α=0.2
     print(f"α=0.2: {total_proposals:.0f} proposals, {total_mergers:.0f} mergers")
@@ -88,11 +89,11 @@ def test_merger_kernel_optimization_reproducibility():
     result1 = model(params, seed=12345, market_corr='identity')
     result2 = model(params, seed=12345, market_corr='identity')
 
-    # Unpack results
+    # Unpack results - 11 elements (ranks removed)
     (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,
-     gini1, ranks1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
+     gini1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
     (mean_members2, quantiles_members2, num_cong2, avg_shares2, quantiles_shares2,
-     gini2, ranks2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
+     gini2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
 
     # Verify bit-identical outputs
     assert np.array_equal(mergers1, mergers2), "mergers_per_period differs"
@@ -100,7 +101,6 @@ def test_merger_kernel_optimization_reproducibility():
     assert np.array_equal(exits1, exits2), "exits_per_period differs"
     assert np.array_equal(mean_members1, mean_members2), "mean_members differs"
     assert np.array_equal(gini1, gini2), "gini_coefficient differs"
-    assert np.array_equal(ranks1, ranks2), "ranks differs"
 
     # Verify the runs actually produced mergers (sanity check)
     total_mergers = mergers1.sum()
