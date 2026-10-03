@@ -1,1 +1,7 @@
 __pycache__/
+diagnostics/*.out
+diagnostics/*.err
+diagnostics/*.pkl
+check_pkl_structure.py
+debug_model.py
+generate_summary.py
