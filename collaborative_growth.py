@@ -304,66 +304,101 @@ def merger_kernel_numba(
         merged_firms = np.sort(merged_firms)
         merged_size = len(merged_firms)
 
-        # Synthetic pool evaluation (only if >2 firms)
-        synth_pool = np.zeros(lookback, dtype=np.float64)
-        hist_len = 0
-
-        if merged_size > 2:
-            hist_start = max(0, step - lookback)
-            hist_len = step - hist_start
-
-            if hist_len > 0:
-                past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, merged_firms)
-                past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, merged_firms)
-
-                log_S = logsumexp_numba_2d(past_states)
-
-                # Compute weights
-                w = np.empty_like(past_states)
-                for i in range(past_states.shape[0]):
-                    for j in range(past_states.shape[1]):
-                        w[i, j] = np.exp(past_states[i, j] - log_S[i])
-
-                # Compute r_minus1
-                r_m1 = np.empty_like(past_returns)
-                for i in range(past_returns.shape[0]):
-                    for j in range(past_returns.shape[1]):
-                        r_m1[i, j] = np.expm1(past_returns[i, j])
-
-                # Weighted average gain
-                avg_gain = np.zeros(past_states.shape[0], dtype=np.float64)
-                for i in range(past_states.shape[0]):
-                    for j in range(past_states.shape[1]):
-                        avg_gain[i] += w[i, j] * r_m1[i, j]
-
-                m = management_costs_lookup[merged_size]
-
-                if proportional:
-                    for i in range(len(log_S)):
-                        cost_factor = 1.0 - m * np.exp(-log_S[i])
-                        synth_pool[lookback - hist_len + i] = share * avg_gain[i] * cost_factor
-                else:
-                    for i in range(len(avg_gain)):
-                        synth_pool[lookback - hist_len + i] = share * avg_gain[i] - m
-
+        # Per-member merger test (same criterion as exit test)
+        # Accept iff every firm i in the merged set would have higher synthetic
+        # log growth inside the merged conglomerate than realized log growth
+        # under their current arrangement.
+        
+        # Window: [t-h, t) where h = min(lookback, step)
+        h = min(lookback, step)
+        
+        # Reject if no history available
+        if h == 0:
+            continue
+        
         # This is a feasible proposal reaching the desirability test
         proposals_this_step += 1
         
-        # Acceptance test
+        hist_start = step - h
+        K_hat = merged_size  # Size of proposed merged set
+        m = management_costs_lookup[K_hat]  # Management cost Phi(K_hat)
+        
+        # Get historical states and returns for merged firms
+        # past_states[tau, j] = log_state of firm merged_firms[j] at time hist_start + tau
+        past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, merged_firms)
+        past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, merged_firms)
+        
+        # Also need states at step (for computing growth from step-1 to step)
+        # Actually we need states at hist_start to step (inclusive) for realized growth
+        # past_states is [hist_start, step), we need [hist_start, step] for growth computation
+        # Get the extra state at step
+        step_states = get_historical_states_numba(firm_log_states_buffer, step, step + 1, merged_firms)
+        
         accept = True
-        if merged_size > 2:
-            synth_total = np.sum(synth_pool)
-
-            if initiator_cong == -1 or target_cong == -1:
-                existing_cong = initiator_cong if target_cong == -1 else target_cong
-                existing_pool = np.sum(cong_pool[existing_cong, :])
-                if synth_total < existing_pool:
-                    accept = False
-            else:
-                p1 = np.sum(cong_pool[initiator_cong, :])
-                p2 = np.sum(cong_pool[target_cong, :])
-                if synth_total < p1 or synth_total < p2:
-                    accept = False
+        
+        # For each firm in the merged set, compute synthetic vs realized growth
+        for j in range(K_hat):
+            firm_id = merged_firms[j]
+            
+            # Compute synthetic log growth g_hat_i
+            g_hat = 0.0
+            has_invalid = False
+            
+            for tau in range(h):
+                # s_i_tau = exp(log_state)
+                s_i_tau = np.exp(past_states[tau, j])
+                # r_i_tau = expm1(log_return)
+                r_i_tau = np.expm1(past_returns[tau, j])
+                # Delta_i_tau = s_i_tau * r_i_tau
+                Delta_i_tau = s_i_tau * r_i_tau
+                
+                # Compute synthetic pool Omega_hat_tau
+                # Need sums over all firms in merged set for this tau
+                sum_Delta = 0.0
+                sum_s = 0.0
+                for k in range(K_hat):
+                    s_k_tau = np.exp(past_states[tau, k])
+                    r_k_tau = np.expm1(past_returns[tau, k])
+                    sum_Delta += s_k_tau * r_k_tau
+                    sum_s += s_k_tau
+                
+                if proportional:
+                    # Omega_hat = share * sum_Delta * (1 - m / sum_s)
+                    Omega_hat = share * sum_Delta * (1.0 - m / sum_s) if sum_s > 0 else 0.0
+                else:
+                    # Omega_hat = share * sum_Delta - m * sum_s
+                    Omega_hat = share * sum_Delta - m * sum_s
+                
+                # Synthetic per-member profit: Pi_hat_i = (1-share) * Delta_i + Omega_hat / K_hat
+                Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
+                
+                # Check for invalid growth (would cause exit)
+                growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
+                if growth_ratio <= -1.0:
+                    has_invalid = True
+                    break
+                
+                g_hat += np.log1p(growth_ratio)
+            
+            if has_invalid:
+                accept = False
+                break
+            
+            g_hat /= h  # Mean log growth
+            
+            # Compute realized log growth g_i under current arrangement
+            # g_i = (1/h) * sum_tau (log_state[tau+1] - log_state[tau])
+            g_realized = 0.0
+            for tau in range(h - 1):
+                g_realized += past_states[tau + 1, j] - past_states[tau, j]
+            # Last step: from past_states[h-1] to step_states[0]
+            g_realized += step_states[0, j] - past_states[h - 1, j]
+            g_realized /= h
+            
+            # Reject if firm would not benefit
+            if g_hat <= g_realized:
+                accept = False
+                break
 
         if not accept:
             continue
@@ -384,9 +419,6 @@ def merger_kernel_numba(
                 firm_conglom[f] = target_cong
                 firm_entered[f] = step
 
-            # Store pool if >2
-            if merged_size > 2:
-                cong_pool[target_cong, :] = synth_pool
 
             # Deactivate initiator
             cong_active[initiator_cong] = False
