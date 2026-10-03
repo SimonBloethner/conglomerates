@@ -752,7 +752,7 @@ def model(params, seed=None, market_corr="identity"):
         # Generate standard normal random variates and transform using L @ z
         z = np.random.standard_normal((markets, firms_per_market))
         realizations_step = growth_vars[:, 0][:, np.newaxis] + market_cov_cholesky @ z
-        log_realizations_step = np.log(realizations_step.T.flatten() + 1).astype(np.float64)
+        log_realizations_step = np.log1p(realizations_step.ravel()).astype(np.float64)
 
         # Calculate circular buffer indices for current and next timestep
         curr_idx = step % (lookback + 1)
