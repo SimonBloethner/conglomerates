@@ -119,6 +119,7 @@ class ParallelCounterfactualRunner:
             # Extract only essential data for aggregation (much smaller memory footprint)
             results = {
                 'share': share,
+                'seed': seed,  # Record seed for reproducibility
                 'experiment_id': experiment_id,
 
                 # Store hyperparameters BEFORE they get deleted
@@ -410,11 +411,13 @@ class ParallelCounterfactualRunner:
         total_experiments = len(experiments)
         print(f"COUNTER: Starting {total_experiments} experiments for share {share_value:.2f}")
         
-        # Generate seeds for reproducibility
-        base_seed = int(share_value * 10000) % 10000
+        # Generate seeds for reproducibility - COMMON RANDOM NUMBERS across alpha
+        # Seed depends only on (scenario_name, exp_id), NOT on share_value
+        # This enables paired comparisons: same exp_id sees same shocks at all alpha
+        scenario_name = getattr(self, 'scenario_name', None) or 'default'
         experiment_params = []
         for exp_id in experiments:
-            seed = base_seed + exp_id * 1000
+            seed = hash((scenario_name, exp_id)) % (2**32)
             experiment_params.append((share_value, exp_id, seed))
         
         # Run experiments in parallel with disk-based results
