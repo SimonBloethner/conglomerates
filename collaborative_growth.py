@@ -1090,8 +1090,9 @@ def model(params, seed=None, market_corr="identity",
     if mobility_file is not None:
         mobility_file.close()
 
+    # Note: ranks array removed from output to save memory (computed internally for avg_ranks)
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
-                     gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period,
+                     gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
                      exits_per_period, hyperparameters]
     total_time = time.time() - model_start_time
     print(f"Runtime: {total_time:.1f}s", flush=True)

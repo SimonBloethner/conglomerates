@@ -5,6 +5,9 @@ identical results to Phase A reference (commit 56ee13f).
 
 This test must pass at every commit that modifies collaborative_growth.py
 or parallel_counterfactuals.py.
+
+Note: ranks array has been removed from current output to save memory.
+The test compares all other arrays between Phase A reference and current code.
 """
 import numpy as np
 import sys
@@ -21,7 +24,7 @@ def test_phase_a_identity():
     """
     Run model at M=N=20, T=300, α=0.2, seed=1, default flags on both
     Phase A reference and current code. Assert every returned array
-    is exactly equal.
+    is exactly equal (except ranks which has been removed from current output).
     """
     # Phase A parameters: M=20, N=20, T=300, α=0.2
     M = 20
@@ -58,7 +61,7 @@ def test_phase_a_identity():
     print("Running current code with Phase A defaults...")
     result_cur = current.model(params, seed=seed, market_corr='identity')
 
-    # Result structure (12 elements):
+    # Phase A reference structure (12 elements):
     # 0: mean_members
     # 1: quantiles_members
     # 2: num_cong
@@ -72,25 +75,39 @@ def test_phase_a_identity():
     # 10: exits_per_period
     # 11: hyperparameters (dict)
 
-    array_names = [
-        'mean_members',
-        'quantiles_members',
-        'num_cong',
-        'avg_shares',
-        'quantiles_shares',
-        'gini_coefficient',
-        'ranks',
-        'avg_ranks',
-        'mergers_per_period',
-        'proposals_per_period',
-        'exits_per_period',
+    # Current structure (11 elements - ranks removed):
+    # 0: mean_members
+    # 1: quantiles_members
+    # 2: num_cong
+    # 3: avg_shares (list of arrays)
+    # 4: quantiles_shares
+    # 5: gini_coefficient
+    # 6: avg_ranks (list of arrays)  <- was index 7
+    # 7: mergers_per_period           <- was index 8
+    # 8: proposals_per_period         <- was index 9
+    # 9: exits_per_period             <- was index 10
+    # 10: hyperparameters (dict)
+
+    # Map: (name, ref_index, cur_index)
+    comparisons = [
+        ('mean_members', 0, 0),
+        ('quantiles_members', 1, 1),
+        ('num_cong', 2, 2),
+        ('avg_shares', 3, 3),
+        ('quantiles_shares', 4, 4),
+        ('gini_coefficient', 5, 5),
+        # ranks (index 6 in ref) is skipped - removed from current
+        ('avg_ranks', 7, 6),
+        ('mergers_per_period', 8, 7),
+        ('proposals_per_period', 9, 8),
+        ('exits_per_period', 10, 9),
     ]
 
-    # Compare arrays (indices 0-10, skip hyperparameters dict at index 11)
+    # Compare arrays
     all_match = True
-    for i, name in enumerate(array_names):
-        ref_val = result_ref[i]
-        cur_val = result_cur[i]
+    for name, ref_idx, cur_idx in comparisons:
+        ref_val = result_ref[ref_idx]
+        cur_val = result_cur[cur_idx]
 
         if isinstance(ref_val, list):
             # avg_shares and avg_ranks are lists of arrays

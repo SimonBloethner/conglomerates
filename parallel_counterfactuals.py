@@ -131,9 +131,9 @@ class ParallelCounterfactualRunner:
                 cross_corr=self.cross_corr,
                 mobility_csv=self.mobility_csv
             )
-            # Updated for new model output (12 elements: includes proposals_per_period)
+            # Updated for new model output (11 elements: ranks removed to save memory)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
-            gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period, \
+            gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period, \
             exits_per_period, hyperparameters = res
 
             # Extract only essential data for aggregation (much smaller memory footprint)
@@ -158,10 +158,6 @@ class ParallelCounterfactualRunner:
                 'temporal_poly_estimates': self._calculate_temporal_polynomial_estimates(avg_shares),
                 'panel_poly_estimates': self._calculate_panel_polynomial_estimates(avg_shares),
 
-                # Mobility metrics (pre-computed to avoid storing full ranks)
-                'rank_ranges': self._calculate_single_run_mobility(ranks),
-                'rank_std': self._calculate_single_run_std(ranks),
-
                 # Merger and exit frequency per period
                 'mergers_per_period': mergers_per_period,
                 'proposals_per_period': proposals_per_period,
@@ -173,7 +169,7 @@ class ParallelCounterfactualRunner:
 
             # Explicitly delete large arrays to free memory immediately
             del res, mean_members, quantiles_members, avg_shares, quantiles_shares, proposals_per_period
-            del gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters
+            del gini_coefficient, avg_ranks, mergers_per_period, exits_per_period, hyperparameters
             
             # Log successful completion
             runtime = time.time() - start_time
@@ -330,17 +326,6 @@ class ParallelCounterfactualRunner:
         print(f"AGG_RESULT: share={share_value}, final_valid_coeffs={final_valid}")
         
         return result
-    
-    def _calculate_single_run_mobility(self, ranks):
-        """Calculate mobility metrics for a single run (to avoid storing full ranks)"""
-        # ranks shape: (steps, markets, firms)
-        min_ranks = np.min(ranks, axis=0)  # min over time for each firm
-        max_ranks = np.max(ranks, axis=0)  # max over time for each firm
-        return max_ranks - min_ranks  # range for each firm
-    
-    def _calculate_single_run_std(self, ranks):
-        """Calculate rank standard deviation for a single run"""
-        return np.std(ranks, axis=0)  # std over time for each firm
     
     def detect_merger_clusters_dbscan(self, merger_time_series, exclude_early=50, eps=10, min_samples=3):
         """Use DBSCAN to identify merger wave clusters"""
@@ -547,10 +532,6 @@ class ParallelCounterfactualRunner:
             'temporal_poly_estimates_std': np.nanstd([r['temporal_poly_estimates'] for r in results], axis=0),
             'panel_poly_estimates_all': np.array([r['panel_poly_estimates'] for r in results]),  # shape: (n_realizations, 3)
 
-            # Mobility analysis (concatenate pre-computed metrics)
-            'rank_ranges': np.array([r['rank_ranges'] for r in results]),
-            'rank_std': np.array([r['rank_std'] for r in results]),
-
             # Merger and exit frequency analysis
             'mergers_per_period_avg': np.mean([r['mergers_per_period'] for r in results], axis=0),
             'mergers_per_period_std': np.std([r['mergers_per_period'] for r in results], axis=0),
@@ -572,26 +553,7 @@ class ParallelCounterfactualRunner:
         }
         
         return aggregated
-    
-    def _calculate_rank_mobility(self, ranks_list):
-        """Calculate rank mobility metrics"""
-        # Stack all experiments
-        ranks_array = np.array(ranks_list)  # shape: (experiments, steps, markets, firms)
-        
-        # Calculate min/max ranks over time for each firm
-        min_ranks = np.min(ranks_array, axis=1)  # shape: (experiments, markets, firms)
-        max_ranks = np.max(ranks_array, axis=1)  # shape: (experiments, markets, firms)
-        
-        # Range of ranks (mobility measure)
-        rank_ranges = max_ranks - min_ranks
-        
-        return rank_ranges
-    
-    def _calculate_rank_std(self, ranks_list):
-        """Calculate standard deviation of ranks"""
-        ranks_array = np.array(ranks_list)
-        return np.std(ranks_array, axis=1)  # std over time for each experiment
-    
+
     def save_results(self, aggregated_results, filename_prefix='counterfactual_results'):
         """Save aggregated results"""
         # Save as pickle for complete data
