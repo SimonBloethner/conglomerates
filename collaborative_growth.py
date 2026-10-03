@@ -586,7 +586,7 @@ def process_conglomerate_pooling_numba(
     return new_log_states, cong_pools, firms_to_exit
 
 
-def model(params, seed=None):
+def model(params, seed=None, market_corr="identity"):
     """
     Main simulation model.
 
@@ -648,15 +648,20 @@ def model(params, seed=None):
     growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
     growth_vars = min_bound + (growth_vars / growth_vars.max(axis=0)) * (max_bound - min_bound)
 
-    eigen_vals = np.random.uniform(0.1, 3, markets)
-    eigen_vals = eigen_vals * markets / eigen_vals.sum()
-
-    market_corr = random_correlation.rvs(tuple(eigen_vals), random_state=np.random.default_rng())
-
-    # market_corr = np.diag(np.ones(markets))
-    # market_corr[np.triu_indices(markets, k=1)] = np.random.uniform(0.1, 0.8, int(markets * (markets - 1) / 2))
-    # market_corr = market_corr + market_corr.T - np.diag(np.ones(markets))
-    market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr
+    # Market correlation: identity (uncorrelated, paper baseline) or random
+    if market_corr == "identity":
+        market_corr_matrix = np.eye(markets)
+    elif market_corr == "random":
+        # Generate random correlation matrix, seeded for reproducibility
+        eigen_vals = np.random.uniform(0.1, 3, markets)
+        eigen_vals = eigen_vals * markets / eigen_vals.sum()
+        # Use seeded generator if seed was provided, otherwise use a fresh one
+        rng = np.random.default_rng(seed) if seed is not None else np.random.default_rng()
+        market_corr_matrix = random_correlation.rvs(tuple(eigen_vals), random_state=rng)
+    else:
+        raise ValueError(f"Unknown market_corr type: {market_corr}. Use 'identity' or 'random'.")
+    
+    market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr_matrix
 
     # PERFORMANCE OPTIMIZATION: Precompute Cholesky decomposition for random number generation
     # This avoids recomputing the decomposition at every timestep (10,000x speedup for this operation)

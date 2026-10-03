@@ -55,6 +55,7 @@ class ParallelCounterfactualRunner:
         self.lookback = 50
         self.ramp = 10
         self.proportional = False
+        self.market_corr = 'identity'  # 'identity' (paper baseline) or 'random'
         
         # Share values to test
         self.shares = np.arange(0, 0.52, 0.02)
@@ -110,7 +111,7 @@ class ParallelCounterfactualRunner:
         print(f"DEBUG PARAMS: share={share}, cost_type={self.cost_type}, c0={c0}, c1={c1}, c2={c2}")
         try:
             # Run the model
-            res = collaborative_growth.model(params=params)
+            res = collaborative_growth.model(params=params, seed=seed, market_corr=self.market_corr)
             # Updated for new model output (11 elements: added exits_per_period, keeping avg_shares)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
             gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters = res
@@ -599,6 +600,9 @@ def main():
                        help='Lookback period for exit decisions (default: 50)')
     parser.add_argument('--proportional', action='store_true',
                        help='Use proportional sharing (default: False)')
+    parser.add_argument('--market_corr', type=str, default='identity',
+                       choices=['identity', 'random'],
+                       help='Market correlation type (default: identity = uncorrelated)')
     parser.add_argument('--cost_type', type=str, default='power_law',
                        choices=['linear', 'quadratic', 'exponential', 'power_law'],
                        help='Management cost function type (default: power_law)')
@@ -647,6 +651,7 @@ def main():
     runner.break_thresh = args.break_thresh
     runner.lookback = args.lookback
     runner.proportional = args.proportional
+    runner.market_corr = args.market_corr
     
     # Cost function parameters
     runner.cost_type = args.cost_type
