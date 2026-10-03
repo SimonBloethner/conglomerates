@@ -163,7 +163,7 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
     firm_entered[firm_id] = -1
 
 
-@nb.njit
+@nb.njit(cache=True)
 def logsumexp_numba_2d(x):
     """Stable logsumexp over last axis (axis=1 for 2D arrays)"""
     n_rows = x.shape[0]
@@ -180,7 +180,7 @@ def logsumexp_numba_2d(x):
     return result
 
 
-@nb.njit
+@nb.njit(cache=True)
 def get_historical_states_numba(firm_log_states_buffer, start_step, end_step, firm_ids):
     """Extract historical log states from circular buffer"""
     lookback_plus_1 = firm_log_states_buffer.shape[0]
@@ -194,7 +194,7 @@ def get_historical_states_numba(firm_log_states_buffer, start_step, end_step, fi
     return result
 
 
-@nb.njit
+@nb.njit(cache=True)
 def get_historical_returns_numba(firm_log_returns_buffer, start_step, end_step, firm_ids):
     """Extract historical log returns from circular buffer"""
     lookback_plus_1 = firm_log_returns_buffer.shape[0]
@@ -858,7 +858,7 @@ def model(params):
             lorenz = cum_shares / sums
             lorenz = np.nan_to_num(lorenz)
 
-        area = np.trapz(y=lorenz, axis=1, dx=1 / firms_per_market)
+        area = np.trapezoid(y=lorenz, axis=1, dx=1 / firms_per_market)
         gini_coefficient[:, step] = (1 - 2 * area).astype(np.float32)
 
         # Ranks (double argsort trick, vectorized)
