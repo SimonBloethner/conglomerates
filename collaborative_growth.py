@@ -937,25 +937,15 @@ def model(params, seed=None, market_corr="identity"):
             mean_members[step] = np.mean(active_sizes)
             quantiles_members[step] = np.quantile(active_sizes, q=[0.1, 0.25, 0.5, 0.75, 0.9])
 
-            # Pre-allocate arrays for better performance
-            avg_share = np.empty((len(active_cong_ids), 2), dtype=np.float32)
-            avg_rank = np.empty((len(active_cong_ids), 2), dtype=np.float32)
-
-            for idx, cong_id in enumerate(active_cong_ids):
-                n_firms = active_sizes[idx]
-                # Direct access from SoA (no where operation needed)
-                firm_ids = cong_firms[cong_id, :n_firms]
-
-                # Get market and local indices
-                cong_markets = firm_to_market[firm_ids]
-                local_idxs = firm_to_local_idx[firm_ids]
-
-                # Direct indexing using this timestep's data
-                avg_share_val = market_share_current[cong_markets, local_idxs].mean()
-                avg_rank_val = ranks[step, cong_markets, local_idxs].mean()
-
-                avg_share[idx] = [n_firms, avg_share_val]
-                avg_rank[idx] = [n_firms, avg_rank_val]
+            # PERFORMANCE: Vectorized avg_share and avg_rank using np.bincount
+            # Replaces per-conglomerate loop with O(n) bincount aggregation
+            in_cong_mask = firm_conglom != -1
+            cids = firm_conglom[in_cong_mask]
+            cnt = np.bincount(cids, minlength=MAX_CONGLOMERATES)
+            sh_sum = np.bincount(cids, weights=market_share_current.ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
+            rk_sum = np.bincount(cids, weights=ranks[step].ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
+            avg_share = np.column_stack([active_sizes, sh_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
+            avg_rank = np.column_stack([active_sizes, rk_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
 
             avg_shares.append(avg_share)
             avg_ranks.append(avg_rank)
