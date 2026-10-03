@@ -14,7 +14,6 @@ from tqdm import tqdm
 import warnings
 import collaborative_growth
 from collaborative_growth import seed_numba
-from sklearn.cluster import DBSCAN
 import signal
 import time
 import subprocess
@@ -158,10 +157,7 @@ class ParallelCounterfactualRunner:
                 # Merger and exit frequency per period
                 'mergers_per_period': mergers_per_period,
                 'proposals_per_period': proposals_per_period,
-                'exits_per_period': exits_per_period,
-
-                # DBSCAN merger clusters
-                'merger_clusters': self.detect_merger_clusters_dbscan(mergers_per_period)
+                'exits_per_period': exits_per_period
             }
 
             # Explicitly delete large arrays to free memory immediately
@@ -219,18 +215,18 @@ class ParallelCounterfactualRunner:
     
     def _calculate_temporal_polynomial_estimates(self, avg_shares):
         """
-        Calculate timestep-by-timestep polynomial estimates.
+        Calculate polynomial estimates every 10th timestep.
         This gives us temporal evolution of the size-market share relationship.
         """
         # Initialize estimates array with FULL steps size, like original (first ramp entries stay NaN)
         estimates = np.full([self.steps, 3], np.nan)
-        
+
         successful_fits = 0
         empty_steps = 0
         insufficient_points = 0
         failed_fits = 0
-        
-        for step in range(self.ramp, self.steps):
+
+        for step in range(self.ramp, self.steps, 10):  # Every 10th step
             try:
                 # Check if we have data for this step
                 if len(avg_shares[step]) == 0:
@@ -321,85 +317,9 @@ class ParallelCounterfactualRunner:
         
         final_valid = np.sum(~np.isnan(result[:, 0]))
         print(f"AGG_RESULT: share={share_value}, final_valid_coeffs={final_valid}")
-        
+
         return result
-    
-    def detect_merger_clusters_dbscan(self, merger_time_series, exclude_early=50, eps=10, min_samples=3):
-        """Use DBSCAN to identify merger wave clusters"""
-        if np.sum(merger_time_series) == 0:  # No mergers
-            return []
-        
-        # Exclude early periods to avoid initialization noise
-        if len(merger_time_series) <= exclude_early:
-            return []
-        
-        clean_series = merger_time_series[exclude_early:]
-        
-        if np.sum(clean_series) == 0:
-            return []
-        
-        # Find periods with above-median activity
-        threshold = np.median(clean_series[clean_series > 0]) if np.any(clean_series > 0) else 0
-        
-        if threshold <= 0:
-            return []
-        
-        # Create feature matrix: [time_index, merger_intensity] for active periods
-        active_periods = []
-        period_indices = []
-        
-        for t, activity in enumerate(clean_series):
-            if activity > threshold:
-                # Scale time and intensity for clustering
-                scaled_time = (t + exclude_early) / len(merger_time_series)  # Normalize time to [0,1]
-                scaled_intensity = activity / np.max(clean_series)  # Normalize intensity to [0,1]
-                active_periods.append([scaled_time, scaled_intensity])
-                period_indices.append(t + exclude_early)
-        
-        if len(active_periods) < min_samples:
-            return []
-        
-        # Apply DBSCAN clustering
-        active_periods = np.array(active_periods)
-        
-        # Scale eps appropriately for normalized features
-        normalized_eps = eps / len(merger_time_series)  # eps in terms of fraction of total time
-        
-        dbscan = DBSCAN(eps=normalized_eps, min_samples=min_samples)
-        cluster_labels = dbscan.fit_predict(active_periods)
-        
-        # Convert clusters back to merger wave format
-        clusters = []
-        
-        for cluster_id in set(cluster_labels):
-            if cluster_id == -1:  # Noise points (not part of any cluster)
-                continue
-            
-            # Get periods belonging to this cluster
-            cluster_mask = cluster_labels == cluster_id
-            cluster_periods = [period_indices[i] for i in range(len(period_indices)) if cluster_mask[i]]
-            cluster_intensities = [merger_time_series[p] for p in cluster_periods]
-            
-            if len(cluster_periods) >= min_samples:
-                peak_idx = np.argmax(cluster_intensities)
-                peak_period = cluster_periods[peak_idx]
-                
-                clusters.append({
-                    'cluster_id': cluster_id,
-                    'periods': sorted(cluster_periods),
-                    'start_period': min(cluster_periods),
-                    'end_period': max(cluster_periods),
-                    'peak_period': peak_period,
-                    'peak_intensity': merger_time_series[peak_period],
-                    'total_mergers': sum(cluster_intensities),
-                    'duration': max(cluster_periods) - min(cluster_periods) + 1,
-                    'n_active_periods': len(cluster_periods),
-                    'avg_intensity': np.mean(cluster_intensities),
-                    'threshold_used': threshold
-                })
-        
-        return clusters
-    
+
     def run_share_experiments(self, share_value, chunk_start=None, chunk_end=None):
         """Run all experiments for a specific share value"""
         print(f"Running experiments for share = {share_value:.2f}")
@@ -541,12 +461,7 @@ class ParallelCounterfactualRunner:
 
             'exits_per_period_avg': np.mean([r['exits_per_period'] for r in results], axis=0),
             'exits_per_period_std': np.std([r['exits_per_period'] for r in results], axis=0),
-            'exits_per_period_all': np.array([r['exits_per_period'] for r in results]),
-
-            # Merger cluster analysis
-            'merger_clusters_all': [r['merger_clusters'] for r in results],
-            'n_clusters_per_experiment': [len(r['merger_clusters']) for r in results],
-            'avg_clusters_per_experiment': np.mean([len(r['merger_clusters']) for r in results])
+            'exits_per_period_all': np.array([r['exits_per_period'] for r in results])
         }
         
         return aggregated

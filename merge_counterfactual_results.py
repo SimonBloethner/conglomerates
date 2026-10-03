@@ -215,22 +215,7 @@ class CounterfactualMerger:
 
             if all_exit_data:
                 merged['exits_per_period_all'] = np.concatenate(all_exit_data, axis=0)
-        
-        # Merge cluster data
-        if 'merger_clusters_all' in aggregated_chunks[0]:
-            all_cluster_data = []
-            all_cluster_counts = []
-            
-            for chunk in aggregated_chunks:
-                if 'merger_clusters_all' in chunk:
-                    all_cluster_data.extend(chunk['merger_clusters_all'])
-                    all_cluster_counts.extend(chunk['n_clusters_per_experiment'])
-            
-            if all_cluster_data:
-                merged['merger_clusters_all'] = all_cluster_data
-                merged['n_clusters_per_experiment'] = all_cluster_counts
-                merged['avg_clusters_per_experiment'] = np.mean(all_cluster_counts)
-        
+
         return merged
     
     def _aggregate_raw_experiments(self, experiments, share_value):

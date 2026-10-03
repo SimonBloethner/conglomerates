@@ -14,9 +14,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.pipeline import Pipeline
 from scipy.stats import gaussian_kde
 import warnings
 import time
@@ -597,37 +594,29 @@ class ParametrizationComparator:
             }
         else:
             # Panel models without time fixed effects for better performance
-            # Linear panel model
-            panel_linear_model = LinearRegression()
-            panel_linear_model.fit(panel_X, panel_y)
-            
-            # Quadratic panel model
-            poly_features_panel = PolynomialFeatures(degree=2, include_bias=True)
-            X_poly = poly_features_panel.fit_transform(panel_X)
-            
-            panel_quad_model = LinearRegression()
-            panel_quad_model.fit(X_poly, panel_y)
-        
-            # Helper function to extract scalars
-            def extract_scalar_panel(coeff):
-                if hasattr(coeff, 'shape'):
-                    if coeff.shape == ():
-                        return float(coeff)
-                    elif len(coeff.shape) == 1 and coeff.shape[0] == 1:
-                        return float(coeff[0])
-                    else:
-                        return float(coeff.flat[0])  # Take first element
-                elif hasattr(coeff, 'item'):
-                    return coeff.item()
-                else:
-                    return float(coeff)
-                    
+            # Linear panel model: y = β₀ + β₁·x
+            X_linear = np.column_stack([np.ones(len(panel_X)), panel_X])
+            linear_coeffs, linear_resid, _, _ = np.linalg.lstsq(X_linear, panel_y, rcond=None)
+            linear_beta1 = float(linear_coeffs[1])
+            linear_ss_res = np.sum((panel_y - X_linear @ linear_coeffs) ** 2)
+            linear_ss_tot = np.sum((panel_y - np.mean(panel_y)) ** 2)
+            linear_r2 = 1 - linear_ss_res / linear_ss_tot if linear_ss_tot > 0 else np.nan
+
+            # Quadratic panel model: y = β₀ + β₁·x + β₂·x²
+            X_poly = np.column_stack([np.ones(len(panel_X)), panel_X, panel_X ** 2])
+            quad_coeffs, quad_resid, _, _ = np.linalg.lstsq(X_poly, panel_y, rcond=None)
+            quad_beta1 = float(quad_coeffs[1])
+            quad_beta2 = float(quad_coeffs[2])
+            quad_ss_res = np.sum((panel_y - X_poly @ quad_coeffs) ** 2)
+            quad_ss_tot = np.sum((panel_y - np.mean(panel_y)) ** 2)
+            quad_r2 = 1 - quad_ss_res / quad_ss_tot if quad_ss_tot > 0 else np.nan
+
             panel = {
-                'linear_beta1': float(panel_linear_model.coef_[0]),
-                'linear_r2': panel_linear_model.score(panel_X, panel_y),
-                'quadratic_beta1': float(panel_quad_model.coef_[1]),  # α term (after intercept)
-                'quadratic_beta2': float(panel_quad_model.coef_[2]),  # α² term
-                'quadratic_r2': panel_quad_model.score(X_poly, panel_y),
+                'linear_beta1': linear_beta1,
+                'linear_r2': linear_r2,
+                'quadratic_beta1': quad_beta1,
+                'quadratic_beta2': quad_beta2,
+                'quadratic_r2': quad_r2,
                 'n_observations': len(panel_y)
             }
         
@@ -1211,10 +1200,6 @@ class ParametrizationComparator:
             control_hyperparams: Whether to include hyperparameter controls
             model_type: 'linear' or 'quadratic' - controls alpha polynomial terms
         """
-        from sklearn.linear_model import LinearRegression
-        from scipy import stats
-        import numpy as np
-
         # Dependent variable
         y = df['metric_value'].values
 
@@ -1257,30 +1242,33 @@ class ParametrizationComparator:
         X = np.column_stack([np.ones(len(X)), X])
         var_names = ['intercept'] + X_vars
 
-        # Run regression
-        model = LinearRegression(fit_intercept=False)  # We added intercept manually
-        model.fit(X, y)
+        # Run regression using numpy lstsq
+        coeffs, residuals, rank, s = np.linalg.lstsq(X, y, rcond=None)
+
+        # Calculate predictions and R²
+        y_pred = X @ coeffs
+        ss_res = np.sum((y - y_pred) ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+        r2 = 1 - ss_res / ss_tot if ss_tot > 0 else np.nan
 
         # Calculate standard errors and t-statistics
-        y_pred = model.predict(X)
-        residuals = y - y_pred
-        mse = np.sum(residuals**2) / (len(y) - len(var_names))
+        mse = ss_res / (len(y) - len(var_names))
         var_covar_matrix = mse * np.linalg.inv(X.T @ X)
         standard_errors = np.sqrt(np.diag(var_covar_matrix))
-        t_statistics = model.coef_ / standard_errors
+        t_statistics = coeffs / standard_errors
 
         # Find alpha coefficient indices
         alpha_idx = 1  # Alpha is always first after intercept
         alpha_sq_idx = 2 if model_type == 'quadratic' else None
 
         result = {
-            'coefficients': dict(zip(var_names, model.coef_)),
+            'coefficients': dict(zip(var_names, coeffs)),
             'standard_errors': dict(zip(var_names, standard_errors)),
             't_statistics': dict(zip(var_names, t_statistics)),
-            'alpha_coeff': model.coef_[alpha_idx],
+            'alpha_coeff': coeffs[alpha_idx],
             'alpha_se': standard_errors[alpha_idx],
             'alpha_tstat': t_statistics[alpha_idx],
-            'r2': model.score(X, y),
+            'r2': r2,
             'n_obs': len(y),
             'controls': control_hyperparams,
             'control_vars': X_vars[1:] if control_hyperparams else [],
@@ -1289,7 +1277,7 @@ class ParametrizationComparator:
 
         # Add quadratic coefficient if applicable
         if model_type == 'quadratic':
-            result['alpha_sq_coeff'] = model.coef_[alpha_sq_idx]
+            result['alpha_sq_coeff'] = coeffs[alpha_sq_idx]
             result['alpha_sq_se'] = standard_errors[alpha_sq_idx]
             result['alpha_sq_tstat'] = t_statistics[alpha_sq_idx]
 
