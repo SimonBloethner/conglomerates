@@ -28,44 +28,58 @@ class RobustnessScenarioGenerator:
             'lookback': [10, 50, 100],
         }
         
-        # Cost function specific parameter variations
-        self.cost_variations = {
-            'linear': {
-                'c0': [0.001, 0.005, 0.01],
-                'c1': [0.001, 0.005, 0.01],
-                'c2': [0.001]  # Not used but keep consistent
-            },
-            'quadratic': {
-                'c0': [0.001, 0.005, 0.01],
-                'c1': [0.001, 0.005, 0.01], 
-                'c2': [0.0001, 0.001, 0.005]
-            },
-            'exponential': {
-                'c0': [0.001, 0.005, 0.01],
-                'c1': [0.1, 0.2, 0.3],
-                'c2': [0.001]  # Not used but keep consistent
-            },
-            'power_law': {
-                'c0': [0.00001, 0.0001, 0.001],
-                'c1': [1.0, 1.2, 1.5],
-                'c2': [0.001]  # Not used but keep consistent
-            }
-        }
+        # Cost function parameter variations using MULTIPLICATIVE PERTURBATIONS
+        # of calibrated defaults (all converge to ~0.0017 at size=40)
+        # Level parameters: c0 (and c1 for linear/quadratic) × {0.5, 1, 2}
+        # Shape parameters: c1 (exp/power_law) or c2 (quadratic) × {0.8, 1, 1.25}
+        self.level_multipliers = [0.5, 1.0, 2.0]
+        self.shape_multipliers = [0.8, 1.0, 1.25]
+        
+        # Build variations dynamically from calibrated defaults
+        self.cost_variations = {}
+        for cost_type in ['linear', 'quadratic', 'exponential', 'power_law']:
+            defaults = get_cost_function_defaults(cost_type)
+            
+            if cost_type == 'linear':
+                # Level: c0, c1; no shape parameter
+                self.cost_variations[cost_type] = {
+                    'c0': [defaults['c0'] * m for m in self.level_multipliers],
+                    'c1': [defaults['c1'] * m for m in self.level_multipliers],
+                    'c2': [defaults['c2']]  # Not used
+                }
+            elif cost_type == 'quadratic':
+                # Level: c0, c1; Shape: c2
+                self.cost_variations[cost_type] = {
+                    'c0': [defaults['c0'] * m for m in self.level_multipliers],
+                    'c1': [defaults['c1'] * m for m in self.level_multipliers],
+                    'c2': [defaults['c2'] * m for m in self.shape_multipliers]
+                }
+            elif cost_type == 'exponential':
+                # Level: c0; Shape: c1
+                self.cost_variations[cost_type] = {
+                    'c0': [defaults['c0'] * m for m in self.level_multipliers],
+                    'c1': [defaults['c1'] * m for m in self.shape_multipliers],
+                    'c2': [defaults['c2']]  # Not used
+                }
+            elif cost_type == 'power_law':
+                # Level: c0; Shape: c1
+                self.cost_variations[cost_type] = {
+                    'c0': [defaults['c0'] * m for m in self.level_multipliers],
+                    'c1': [defaults['c1'] * m for m in self.shape_multipliers],
+                    'c2': [defaults['c2']]  # Not used
+                }
     
     def get_baseline_config(self, cost_type):
-        """Get baseline configuration for a specific cost function"""
-        # Get cost-specific defaults
+        """Get baseline configuration using CALIBRATED DEFAULTS"""
+        # Use calibrated defaults (converge to ~0.0017 at size=40)
         defaults = get_cost_function_defaults(cost_type)
-        
-        # Find middle values from variations for this cost type
-        cost_vars = self.cost_variations[cost_type]
         
         baseline = self.economic_baseline.copy()
         baseline.update({
             'cost_type': cost_type,
-            'c0': cost_vars['c0'][len(cost_vars['c0'])//2],  # Middle value
-            'c1': cost_vars['c1'][len(cost_vars['c1'])//2],  # Middle value
-            'c2': cost_vars['c2'][len(cost_vars['c2'])//2] if len(cost_vars['c2']) > 1 else cost_vars['c2'][0],
+            'c0': defaults['c0'],  # Calibrated default
+            'c1': defaults['c1'],  # Calibrated default
+            'c2': defaults['c2'],  # Calibrated default
         })
         
         return baseline
@@ -253,6 +267,45 @@ echo "Check logs in: robustness_slurm_logs/"
         print(f"Created master submission script: {output_file}")
         
         return output_file
+
+
+def generate_cost_table():
+    """Generate robustness_cost_table.md showing Phi(size) for all scenarios"""
+    from collaborative_growth import management_cost_function, get_cost_function_defaults
+    
+    sizes = [2, 5, 10, 20, 40]
+    generator = RobustnessScenarioGenerator()
+    scenarios = generator.generate_all_scenarios()
+    
+    lines = []
+    lines.append("# Robustness Cost Table")
+    lines.append("")
+    lines.append("Management cost Φ(size) for each scenario at sizes {2, 5, 10, 20, 40}.")
+    lines.append("Calibrated defaults converge to ~0.0017 at size=40.")
+    lines.append("")
+    
+    for cost_type in ['linear', 'quadratic', 'exponential', 'power_law']:
+        lines.append(f"## {cost_type.replace('_', ' ').title()}")
+        lines.append("")
+        lines.append("| Scenario | Φ(2) | Φ(5) | Φ(10) | Φ(20) | Φ(40) |")
+        lines.append("|----------|------|------|-------|-------|-------|")
+        
+        for scenario in scenarios[cost_type]:
+            name = scenario['scenario_name']
+            costs = []
+            for size in sizes:
+                cost = management_cost_function(size, cost_type, 
+                                               scenario['c0'], scenario['c1'], scenario['c2'])
+                costs.append(f"{cost:.6f}")
+            lines.append(f"| {name} | {' | '.join(costs)} |")
+        
+        lines.append("")
+    
+    with open("robustness_cost_table.md", "w") as f:
+        f.write("\n".join(lines))
+    
+    print("Generated robustness_cost_table.md")
+
 
 def main():
     """Generate all robustness scenarios and SLURM job array scripts"""
