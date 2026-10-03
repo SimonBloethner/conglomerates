@@ -13,6 +13,7 @@ import os
 from tqdm import tqdm
 import warnings
 import collaborative_growth
+from collaborative_growth import seed_numba
 from sklearn.cluster import DBSCAN
 import signal
 import time
@@ -87,8 +88,9 @@ class ParallelCounterfactualRunner:
         start_time = time.time()
         print(f"Starting: share={share:.2f}, exp={experiment_id}, seed={seed}", flush=True)
         
-        # Set random seed for reproducibility
+        # Set random seed for reproducibility (both NumPy and Numba RNGs)
         np.random.seed(seed)
+        seed_numba(seed)
         
         # Get cost function defaults if parameters not specified
         from collaborative_growth import get_cost_function_defaults

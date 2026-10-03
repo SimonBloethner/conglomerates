@@ -4,6 +4,12 @@ from scipy.special import logsumexp, expm1
 import numba as nb
 
 
+@nb.njit(cache=True)
+def seed_numba(s):
+    """Seed Numba's random number generator for reproducibility."""
+    np.random.seed(s)
+
+
 def logistic_cost(x, k, x_0):
     y = 1 / (1 + np.exp(-k * (x - x_0)))
     return y
@@ -580,7 +586,7 @@ def process_conglomerate_pooling_numba(
     return new_log_states, cong_pools, firms_to_exit
 
 
-def model(params):
+def model(params, seed=None):
     """
     Main simulation model.
 
@@ -592,6 +598,12 @@ def model(params):
     import time
 
     model_start_time = time.time()
+
+    # Seed both NumPy and Numba RNGs if seed is provided
+    if seed is not None:
+        np.random.seed(seed)
+        seed_numba(seed)
+
 
     min_mu = 0.01
     max_mu = 0.1
