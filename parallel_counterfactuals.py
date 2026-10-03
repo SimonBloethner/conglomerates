@@ -118,18 +118,15 @@ class ParallelCounterfactualRunner:
         # DEBUG: Print parameters being passed to model
         print(f"DEBUG PARAMS: share={share}, cost_type={self.cost_type}, c0={c0}, c1={c1}, c2={c2}")
         try:
-            # Run the model with growth process, sharing rule, correlation, and mobility params
+            # Run the model with growth process, sharing rule, and correlation params
             res = collaborative_growth.model(
                 params=params, seed=seed, market_corr=self.market_corr,
                 growth_process=self.growth_process,
                 mu_range=self.mu_range,
                 sigma_range=self.sigma_range,
                 sharing_rule=self.sharing_rule,
-                pool_history=self.pool_history,
-                pool_window=self.pool_window,
                 rho=self.rho,
-                cross_corr=self.cross_corr,
-                mobility_csv=self.mobility_csv
+                cross_corr=self.cross_corr
             )
             # Updated for new model output (11 elements: ranks removed to save memory)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
@@ -613,11 +610,6 @@ def main():
     parser.add_argument('--sharing_rule', type=str, default='equal',
                        choices=['equal', 'proportional'],
                        help='Sharing rule: equal (Phase A default), proportional (capital-weighted)')
-    parser.add_argument('--pool_history', type=str, default='rolling',
-                       choices=['full', 'rolling'],
-                       help='Pool history mode: full or rolling window')
-    parser.add_argument('--pool_window', type=int, default=None,
-                       help='Rolling window size (default: same as --lookback)')
     # §3 Correlation structure
     parser.add_argument('--rho', type=float, default=0.0,
                        help='Within-market correlation coefficient (default: 0.0)')
@@ -641,9 +633,6 @@ def main():
     # Robustness analysis scenario naming
     parser.add_argument('--scenario_name', type=str, default=None,
                        help='Name for robustness analysis scenario')
-    # §4 Campaign: Online mobility tracking
-    parser.add_argument('--mobility_csv', type=str, default=None,
-                       help='Path to write online mobility metrics (rank autocorrelation per step)')
 
     args = parser.parse_args()
     
@@ -683,8 +672,6 @@ def main():
 
     # Sharing rule parameters
     runner.sharing_rule = args.sharing_rule
-    runner.pool_history = args.pool_history
-    runner.pool_window = args.pool_window if args.pool_window is not None else args.lookback
 
     # Correlation structure parameters
     runner.rho = args.rho
@@ -702,9 +689,6 @@ def main():
     
     # Robustness scenario naming
     runner.scenario_name = args.scenario_name
-
-    # Online mobility tracking
-    runner.mobility_csv = args.mobility_csv
 
     # Create results directory (organized by scenario if provided)
     results_dir = 'counterfactual_results'

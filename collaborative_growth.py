@@ -660,8 +660,7 @@ def process_conglomerate_pooling_numba(
 
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
-          sharing_rule="equal", pool_history="rolling", pool_window=None,
-          rho=0.0, cross_corr=0.0, mobility_csv=None):
+          sharing_rule="equal", rho=0.0, cross_corr=0.0):
     """
     Main simulation model.
 
@@ -685,16 +684,10 @@ def model(params, seed=None, market_corr="identity",
         Sharing rule: 'equal' (Phase A default) or 'proportional'
         - equal: pool distributed equally per dollar (δ_i = (1-α)r_i + Ω/(K·w_i))
         - proportional: pool distributed proportionally to size (δ_i = (1-α)r_i + Ω)
-    pool_history : str
-        Pool history mode: 'rolling' (default) or 'full'
-    pool_window : int, optional
-        Rolling window size (default: same as lookback)
     rho : float
         Within-market correlation coefficient (default 0.0)
     cross_corr : float
         Cross-market correlation coefficient (default 0.0)
-    mobility_csv : str, optional
-        Path to write online mobility metrics (rank autocorrelation per step)
     """
     import time
 
@@ -704,12 +697,6 @@ def model(params, seed=None, market_corr="identity",
     if seed is not None:
         np.random.seed(seed)
         seed_numba(seed)
-
-    # Open mobility CSV file if requested
-    mobility_file = None
-    if mobility_csv is not None:
-        mobility_file = open(mobility_csv, 'w')
-        mobility_file.write('step,rank_autocorr\n')
 
     # Unpack mu and sigma ranges from parameters
     min_mu, max_mu = mu_range
@@ -769,10 +756,6 @@ def model(params, seed=None, market_corr="identity",
     # Sharing rule: convert string to int code for Numba
     # 0 = equal (distribute equally per dollar), 1 = proportional (distribute by size)
     sharing_rule_code = 0 if sharing_rule == "equal" else 1
-
-    # Pool window defaults to lookback if not specified
-    if pool_window is None:
-        pool_window = lookback
 
     # Correlation structure: rho is now a float directly
     rho_val = float(rho)
@@ -1026,17 +1009,6 @@ def model(params, seed=None, market_corr="identity",
         # Ranks (double argsort trick, vectorized)
         ranks[step, :, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
 
-        # Online mobility tracking: rank autocorrelation between consecutive steps
-        if mobility_file is not None and step > 0:
-            # Spearman rank correlation: ρ = 1 - (6 * Σd²) / (n * (n² - 1))
-            # where d is the difference in ranks between consecutive steps
-            prev_ranks = ranks[step - 1].ravel().astype(np.float64)
-            curr_ranks = ranks[step].ravel().astype(np.float64)
-            n = len(prev_ranks)
-            d_sq_sum = np.sum((curr_ranks - prev_ranks) ** 2)
-            rank_autocorr = 1.0 - (6.0 * d_sq_sum) / (n * (n * n - 1))
-            mobility_file.write(f'{step},{rank_autocorr:.6f}\n')
-
         # Quantiles of market share (computed per-market for this timestep)
         quantiles_shares[:, :, step] = np.quantile(market_share_current, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
 
@@ -1079,16 +1051,7 @@ def model(params, seed=None, market_corr="identity",
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
                        'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2,
                        'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
-                       'sharing_rule': sharing_rule, 'pool_history': pool_history, 'pool_window': pool_window,
-                       'rho': rho, 'cross_corr': cross_corr}
-
-    # Hyperparameters stored successfully
-
-    # MEMORY OPTIMIZATION: Removed market_share from results (no longer needed)
-    # Now includes: avg_shares (firm-level size/market-share data) and exits_per_period
-    # Close mobility CSV file if opened
-    if mobility_file is not None:
-        mobility_file.close()
+                       'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr}
 
     # Note: ranks array removed from output to save memory (computed internally for avg_ranks)
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
