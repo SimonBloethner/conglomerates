@@ -221,7 +221,8 @@ def merger_kernel_numba(
     cong_firms, cong_size, cong_active, cong_occupies_market,
     cong_pool, management_costs_lookup,
     firm_log_states_buffer, firm_log_returns_buffer,
-    total_firms, markets, firms_per_market
+    total_firms, markets, firms_per_market,
+    sharing_rule_code
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
@@ -378,8 +379,14 @@ def merger_kernel_numba(
                     # Omega_hat = share * sum_Delta - m * sum_s
                     Omega_hat = share * sum_Delta - m * sum_s
 
-                # Synthetic per-member profit: Pi_hat_i = (1-share) * Delta_i + Omega_hat / K_hat
-                Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
+                # Synthetic per-member profit depends on sharing rule
+                if sharing_rule_code == 0:
+                    # equal: each firm gets equal dollars from pool
+                    Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
+                else:
+                    # proportional: each firm gets share proportional to its size
+                    w_i = s_i_tau / sum_s if sum_s > 0 else 0.0
+                    Pi_hat_i = (1.0 - share) * Delta_i_tau + w_i * Omega_hat
 
                 # Check for invalid growth (would cause exit)
                 growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
@@ -921,7 +928,8 @@ def model(params, seed=None, market_corr="identity",
                 cong_firms, cong_size, cong_active, cong_occupies_market,
                 cong_pool, management_costs_lookup,
                 firm_log_states_buffer, firm_log_returns_buffer,
-                total_firms, markets, firms_per_market
+                total_firms, markets, firms_per_market,
+                sharing_rule_code
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
