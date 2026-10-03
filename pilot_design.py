@@ -3,7 +3,7 @@
 Pilot design generator (§7).
 
 Generates factorial design for Phase B experiments:
-- Treatment factors: growth_process, pooling_rule, rho, cross_corr
+- Treatment factors: growth_process, sharing_rule, rho, cross_corr
 - α values: [0.00, 0.02, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
 - Replications: configurable (default 5 per scenario)
 
@@ -31,7 +31,7 @@ import pandas as pd
 # Treatment factors and their levels
 FACTORS = {
     'growth_process': ['normal_net', 'lognormal'],
-    'pooling_rule': ['ewp', 'cap'],
+    'sharing_rule': ['equal', 'proportional'],
     'rho': ['uncorr', 'pos', 'neg'],
     'cross_corr': ['none', 'block', 'ar1'],
 }
@@ -199,7 +199,7 @@ cd /groups/m-larch/bt307958/conglomerates_dev
 python parallel_counterfactuals.py \\
     --scenario_name {scenario['scenario_name']} \\
     --growth_process {scenario['growth_process']} \\
-    --pooling_rule {scenario['pooling_rule']} \\
+    --sharing_rule {scenario['sharing_rule']} \\
     --rho {scenario['rho']} \\
     --cross_corr {scenario['cross_corr']} \\
     --counterfactuals {n_reps} \\

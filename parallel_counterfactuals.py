@@ -124,7 +124,7 @@ class ParallelCounterfactualRunner:
                 growth_process=self.growth_process,
                 mu_range=self.mu_range,
                 sigma_range=self.sigma_range,
-                pooling_rule=self.pooling_rule,
+                sharing_rule=self.sharing_rule,
                 pool_history=self.pool_history,
                 pool_window=self.pool_window,
                 rho=self.rho,
@@ -648,9 +648,9 @@ def main():
                        metavar=('LO', 'HI'),
                        help='Volatility bounds (default: 0.01 0.05)')
     # §2 Sharing rule
-    parser.add_argument('--pooling_rule', type=str, default='ewp',
-                       choices=['ewp', 'cap'],
-                       help='Pooling rule: ewp=equal-weight (Phase A), cap=capitalization-weighted')
+    parser.add_argument('--sharing_rule', type=str, default='equal',
+                       choices=['equal', 'proportional'],
+                       help='Sharing rule: equal (Phase A default), proportional (capital-weighted)')
     parser.add_argument('--pool_history', type=str, default='rolling',
                        choices=['full', 'rolling'],
                        help='Pool history mode: full or rolling window')
@@ -722,7 +722,7 @@ def main():
     runner.sigma_range = tuple(args.sigma_range)
 
     # Sharing rule parameters
-    runner.pooling_rule = args.pooling_rule
+    runner.sharing_rule = args.sharing_rule
     runner.pool_history = args.pool_history
     runner.pool_window = args.pool_window if args.pool_window is not None else args.lookback
 

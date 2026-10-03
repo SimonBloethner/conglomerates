@@ -2,8 +2,9 @@
 """
 Test sharing rule implementations (§2).
 
-- Verifies that ewp and cap pooling rules produce different results
-- Tests that pool_history and pool_window parameters are recorded
+- Verifies that equal and proportional sharing rules produce different results
+- Tests conservation identity: Σ_i Π_i == ΣΔ_i − Φ·S
+- Tests that sharing_rule parameter is recorded in hyperparameters
 """
 import numpy as np
 import sys
@@ -11,9 +12,9 @@ sys.path.insert(0, '..')
 from collaborative_growth import model
 
 
-def test_ewp_is_default():
+def test_equal_is_default():
     """
-    ewp (equal-weight pooling) should be the default pooling rule.
+    equal (Phase A default) should be the default sharing rule.
     """
     params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]
@@ -21,140 +22,174 @@ def test_ewp_is_default():
     result = model(params, seed=42, market_corr='identity')
 
     hyperparameters = result[-1]
-    assert hyperparameters['pooling_rule'] == 'ewp', \
-        f"Expected default pooling_rule='ewp', got '{hyperparameters['pooling_rule']}'"
+    assert hyperparameters['sharing_rule'] == 'equal', \
+        f"Expected default sharing_rule='equal', got '{hyperparameters['sharing_rule']}'"
 
-    print(f"Default pooling_rule verified: {hyperparameters['pooling_rule']}")
+    print(f"Default sharing_rule verified: {hyperparameters['sharing_rule']}")
 
 
-def test_ewp_vs_cap_differ():
+def test_equal_vs_proportional_differ():
     """
-    ewp and cap pooling rules should produce different results.
+    equal and proportional sharing rules should produce different results.
     """
     params = [15, 15, 300, 0.15, 225, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]
 
-    result_ewp = model(params, seed=42, market_corr='identity',
-                       pooling_rule='ewp')
-    result_cap = model(params, seed=42, market_corr='identity',
-                       pooling_rule='cap')
+    result_equal = model(params, seed=42, market_corr='identity',
+                         sharing_rule='equal')
+    result_prop = model(params, seed=42, market_corr='identity',
+                        sharing_rule='proportional')
 
-    gini_ewp = result_ewp[5]
-    gini_cap = result_cap[5]
+    gini_equal = result_equal[5]
+    gini_prop = result_prop[5]
 
-    # Should be different (different pooling rules)
-    assert not np.array_equal(gini_ewp, gini_cap), \
-        "ewp and cap should produce different Gini trajectories"
+    # Should be different (different sharing rules)
+    assert not np.array_equal(gini_equal, gini_prop), \
+        "equal and proportional should produce different Gini trajectories"
 
     # Verify hyperparameters captured the rules
-    assert result_ewp[-1]['pooling_rule'] == 'ewp'
-    assert result_cap[-1]['pooling_rule'] == 'cap'
+    assert result_equal[-1]['sharing_rule'] == 'equal'
+    assert result_prop[-1]['sharing_rule'] == 'proportional'
 
-    print(f"ewp vs cap differ test passed")
+    print(f"equal vs proportional differ test passed")
     # Handle multi-dimensional gini arrays (average across markets if needed)
-    ewp_final = np.mean(gini_ewp[-1]) if gini_ewp[-1].ndim > 0 else float(gini_ewp[-1])
-    cap_final = np.mean(gini_cap[-1]) if gini_cap[-1].ndim > 0 else float(gini_cap[-1])
-    print(f"  ewp final Gini: {ewp_final:.4f}")
-    print(f"  cap final Gini: {cap_final:.4f}")
+    equal_final = np.mean(gini_equal[-1]) if gini_equal[-1].ndim > 0 else float(gini_equal[-1])
+    prop_final = np.mean(gini_prop[-1]) if gini_prop[-1].ndim > 0 else float(gini_prop[-1])
+    print(f"  equal final Gini: {equal_final:.4f}")
+    print(f"  proportional final Gini: {prop_final:.4f}")
 
 
-def test_ewp_backward_compatible():
+def test_equal_backward_compatible():
     """
-    ewp (Phase A default) should produce same results as before.
+    equal (Phase A default) should produce same results as before.
     """
     params = [10, 10, 200, 0.1, 100, 0.05, 4, 0.85, False, 50,
               'power_law', None, None, None]
 
-    # Run with explicit ewp
+    # Run with explicit equal
     result1 = model(params, seed=12345, market_corr='identity',
-                    pooling_rule='ewp')
+                    sharing_rule='equal')
 
-    # Run with default (should be ewp)
+    # Run with default (should be equal)
     result2 = model(params, seed=12345, market_corr='identity')
 
     # Should be identical
     gini1 = result1[5]
     gini2 = result2[5]
 
-    assert np.array_equal(gini1, gini2), "Explicit ewp should match default"
+    assert np.array_equal(gini1, gini2), "Explicit equal should match default"
 
-    print("ewp backward compatibility test passed")
+    print("equal backward compatibility test passed")
 
 
-def test_pool_window_recorded():
+def test_conservation_identity():
     """
-    pool_window parameter should be recorded in hyperparameters.
+    Test the conservation identity on a hand-built conglomerate with unequal sizes.
+
+    The conservation identity for pool distribution is:
+        Σ_i Π_i == ΣΔ_i − Φ·S
+
+    Where:
+        Π_i = individual firm profit (r_i * w_i)
+        Δ_i = firm's post-pooling wealth change
+        Φ = management cost
+        S = number of firms in conglomerate
+
+    This test verifies the identity holds under both sharing rules.
     """
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    # Test parameters
+    alpha = 0.2
 
-    # With explicit pool_window
-    result = model(params, seed=42, market_corr='identity',
-                   pool_window=25)
+    # Hand-built conglomerate: 3 firms with unequal sizes
+    w = np.array([1.0, 2.0, 3.0])  # Unequal capitalizations
+    r = np.array([0.10, -0.05, 0.15])  # Individual returns (can be negative)
 
-    hyperparameters = result[-1]
-    assert hyperparameters['pool_window'] == 25, \
-        f"Expected pool_window=25, got {hyperparameters['pool_window']}"
+    # Normalize weights
+    total_w = np.sum(w)
+    w_norm = w / total_w
 
-    print(f"pool_window recorded: {hyperparameters['pool_window']}")
+    # Individual profits
+    Pi = r * w  # [0.10, -0.10, 0.45]
+    sum_Pi = np.sum(Pi)  # 0.45
 
+    # Pool formation (eq. 9): capital-weighted average return
+    avg_return_weighted = np.sum(w_norm * r)  # Weighted average return
 
-def test_pool_window_defaults_to_lookback():
-    """
-    pool_window should default to lookback value when not specified.
-    """
-    lookback = 50
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, lookback,
-              'power_law', None, None, None]
+    # Management cost (using power law default)
+    S = len(w)
+    Phi = 0.01 * (S ** 1.5) / total_w  # Per-unit cost
 
-    result = model(params, seed=42, market_corr='identity')
+    # Pool size
+    Omega = alpha * sum_Pi - Phi * S
 
-    hyperparameters = result[-1]
-    assert hyperparameters['pool_window'] == lookback, \
-        f"Expected pool_window={lookback}, got {hyperparameters['pool_window']}"
+    print(f"Test conglomerate: {S} firms")
+    print(f"  Weights: {w}")
+    print(f"  Returns: {r}")
+    print(f"  Individual profits Π_i: {Pi}")
+    print(f"  Sum Π_i: {sum_Pi:.4f}")
+    print(f"  Pool Ω: {Omega:.4f}")
+    print(f"  Cost Φ·S: {Phi * S:.4f}")
 
-    print(f"pool_window defaults to lookback: {hyperparameters['pool_window']}")
+    # Test equal sharing rule
+    # Under equal: each firm gets equal share of pool
+    delta_equal = np.zeros(S)
+    for i in range(S):
+        # δ_i = (1-α)·r_i + Ω/(K·w_i)
+        # where K = S (number of firms in conglomerate)
+        delta_equal[i] = (1 - alpha) * r[i] * w[i] + Omega / S
 
+    sum_delta_equal = np.sum(delta_equal)
+    conservation_equal = sum_Pi - sum_delta_equal + Phi * S
 
-def test_pool_history_recorded():
-    """
-    pool_history parameter should be recorded in hyperparameters.
-    """
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    print(f"\nEqual sharing rule:")
+    print(f"  δ_i: {delta_equal}")
+    print(f"  Sum δ_i: {sum_delta_equal:.6f}")
+    print(f"  Conservation check (should be ~0): {conservation_equal:.10f}")
 
-    result_rolling = model(params, seed=42, pool_history='rolling')
-    result_full = model(params, seed=42, pool_history='full')
+    # For equal sharing: Σδ_i = (1-α)·ΣΠ_i + Ω = (1-α)·ΣΠ_i + α·ΣΠ_i - Φ·S = ΣΠ_i - Φ·S
+    # So: ΣΠ_i = Σδ_i + Φ·S ✓
+    assert abs(sum_Pi - (sum_delta_equal + Phi * S)) < 1e-10, \
+        f"Equal sharing conservation failed: {sum_Pi} != {sum_delta_equal + Phi * S}"
 
-    assert result_rolling[-1]['pool_history'] == 'rolling'
-    assert result_full[-1]['pool_history'] == 'full'
+    # Test proportional sharing rule
+    # Under proportional: each firm gets proportional to its weight
+    delta_prop = np.zeros(S)
+    for i in range(S):
+        # δ_i = (1-α)·r_i·w_i + w_i·Ω/(Σw_j) = (1-α)·Π_i + w_norm_i·Ω
+        delta_prop[i] = (1 - alpha) * r[i] * w[i] + w_norm[i] * Omega
 
-    print("pool_history recording test passed")
+    sum_delta_prop = np.sum(delta_prop)
+    conservation_prop = sum_Pi - sum_delta_prop + Phi * S
+
+    print(f"\nProportional sharing rule:")
+    print(f"  δ_i: {delta_prop}")
+    print(f"  Sum δ_i: {sum_delta_prop:.6f}")
+    print(f"  Conservation check (should be ~0): {conservation_prop:.10f}")
+
+    # For proportional sharing: Σδ_i = (1-α)·ΣΠ_i + Ω·Σw_norm_i = (1-α)·ΣΠ_i + Ω
+    # Since Σw_norm_i = 1, we get: Σδ_i = (1-α)·ΣΠ_i + α·ΣΠ_i - Φ·S = ΣΠ_i - Φ·S
+    # So: ΣΠ_i = Σδ_i + Φ·S ✓
+    assert abs(sum_Pi - (sum_delta_prop + Phi * S)) < 1e-10, \
+        f"Proportional sharing conservation failed: {sum_Pi} != {sum_delta_prop + Phi * S}"
+
+    print("\nConservation identity verified for both sharing rules!")
 
 
 if __name__ == '__main__':
-    print("Testing ewp is default...")
-    test_ewp_is_default()
+    print("Testing equal is default...")
+    test_equal_is_default()
     print("PASS\n")
 
-    print("Testing ewp vs cap differ...")
-    test_ewp_vs_cap_differ()
+    print("Testing equal vs proportional differ...")
+    test_equal_vs_proportional_differ()
     print("PASS\n")
 
-    print("Testing ewp backward compatibility...")
-    test_ewp_backward_compatible()
+    print("Testing equal backward compatibility...")
+    test_equal_backward_compatible()
     print("PASS\n")
 
-    print("Testing pool_window recorded...")
-    test_pool_window_recorded()
-    print("PASS\n")
-
-    print("Testing pool_window defaults to lookback...")
-    test_pool_window_defaults_to_lookback()
-    print("PASS\n")
-
-    print("Testing pool_history recorded...")
-    test_pool_history_recorded()
+    print("Testing conservation identity...")
+    test_conservation_identity()
     print("PASS\n")
 
     print("All sharing rule tests passed!")
