@@ -18,6 +18,7 @@ from sklearn.cluster import DBSCAN
 import signal
 import time
 import subprocess
+import zlib
 
 def log_memory_usage(label):
     """Log current memory usage using ps command"""
@@ -56,9 +57,16 @@ class ParallelCounterfactualRunner:
         self.ramp = 10
         self.proportional = False
         self.market_corr = 'identity'  # 'identity' (paper baseline) or 'random'
-        
-        # Share values to test
-        self.shares = np.arange(0, 0.52, 0.02)
+
+        # Growth process parameters (Phase B §1)
+        self.growth_process = 'normal_net'  # 'normal_net' (Phase A) or 'lognormal'
+        self.mu_range = (0.01, 0.1)  # Mean growth rate bounds
+        self.sigma_range = (0.01, 0.05)  # Volatility bounds
+
+        # Share values to test (α grid)
+        # Phase B: Refined grid with denser spacing near zero
+        # [0.00, 0.02, 0.05] + [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+        self.shares = np.array([0.00, 0.02, 0.05] + list(np.arange(0.10, 0.52, 0.05)))
         
         # Cost function parameters
         self.cost_type = 'power_law'  # Default cost function type
@@ -110,11 +118,23 @@ class ParallelCounterfactualRunner:
         # DEBUG: Print parameters being passed to model
         print(f"DEBUG PARAMS: share={share}, cost_type={self.cost_type}, c0={c0}, c1={c1}, c2={c2}")
         try:
-            # Run the model
-            res = collaborative_growth.model(params=params, seed=seed, market_corr=self.market_corr)
-            # Updated for new model output (11 elements: added exits_per_period, keeping avg_shares)
+            # Run the model with growth process, sharing rule, correlation, and mobility params
+            res = collaborative_growth.model(
+                params=params, seed=seed, market_corr=self.market_corr,
+                growth_process=self.growth_process,
+                mu_range=self.mu_range,
+                sigma_range=self.sigma_range,
+                pooling_rule=self.pooling_rule,
+                pool_history=self.pool_history,
+                pool_window=self.pool_window,
+                rho=self.rho,
+                cross_corr=self.cross_corr,
+                mobility_csv=self.mobility_csv
+            )
+            # Updated for new model output (12 elements: includes proposals_per_period)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
-            gini_coefficient, ranks, avg_ranks, mergers_per_period, exits_per_period, hyperparameters = res
+            gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period, \
+            exits_per_period, hyperparameters = res
 
             # Extract only essential data for aggregation (much smaller memory footprint)
             results = {
@@ -414,10 +434,11 @@ class ParallelCounterfactualRunner:
         # Generate seeds for reproducibility - COMMON RANDOM NUMBERS across alpha
         # Seed depends only on (scenario_name, exp_id), NOT on share_value
         # This enables paired comparisons: same exp_id sees same shocks at all alpha
+        # Use zlib.crc32 for deterministic hashing (Python's hash() is salted per-process)
         scenario_name = getattr(self, 'scenario_name', None) or 'default'
         experiment_params = []
         for exp_id in experiments:
-            seed = hash((scenario_name, exp_id)) % (2**32)
+            seed = zlib.crc32(f"{scenario_name}:{exp_id}".encode()) & 0xFFFFFFFF
             experiment_params.append((share_value, exp_id, seed))
         
         # Run experiments in parallel with disk-based results
@@ -509,9 +530,13 @@ class ParallelCounterfactualRunner:
             'n_experiments': n_experiments,
             'hyperparameters': hyperparameters,
 
+            # Preserve individual results for paired analysis (§5)
+            'individual_results': results,
+
             # Time series averages
             'mean_members_avg': np.mean([r['mean_members'] for r in results], axis=0),
             'num_cong_avg': np.mean([r['num_cong'] for r in results], axis=0),
+            'gini_avg': np.mean([r['gini_coefficient'] for r in results], axis=0),
 
             # Quantile averages
             'market_share_quantiles_avg': np.mean([r['market_share_quantiles'] for r in results], axis=0),
@@ -612,6 +637,32 @@ def main():
     parser.add_argument('--market_corr', type=str, default='identity',
                        choices=['identity', 'random'],
                        help='Market correlation type (default: identity = uncorrelated)')
+    # Growth process parameters (Phase B §1)
+    parser.add_argument('--growth_process', type=str, default='normal_net',
+                       choices=['normal_net', 'lognormal'],
+                       help='Growth process type (default: normal_net = Phase A)')
+    parser.add_argument('--mu_range', type=float, nargs=2, default=[0.01, 0.1],
+                       metavar=('LO', 'HI'),
+                       help='Mean growth rate bounds (default: 0.01 0.1)')
+    parser.add_argument('--sigma_range', type=float, nargs=2, default=[0.01, 0.05],
+                       metavar=('LO', 'HI'),
+                       help='Volatility bounds (default: 0.01 0.05)')
+    # §2 Sharing rule
+    parser.add_argument('--pooling_rule', type=str, default='ewp',
+                       choices=['ewp', 'cap'],
+                       help='Pooling rule: ewp=equal-weight (Phase A), cap=capitalization-weighted')
+    parser.add_argument('--pool_history', type=str, default='rolling',
+                       choices=['full', 'rolling'],
+                       help='Pool history mode: full or rolling window')
+    parser.add_argument('--pool_window', type=int, default=None,
+                       help='Rolling window size (default: same as --lookback)')
+    # §3 Correlation structure
+    parser.add_argument('--rho', type=str, default='uncorr',
+                       choices=['uncorr', 'pos', 'neg'],
+                       help='Within-market correlation: uncorr (ρ=0), pos (ρ=0.3), neg (ρ=-0.3)')
+    parser.add_argument('--cross_corr', type=str, default='none',
+                       choices=['block', 'ar1', 'none'],
+                       help='Cross-market correlation: block (industry), ar1 (distance decay), none')
     parser.add_argument('--cost_type', type=str, default='power_law',
                        choices=['linear', 'quadratic', 'exponential', 'power_law'],
                        help='Management cost function type (default: power_law)')
@@ -630,7 +681,10 @@ def main():
     # Robustness analysis scenario naming
     parser.add_argument('--scenario_name', type=str, default=None,
                        help='Name for robustness analysis scenario')
-    
+    # §4 Campaign: Online mobility tracking
+    parser.add_argument('--mobility_csv', type=str, default=None,
+                       help='Path to write online mobility metrics (rank autocorrelation per step)')
+
     args = parser.parse_args()
     
     # DEBUG: Print actual parsed arguments
@@ -661,7 +715,21 @@ def main():
     runner.lookback = args.lookback
     runner.proportional = args.proportional
     runner.market_corr = args.market_corr
-    
+
+    # Growth process parameters (Phase B §1)
+    runner.growth_process = args.growth_process
+    runner.mu_range = tuple(args.mu_range)
+    runner.sigma_range = tuple(args.sigma_range)
+
+    # Sharing rule parameters
+    runner.pooling_rule = args.pooling_rule
+    runner.pool_history = args.pool_history
+    runner.pool_window = args.pool_window if args.pool_window is not None else args.lookback
+
+    # Correlation structure parameters
+    runner.rho = args.rho
+    runner.cross_corr = args.cross_corr
+
     # Cost function parameters
     runner.cost_type = args.cost_type
     runner.c0 = args.c0
@@ -674,7 +742,10 @@ def main():
     
     # Robustness scenario naming
     runner.scenario_name = args.scenario_name
-    
+
+    # Online mobility tracking
+    runner.mobility_csv = args.mobility_csv
+
     # Create results directory (organized by scenario if provided)
     results_dir = 'counterfactual_results'
     if args.scenario_name:

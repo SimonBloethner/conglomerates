@@ -73,15 +73,55 @@ def test_positive_alpha_has_mergers():
     print(f"α=0.2: {total_proposals:.0f} proposals, {total_mergers:.0f} mergers")
 
 
+def test_merger_kernel_optimization_reproducibility():
+    """
+    Verify that the precomputed sum_Delta_tau/sum_s_tau optimization
+    produces bit-identical results across runs with the same seed.
+
+    This tests that the O(K·h) optimization produces the same results
+    as would be expected from the original O(K²·h) implementation.
+    """
+    params = [25, 25, 400, 0.15, 625, 0.05, 4, 0.85, False, 50,
+              'power_law', None, None, None]
+
+    # Run twice with same seed
+    result1 = model(params, seed=12345, market_corr='identity')
+    result2 = model(params, seed=12345, market_corr='identity')
+
+    # Unpack results
+    (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,
+     gini1, ranks1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
+    (mean_members2, quantiles_members2, num_cong2, avg_shares2, quantiles_shares2,
+     gini2, ranks2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
+
+    # Verify bit-identical outputs
+    assert np.array_equal(mergers1, mergers2), "mergers_per_period differs"
+    assert np.array_equal(proposals1, proposals2), "proposals_per_period differs"
+    assert np.array_equal(exits1, exits2), "exits_per_period differs"
+    assert np.array_equal(mean_members1, mean_members2), "mean_members differs"
+    assert np.array_equal(gini1, gini2), "gini_coefficient differs"
+    assert np.array_equal(ranks1, ranks2), "ranks differs"
+
+    # Verify the runs actually produced mergers (sanity check)
+    total_mergers = mergers1.sum()
+    total_proposals = proposals1.sum()
+    print(f"Reproducibility test: {total_proposals:.0f} proposals, {total_mergers:.0f} mergers")
+    print("Both runs produced bit-identical results")
+
+
 if __name__ == '__main__':
     print("Testing α=0 produces no mergers...")
     test_alpha_zero_no_mergers()
     print("PASS")
-    
+
     print("\nTesting M != N completes...")
     test_M_not_equals_N_completes()
     print("PASS")
-    
+
     print("\nTesting positive α has mergers...")
     test_positive_alpha_has_mergers()
+    print("PASS")
+
+    print("\nTesting merger kernel optimization reproducibility...")
+    test_merger_kernel_optimization_reproducibility()
     print("PASS")

@@ -335,15 +335,30 @@ def merger_kernel_numba(
         step_states = get_historical_states_numba(firm_log_states_buffer, step, step + 1, merged_firms)
         
         accept = True
-        
+
+        # OPTIMIZATION: Precompute sum_Delta and sum_s for each tau ONCE before firm loop
+        # This reduces complexity from O(K²·h) to O(K·h)
+        sum_Delta_tau = np.empty(h, dtype=np.float64)
+        sum_s_tau = np.empty(h, dtype=np.float64)
+        for tau in range(h):
+            sum_Delta = 0.0
+            sum_s = 0.0
+            for k in range(K_hat):
+                s_k_tau = np.exp(past_states[tau, k])
+                r_k_tau = np.expm1(past_returns[tau, k])
+                sum_Delta += s_k_tau * r_k_tau
+                sum_s += s_k_tau
+            sum_Delta_tau[tau] = sum_Delta
+            sum_s_tau[tau] = sum_s
+
         # For each firm in the merged set, compute synthetic vs realized growth
         for j in range(K_hat):
             firm_id = merged_firms[j]
-            
+
             # Compute synthetic log growth g_hat_i
             g_hat = 0.0
             has_invalid = False
-            
+
             for tau in range(h):
                 # s_i_tau = exp(log_state)
                 s_i_tau = np.exp(past_states[tau, j])
@@ -351,33 +366,27 @@ def merger_kernel_numba(
                 r_i_tau = np.expm1(past_returns[tau, j])
                 # Delta_i_tau = s_i_tau * r_i_tau
                 Delta_i_tau = s_i_tau * r_i_tau
-                
-                # Compute synthetic pool Omega_hat_tau
-                # Need sums over all firms in merged set for this tau
-                sum_Delta = 0.0
-                sum_s = 0.0
-                for k in range(K_hat):
-                    s_k_tau = np.exp(past_states[tau, k])
-                    r_k_tau = np.expm1(past_returns[tau, k])
-                    sum_Delta += s_k_tau * r_k_tau
-                    sum_s += s_k_tau
-                
+
+                # Use precomputed sums for synthetic pool Omega_hat_tau
+                sum_Delta = sum_Delta_tau[tau]
+                sum_s = sum_s_tau[tau]
+
                 if proportional:
                     # Omega_hat = share * sum_Delta * (1 - m / sum_s)
                     Omega_hat = share * sum_Delta * (1.0 - m / sum_s) if sum_s > 0 else 0.0
                 else:
                     # Omega_hat = share * sum_Delta - m * sum_s
                     Omega_hat = share * sum_Delta - m * sum_s
-                
+
                 # Synthetic per-member profit: Pi_hat_i = (1-share) * Delta_i + Omega_hat / K_hat
                 Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
-                
+
                 # Check for invalid growth (would cause exit)
                 growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
                 if growth_ratio <= -1.0:
                     has_invalid = True
                     break
-                
+
                 g_hat += np.log1p(growth_ratio)
             
             if has_invalid:
@@ -530,10 +539,17 @@ def process_conglomerate_pooling_numba(
     share,
     proportional,
     lookback,
-    step
+    step,
+    pooling_rule_code
 ):
     """
     Numba-compiled pooling function for all active conglomerates.
+
+    Parameters:
+    -----------
+    pooling_rule_code : int
+        0 = ewp (equal-weight pooling): equal contributions and distributions
+        1 = cap (capitalization-weighted): size-weighted contributions and distributions
 
     Returns:
     --------
@@ -577,16 +593,24 @@ def process_conglomerate_pooling_numba(
             sum_exp += np.exp(log_st[i] - max_log_st)
         log_S = max_log_st + np.log(sum_exp)
 
-        # Step 2: Compute normalized weights
+        # Step 2: Compute normalized weights (for cap-weighted)
         w = np.exp(log_st - log_S)
 
         # Step 3: Compute r_minus1 = exp(log_returns) - 1
         r_m1 = np.expm1(log_ret)
 
-        # Step 4: Weighted average gain (CORRECTED - no extra division)
-        avg_gain_weighted = 0.0
-        for i in range(n_firms):
-            avg_gain_weighted += w[i] * r_m1[i]
+        # Step 4: Average gain (depends on pooling rule)
+        if pooling_rule_code == 0:
+            # ewp: equal-weight pooling - simple average
+            avg_gain = 0.0
+            for i in range(n_firms):
+                avg_gain += r_m1[i]
+            avg_gain /= n_firms
+        else:
+            # cap: capitalization-weighted - size-weighted average
+            avg_gain = 0.0
+            for i in range(n_firms):
+                avg_gain += w[i] * r_m1[i]
 
         # Step 5: Management cost
         m = management_costs_lookup[n_firms]
@@ -595,19 +619,25 @@ def process_conglomerate_pooling_numba(
         if proportional:
             mgmt_over_S = m * np.exp(-log_S)
             cost_factor = 1.0 - mgmt_over_S
-            pool_over_S = share * avg_gain_weighted * cost_factor
+            pool_over_S = share * avg_gain * cost_factor
         else:
-            pool_over_S = share * avg_gain_weighted - m
+            pool_over_S = share * avg_gain - m
 
         # Store pool value
         cong_pools[idx] = pool_over_S
 
-        # Step 7: Compute delta_over_state for each firm
+        # Step 7: Compute delta for each firm (depends on pooling rule)
         K = n_firms
         for i in range(n_firms):
             firm = conglomerate[i]
-            w_safe = max(w[i], 1e-300)
-            delta = (1.0 - share) * r_m1[i] + pool_over_S / (K * w_safe)
+
+            if pooling_rule_code == 0:
+                # ewp: equal distribution - each firm gets equal dollars
+                w_safe = max(w[i], 1e-300)
+                delta = (1.0 - share) * r_m1[i] + pool_over_S / (K * w_safe)
+            else:
+                # cap: cap-weighted distribution - each firm gets same return
+                delta = (1.0 - share) * r_m1[i] + pool_over_S
 
             # Check for exit condition
             if not np.isfinite(delta) or delta <= -1.0:
@@ -624,7 +654,10 @@ def process_conglomerate_pooling_numba(
     return new_log_states, cong_pools, firms_to_exit
 
 
-def model(params, seed=None, market_corr="identity"):
+def model(params, seed=None, market_corr="identity",
+          growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
+          pooling_rule="ewp", pool_history="rolling", pool_window=None,
+          rho="uncorr", cross_corr="none", mobility_csv=None):
     """
     Main simulation model.
 
@@ -632,6 +665,30 @@ def model(params, seed=None, market_corr="identity"):
     -----------
     params : list
         Model parameters (10-14 elements depending on version)
+    seed : int, optional
+        Random seed for reproducibility
+    market_corr : str
+        Market correlation type: 'identity' (default) or 'random'
+    growth_process : str
+        Growth process type: 'normal_net' (Phase A default) or 'lognormal'
+        - normal_net: r ~ N(μ, σ²), then log(1+r) is stored
+        - lognormal: log δ = (μ - σ²/2) + σ·ε, so E[δ] = exp(μ)
+    mu_range : tuple
+        (min_mu, max_mu) bounds for mean growth rate
+    sigma_range : tuple
+        (min_sigma, max_sigma) bounds for volatility
+    pooling_rule : str
+        Pooling rule: 'ewp' (equal-weight, Phase A default) or 'cap' (capitalization-weighted)
+    pool_history : str
+        Pool history mode: 'rolling' (default) or 'full'
+    pool_window : int, optional
+        Rolling window size (default: same as lookback)
+    rho : str
+        Within-market correlation: 'uncorr' (ρ=0), 'pos' (ρ=0.3), 'neg' (ρ=-0.3)
+    cross_corr : str
+        Cross-market correlation: 'block' (industry groups), 'ar1' (distance decay), 'none'
+    mobility_csv : str, optional
+        Path to write online mobility metrics (rank autocorrelation per step)
     """
     import time
 
@@ -642,11 +699,15 @@ def model(params, seed=None, market_corr="identity"):
         np.random.seed(seed)
         seed_numba(seed)
 
+    # Open mobility CSV file if requested
+    mobility_file = None
+    if mobility_csv is not None:
+        mobility_file = open(mobility_csv, 'w')
+        mobility_file.write('step,rank_autocorr\n')
 
-    min_mu = 0.01
-    max_mu = 0.1
-    min_sig = 0.01
-    max_sig = 0.05
+    # Unpack mu and sigma ranges from parameters
+    min_mu, max_mu = mu_range
+    min_sig, max_sig = sigma_range
 
     min_bound = np.array([min_mu, min_sig])
     max_bound = np.array([max_mu, max_sig])
@@ -698,7 +759,43 @@ def model(params, seed=None, market_corr="identity"):
         market_corr_matrix = random_correlation.rvs(tuple(eigen_vals), random_state=rng)
     else:
         raise ValueError(f"Unknown market_corr type: {market_corr}. Use 'identity' or 'random'.")
-    
+
+    # Pooling rule: convert string to int code for Numba
+    # 0 = ewp (equal-weight pooling), 1 = cap (capitalization-weighted)
+    pooling_rule_code = 0 if pooling_rule == "ewp" else 1
+
+    # Pool window defaults to lookback if not specified
+    if pool_window is None:
+        pool_window = lookback
+
+    # Correlation structure: convert rho to numeric value
+    rho_values = {'uncorr': 0.0, 'pos': 0.3, 'neg': -0.3}
+    rho_val = rho_values.get(rho, 0.0)
+
+    # Cross-market correlation: modify market_corr_matrix
+    if cross_corr == "block":
+        # Industry block structure: divide markets into 4 groups with high within-group correlation
+        n_blocks = min(4, markets)
+        block_size = markets // n_blocks
+        block_corr_matrix = np.eye(markets)
+        for b in range(n_blocks):
+            start = b * block_size
+            end = start + block_size if b < n_blocks - 1 else markets
+            for i in range(start, end):
+                for j in range(start, end):
+                    if i != j:
+                        block_corr_matrix[i, j] = 0.5  # Within-block correlation
+        market_corr_matrix = block_corr_matrix
+    elif cross_corr == "ar1":
+        # AR(1) decay: correlation decays with "distance" between markets
+        ar1_matrix = np.zeros((markets, markets))
+        decay = 0.7  # AR(1) coefficient
+        for i in range(markets):
+            for j in range(markets):
+                ar1_matrix[i, j] = decay ** abs(i - j)
+        market_corr_matrix = ar1_matrix
+    # else: cross_corr == "none", keep existing market_corr_matrix (identity or random)
+
     market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr_matrix
 
     # PERFORMANCE OPTIMIZATION: Precompute Cholesky decomposition for random number generation
@@ -788,9 +885,27 @@ def model(params, seed=None, market_corr="identity"):
     for step in range(steps):
         # PERFORMANCE OPTIMIZATION: Use precomputed Cholesky decomposition for random generation
         # Generate standard normal random variates and transform using L @ z
-        z = np.random.standard_normal((markets, firms_per_market))
-        realizations_step = growth_vars[:, 0][:, np.newaxis] + market_cov_cholesky @ z
-        log_realizations_step = np.log1p(realizations_step.ravel()).astype(np.float64)
+        if rho_val == 0.0:
+            # uncorr: independent firms within market (Phase A default)
+            z = np.random.standard_normal((markets, firms_per_market))
+        else:
+            # Apply within-market correlation using factor model:
+            # z_i = sqrt(|rho|) * sign(rho) * z_common + sqrt(1-|rho|) * z_idio
+            z_common = np.random.standard_normal((markets, 1))
+            z_idio = np.random.standard_normal((markets, firms_per_market))
+            rho_abs = abs(rho_val)
+            rho_sign = 1.0 if rho_val > 0 else -1.0
+            z = rho_sign * np.sqrt(rho_abs) * z_common + np.sqrt(1 - rho_abs) * z_idio
+
+        if growth_process == "normal_net":
+            # Phase A default: r ~ N(μ, σ²), then log(1+r)
+            realizations_step = growth_vars[:, 0][:, np.newaxis] + market_cov_cholesky @ z
+            log_realizations_step = np.log1p(realizations_step.ravel()).astype(np.float64)
+        else:
+            # Lognormal: log δ = (μ - σ²/2) + σ·ε
+            # This gives E[δ] = exp(μ), E[log δ] = μ - σ²/2
+            drift = growth_vars[:, 0] - 0.5 * growth_vars[:, 1] ** 2
+            log_realizations_step = (drift[:, np.newaxis] + market_cov_cholesky @ z).ravel().astype(np.float64)
 
         # Calculate circular buffer indices for current and next timestep
         curr_idx = step % (lookback + 1)
@@ -833,7 +948,8 @@ def model(params, seed=None, market_corr="identity"):
                 share,
                 proportional,
                 lookback,
-                step
+                step,
+                pooling_rule_code
             )
 
             # Update log states in buffer
@@ -920,6 +1036,17 @@ def model(params, seed=None, market_corr="identity"):
         # Ranks (double argsort trick, vectorized)
         ranks[step, :, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
 
+        # Online mobility tracking: rank autocorrelation between consecutive steps
+        if mobility_file is not None and step > 0:
+            # Spearman rank correlation: ρ = 1 - (6 * Σd²) / (n * (n² - 1))
+            # where d is the difference in ranks between consecutive steps
+            prev_ranks = ranks[step - 1].ravel().astype(np.float64)
+            curr_ranks = ranks[step].ravel().astype(np.float64)
+            n = len(prev_ranks)
+            d_sq_sum = np.sum((curr_ranks - prev_ranks) ** 2)
+            rank_autocorr = 1.0 - (6.0 * d_sq_sum) / (n * (n * n - 1))
+            mobility_file.write(f'{step},{rank_autocorr:.6f}\n')
+
         # Quantiles of market share (computed per-market for this timestep)
         quantiles_shares[:, :, step] = np.quantile(market_share_current, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
 
@@ -960,12 +1087,19 @@ def model(params, seed=None, market_corr="identity"):
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
-                       'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2}
+                       'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2,
+                       'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
+                       'pooling_rule': pooling_rule, 'pool_history': pool_history, 'pool_window': pool_window,
+                       'rho': rho, 'cross_corr': cross_corr}
 
     # Hyperparameters stored successfully
 
     # MEMORY OPTIMIZATION: Removed market_share from results (no longer needed)
     # Now includes: avg_shares (firm-level size/market-share data) and exits_per_period
+    # Close mobility CSV file if opened
+    if mobility_file is not None:
+        mobility_file.close()
+
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
                      gini_coefficient, ranks, avg_ranks, mergers_per_period, proposals_per_period,
                      exits_per_period, hyperparameters]
