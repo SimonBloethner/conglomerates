@@ -4,12 +4,12 @@ Pilot design generator (§7).
 
 Generates factorial design for Phase B experiments:
 - Treatment factors: growth_process, sharing_rule, rho, cross_corr
-- α values: [0.00, 0.02, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+- α values: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5]
 - Replications: configurable (default 5 per scenario)
 
 Full factorial: 2 × 2 × 2 × 2 = 16 scenarios
-With α values: 16 × 12 = 192 cells
-With replications: 192 × 5 = 960 experiments
+With α values: 16 × 9 = 144 cells
+With replications: 144 × 5 = 720 experiments
 
 Usage:
     # Generate design table
@@ -36,8 +36,8 @@ FACTORS = {
     'cross_corr': [0.0, 0.3],
 }
 
-# α values from updated grid
-ALPHA_VALUES = np.array([0.00, 0.02, 0.05] + list(np.arange(0.10, 0.52, 0.05)))
+# α values - 9-point grid
+ALPHA_VALUES = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5])
 
 # Cost function levels (for extended design)
 COST_LEVELS = {

@@ -62,10 +62,8 @@ class ParallelCounterfactualRunner:
         self.mu_range = (0.01, 0.1)  # Mean growth rate bounds
         self.sigma_range = (0.01, 0.05)  # Volatility bounds
 
-        # Share values to test (α grid)
-        # Phase B: Refined grid with denser spacing near zero
-        # [0.00, 0.02, 0.05] + [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
-        self.shares = np.array([0.00, 0.02, 0.05] + list(np.arange(0.10, 0.52, 0.05)))
+        # Share values to test (α grid) - 9-point grid
+        self.shares = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5])
         
         # Cost function parameters
         self.cost_type = 'power_law'  # Default cost function type
@@ -134,12 +132,13 @@ class ParallelCounterfactualRunner:
 
             # Extract only essential data for aggregation (much smaller memory footprint)
             results = {
-                'share': share,
-                'seed': seed,  # Record seed for reproducibility
-                'experiment_id': experiment_id,
+                'alpha': share,
+                'rep': experiment_id,
+                'seed': seed,  # crc32 seed for reproducibility
 
                 # Store hyperparameters BEFORE they get deleted
                 'hyperparameters': hyperparameters.copy() if hyperparameters else None,
+                'gini_coefficient': gini_coefficient.mean(axis=0),  # Average over markets
 
                 # Time series data (keep these for averaging)
                 'mean_members': mean_members,
@@ -183,34 +182,37 @@ class ParallelCounterfactualRunner:
             signal.alarm(0)
     
     def run_single_experiment_to_disk(self, params_and_seed):
-        """Run single experiment and save result directly to disk to avoid memory accumulation"""
+        """Run single experiment and save result directly to disk.
+
+        Each task is (α, rep, seed) and produces one pickle file.
+        """
         import pickle
         import os
-        
-        share, experiment_id, seed = params_and_seed
-        
+
+        alpha, rep, seed = params_and_seed
+
         # Run the experiment
         result = self.run_single_experiment(params_and_seed)
-        
+
         if result is not None:
-            # Save result directly to disk
-            filename = f'{self.results_dir}/share_{share:.2f}_exp_{experiment_id}.pkl'
+            # Save result directly to disk - one pickle per (α, rep)
+            filename = f'{self.results_dir}/alpha_{alpha:.2f}_rep_{rep:03d}.pkl'
             try:
                 with open(filename, 'wb') as f:
                     pickle.dump(result, f)
-                print(f"Saved: share={share:.2f}, exp={experiment_id} to {filename}", flush=True)
-                
+                print(f"Saved: alpha={alpha:.2f}, rep={rep}, seed={seed} to {filename}", flush=True)
+
                 # Immediate memory cleanup after saving
                 del result
                 import gc
                 gc.collect()
-                
-                return experiment_id  # Return only experiment ID, not the full result
+
+                return (alpha, rep, seed)  # Return full tuple for tracking
             except Exception as e:
-                print(f"Failed to save experiment {experiment_id}: {e}", flush=True)
+                print(f"Failed to save alpha={alpha:.2f}, rep={rep}: {e}", flush=True)
                 return None
         else:
-            print(f"Experiment failed: share={share:.2f}, exp={experiment_id}", flush=True)
+            print(f"Experiment failed: alpha={alpha:.2f}, rep={rep}", flush=True)
             return None
     
     def _calculate_temporal_polynomial_estimates(self, avg_shares):
@@ -484,6 +486,8 @@ def main():
     parser = argparse.ArgumentParser(description='Run parallel counterfactual analysis')
     parser.add_argument('--share', type=float, default=None,
                        help='Specific share value to process (if None, process all)')
+    parser.add_argument('--alpha_list', type=str, default=None,
+                       help='Comma-separated list of alpha values (e.g., "0.0,0.1")')
     parser.add_argument('--chunk', type=str, default=None,
                        help='Experiment chunk to process (format: start_end, e.g., 0_25)')
     parser.add_argument('--n_cores', type=int, default=64,
@@ -606,84 +610,58 @@ def main():
     runner.scenario_name = args.scenario_name
 
     # Create results directory (organized by scenario if provided)
-    results_dir = 'counterfactual_results'
+    results_dir = 'results'
     if args.scenario_name:
-        results_dir = f'robustness_results/{args.scenario_name}'
+        results_dir = f'results/{args.scenario_name}'
     os.makedirs(results_dir, exist_ok=True)
-    
+
     # Set results directory in runner
     runner.results_dir = results_dir
-    
-    if args.share is not None:
-        # Process single share value
-        results = runner.run_share_experiments(args.share, chunk_start, chunk_end)
-        aggregated = runner.aggregate_share_results(results)
-        
-        # Save with share-specific filename
-        filename = f'{results_dir}/share_{args.share:.2f}'
-        if args.chunk:
-            filename += f'_chunk_{args.chunk}'
-        
-        runner.save_results(aggregated, filename)
-        
+
+    # Determine which α values to process
+    if args.alpha_list is not None:
+        alpha_values = [float(a) for a in args.alpha_list.split(',')]
+    elif args.share is not None:
+        alpha_values = [args.share]
     else:
-        # Process all share values
-        all_results = {}
-        
-        for share in runner.shares:
-            log_memory_usage(f"BEFORE_ALPHA_{share:.2f}")
-            
-            print(f"\nProcessing share = {share:.2f}")
-            results = runner.run_share_experiments(share, chunk_start, chunk_end)
-            
-            log_memory_usage(f"AFTER_EXPERIMENTS_{share:.2f}")
-            
-            aggregated = runner.aggregate_share_results(results)
-            
-            log_memory_usage(f"AFTER_AGGREGATION_{share:.2f}")
-            
-            # Save each alpha's results immediately to disk to reduce memory pressure
-            alpha_filename = f'{results_dir}/share_{share:.2f}'
-            if args.chunk:
-                alpha_filename += f'_chunk_{args.chunk}'
-            alpha_filename += '_aggregated.pkl'
-            with open(alpha_filename, 'wb') as f:
-                pickle.dump(aggregated, f)
-            
-            # Store reference instead of full data
-            all_results[share] = alpha_filename
-            
-            # Aggressive memory cleanup between alpha values
-            del results, aggregated
-            import gc
-            gc.collect()
-            
-            log_memory_usage(f"AFTER_CLEANUP_{share:.2f}")
-            print(f"Memory flushed after share {share:.2f}, saved to {alpha_filename}")
-        
-        # Load and combine results from disk for final save (only when needed)
-        print("Loading individual alpha results for final aggregation...")
-        combined_results = {}
-        for share, alpha_filename in all_results.items():
-            try:
-                with open(alpha_filename, 'rb') as f:
-                    combined_results[share] = pickle.load(f)
-                # Clean up individual alpha files to save disk space
-                os.remove(alpha_filename)
-            except Exception as e:
-                print(f"Warning: Could not load {alpha_filename}: {e}")
-        
-        # Save combined results
-        filename = f'{results_dir}/all_shares'
-        if args.chunk:
-            filename += f'_chunk_{args.chunk}'
-            
-        runner.save_results(combined_results, filename)
-        
-        # Final memory cleanup
-        del combined_results
-        import gc
-        gc.collect()
+        alpha_values = runner.shares
+
+    # Generate all (α, rep, seed) tasks upfront
+    scenario_name = args.scenario_name or 'default'
+    all_tasks = []
+    for alpha in alpha_values:
+        for rep in range(runner.counterfactuals):
+            # crc32 seed: depends on (scenario, rep), NOT on alpha (common random numbers)
+            seed = zlib.crc32(f"{scenario_name}:{rep}".encode()) & 0xFFFFFFFF
+            all_tasks.append((alpha, rep, seed))
+
+    n_tasks = len(all_tasks)
+    print(f"\n=== Task Overview ===")
+    print(f"α values: {len(alpha_values)} ({alpha_values[0]:.2f} to {alpha_values[-1]:.2f})")
+    print(f"Replications: {runner.counterfactuals}")
+    print(f"Total tasks: {n_tasks}")
+    print(f"Output directory: {results_dir}")
+    print()
+
+    # Run all tasks in one pool
+    log_memory_usage("BEFORE_POOL")
+
+    with mp.Pool(processes=runner.n_cores, maxtasksperchild=1) as pool:
+        completed = list(tqdm(
+            pool.imap(runner.run_single_experiment_to_disk, all_tasks),
+            total=n_tasks,
+            desc="Running experiments"
+        ))
+
+    log_memory_usage("AFTER_POOL")
+
+    # Summary
+    successful = [t for t in completed if t is not None]
+    failed = n_tasks - len(successful)
+    print(f"\n=== Summary ===")
+    print(f"Completed: {len(successful)}/{n_tasks}")
+    if failed > 0:
+        print(f"Failed: {failed}")
     
     # Calculate and display runtime
     end_time = time.time()
