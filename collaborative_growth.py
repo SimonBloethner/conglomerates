@@ -829,7 +829,15 @@ def model(params, seed=None, market_corr="identity",
     # MEMORY OPTIMIZATION: Only store current timestep snapshot, not full history
     market_share_current = np.zeros((markets, firms_per_market), dtype=np.float32)
     gini_coefficient = np.zeros((markets, steps), dtype=np.float32)
-    ranks = np.zeros((steps, markets, firms_per_market), dtype=np.uint16)
+
+    # Online rank statistics (replaces full ranks array to save memory)
+    # Track min/max/sum/sum_sq for each firm to compute rank_range and rank_std
+    ranks_current = np.zeros((markets, firms_per_market), dtype=np.uint16)
+    rank_min = np.full((markets, firms_per_market), np.iinfo(np.uint16).max, dtype=np.uint16)
+    rank_max = np.zeros((markets, firms_per_market), dtype=np.uint16)
+    rank_sum = np.zeros((markets, firms_per_market), dtype=np.float64)
+    rank_sum_sq = np.zeros((markets, firms_per_market), dtype=np.float64)
+    rank_count = np.zeros((markets, firms_per_market), dtype=np.uint32)
 
     # Pre-allocate quantiles array (computed on-the-fly)
     quantiles_shares = np.zeros((7, markets, steps), dtype=np.float32)  # 7 quantiles
@@ -1006,8 +1014,15 @@ def model(params, seed=None, market_corr="identity",
         area = np.trapezoid(y=lorenz, axis=1, dx=1 / firms_per_market)
         gini_coefficient[:, step] = (1 - 2 * area).astype(np.float32)
 
-        # Ranks (double argsort trick, vectorized)
-        ranks[step, :, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
+        # Ranks (double argsort trick, vectorized) - online statistics
+        ranks_current[:, :] = (np.argsort(sorted_idx, axis=1) + 1).astype(np.uint16)
+
+        # Update online rank statistics
+        rank_min = np.minimum(rank_min, ranks_current)
+        rank_max = np.maximum(rank_max, ranks_current)
+        rank_sum += ranks_current.astype(np.float64)
+        rank_sum_sq += (ranks_current.astype(np.float64) ** 2)
+        rank_count += 1
 
         # Quantiles of market share (computed per-market for this timestep)
         quantiles_shares[:, :, step] = np.quantile(market_share_current, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
@@ -1032,7 +1047,7 @@ def model(params, seed=None, market_corr="identity",
             cids = firm_conglom[in_cong_mask]
             cnt = np.bincount(cids, minlength=MAX_CONGLOMERATES)
             sh_sum = np.bincount(cids, weights=market_share_current.ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
-            rk_sum = np.bincount(cids, weights=ranks[step].ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
+            rk_sum = np.bincount(cids, weights=ranks_current.ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
             avg_share = np.column_stack([active_sizes, sh_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
             avg_rank = np.column_stack([active_sizes, rk_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
 
@@ -1046,6 +1061,17 @@ def model(params, seed=None, market_corr="identity",
             mean_members[step] = 0.0
             quantiles_members[step] = np.zeros(5)
 
+    # Compute final rank mobility statistics from online accumulators
+    # rank_range: max - min rank for each firm (measures total rank mobility)
+    rank_range = (rank_max - rank_min).astype(np.float32)
+
+    # rank_std: standard deviation of ranks for each firm
+    # Var(X) = E[X²] - E[X]² = sum_sq/n - (sum/n)²
+    with np.errstate(invalid='ignore'):
+        rank_mean = rank_sum / rank_count
+        rank_var = (rank_sum_sq / rank_count) - (rank_mean ** 2)
+        rank_std = np.sqrt(np.maximum(rank_var, 0)).astype(np.float32)  # Clamp negative due to float precision
+
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
@@ -1053,10 +1079,11 @@ def model(params, seed=None, market_corr="identity",
                        'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr}
 
-    # Note: ranks array removed from output to save memory (computed internally for avg_ranks)
+    # Model results: 13 elements
+    # rank_range and rank_std replace the full ranks array (memory optimization)
     model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
                      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
-                     exits_per_period, hyperparameters]
+                     exits_per_period, rank_range, rank_std, hyperparameters]
     total_time = time.time() - model_start_time
     print(f"Runtime: {total_time:.1f}s", flush=True)
 

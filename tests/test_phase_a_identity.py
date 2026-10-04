@@ -6,25 +6,48 @@ identical results to Phase A reference (commit 56ee13f).
 This test must pass at every commit that modifies collaborative_growth.py
 or parallel_counterfactuals.py.
 
-Note: ranks array has been removed from current output to save memory.
-The test compares all other arrays between Phase A reference and current code.
+Note: ranks array has been replaced with online rank statistics (rank_range, rank_std).
+The test compares all other arrays between Phase A reference and current code,
+and validates that rank_range/rank_std match offline computation from reference ranks.
 """
 import numpy as np
 import sys
 sys.path.insert(0, '..')
 
 # Import Phase A reference (vendored from commit 56ee13f)
-from tests import _phase_a_reference as phase_a
+import _phase_a_reference as phase_a
 
 # Import current code
 import collaborative_growth as current
+
+
+def compute_rank_stats_from_reference(ranks):
+    """
+    Compute rank_range and rank_std offline from Phase A reference ranks array.
+
+    Args:
+        ranks: array of shape (steps, markets, firms) from Phase A reference
+
+    Returns:
+        rank_range: (markets, firms) array of max - min rank
+        rank_std: (markets, firms) array of rank standard deviation
+    """
+    # rank_range: max - min across time axis
+    rank_max = np.max(ranks, axis=0)
+    rank_min = np.min(ranks, axis=0)
+    rank_range = (rank_max - rank_min).astype(np.float32)
+
+    # rank_std: standard deviation across time axis (population std, ddof=0)
+    rank_std = np.std(ranks, axis=0, ddof=0).astype(np.float32)
+
+    return rank_range, rank_std
 
 
 def test_phase_a_identity():
     """
     Run model at M=N=20, T=300, α=0.2, seed=1, default flags on both
     Phase A reference and current code. Assert every returned array
-    is exactly equal (except ranks which has been removed from current output).
+    is exactly equal (except ranks which has been replaced with rank_range/rank_std).
     """
     # Phase A parameters: M=20, N=20, T=300, α=0.2
     M = 20
@@ -68,25 +91,31 @@ def test_phase_a_identity():
     # 3: avg_shares (list of arrays)
     # 4: quantiles_shares
     # 5: gini_coefficient
-    # 6: ranks
+    # 6: ranks                        <- full ranks array
     # 7: avg_ranks (list of arrays)
     # 8: mergers_per_period
     # 9: proposals_per_period
     # 10: exits_per_period
     # 11: hyperparameters (dict)
 
-    # Current structure (11 elements - ranks removed):
+    # Current structure (13 elements - ranks replaced with online stats):
     # 0: mean_members
     # 1: quantiles_members
     # 2: num_cong
     # 3: avg_shares (list of arrays)
     # 4: quantiles_shares
     # 5: gini_coefficient
-    # 6: avg_ranks (list of arrays)  <- was index 7
+    # 6: avg_ranks (list of arrays)   <- was index 7
     # 7: mergers_per_period           <- was index 8
     # 8: proposals_per_period         <- was index 9
     # 9: exits_per_period             <- was index 10
-    # 10: hyperparameters (dict)
+    # 10: rank_range                  <- NEW (computed online)
+    # 11: rank_std                    <- NEW (computed online)
+    # 12: hyperparameters (dict)
+
+    # Verify output lengths
+    assert len(result_ref) == 12, f"Phase A reference should have 12 elements, got {len(result_ref)}"
+    assert len(result_cur) == 13, f"Current code should have 13 elements, got {len(result_cur)}"
 
     # Map: (name, ref_index, cur_index)
     comparisons = [
@@ -96,7 +125,7 @@ def test_phase_a_identity():
         ('avg_shares', 3, 3),
         ('quantiles_shares', 4, 4),
         ('gini_coefficient', 5, 5),
-        # ranks (index 6 in ref) is skipped - removed from current
+        # ranks (index 6 in ref) is replaced with rank_range/rank_std in current
         ('avg_ranks', 7, 6),
         ('mergers_per_period', 8, 7),
         ('proposals_per_period', 9, 8),
@@ -141,6 +170,38 @@ def test_phase_a_identity():
                 all_match = False
             else:
                 print(f"OK: {name}")
+
+    # Validate rank_range and rank_std against offline computation from reference ranks
+    print("\nValidating rank statistics against Phase A reference ranks...")
+    ref_ranks = result_ref[6]  # Full ranks array from Phase A reference
+    expected_rank_range, expected_rank_std = compute_rank_stats_from_reference(ref_ranks)
+
+    cur_rank_range = result_cur[10]
+    cur_rank_std = result_cur[11]
+
+    # Check rank_range
+    if np.allclose(cur_rank_range, expected_rank_range, rtol=1e-5, atol=1e-5):
+        print("OK: rank_range matches offline computation from reference ranks")
+    else:
+        print("FAIL: rank_range differs from offline computation")
+        diff = np.abs(cur_rank_range - expected_rank_range)
+        max_diff = np.max(diff)
+        max_idx = np.unravel_index(np.argmax(diff), diff.shape)
+        print(f"  Max diff: {max_diff} at {max_idx}")
+        print(f"  Current: {cur_rank_range[max_idx]}, Expected: {expected_rank_range[max_idx]}")
+        all_match = False
+
+    # Check rank_std
+    if np.allclose(cur_rank_std, expected_rank_std, rtol=1e-5, atol=1e-5):
+        print("OK: rank_std matches offline computation from reference ranks")
+    else:
+        print("FAIL: rank_std differs from offline computation")
+        diff = np.abs(cur_rank_std - expected_rank_std)
+        max_diff = np.max(diff)
+        max_idx = np.unravel_index(np.argmax(diff), diff.shape)
+        print(f"  Max diff: {max_diff} at {max_idx}")
+        print(f"  Current: {cur_rank_std[max_idx]}, Expected: {expected_rank_std[max_idx]}")
+        all_match = False
 
     assert all_match, "Phase A identity test failed: some arrays differ"
     print("\nPhase A identity test PASSED")

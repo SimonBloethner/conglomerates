@@ -20,10 +20,10 @@ def test_alpha_zero_no_mergers():
 
     result = model(params, seed=42, market_corr='identity')
 
-    # Unpack results - 11 elements (ranks removed)
+    # Unpack results - 13 elements (online rank stats)
     (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
-     exits_per_period, hyperparameters) = result
+     exits_per_period, rank_range, rank_std, hyperparameters) = result
 
     total_mergers = mergers_per_period.sum()
     total_proposals = proposals_per_period.sum()
@@ -48,7 +48,7 @@ def test_M_not_equals_N_completes():
 
     # Verify we got valid output
     assert result is not None
-    assert len(result) == 11  # Expected number of return values (ranks removed)
+    assert len(result) == 13  # Expected number of return values (online rank stats)
     print(f"M={M}, N={N} run completed successfully")
 
 
@@ -61,10 +61,10 @@ def test_positive_alpha_has_mergers():
 
     result = model(params, seed=42, market_corr='identity')
 
-    # Unpack results - 11 elements (ranks removed)
+    # Unpack results - 13 elements (online rank stats)
     (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
-     exits_per_period, hyperparameters) = result
+     exits_per_period, rank_range, rank_std, hyperparameters) = result
 
     total_mergers = mergers_per_period.sum()
     total_proposals = proposals_per_period.sum()
@@ -89,11 +89,11 @@ def test_merger_kernel_optimization_reproducibility():
     result1 = model(params, seed=12345, market_corr='identity')
     result2 = model(params, seed=12345, market_corr='identity')
 
-    # Unpack results - 11 elements (ranks removed)
+    # Unpack results - 13 elements (online rank stats)
     (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,
-     gini1, avg_ranks1, mergers1, proposals1, exits1, hyper1) = result1
+     gini1, avg_ranks1, mergers1, proposals1, exits1, rr1, rs1, hyper1) = result1
     (mean_members2, quantiles_members2, num_cong2, avg_shares2, quantiles_shares2,
-     gini2, avg_ranks2, mergers2, proposals2, exits2, hyper2) = result2
+     gini2, avg_ranks2, mergers2, proposals2, exits2, rr2, rs2, hyper2) = result2
 
     # Verify bit-identical outputs
     assert np.array_equal(mergers1, mergers2), "mergers_per_period differs"

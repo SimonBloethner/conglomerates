@@ -125,10 +125,10 @@ class ParallelCounterfactualRunner:
                 rho=self.rho,
                 cross_corr=self.cross_corr
             )
-            # Updated for new model output (11 elements: ranks removed to save memory)
+            # Updated for new model output (13 elements: online rank stats replace full array)
             mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares, \
             gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period, \
-            exits_per_period, hyperparameters = res
+            exits_per_period, rank_range, rank_std, hyperparameters = res
 
             # Extract only essential data for aggregation (much smaller memory footprint)
             results = {
@@ -156,12 +156,16 @@ class ParallelCounterfactualRunner:
                 # Merger and exit frequency per period
                 'mergers_per_period': mergers_per_period,
                 'proposals_per_period': proposals_per_period,
-                'exits_per_period': exits_per_period
+                'exits_per_period': exits_per_period,
+
+                # Online rank mobility statistics (shape: markets, firms_per_market)
+                'rank_range': rank_range,  # max - min rank per firm
+                'rank_std': rank_std,      # std dev of rank per firm
             }
 
             # Explicitly delete large arrays to free memory immediately
             del res, mean_members, quantiles_members, avg_shares, quantiles_shares, proposals_per_period
-            del gini_coefficient, avg_ranks, mergers_per_period, exits_per_period, hyperparameters
+            del gini_coefficient, avg_ranks, mergers_per_period, exits_per_period, rank_range, rank_std, hyperparameters
             
             # Log successful completion
             runtime = time.time() - start_time
