@@ -76,3 +76,43 @@ N is unchanged; no firm is removed. The floor "reflects" firms back to the thres
 **Stationarity:** With `floor_c > 0`, the size distribution stabilizes. The stationary tail exponent is approximately `1/(1-c)` when using the mean; using the median produces a slightly different value.
 
 **Returns:** `floor_hits` (per-firm array) and `floor_hits_by_status` (steps × 2 array) are included in `hyperparameters`.
+
+## Outcome Metrics Flags
+
+### `metric_every`
+Compute outcome metrics every N steps.
+
+Default: `100`
+
+### `burn_in`
+Steps to exclude from summary statistics.
+
+Default: `0`
+
+### Computed Metrics
+
+Metrics are computed at steps where `(step + 1) % metric_every == 0` or at the final step. Arrays are indexed by `metric_idx = step // metric_every`.
+
+- `hill_exponent[market, k]`: Hill estimator for tail index on top 10% of firm sizes within each market
+- `hhi_within[market, k]`: Herfindahl-Hirschman Index (Σ(share_i)²) within each market
+- `hhi_aggregate[k]`: HHI over control units (conglomerates as single units + standalone firms)
+- `top10_aggregate[k]`: Top 10% share over control units
+- `cong_capital_share[k]`: Capital under conglomerate control / total capital
+- `effective_members`: List of (step, [(cong_id, K, K_eff), ...]) tuples, where K_eff = 1/Σ(w_i²) is the effective number of members
+
+### Summary Statistics
+
+Computed over steps `t >= burn_in` and stored in `hyperparameters['summary']`:
+
+- `hill_exponent_median`: Median Hill exponent per market
+- `hhi_within_median`: Median within-market HHI per market
+- `hhi_aggregate_median`: Median aggregate HHI
+- `top10_aggregate_median`: Median top 10% share
+- `cong_capital_share_median`: Median conglomerate capital share
+- `K_median`: Median conglomerate size K
+- `K_eff_over_K_median`: Median K_eff/K ratio
+- `floor_hit_rate_standalone`: Floor hit rate for standalone firms
+- `floor_hit_rate_member`: Floor hit rate for conglomerate members
+- `mergers_per_period`: Mean mergers per period
+- `proposals_per_period`: Mean proposals per period
+- `exits_per_period`: Mean exits per period

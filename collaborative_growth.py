@@ -658,6 +658,153 @@ def process_conglomerate_pooling_numba(
     return new_log_states, cong_pools, firms_to_exit
 
 
+def compute_hhi(shares):
+    """
+    Compute Herfindahl-Hirschman Index: sum of squared market shares.
+
+    Parameters:
+    -----------
+    shares : array
+        Market shares (should sum to 1, but will normalize if not)
+
+    Returns:
+    --------
+    float : HHI value in [0, 1] where 1 = monopoly, 1/N = equal shares
+    """
+    shares = np.asarray(shares)
+    total = shares.sum()
+    if total <= 0:
+        return 0.0
+    normalized = shares / total
+    return np.sum(normalized ** 2)
+
+
+def compute_aggregate_hhi(firm_sizes, firm_conglom):
+    """
+    Compute aggregate HHI over control units.
+
+    Each conglomerate is one unit with its members' total capital.
+    Each standalone firm (firm_conglom == -1) is its own unit.
+
+    Parameters:
+    -----------
+    firm_sizes : array
+        Size (capital) of each firm
+    firm_conglom : array
+        Conglomerate ID for each firm (-1 = standalone)
+
+    Returns:
+    --------
+    float : Aggregate HHI
+    """
+    firm_sizes = np.asarray(firm_sizes)
+    firm_conglom = np.asarray(firm_conglom)
+
+    total_capital = firm_sizes.sum()
+    if total_capital <= 0:
+        return 0.0
+
+    # Aggregate capital by control unit
+    unit_capitals = []
+
+    # Standalone firms
+    standalone = firm_conglom == -1
+    for s in firm_sizes[standalone]:
+        if s > 0:
+            unit_capitals.append(s)
+
+    # Conglomerates: sum capital of members
+    cong_ids = np.unique(firm_conglom[firm_conglom >= 0])
+    for cid in cong_ids:
+        cong_capital = firm_sizes[firm_conglom == cid].sum()
+        if cong_capital > 0:
+            unit_capitals.append(cong_capital)
+
+    if len(unit_capitals) == 0:
+        return 0.0
+
+    unit_capitals = np.array(unit_capitals)
+    shares = unit_capitals / total_capital
+    return np.sum(shares ** 2)
+
+
+def compute_effective_members(sizes):
+    """
+    Compute effective number of members: 1 / sum(w_i^2).
+
+    This is the inverse of the Herfindahl index on member weights,
+    representing "how many equal-sized firms would give same concentration".
+
+    Parameters:
+    -----------
+    sizes : array
+        Sizes (capital) of conglomerate members
+
+    Returns:
+    --------
+    float : Effective number of members
+    """
+    sizes = np.asarray(sizes)
+    total = sizes.sum()
+    if total <= 0 or len(sizes) == 0:
+        return 0.0
+    weights = sizes / total
+    hhi = np.sum(weights ** 2)
+    if hhi <= 0:
+        return 0.0
+    return 1.0 / hhi
+
+
+def hill_estimator(sizes, k_fraction=0.1):
+    """
+    Hill estimator for tail index on top k_fraction of sizes.
+
+    For Pareto distribution with P(X > x) ~ x^{-alpha}, this estimates alpha.
+
+    Parameters:
+    -----------
+    sizes : array
+        Sample of sizes (e.g., firm capitals)
+    k_fraction : float
+        Fraction of top order statistics to use (default 0.1 = top 10%)
+
+    Returns:
+    --------
+    float : Estimated tail exponent alpha
+    """
+    sizes = np.asarray(sizes)
+    sizes = sizes[sizes > 0]  # Remove zeros/negatives
+
+    if len(sizes) < 2:
+        return np.nan
+
+    sorted_sizes = np.sort(sizes)[::-1]  # Descending order
+    n = len(sorted_sizes)
+    k = max(int(n * k_fraction), 1)
+
+    if k >= n:
+        k = n - 1
+    if k < 1:
+        return np.nan
+
+    # Top k values: X_(1), X_(2), ..., X_(k)
+    # Threshold: X_(k+1) (the k+1 th order statistic)
+    top_k = sorted_sizes[:k]
+    threshold = sorted_sizes[k]
+
+    if threshold <= 0:
+        return np.nan
+
+    # Hill estimator: alpha_hat = k / sum(log(X_(i) / X_(k+1)))
+    log_ratios = np.log(top_k / threshold)
+    sum_log = log_ratios.sum()
+
+    if sum_log <= 0:
+        return np.nan
+
+    return k / sum_log
+
+
 def iqr_to_scale(family, iqr, nu=3.0):
     """
     Convert IQR to distribution scale parameter.
@@ -691,7 +838,8 @@ def iqr_to_scale(family, iqr, nu=3.0):
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
-          log_family="normal", nu=3.0, floor_c=0.0):
+          log_family="normal", nu=3.0, floor_c=0.0,
+          metric_every=100, burn_in=0):
     """
     Main simulation model.
 
@@ -731,6 +879,10 @@ def model(params, seed=None, market_corr="identity",
         Reflecting floor coefficient. Default 0.0 (off).
         When > 0, after state updates, firms below c × market_median are
         raised to that floor. Tracks floor_hits per firm and by status.
+    metric_every : int
+        Compute outcome metrics every N steps. Default 100.
+    burn_in : int
+        Steps to exclude from summary statistics. Default 0.
     """
     import time
 
@@ -829,6 +981,16 @@ def model(params, seed=None, market_corr="identity",
     # Floor tracking arrays (only used when floor_c > 0)
     floor_hits = np.zeros(total_firms, dtype=np.int32)  # Per-firm count
     floor_hits_by_status = np.zeros((steps, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
+
+    # Outcome metrics arrays (computed every metric_every steps)
+    n_metric_steps = (steps + metric_every - 1) // metric_every  # Ceiling division
+    hill_exponent = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)
+    hhi_within = np.zeros((markets, n_metric_steps), dtype=np.float64)
+    hhi_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
+    top10_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
+    cong_capital_share = np.zeros(n_metric_steps, dtype=np.float64)
+    # effective_members stored as list of (cong_id, K, K_eff) tuples per metric step
+    effective_members_list = []
 
     management_costs_lookup = np.array(
         [management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0 for size in range(markets + 1)])
@@ -1187,6 +1349,62 @@ def model(params, seed=None, market_corr="identity",
             mean_members[step] = 0.0
             quantiles_members[step] = np.zeros(5)
 
+        # OUTCOME METRICS: Compute every metric_every steps
+        if (step + 1) % metric_every == 0 or step == steps - 1:
+            metric_idx = step // metric_every
+            if metric_idx < n_metric_steps:
+                # Get current firm sizes in levels
+                current_sizes = np.exp(firm_log_states_buffer[next_idx])
+
+                # Hill exponent per market (top 10%)
+                for m in range(markets):
+                    market_sizes = current_sizes[m * firms_per_market:(m + 1) * firms_per_market]
+                    hill_exponent[m, metric_idx] = hill_estimator(market_sizes, k_fraction=0.1)
+
+                # HHI within each market
+                for m in range(markets):
+                    market_sizes = current_sizes[m * firms_per_market:(m + 1) * firms_per_market]
+                    market_total = market_sizes.sum()
+                    if market_total > 0:
+                        market_shares = market_sizes / market_total
+                        hhi_within[m, metric_idx] = compute_hhi(market_shares)
+
+                # Aggregate metrics over control units
+                hhi_aggregate[metric_idx] = compute_aggregate_hhi(current_sizes, firm_conglom)
+
+                # Top 10% aggregate share
+                unit_capitals = []
+                standalone = firm_conglom == -1
+                unit_capitals.extend(current_sizes[standalone].tolist())
+                cong_ids_unique = np.unique(firm_conglom[firm_conglom >= 0])
+                for cid in cong_ids_unique:
+                    unit_capitals.append(current_sizes[firm_conglom == cid].sum())
+                if len(unit_capitals) > 0:
+                    unit_capitals = np.array(unit_capitals)
+                    sorted_units = np.sort(unit_capitals)[::-1]
+                    n_units = len(sorted_units)
+                    top_k = max(1, n_units // 10)
+                    total_capital = sorted_units.sum()
+                    if total_capital > 0:
+                        top10_aggregate[metric_idx] = sorted_units[:top_k].sum() / total_capital
+
+                # Conglomerate capital share
+                total_capital = current_sizes.sum()
+                if total_capital > 0:
+                    cong_capital = current_sizes[firm_conglom >= 0].sum()
+                    cong_capital_share[metric_idx] = cong_capital / total_capital
+
+                # Effective members for each active conglomerate
+                step_eff_members = []
+                for cid in active_cong_ids:
+                    K = cong_size[cid]
+                    if K > 0:
+                        member_firms = cong_firms[cid, :K]
+                        member_sizes = current_sizes[member_firms]
+                        K_eff = compute_effective_members(member_sizes)
+                        step_eff_members.append((cid, K, K_eff))
+                effective_members_list.append((step, step_eff_members))
+
     # Compute final rank mobility statistics from online accumulators
     # rank_range: max - min rank for each firm (measures total rank mobility)
     rank_range = (rank_max - rank_min).astype(np.float32)
@@ -1198,6 +1416,53 @@ def model(params, seed=None, market_corr="identity",
         rank_var = (rank_sum_sq / rank_count) - (rank_mean ** 2)
         rank_std = np.sqrt(np.maximum(rank_var, 0)).astype(np.float32)  # Clamp negative due to float precision
 
+    # Compute summary statistics over t >= burn_in
+    burn_in_metric_idx = burn_in // metric_every
+    valid_metric_indices = slice(burn_in_metric_idx, n_metric_steps)
+
+    # Median of each metric over valid steps
+    summary = {
+        'hill_exponent_median': np.nanmedian(hill_exponent[:, valid_metric_indices], axis=1),
+        'hhi_within_median': np.nanmedian(hhi_within[:, valid_metric_indices], axis=1),
+        'hhi_aggregate_median': np.nanmedian(hhi_aggregate[valid_metric_indices]),
+        'top10_aggregate_median': np.nanmedian(top10_aggregate[valid_metric_indices]),
+        'cong_capital_share_median': np.nanmedian(cong_capital_share[valid_metric_indices]),
+    }
+
+    # Median K and K_eff/K over valid steps
+    all_K = []
+    all_K_eff_over_K = []
+    for step_val, step_eff in effective_members_list:
+        if step_val >= burn_in:
+            for cid, K, K_eff in step_eff:
+                all_K.append(K)
+                if K > 0:
+                    all_K_eff_over_K.append(K_eff / K)
+    summary['K_median'] = np.median(all_K) if len(all_K) > 0 else np.nan
+    summary['K_eff_over_K_median'] = np.median(all_K_eff_over_K) if len(all_K_eff_over_K) > 0 else np.nan
+
+    # Floor-hit rate per firm-period by status (for steps >= burn_in)
+    if floor_c > 0.0 and steps > burn_in:
+        valid_steps = steps - burn_in
+        total_firm_periods = valid_steps * total_firms
+        standalone_periods = np.sum(floor_hits_by_status[burn_in:, 0])
+        member_periods = np.sum(floor_hits_by_status[burn_in:, 1])
+        summary['floor_hit_rate_standalone'] = standalone_periods / total_firm_periods if total_firm_periods > 0 else 0.0
+        summary['floor_hit_rate_member'] = member_periods / total_firm_periods if total_firm_periods > 0 else 0.0
+    else:
+        summary['floor_hit_rate_standalone'] = 0.0
+        summary['floor_hit_rate_member'] = 0.0
+
+    # Mergers, proposals, exits per period (for steps >= burn_in)
+    if steps > burn_in:
+        summary['mergers_per_period'] = np.mean(mergers_per_period[burn_in:])
+        summary['proposals_per_period'] = np.mean(proposals_per_period[burn_in:])
+        summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
+    else:
+        summary['mergers_per_period'] = 0.0
+        summary['proposals_per_period'] = 0.0
+        summary['exits_per_period'] = 0.0
+
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
@@ -1206,7 +1471,12 @@ def model(params, seed=None, market_corr="identity",
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
                        'log_family': log_family, 'nu': nu,
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
-                       'final_log_states': firm_log_states_buffer[(steps - 1) % (lookback + 1)].copy()}
+                       'final_log_states': firm_log_states_buffer[(steps - 1) % (lookback + 1)].copy(),
+                       'metric_every': metric_every, 'burn_in': burn_in,
+                       'hill_exponent': hill_exponent, 'hhi_within': hhi_within,
+                       'hhi_aggregate': hhi_aggregate, 'top10_aggregate': top10_aggregate,
+                       'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
+                       'summary': summary}
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)
