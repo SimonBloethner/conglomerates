@@ -159,6 +159,86 @@ def test_hill_pareto():
     print(f"PASS: Hill on Pareto(1.5) = {alpha_est:.3f} (error = {error:.4f})")
 
 
+def test_pooled_hill_accuracy():
+    """
+    Pooled Hill on M=5 markets of N=400 shares all drawn from Pareto(α=1.5)
+    returns 1.5 ± 0.1.
+
+    Test catches: wrong pooling or wrong order statistic.
+    """
+    from collaborative_growth import hill_estimator
+
+    np.random.seed(42)
+
+    M = 5
+    N = 400
+    alpha_true = 1.5
+
+    # Generate Pareto samples for each market
+    all_sizes = stats.pareto.rvs(b=alpha_true, size=M * N)
+
+    # Convert to market shares (fraction of total)
+    market_shares = all_sizes / all_sizes.sum()
+
+    # Pooled Hill on top 10% of all M×N = 2000 market shares
+    alpha_est = hill_estimator(market_shares, k_fraction=0.1)
+
+    error = abs(alpha_est - alpha_true)
+    assert error < 0.1, f"Pooled Hill = {alpha_est:.3f}, expected {alpha_true} ± 0.1"
+
+    print(f"PASS: Pooled Hill on M=5, N=400 Pareto(1.5) = {alpha_est:.3f} (error = {error:.4f})")
+
+
+def test_pooled_hill_lower_variance():
+    """
+    Pooled Hill on M=50, N=50 Pareto(α=1.5) shares has std < 0.15 across 20 seeds;
+    per-market version has std > 0.4.
+
+    Demonstrates why the pooled estimator is used.
+    Test catches: a "pooled" implementation that still averages per-market estimates.
+    """
+    from collaborative_growth import hill_estimator
+
+    M = 50
+    N = 50
+    alpha_true = 1.5
+    n_seeds = 20
+
+    pooled_estimates = []
+    permarket_stds = []
+
+    for seed in range(n_seeds):
+        np.random.seed(seed)
+
+        # Generate Pareto samples
+        all_sizes = stats.pareto.rvs(b=alpha_true, size=M * N)
+
+        # Pooled: Hill on all market shares
+        market_shares = all_sizes / all_sizes.sum()
+        pooled_hill = hill_estimator(market_shares, k_fraction=0.1)
+        pooled_estimates.append(pooled_hill)
+
+        # Per-market: Hill on each market's shares separately
+        permarket_hills = []
+        for m in range(M):
+            market_sizes = all_sizes[m * N:(m + 1) * N]
+            market_total = market_sizes.sum()
+            market_share = market_sizes / market_total
+            permarket_hills.append(hill_estimator(market_share, k_fraction=0.1))
+        permarket_stds.append(np.std(permarket_hills))
+
+    pooled_std = np.std(pooled_estimates)
+    avg_permarket_std = np.mean(permarket_stds)
+
+    print(f"Pooled std across {n_seeds} seeds: {pooled_std:.3f}")
+    print(f"Avg per-market std within seed: {avg_permarket_std:.3f}")
+
+    assert pooled_std < 0.15, f"Pooled Hill std = {pooled_std:.3f}, expected < 0.15"
+    assert avg_permarket_std > 0.4, f"Per-market Hill std = {avg_permarket_std:.3f}, expected > 0.4"
+
+    print(f"PASS: Pooled std = {pooled_std:.3f} < 0.15, per-market std = {avg_permarket_std:.3f} > 0.4")
+
+
 def test_phase_b_identity_with_metrics():
     """
     test_phase_b_identity.py passes with new metrics.
@@ -191,6 +271,12 @@ if __name__ == '__main__':
 
     print("\nTesting Hill estimator on Pareto...")
     test_hill_pareto()
+
+    print("\nTesting pooled Hill accuracy...")
+    test_pooled_hill_accuracy()
+
+    print("\nTesting pooled Hill lower variance...")
+    test_pooled_hill_lower_variance()
 
     print("\nTesting Phase B identity...")
     test_phase_b_identity_with_metrics()

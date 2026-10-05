@@ -1207,7 +1207,8 @@ def model(params, seed=None, market_corr="identity",
 
     # Outcome metrics arrays (computed every metric_every steps)
     n_metric_steps = (steps + metric_every - 1) // metric_every  # Ceiling division
-    hill_exponent = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)
+    hill_exponent = np.full(n_metric_steps, np.nan, dtype=np.float64)  # Pooled Hill on all M×N market shares
+    hill_exponent_by_market = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)  # Per-market (diagnostic)
     hhi_within = np.zeros((markets, n_metric_steps), dtype=np.float64)
     hhi_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
     top10_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
@@ -1627,10 +1628,16 @@ def model(params, seed=None, market_corr="identity",
                 # Get current firm sizes in levels
                 current_sizes = np.exp(firm_log_states_buffer[next_idx])
 
-                # Hill exponent per market (top 10%)
+                # Pooled Hill exponent: top 10% of all M×N market shares
+                total_capital = current_sizes.sum()
+                if total_capital > 0:
+                    market_shares = current_sizes / total_capital
+                    hill_exponent[metric_idx] = hill_estimator(market_shares, k_fraction=0.1)
+
+                # Hill exponent per market (diagnostic only)
                 for m in range(markets):
                     market_sizes = current_sizes[m * firms_per_market:(m + 1) * firms_per_market]
-                    hill_exponent[m, metric_idx] = hill_estimator(market_sizes, k_fraction=0.1)
+                    hill_exponent_by_market[m, metric_idx] = hill_estimator(market_sizes, k_fraction=0.1)
 
                 # HHI within each market
                 for m in range(markets):
@@ -1699,7 +1706,8 @@ def model(params, seed=None, market_corr="identity",
 
     # Median of each metric over valid steps
     summary = {
-        'hill_exponent_median': np.nanmedian(hill_exponent[:, valid_metric_indices], axis=1),
+        'hill_exponent_median': np.nanmedian(hill_exponent[valid_metric_indices]),  # Scalar: median of pooled series
+        'hill_exponent_by_market_median': np.nanmedian(hill_exponent_by_market[:, valid_metric_indices], axis=1),  # Diagnostic
         'hhi_within_median': np.nanmedian(hhi_within[:, valid_metric_indices], axis=1),
         'hhi_aggregate_median': np.nanmedian(hhi_aggregate[valid_metric_indices]),
         'top10_aggregate_median': np.nanmedian(top10_aggregate[valid_metric_indices]),
@@ -1750,7 +1758,8 @@ def model(params, seed=None, market_corr="identity",
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
                        'final_log_states': firm_log_states_buffer[(steps - 1) % (lookback + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
-                       'hill_exponent': hill_exponent, 'hhi_within': hhi_within,
+                       'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,
+                       'hhi_within': hhi_within,
                        'hhi_aggregate': hhi_aggregate, 'top10_aggregate': top10_aggregate,
                        'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
                        'alpha_endogenous': alpha_endogenous, 'alpha_history': alpha_history,
