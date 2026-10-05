@@ -1,281 +1,401 @@
 #!/usr/bin/env python3
 """
-Pilot design generator (§7).
+Phase C pilot design generator.
 
-Generates factorial design for Phase B experiments:
-- Treatment factors: growth_process, sharing_rule, rho, cross_corr
-- α values: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5]
-- Replications: configurable (default 5 per scenario)
+Generates pilot_c/scenarios.json with factorial design for Phase C experiments.
 
-Full factorial: 2 × 2 × 2 × 2 = 16 scenarios
-With α values: 16 × 9 = 144 cells
-With replications: 144 × 5 = 720 experiments
+Fixed parameters:
+- M=N=50, merge_thresh=0.05, proportional=False
+- growth_process=log_family, mu_range=(0.01, 0.1), sigma_range=(0.1, 0.3)
+- sharing_rule=proportional (default), floor_c from C1 benchmark
+- metric_every=100, 5 reps, common random numbers
+- α grid: [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 
-Usage:
-    # Generate design table
-    python pilot_design.py --output pilot_scenarios.csv
+Blocks:
+- main: 3 families × 4 costs × 9 α × 5 reps = 540 runs
+- equal-split: normal × 4 costs × 9 α × 5 reps = 180 runs
+- cost level: laplace × 4 costs × 2 multipliers × 9 α × 5 reps = 360 runs
+- lookback: laplace × power_law × 2 lookbacks × 9 α × 5 reps = 90 runs
+- correlation: laplace × power_law × cross_corr=0.3 × 9 α × 5 reps = 45 runs
+- endogenous α: 3 families × 4 costs × 5 reps = 60 runs (α_start=0.1)
 
-    # Generate SLURM scripts
-    python pilot_design.py --slurm --output pilot_jobs/
-
-    # Estimate runtime
-    python pilot_design.py --estimate
+Total: 1275 runs
 """
-import argparse
-import itertools
+import json
 import os
-import numpy as np
-import pandas as pd
+from pathlib import Path
 
 
-# Treatment factors and their levels
-FACTORS = {
-    'growth_process': ['normal_net', 'lognormal'],
-    'sharing_rule': ['equal', 'proportional'],
-    'rho': [0.0, 0.3],
-    'cross_corr': [0.0, 0.3],
+# ============================================================================
+# FIXED PARAMETERS
+# ============================================================================
+
+M = 50
+N = 50
+MERGE_THRESH = 0.05
+PROPORTIONAL = False  # Management cost NOT proportional to size
+GROWTH_PROCESS = 'log_family'
+MU_RANGE = (0.01, 0.1)
+SIGMA_RANGE = (0.1, 0.3)  # IQR range
+SHARING_RULE = 'proportional'
+METRIC_EVERY = 100
+N_REPS = 5
+
+# Floor coefficient from C1: c_for_exponent(1.06) = 1 - 1/1.06
+FLOOR_C = 1.0 - 1.0 / 1.06  # ≈ 0.0566037736
+
+# Alpha grid (9 values)
+ALPHA_GRID = [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+
+# Distribution families
+FAMILIES = ['normal', 'laplace', 't3']
+
+# Cost types with calibrated defaults (from benchmarks.py)
+COST_TYPES = ['linear', 'quadratic', 'exponential', 'power_law']
+
+# Cost parameters (calibrated for convergence at size=40)
+COST_PARAMS = {
+    'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
+    'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
+    'quadratic': {'c0': 0.0001, 'c1': 0.000001, 'c2': 0.00000097},
+    'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001},
 }
 
-# α values - 9-point grid
-ALPHA_VALUES = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5])
+# Base seed for common random numbers
+BASE_SEED = 42
 
-# Cost function levels (for extended design)
-COST_LEVELS = {
-    'power_law': {'c0': None, 'c1': None, 'c2': None},  # Use defaults
-}
+# Burn-in parameters (from burn_in_analysis.py)
+T = 6000
+BURN_IN = 2000
 
 
-def generate_factorial_design(include_cost=False):
+# ============================================================================
+# SCENARIO GENERATION
+# ============================================================================
+
+def make_base_params():
+    """Return fixed parameters common to all scenarios."""
+    return {
+        'M': M,
+        'N': N,
+        'T': T,
+        'burn_in': BURN_IN,
+        'merge_thresh': MERGE_THRESH,
+        'proportional': PROPORTIONAL,
+        'growth_process': GROWTH_PROCESS,
+        'mu_range': list(MU_RANGE),
+        'sigma_range': list(SIGMA_RANGE),
+        'floor_c': FLOOR_C,
+        'metric_every': METRIC_EVERY,
+    }
+
+
+def cell_seed(cell_id, rep):
     """
-    Generate full factorial design.
+    Compute seed for (cell, rep).
 
-    Parameters:
-    -----------
-    include_cost : bool
-        If True, include cost function variations (expands design)
-
-    Returns:
-    --------
-    scenarios : list of dict
-        Each dict contains factor levels for one scenario
+    Seeds are identical across α within a cell and differ across reps.
+    A cell is defined by (block, family, cost_type, lookback, cross_corr, sharing_rule).
+    This ensures common random numbers for comparing different α values.
     """
-    # Get all factor levels
-    factor_names = list(FACTORS.keys())
-    factor_levels = [FACTORS[f] for f in factor_names]
+    return BASE_SEED + cell_id * 100 + rep
 
-    # Generate all combinations
+
+def generate_main_block(scenarios, scenario_id):
+    """
+    Main block: 3 families × 4 costs × 9 α × 5 reps = 540 runs
+    """
+    cell_id = 0
+    for family in FAMILIES:
+        for cost_type in COST_TYPES:
+            # All α values within this (family, cost_type) share seeds per rep
+            for alpha in ALPHA_GRID:
+                for rep in range(N_REPS):
+                    s = make_base_params()
+                    s.update({
+                        'block': 'main',
+                        'scenario_id': scenario_id,
+                        'cell_id': cell_id,
+                        'log_family': family,
+                        'cost_type': cost_type,
+                        'c0': COST_PARAMS[cost_type]['c0'],
+                        'c1': COST_PARAMS[cost_type]['c1'],
+                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'lookback': 50,
+                        'cross_corr': 0.0,
+                        'alpha': alpha,
+                        'sharing_rule': SHARING_RULE,
+                        'rep': rep,
+                        'seed': cell_seed(cell_id, rep),
+                        'alpha_endogenous': False,
+                    })
+                    scenarios.append(s)
+                    scenario_id += 1
+            cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_equal_split_block(scenarios, scenario_id, cell_id):
+    """
+    Equal-split check: normal × 4 costs × 9 α × 5 reps = 180 runs
+    sharing_rule=equal
+    """
+    family = 'normal'
+    for cost_type in COST_TYPES:
+        # All α values within this (cost_type) share seeds per rep
+        for alpha in ALPHA_GRID:
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s.update({
+                    'block': 'equal-split',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': 50,
+                    'cross_corr': 0.0,
+                    'alpha': alpha,
+                    'sharing_rule': 'equal',
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': False,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_cost_level_block(scenarios, scenario_id, cell_id):
+    """
+    Cost level: laplace × 4 costs × 2 multipliers × 9 α × 5 reps = 360 runs
+    Multipliers: 0.5 and 2.0 applied to c0
+    """
+    family = 'laplace'
+    multipliers = [0.5, 2.0]
+
+    for cost_type in COST_TYPES:
+        for mult in multipliers:
+            # All α values within this (cost_type, mult) share seeds per rep
+            for alpha in ALPHA_GRID:
+                for rep in range(N_REPS):
+                    s = make_base_params()
+                    s.update({
+                        'block': 'cost-level',
+                        'scenario_id': scenario_id,
+                        'cell_id': cell_id,
+                        'log_family': family,
+                        'cost_type': cost_type,
+                        'c0': COST_PARAMS[cost_type]['c0'] * mult,
+                        'c1': COST_PARAMS[cost_type]['c1'],
+                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'cost_multiplier': mult,
+                        'lookback': 50,
+                        'cross_corr': 0.0,
+                        'alpha': alpha,
+                        'sharing_rule': SHARING_RULE,
+                        'rep': rep,
+                        'seed': cell_seed(cell_id, rep),
+                        'alpha_endogenous': False,
+                    })
+                    scenarios.append(s)
+                    scenario_id += 1
+            cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_lookback_block(scenarios, scenario_id, cell_id):
+    """
+    Lookback: laplace × power_law × 2 lookbacks × 9 α × 5 reps = 90 runs
+    Lookbacks: 200, 1000
+    """
+    family = 'laplace'
+    cost_type = 'power_law'
+    lookbacks = [200, 1000]
+
+    for lookback in lookbacks:
+        # All α values within this (lookback) share seeds per rep
+        for alpha in ALPHA_GRID:
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s.update({
+                    'block': 'lookback',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': lookback,
+                    'cross_corr': 0.0,
+                    'alpha': alpha,
+                    'sharing_rule': SHARING_RULE,
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': False,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_correlation_block(scenarios, scenario_id, cell_id):
+    """
+    Correlation: laplace × power_law × cross_corr=0.3 × 9 α × 5 reps = 45 runs
+    """
+    family = 'laplace'
+    cost_type = 'power_law'
+
+    # All α values share seeds per rep (one cell for this block)
+    for alpha in ALPHA_GRID:
+        for rep in range(N_REPS):
+            s = make_base_params()
+            s.update({
+                'block': 'correlation',
+                'scenario_id': scenario_id,
+                'cell_id': cell_id,
+                'log_family': family,
+                'cost_type': cost_type,
+                'c0': COST_PARAMS[cost_type]['c0'],
+                'c1': COST_PARAMS[cost_type]['c1'],
+                'c2': COST_PARAMS[cost_type]['c2'],
+                'lookback': 50,
+                'cross_corr': 0.3,
+                'alpha': alpha,
+                'sharing_rule': SHARING_RULE,
+                'rep': rep,
+                'seed': cell_seed(cell_id, rep),
+                'alpha_endogenous': False,
+            })
+            scenarios.append(s)
+            scenario_id += 1
+    cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_endogenous_alpha_block(scenarios, scenario_id, cell_id):
+    """
+    Endogenous α: 3 families × 4 costs × 5 reps = 60 runs
+    alpha_endogenous=True, start α=0.1
+    """
+    for family in FAMILIES:
+        for cost_type in COST_TYPES:
+            # Each (family, cost_type) is a cell
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s.update({
+                    'block': 'endogenous-alpha',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': 50,
+                    'cross_corr': 0.0,
+                    'alpha': 0.1,  # Start alpha
+                    'sharing_rule': SHARING_RULE,
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': True,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+            cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_all_scenarios():
+    """Generate all scenarios for Phase C pilot."""
     scenarios = []
-    for i, combo in enumerate(itertools.product(*factor_levels)):
-        scenario = {
-            'scenario_id': i,
-            'scenario_name': '_'.join(str(v) for v in combo),
-        }
-        for name, level in zip(factor_names, combo):
-            scenario[name] = level
+    scenario_id = 0
+    cell_id = 0
 
-        # Add cost function (default)
-        scenario['cost_type'] = 'power_law'
-
-        scenarios.append(scenario)
+    scenario_id, cell_id = generate_main_block(scenarios, scenario_id)
+    scenario_id, cell_id = generate_equal_split_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_cost_level_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_lookback_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_correlation_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_endogenous_alpha_block(scenarios, scenario_id, cell_id)
 
     return scenarios
 
 
-def generate_experiment_table(scenarios, alpha_values=ALPHA_VALUES, n_reps=5):
+def set_burn_in_params(scenarios, T, burn_in):
+    """Set T and burn_in for all scenarios."""
+    for s in scenarios:
+        s['T'] = T
+        s['burn_in'] = burn_in
+
+
+def write_scenarios_json(scenarios, output_path='pilot_c/scenarios.json'):
+    """Write scenarios to JSON file."""
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, 'w') as f:
+        json.dump(scenarios, f, indent=2)
+
+    print(f"Wrote {len(scenarios)} scenarios to {output_path}")
+    return output_path
+
+
+def get_burn_in_scenario(scenarios):
     """
-    Generate full experiment table (scenarios × α × replications).
-
-    Parameters:
-    -----------
-    scenarios : list of dict
-        Scenario definitions from generate_factorial_design
-    alpha_values : array-like
-        α values to test
-    n_reps : int
-        Number of replications per cell
-
-    Returns:
-    --------
-    df : pd.DataFrame
-        Full experiment table
+    Get the burn-in scenario: main block, laplace, power_law, α=0.1.
+    Returns one scenario per rep (5 total).
     """
-    rows = []
-    exp_id = 0
-
-    for scenario in scenarios:
-        for alpha in alpha_values:
-            for rep in range(n_reps):
-                row = scenario.copy()
-                row['alpha'] = alpha
-                row['replication'] = rep
-                row['experiment_id'] = exp_id
-                rows.append(row)
-                exp_id += 1
-
-    return pd.DataFrame(rows)
-
-
-def estimate_runtime(n_scenarios, n_alpha, n_reps, steps=200, seconds_per_step=0.1):
-    """
-    Estimate total runtime for pilot.
-
-    Parameters:
-    -----------
-    n_scenarios : int
-        Number of unique scenarios
-    n_alpha : int
-        Number of α values
-    n_reps : int
-        Replications per cell
-    steps : int
-        Simulation steps per experiment
-    seconds_per_step : float
-        Estimated time per simulation step
-
-    Returns:
-    --------
-    estimate : dict
-        Runtime estimates
-    """
-    n_experiments = n_scenarios * n_alpha * n_reps
-    time_per_exp = steps * seconds_per_step  # seconds
-    total_serial_time = n_experiments * time_per_exp
-
-    return {
-        'n_scenarios': n_scenarios,
-        'n_alpha': n_alpha,
-        'n_reps': n_reps,
-        'n_experiments': n_experiments,
-        'time_per_exp_sec': time_per_exp,
-        'total_serial_hours': total_serial_time / 3600,
-        'parallel_64cores_hours': total_serial_time / 3600 / 64,
-        'parallel_256cores_hours': total_serial_time / 3600 / 256,
-    }
-
-
-def generate_slurm_scripts(scenarios, output_dir, n_reps=5, cores_per_job=64):
-    """
-    Generate SLURM job scripts for each scenario.
-
-    Parameters:
-    -----------
-    scenarios : list of dict
-        Scenario definitions
-    output_dir : str
-        Directory to write scripts
-    n_reps : int
-        Replications per scenario
-    cores_per_job : int
-        CPU cores per SLURM job
-    """
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Master submit script
-    submit_lines = ['#!/bin/bash', '# Master script to submit all pilot jobs', '']
-
-    for scenario in scenarios:
-        job_name = f"pilot_{scenario['scenario_id']:03d}_{scenario['scenario_name']}"
-
-        script = f'''#!/bin/bash
-#SBATCH --job-name={job_name}
-#SBATCH --partition=normal
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task={cores_per_job}
-#SBATCH --time=04:00:00
-#SBATCH --output=logs/{job_name}_%j.out
-#SBATCH --error=logs/{job_name}_%j.err
-
-# Load modules
-module load python/3.13.3
-
-# Activate environment
-source $HOME/cong_env/bin/activate
-
-# Change to working directory
-cd /groups/m-larch/bt307958/conglomerates_dev
-
-# Run experiment
-python parallel_counterfactuals.py \\
-    --scenario_name {scenario['scenario_name']} \\
-    --growth_process {scenario['growth_process']} \\
-    --sharing_rule {scenario['sharing_rule']} \\
-    --rho {scenario['rho']} \\
-    --cross_corr {scenario['cross_corr']} \\
-    --counterfactuals {n_reps} \\
-    --n_cores {cores_per_job} \\
-    --output_dir results/pilot/{scenario['scenario_name']}
-
-echo "Job completed: {job_name}"
-'''
-
-        script_path = os.path.join(output_dir, f'{job_name}.sh')
-        with open(script_path, 'w') as f:
-            f.write(script)
-
-        submit_lines.append(f'sbatch {job_name}.sh')
-
-    # Write master submit script
-    submit_path = os.path.join(output_dir, 'submit_all.sh')
-    with open(submit_path, 'w') as f:
-        f.write('\n'.join(submit_lines))
-
-    print(f"Generated {len(scenarios)} SLURM scripts in {output_dir}")
-    print(f"Master submit script: {submit_path}")
+    burn_in_scenarios = []
+    for s in scenarios:
+        if (s['block'] == 'main' and
+            s['log_family'] == 'laplace' and
+            s['cost_type'] == 'power_law' and
+            abs(s['alpha'] - 0.1) < 0.001):
+            burn_in_scenarios.append(s)
+    return burn_in_scenarios
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Generate pilot design for Phase B experiments'
-    )
-    parser.add_argument('--output', type=str, default='pilot_scenarios.csv',
-                       help='Output path for scenario table or SLURM directory')
-    parser.add_argument('--n_reps', type=int, default=5,
-                       help='Replications per cell (default: 5)')
-    parser.add_argument('--slurm', action='store_true',
-                       help='Generate SLURM job scripts instead of CSV')
-    parser.add_argument('--estimate', action='store_true',
-                       help='Only print runtime estimates')
-    parser.add_argument('--full_table', action='store_true',
-                       help='Output full experiment table (scenarios × α × reps)')
+    """Generate Phase C pilot design."""
+    scenarios = generate_all_scenarios()
 
-    args = parser.parse_args()
+    # Count by block
+    blocks = {}
+    for s in scenarios:
+        block = s['block']
+        blocks[block] = blocks.get(block, 0) + 1
 
-    # Generate factorial design
-    scenarios = generate_factorial_design()
-    n_scenarios = len(scenarios)
-    n_alpha = len(ALPHA_VALUES)
-
-    print(f"Factorial Design: {' × '.join(f'{len(FACTORS[f])}' for f in FACTORS)}")
-    print(f"  = {n_scenarios} scenarios")
-    print(f"α values: {n_alpha} ({ALPHA_VALUES[0]:.2f} to {ALPHA_VALUES[-1]:.2f})")
-    print(f"Replications: {args.n_reps}")
-    print(f"Total experiments: {n_scenarios * n_alpha * args.n_reps}")
+    print("Phase C Pilot Design")
+    print("=" * 50)
+    print(f"Fixed parameters:")
+    print(f"  M=N={M}, T={T}, burn_in={BURN_IN}")
+    print(f"  merge_thresh={MERGE_THRESH}")
+    print(f"  growth_process={GROWTH_PROCESS}")
+    print(f"  mu_range={MU_RANGE}, sigma_range={SIGMA_RANGE}")
+    print(f"  floor_c={FLOOR_C:.10f} (exponent=1.06)")
+    print(f"  metric_every={METRIC_EVERY}")
+    print(f"  α grid: {ALPHA_GRID}")
+    print()
+    print("Blocks:")
+    for block, count in blocks.items():
+        print(f"  {block}: {count} runs")
+    print(f"  Total: {len(scenarios)} runs")
     print()
 
-    if args.estimate:
-        est = estimate_runtime(n_scenarios, n_alpha, args.n_reps)
-        print("=== Runtime Estimates ===")
-        print(f"Time per experiment: {est['time_per_exp_sec']:.1f} seconds")
-        print(f"Total serial time: {est['total_serial_hours']:.1f} hours")
-        print(f"Parallel (64 cores): {est['parallel_64cores_hours']:.1f} hours")
-        print(f"Parallel (256 cores): {est['parallel_256cores_hours']:.1f} hours")
-        return
+    # Note: T and burn_in will be set after burn-in analysis
+    # For now, write scenarios without T/burn_in
+    output_path = write_scenarios_json(scenarios)
 
-    if args.slurm:
-        generate_slurm_scripts(scenarios, args.output, n_reps=args.n_reps)
-        return
+    # Print burn-in scenario info
+    burn_in = get_burn_in_scenario(scenarios)
+    print(f"\nBurn-in scenarios (laplace/power_law/α=0.1): {len(burn_in)} runs")
 
-    if args.full_table:
-        df = generate_experiment_table(scenarios, n_reps=args.n_reps)
-        df.to_csv(args.output, index=False)
-        print(f"Full experiment table saved to {args.output}")
-        print(f"Shape: {df.shape}")
-    else:
-        df = pd.DataFrame(scenarios)
-        df.to_csv(args.output, index=False)
-        print(f"Scenario table saved to {args.output}")
-        print(f"Shape: {df.shape}")
+    return scenarios
 
 
 if __name__ == '__main__':
