@@ -57,3 +57,22 @@ When `cross_corr > 0`, all pairs of firms across different markets have correlat
 3. Map through the family's quantile function
 
 This preserves the marginal distributions while introducing the correlation structure.
+
+## Floor Flags
+
+### `floor_c`
+Reflecting floor coefficient at `c × market_median`.
+
+Default: `0.0` (off)
+
+When `floor_c > 0`, after state updates (after pooling, before exit test):
+1. For each market, compute the median firm size in levels: `median = median(exp(log_state))`
+2. Set log floor: `log_floor = log(c × median)`
+3. Any firm below the floor has its log state set to `log_floor`
+4. Track `floor_hits[firm]` (per-firm count) and `floor_hits_by_status[step, status]` where status is 0=standalone, 1=member
+
+N is unchanged; no firm is removed. The floor "reflects" firms back to the threshold.
+
+**Stationarity:** With `floor_c > 0`, the size distribution stabilizes. The stationary tail exponent is approximately `1/(1-c)` when using the mean; using the median produces a slightly different value.
+
+**Returns:** `floor_hits` (per-firm array) and `floor_hits_by_status` (steps × 2 array) are included in `hyperparameters`.

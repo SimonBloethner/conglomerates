@@ -29,7 +29,11 @@ def test_reproducibility_same_seed():
                     assert np.array_equal(a1, a2), f"List {i} element {j} differs"
         elif isinstance(arr1, dict):
             for k in arr1:
-                assert arr1[k] == arr2[k], f"Dict {i} key {k} differs"
+                v1, v2 = arr1[k], arr2[k]
+                if isinstance(v1, np.ndarray):
+                    assert np.array_equal(v1, v2), f"Dict {i} key {k} differs"
+                else:
+                    assert v1 == v2, f"Dict {i} key {k} differs"
 
 
 def test_reproducibility_different_seed():

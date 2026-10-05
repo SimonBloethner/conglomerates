@@ -691,7 +691,7 @@ def iqr_to_scale(family, iqr, nu=3.0):
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
-          log_family="normal", nu=3.0):
+          log_family="normal", nu=3.0, floor_c=0.0):
     """
     Main simulation model.
 
@@ -727,6 +727,10 @@ def model(params, seed=None, market_corr="identity",
     nu : float
         Degrees of freedom for Student-t distribution. Default 3.0.
         Only active when log_family == 'student_t'.
+    floor_c : float
+        Reflecting floor coefficient. Default 0.0 (off).
+        When > 0, after state updates, firms below c × market_median are
+        raised to that floor. Tracks floor_hits per firm and by status.
     """
     import time
 
@@ -821,6 +825,10 @@ def model(params, seed=None, market_corr="identity",
     firm_log_states_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
     firm_log_returns_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
     firm_outside_log_profits = np.zeros((lookback, total_firms), dtype=np.float64)
+
+    # Floor tracking arrays (only used when floor_c > 0)
+    floor_hits = np.zeros(total_firms, dtype=np.int32)  # Per-firm count
+    floor_hits_by_status = np.zeros((steps, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
 
     management_costs_lookup = np.array(
         [management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0 for size in range(markets + 1)])
@@ -1046,6 +1054,36 @@ def model(params, seed=None, market_corr="identity",
         firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
         firm_log_states_buffer[next_idx, solo] = firm_log_states_buffer[curr_idx, solo] + log_realizations_step[solo]
 
+        # FLOOR: Apply reflecting floor at c × market median (after pooling, before exit test)
+        if floor_c > 0.0:
+            current_log_states_flat = firm_log_states_buffer[next_idx]
+            for m in range(markets):
+                start_idx = m * firms_per_market
+                end_idx = (m + 1) * firms_per_market
+                market_log_states = current_log_states_flat[start_idx:end_idx]
+
+                # Compute median in levels, then log floor
+                median_size = np.median(np.exp(market_log_states))
+                log_floor = np.log(floor_c * median_size)
+
+                # Find firms below floor
+                below_floor_mask = market_log_states < log_floor
+                if below_floor_mask.any():
+                    # Get firm indices in global array
+                    below_floor_local = np.where(below_floor_mask)[0]
+                    below_floor_global = start_idx + below_floor_local
+
+                    # Apply floor
+                    firm_log_states_buffer[next_idx, below_floor_global] = log_floor
+
+                    # Track hits per firm
+                    floor_hits[below_floor_global] += 1
+
+                    # Track by status: 0=standalone, 1=member
+                    for firm_id in below_floor_global:
+                        status = 0 if firm_conglom[firm_id] == -1 else 1
+                        floor_hits_by_status[step, status] += 1
+
         # VECTORIZED: Exit checks using geometric means
         if step > lookback:
             exit_cleanup_to_delete = set()
@@ -1166,7 +1204,9 @@ def model(params, seed=None, market_corr="identity",
                        'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2,
                        'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
-                       'log_family': log_family, 'nu': nu}
+                       'log_family': log_family, 'nu': nu,
+                       'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
+                       'final_log_states': firm_log_states_buffer[(steps - 1) % (lookback + 1)].copy()}
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)
