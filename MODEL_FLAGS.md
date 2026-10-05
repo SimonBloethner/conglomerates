@@ -77,6 +77,29 @@ N is unchanged; no firm is removed. The floor "reflects" firms back to the thres
 
 **Returns:** `floor_hits` (per-firm array) and `floor_hits_by_status` (steps × 2 array) are included in `hyperparameters`.
 
+## Endogenous Sharing Rate
+
+### `alpha_endogenous`
+Enable per-conglomerate endogenous sharing rate adaptation.
+
+Default: `False`
+
+When `alpha_endogenous=True`:
+1. Each conglomerate carries its own `α_c` initialized to the run's global `share` parameter
+2. Every `lookback` periods, the model evaluates each α on the grid {0, 0.05, ..., 1.0}
+3. For each candidate α, it replays the last `lookback` periods of member growth under that α
+4. The α that maximizes the minimum member gain (relative to current α) is adopted, but only if `min_gain > 0`
+5. Pooling uses `α_c` instead of the global `share` parameter
+
+**Unanimity Constraint:** The rule requires all members to benefit from any α change. With finite samples and K=2 firms, this is rarely satisfied because one firm typically prefers more pooling while the other prefers less.
+
+**Returns:** `alpha_history[cong, k]` sampled every `metric_every` steps, included in `hyperparameters`.
+
+### Helper Functions
+
+- `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
+- `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
+
 ## Outcome Metrics Flags
 
 ### `metric_every`

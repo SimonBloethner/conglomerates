@@ -215,6 +215,213 @@ def get_historical_returns_numba(firm_log_returns_buffer, start_step, end_step, 
 
 
 @nb.njit(cache=True)
+def replay_member_growth(
+    past_states, past_returns, step_states,
+    alpha, management_cost, proportional, sharing_rule_code
+):
+    """
+    Replay member growth under a given alpha and return per-member log growth.
+
+    This is the factored-out counterfactual computation from merger_kernel_numba.
+
+    Parameters:
+    -----------
+    past_states : ndarray, shape (h, K)
+        Log states for h historical steps for K firms
+    past_returns : ndarray, shape (h, K)
+        Log returns for h historical steps for K firms
+    step_states : ndarray, shape (1, K)
+        Log states at the final step (for computing last growth)
+    alpha : float
+        Pooling fraction (share)
+    management_cost : float
+        Management cost Φ(K)
+    proportional : bool
+        Whether management cost is proportional
+    sharing_rule_code : int
+        0 = equal, 1 = proportional
+
+    Returns:
+    --------
+    member_growth : ndarray, shape (K,)
+        Mean log growth for each member under this alpha
+    valid : bool
+        False if any member would have invalid growth (exit condition)
+    """
+    h = past_states.shape[0]
+    K = past_states.shape[1]
+
+    member_growth = np.zeros(K, dtype=np.float64)
+
+    # Precompute sum_Delta and sum_s for each tau
+    sum_Delta_tau = np.empty(h, dtype=np.float64)
+    sum_s_tau = np.empty(h, dtype=np.float64)
+    for tau in range(h):
+        sum_Delta = 0.0
+        sum_s = 0.0
+        for k in range(K):
+            s_k_tau = np.exp(past_states[tau, k])
+            r_k_tau = np.expm1(past_returns[tau, k])
+            sum_Delta += s_k_tau * r_k_tau
+            sum_s += s_k_tau
+        sum_Delta_tau[tau] = sum_Delta
+        sum_s_tau[tau] = sum_s
+
+    # For each firm, compute synthetic log growth
+    for j in range(K):
+        g_hat = 0.0
+        has_invalid = False
+
+        for tau in range(h):
+            s_i_tau = np.exp(past_states[tau, j])
+            r_i_tau = np.expm1(past_returns[tau, j])
+            Delta_i_tau = s_i_tau * r_i_tau
+
+            sum_Delta = sum_Delta_tau[tau]
+            sum_s = sum_s_tau[tau]
+
+            if proportional:
+                Omega_hat = alpha * sum_Delta * (1.0 - management_cost / sum_s) if sum_s > 0 else 0.0
+            else:
+                Omega_hat = alpha * sum_Delta - management_cost * sum_s
+
+            if sharing_rule_code == 0:
+                # equal: each firm gets equal dollars from pool
+                Pi_hat_i = (1.0 - alpha) * Delta_i_tau + Omega_hat / K
+            else:
+                # proportional: each firm gets share proportional to its size
+                w_i = s_i_tau / sum_s if sum_s > 0 else 0.0
+                Pi_hat_i = (1.0 - alpha) * Delta_i_tau + w_i * Omega_hat
+
+            growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
+            if growth_ratio <= -1.0:
+                has_invalid = True
+                break
+
+            g_hat += np.log1p(growth_ratio)
+
+        if has_invalid:
+            return member_growth, False
+
+        member_growth[j] = g_hat / h
+
+    return member_growth, True
+
+
+@nb.njit(cache=True)
+def compute_realized_growth(past_states, step_states):
+    """
+    Compute realized log growth for each member.
+
+    Parameters:
+    -----------
+    past_states : ndarray, shape (h, K)
+        Log states for h historical steps
+    step_states : ndarray, shape (1, K)
+        Log states at the final step
+
+    Returns:
+    --------
+    realized_growth : ndarray, shape (K,)
+        Mean log growth for each member
+    """
+    h = past_states.shape[0]
+    K = past_states.shape[1]
+
+    realized_growth = np.zeros(K, dtype=np.float64)
+
+    for j in range(K):
+        g_realized = 0.0
+        for tau in range(h - 1):
+            g_realized += past_states[tau + 1, j] - past_states[tau, j]
+        g_realized += step_states[0, j] - past_states[h - 1, j]
+        realized_growth[j] = g_realized / h
+
+    return realized_growth
+
+
+# Alpha grid for endogenous alpha search
+ALPHA_GRID = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
+                       0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0])
+
+
+@nb.njit(cache=True)
+def find_optimal_alpha(
+    past_states, past_returns, step_states,
+    current_alpha, management_cost, proportional, sharing_rule_code
+):
+    """
+    Find the optimal alpha that maximizes the minimum member gain relative to current alpha.
+
+    Parameters:
+    -----------
+    past_states, past_returns, step_states : ndarrays
+        Historical data for computing counterfactual growth
+    current_alpha : float
+        The conglomerate's current alpha
+    management_cost : float
+        Management cost Φ(K)
+    proportional : bool
+        Whether management cost is proportional
+    sharing_rule_code : int
+        0 = equal, 1 = proportional
+
+    Returns:
+    --------
+    optimal_alpha : float
+        The optimal alpha from the grid
+    should_change : bool
+        True if the optimal alpha improves on current (min gain > 0)
+    """
+    # Compute growth under current alpha
+    current_growth, current_valid = replay_member_growth(
+        past_states, past_returns, step_states,
+        current_alpha, management_cost, proportional, sharing_rule_code
+    )
+
+    if not current_valid:
+        # Current alpha is invalid, try to find any valid alpha
+        current_growth = np.full(past_states.shape[1], -np.inf, dtype=np.float64)
+
+    best_alpha = current_alpha
+    best_min_gain = -np.inf
+    should_change = False
+
+    # Grid: {0, 0.05, ..., 1.0}
+    for alpha_idx in range(21):
+        alpha = alpha_idx * 0.05
+
+        new_growth, valid = replay_member_growth(
+            past_states, past_returns, step_states,
+            alpha, management_cost, proportional, sharing_rule_code
+        )
+
+        if not valid:
+            continue
+
+        # Compute minimum gain relative to current alpha
+        min_gain = np.inf
+        for j in range(len(new_growth)):
+            gain = new_growth[j] - current_growth[j]
+            if gain < min_gain:
+                min_gain = gain
+
+        # Adopt if this alpha has the best min gain and it's positive
+        if min_gain > best_min_gain:
+            best_min_gain = min_gain
+            best_alpha = alpha
+
+    # Only change if min gain > 0
+    if best_min_gain > 0 and best_alpha != current_alpha:
+        should_change = True
+    else:
+        best_alpha = current_alpha
+        should_change = False
+
+    return best_alpha, should_change
+
+
+@nb.njit(cache=True)
 def merger_kernel_numba(
     step, lookback, share, proportional, merge_thresh,
     firm_conglom, firm_home_market, firm_entered,
@@ -547,7 +754,9 @@ def process_conglomerate_pooling_numba(
     proportional,
     lookback,
     step,
-    sharing_rule_code
+    sharing_rule_code,
+    cong_alpha,
+    alpha_endogenous
 ):
     """
     Numba-compiled pooling function for all active conglomerates.
@@ -559,6 +768,10 @@ def process_conglomerate_pooling_numba(
     sharing_rule_code : int
         0 = equal: pool distributed equally per dollar (δ_i = (1-α)r_i + Ω/(K·w_i))
         1 = proportional: pool distributed proportionally (δ_i = (1-α)r_i + Ω)
+    cong_alpha : ndarray
+        Per-conglomerate alpha values (used when alpha_endogenous=True)
+    alpha_endogenous : bool
+        If True, use cong_alpha[cong_id] instead of global share
 
     Returns:
     --------
@@ -587,6 +800,12 @@ def process_conglomerate_pooling_numba(
 
         if n_firms == 0:
             continue
+
+        # Use per-conglomerate alpha if endogenous, otherwise global share
+        if alpha_endogenous:
+            alpha_c = cong_alpha[cong_id]
+        else:
+            alpha_c = share
 
         # Extract firms in this conglomerate
         conglomerate = cong_firms[cong_id, :n_firms]
@@ -621,9 +840,9 @@ def process_conglomerate_pooling_numba(
         if proportional:
             mgmt_over_S = m * np.exp(-log_S)
             cost_factor = 1.0 - mgmt_over_S
-            pool_over_S = share * avg_gain_weighted * cost_factor
+            pool_over_S = alpha_c * avg_gain_weighted * cost_factor
         else:
-            pool_over_S = share * avg_gain_weighted - m
+            pool_over_S = alpha_c * avg_gain_weighted - m
 
         # Store pool value
         cong_pools[idx] = pool_over_S
@@ -637,11 +856,11 @@ def process_conglomerate_pooling_numba(
                 # equal: each firm gets equal dollars from the pool
                 # δ_i = (1-α)·r_i + Ω/(K·w_i)
                 w_safe = max(w[i], 1e-300)
-                delta = (1.0 - share) * r_m1[i] + pool_over_S / (K * w_safe)
+                delta = (1.0 - alpha_c) * r_m1[i] + pool_over_S / (K * w_safe)
             else:
                 # proportional: each firm gets proportional to size
                 # δ_i = (1-α)·r_i + Ω
-                delta = (1.0 - share) * r_m1[i] + pool_over_S
+                delta = (1.0 - alpha_c) * r_m1[i] + pool_over_S
 
             # Check for exit condition
             if not np.isfinite(delta) or delta <= -1.0:
@@ -839,7 +1058,7 @@ def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
           log_family="normal", nu=3.0, floor_c=0.0,
-          metric_every=100, burn_in=0):
+          metric_every=100, burn_in=0, alpha_endogenous=False):
     """
     Main simulation model.
 
@@ -883,6 +1102,10 @@ def model(params, seed=None, market_corr="identity",
         Compute outcome metrics every N steps. Default 100.
     burn_in : int
         Steps to exclude from summary statistics. Default 0.
+    alpha_endogenous : bool
+        Enable endogenous alpha adaptation. Default False.
+        When True, each conglomerate carries its own alpha, updated every
+        lookback periods to maximize minimum member gain.
     """
     import time
 
@@ -992,6 +1215,11 @@ def model(params, seed=None, market_corr="identity",
     # effective_members stored as list of (cong_id, K, K_eff) tuples per metric step
     effective_members_list = []
 
+    # Alpha history for endogenous alpha tracking (sampled every metric_every steps)
+    # Shape: (MAX_CONGLOMERATES, n_metric_steps) - NaN for inactive conglomerates
+    MAX_CONGLOMERATES = total_firms // 2
+    alpha_history = np.full((MAX_CONGLOMERATES, n_metric_steps), np.nan, dtype=np.float64)
+
     management_costs_lookup = np.array(
         [management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0 for size in range(markets + 1)])
 
@@ -1009,6 +1237,7 @@ def model(params, seed=None, market_corr="identity",
     cong_pool = np.zeros((MAX_CONGLOMERATES, lookback), dtype=np.float64)
     cong_active = np.zeros(MAX_CONGLOMERATES, dtype=bool)
     cong_occupies_market = np.zeros((MAX_CONGLOMERATES, markets), dtype=bool)  # Fast market occupancy lookup
+    cong_alpha = np.full(MAX_CONGLOMERATES, share, dtype=np.float64)  # Per-conglomerate alpha (endogenous)
 
     # ID management for conglomerate slots
     free_ids = []
@@ -1152,6 +1381,38 @@ def model(params, seed=None, market_corr="identity",
         # Store this step's log returns in circular buffer
         firm_log_returns_buffer[curr_idx] = log_realizations_step
 
+        # ENDOGENOUS ALPHA: Update alpha for each active conglomerate every lookback periods
+        # Must run BEFORE pooling so historical buffer data is still valid
+        if alpha_endogenous and step > 0 and step % lookback == 0:
+            h = min(lookback, step)
+            hist_start = step - h
+
+            # Get active conglomerates for alpha update
+            active_cong_ids_for_alpha = np.where(cong_active)[0]
+
+            for cid in active_cong_ids_for_alpha:
+                K = cong_size[cid]
+                if K < 2:
+                    continue  # Need at least 2 members
+
+                member_firms = cong_firms[cid, :K]
+                m = management_costs_lookup[K]
+
+                # Get historical data for this conglomerate
+                # past_states and past_returns are from the circular buffer
+                past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, member_firms)
+                past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, member_firms)
+                step_states = get_historical_states_numba(firm_log_states_buffer, step, step + 1, member_firms)
+
+                # Find optimal alpha
+                optimal_alpha, should_change = find_optimal_alpha(
+                    past_states, past_returns, step_states,
+                    cong_alpha[cid], m, proportional, sharing_rule_code
+                )
+
+                if should_change:
+                    cong_alpha[cid] = optimal_alpha
+
         # NUMBA OPTIMIZATION: Full merger pipeline in compiled code
         if merge_thresh > 0:
             num_mergers, num_proposals = merger_kernel_numba(
@@ -1188,7 +1449,9 @@ def model(params, seed=None, market_corr="identity",
                 proportional,
                 lookback,
                 step,
-                sharing_rule_code
+                sharing_rule_code,
+                cong_alpha,
+                alpha_endogenous
             )
 
             # Update log states in buffer
@@ -1405,6 +1668,12 @@ def model(params, seed=None, market_corr="identity",
                         step_eff_members.append((cid, K, K_eff))
                 effective_members_list.append((step, step_eff_members))
 
+                # Track alpha history for active conglomerates
+                if alpha_endogenous:
+                    for cid in active_cong_ids:
+                        if cong_active[cid]:
+                            alpha_history[cid, metric_idx] = cong_alpha[cid]
+
     # Compute final rank mobility statistics from online accumulators
     # rank_range: max - min rank for each firm (measures total rank mobility)
     rank_range = (rank_max - rank_min).astype(np.float32)
@@ -1476,6 +1745,7 @@ def model(params, seed=None, market_corr="identity",
                        'hill_exponent': hill_exponent, 'hhi_within': hhi_within,
                        'hhi_aggregate': hhi_aggregate, 'top10_aggregate': top10_aggregate,
                        'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
+                       'alpha_endogenous': alpha_endogenous, 'alpha_history': alpha_history,
                        'summary': summary}
 
     # Model results: 13 elements
