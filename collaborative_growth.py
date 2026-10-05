@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import random_correlation
+from scipy.stats import random_correlation, norm, laplace, t as student_t
 from scipy.special import logsumexp, expm1
 import numba as nb
 
@@ -658,9 +658,40 @@ def process_conglomerate_pooling_numba(
     return new_log_states, cong_pools, firms_to_exit
 
 
+def iqr_to_scale(family, iqr, nu=3.0):
+    """
+    Convert IQR to distribution scale parameter.
+
+    Parameters:
+    -----------
+    family : str
+        Distribution family: 'normal', 'laplace', 'student_t'
+    iqr : float or array
+        Inter-quartile range
+    nu : float
+        Degrees of freedom for Student-t (default 3.0)
+
+    Returns:
+    --------
+    float or array : Scale parameter (σ for normal, b for Laplace, s for t)
+    """
+    if family == 'normal':
+        # IQR = 2 * z_0.75 * σ = 2 * 0.6745 * σ ≈ 1.349 * σ
+        return iqr / (2 * norm.ppf(0.75))
+    elif family == 'laplace':
+        # IQR = 2 * b * ln(2)
+        return iqr / (2 * np.log(2))
+    elif family == 'student_t':
+        # IQR = 2 * s * t_inv(0.75, df=nu)
+        return iqr / (2 * student_t.ppf(0.75, df=nu))
+    else:
+        raise ValueError(f"Unknown family: {family}")
+
+
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
-          sharing_rule="equal", rho=0.0, cross_corr=0.0):
+          sharing_rule="equal", rho=0.0, cross_corr=0.0,
+          log_family="normal", nu=3.0):
     """
     Main simulation model.
 
@@ -673,13 +704,15 @@ def model(params, seed=None, market_corr="identity",
     market_corr : str
         Market correlation type: 'identity' (default) or 'random'
     growth_process : str
-        Growth process type: 'normal_net' (Phase A default) or 'lognormal'
+        Growth process type: 'normal_net' (Phase A default), 'lognormal', or 'log_family'
         - normal_net: r ~ N(μ, σ²), then log(1+r) is stored
         - lognormal: log δ = (μ - σ²/2) + σ·ε, so E[δ] = exp(μ)
+        - log_family: log δ = μ + scale·ε, where scale from IQR (sigma_range)
     mu_range : tuple
         (min_mu, max_mu) bounds for mean growth rate
     sigma_range : tuple
-        (min_sigma, max_sigma) bounds for volatility
+        (min_sigma, max_sigma) bounds for volatility.
+        Under log_family, interpreted as the IQR of log δ.
     sharing_rule : str
         Sharing rule: 'equal' (Phase A default) or 'proportional'
         - equal: pool distributed equally per dollar (δ_i = (1-α)r_i + Ω/(K·w_i))
@@ -688,6 +721,12 @@ def model(params, seed=None, market_corr="identity",
         Within-market correlation coefficient (default 0.0)
     cross_corr : float
         Cross-market correlation coefficient (default 0.0)
+    log_family : str
+        Distribution family for log_family process: 'normal', 'laplace', 'student_t'
+        Only active when growth_process == 'log_family'. Default 'normal'.
+    nu : float
+        Degrees of freedom for Student-t distribution. Default 3.0.
+        Only active when log_family == 'student_t'.
     """
     import time
 
@@ -881,6 +920,55 @@ def model(params, seed=None, market_corr="identity",
             # Phase A default: r ~ N(μ, σ²), then log(1+r)
             realizations_step = growth_vars[:, 0][:, np.newaxis] + market_cov_cholesky @ z
             log_realizations_step = np.log1p(realizations_step.ravel()).astype(np.float64)
+        elif growth_process == "log_family":
+            # Log-family process: log δ = μ + scale·ε
+            # E[log δ] = μ by construction (no -σ²/2 term)
+            # sigma_range interpreted as IQR of log δ
+            mu_m = growth_vars[:, 0]  # Market-specific location
+            iqr_m = growth_vars[:, 1]  # Market-specific IQR
+            scale_m = iqr_to_scale(log_family, iqr_m, nu)
+
+            # Check if we need Gaussian copula (non-normal family with correlation)
+            needs_copula = (log_family != 'normal') and (rho_val != 0.0 or cross_corr != 0.0)
+
+            if needs_copula:
+                # Gaussian copula: draw correlated normals, map through Φ, then family quantile
+                # Step 1: Generate correlated standard normals
+                # z already has within-market correlation from rho_val
+                # Apply cross-market correlation via Cholesky of market correlation matrix
+                z_corr = market_cov_cholesky @ z / growth_vars[:, 1][:, np.newaxis]  # Undo sigma scaling
+
+                # Step 2: Map through Φ to get uniform marginals
+                u = norm.cdf(z_corr)
+
+                # Step 3: Map through family's quantile function (standardized to IQR=1)
+                if log_family == 'laplace':
+                    # Laplace quantile: sign(u-0.5) * b * ln(1 - 2|u-0.5|)
+                    # For standard Laplace (b=1), IQR = 2*ln(2)
+                    eps_raw = laplace.ppf(u)
+                    eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
+                elif log_family == 'student_t':
+                    eps_raw = student_t.ppf(u, df=nu)
+                    eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
+
+                # log δ = μ + IQR * ε (where ε has IQR=1)
+                log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
+            else:
+                # No copula needed: either normal family, or no correlation
+                if log_family == 'normal':
+                    # For normal, z already has the right structure
+                    # log δ = μ + scale * z, where scale = IQR / 1.349
+                    log_realizations_step = (mu_m[:, np.newaxis] + scale_m[:, np.newaxis] * z).ravel().astype(np.float64)
+                elif log_family == 'laplace':
+                    # Independent Laplace draws (no correlation)
+                    eps_raw = np.random.laplace(0, 1, (markets, firms_per_market))
+                    eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
+                    log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
+                elif log_family == 'student_t':
+                    # Independent Student-t draws (no correlation)
+                    eps_raw = np.random.standard_t(df=nu, size=(markets, firms_per_market))
+                    eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
+                    log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
         else:
             # Lognormal: log δ = (μ - σ²/2) + σ·ε
             # This gives E[δ] = exp(μ), E[log δ] = μ - σ²/2
@@ -1077,7 +1165,8 @@ def model(params, seed=None, market_corr="identity",
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
                        'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2,
                        'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
-                       'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr}
+                       'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
+                       'log_family': log_family, 'nu': nu}
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)
