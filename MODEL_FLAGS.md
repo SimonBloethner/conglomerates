@@ -61,19 +61,19 @@ This preserves the marginal distributions while introducing the correlation stru
 ## Floor Flags
 
 ### `floor_c`
-Reflecting floor coefficient at `c × market_median`.
+Reflecting floor coefficient: a firm whose capital falls below `floor_c × (market mean) = (floor_c/N) × total market capital` — i.e. a minimum market share of `floor_c/N` — is reflected to that level. Interpreted as minimum viable scale relative to the market.
 
 Default: `0.0` (off)
 
 When `floor_c > 0`, after state updates (after pooling, before exit test):
-1. For each market, compute the median firm size in levels: `median = median(exp(log_state))`
-2. Set log floor: `log_floor = log(c × median)`
+1. For each market, compute the mean firm size in levels: `mean = mean(exp(log_state))`
+2. Set log floor: `log_floor = log(c × mean)`
 3. Any firm below the floor has its log state set to `log_floor`
 4. Track `floor_hits[firm]` (per-firm count) and `floor_hits_by_status[step, status]` where status is 0=standalone, 1=member
 
 N is unchanged; no firm is removed. The floor "reflects" firms back to the threshold.
 
-**Stationarity:** With `floor_c > 0`, the size distribution stabilizes. The stationary tail exponent is approximately `1/(1-c)` when using the mean; using the median produces a slightly different value.
+**Stationarity:** With `floor_c > 0`, the size distribution stabilizes following the Levy-Solomon / Gabaix mechanism. The stationary tail exponent is approximately `1/(1-c)` (≈1.053 for c=0.05). Using the market mean (rather than median) ensures the barrier rises with the leaders, producing true stationarity.
 
 **Returns:** `floor_hits` (per-firm array) and `floor_hits_by_status` (steps × 2 array) are included in `hyperparameters`.
 

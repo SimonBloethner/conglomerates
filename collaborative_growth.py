@@ -1479,21 +1479,29 @@ def model(params, seed=None, market_corr="identity",
         firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
         firm_log_states_buffer[next_idx, solo] = firm_log_states_buffer[curr_idx, solo] + log_realizations_step[solo]
 
-        # FLOOR: Apply reflecting floor at c × market median (after pooling, before exit test)
+        # FLOOR: Apply reflecting floor at c × market mean (after pooling, before exit test)
+        # The floor is floor_c × market_mean = (floor_c/N) × total_market_capital,
+        # i.e. a minimum market share of floor_c/N. This is the Levy-Solomon barrier.
+        # Iterate until convergence: raising firms changes the mean, which raises the floor.
         if floor_c > 0.0:
             current_log_states_flat = firm_log_states_buffer[next_idx]
             for m in range(markets):
                 start_idx = m * firms_per_market
                 end_idx = (m + 1) * firms_per_market
-                market_log_states = current_log_states_flat[start_idx:end_idx]
 
-                # Compute median in levels, then log floor
-                median_size = np.median(np.exp(market_log_states))
-                log_floor = np.log(floor_c * median_size)
+                # Iterate until no firms are below floor (raising firms raises mean and floor)
+                for _ in range(100):  # Max iterations as safety
+                    market_log_states = current_log_states_flat[start_idx:end_idx]
 
-                # Find firms below floor
-                below_floor_mask = market_log_states < log_floor
-                if below_floor_mask.any():
+                    # Compute mean in levels, then log floor
+                    mean_size = np.mean(np.exp(market_log_states))
+                    log_floor = np.log(floor_c * mean_size)
+
+                    # Find firms below floor
+                    below_floor_mask = market_log_states < log_floor
+                    if not below_floor_mask.any():
+                        break  # Converged
+
                     # Get firm indices in global array
                     below_floor_local = np.where(below_floor_mask)[0]
                     below_floor_global = start_idx + below_floor_local

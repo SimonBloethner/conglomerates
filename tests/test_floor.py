@@ -19,7 +19,7 @@ import collaborative_growth as cg
 
 def test_floor_enforced():
     """
-    With floor_c=0.05: after every step, no firm's size is below 0.05 × its market median.
+    With floor_c=0.05: after every step, no firm's size is below 0.05 × its market mean.
 
     Test catches: wrong ordering or wrong market indexing.
     Uses firm_id // N to determine market.
@@ -57,10 +57,21 @@ def test_floor_enforced():
     assert floor_hits is not None, "floor_hits not returned"
     assert floor_hits_by_status is not None, "floor_hits_by_status not returned"
 
-    # With μ=0.03, σ=0.1, and floor at 5% of median, we should see some floor hits
+    # With μ=0.03, σ=0.1, and floor at 5% of mean, we should see some floor hits
     assert floor_hits.sum() > 0, "Expected some floor hits with these parameters"
 
-    print(f"PASS: floor_enforced - {floor_hits.sum()} total floor hits")
+    # Verify no firm is below floor in final state
+    final_log_states = hyperparams['final_log_states']
+    for m in range(M):
+        start_idx = m * N
+        end_idx = (m + 1) * N
+        market_sizes = np.exp(final_log_states[start_idx:end_idx])
+        mean_size = np.mean(market_sizes)
+        floor_size = FLOOR_C * mean_size
+        below_floor = market_sizes < floor_size * 0.9999  # tolerance for float
+        assert not below_floor.any(), f"Market {m}: {below_floor.sum()} firms below floor"
+
+    print(f"PASS: floor_enforced - {floor_hits.sum()} total floor hits, enforcement verified")
 
 
 def test_floor_identity():
@@ -182,17 +193,18 @@ def hill_estimator(sizes, k_fraction=0.1):
 
 def test_stationarity():
     """
-    Stationarity test: with floor, distribution stabilizes.
+    Stationarity test: with floor relative to market mean, distribution stabilizes.
 
-    Gaussian log_family, μ=0.03, IQR=0.2, M=5, N=400, T=6000, α=0, floor_c=0.05.
-    Hill estimator on top 10% at t=3000 and t=6000.
+    Gaussian log_family, μ=0.03, IQR=0.2, M=5, N=400, α=0, seed 42, floor_c=0.05.
+    Hill on the top 10% of sizes pooled across the 5 markets as market shares,
+    i.e. 200 observations, at t=3000 and t=6000.
 
     Asserts:
-    (i) With floor: estimates differ by <15% (stationary)
-    (ii) Without floor: t=6000 estimate at least 25% below t=3000 (non-stationary drift)
-    (iii) Stationary estimate within 40% of 1/(1-c) = 1.053
+    (i) With floor: |hill(6000) − hill(3000)| / hill(3000) < 0.15
+    (ii) Without floor: hill(6000) < 0.75 × hill(3000)
+    (iii) With floor: hill(6000) within 40% of 1/(1−c) = 1.053, i.e. in (0.63, 1.47)
 
-    Test catches: floor that doesn't bind, floor relative to wrong quantity,
+    Test catches: floor that doesn't bind, floor relative to wrong quantity (median),
     or floor applied before pooling.
     """
     M = 5
@@ -210,15 +222,18 @@ def test_stationarity():
             'power_law', None, None, None,
         ]
 
-    def compute_avg_hill(log_states, M, N):
-        """Compute average Hill estimator across markets."""
+    def compute_pooled_hill(log_states):
+        """
+        Compute Hill estimator on pooled market shares.
+
+        Converts sizes to market shares (size_i / total_size) and computes
+        Hill on top 10% = 200 observations.
+        """
         sizes = np.exp(log_states)
-        hill_estimates = []
-        for m in range(M):
-            market_sizes = sizes[m * N:(m + 1) * N]
-            hill_est = hill_estimator(market_sizes, k_fraction=0.1)
-            hill_estimates.append(hill_est)
-        return np.mean(hill_estimates)
+        # Convert to market shares (fraction of total)
+        market_shares = sizes / sizes.sum()
+        # Hill on top 10%
+        return hill_estimator(market_shares, k_fraction=0.1)
 
     # === WITH FLOOR ===
     # Run to T=3000 with floor
@@ -231,7 +246,7 @@ def test_stationarity():
         floor_c=FLOOR_C
     )
     states_floor_3000 = result_floor_3000[-1]['final_log_states']
-    hill_floor_3000 = compute_avg_hill(states_floor_3000, M, N)
+    hill_floor_3000 = compute_pooled_hill(states_floor_3000)
 
     # Run to T=6000 with floor (same seed = same trajectory for first 3000 steps)
     result_floor_6000 = cg.model(
@@ -243,7 +258,7 @@ def test_stationarity():
         floor_c=FLOOR_C
     )
     states_floor_6000 = result_floor_6000[-1]['final_log_states']
-    hill_floor_6000 = compute_avg_hill(states_floor_6000, M, N)
+    hill_floor_6000 = compute_pooled_hill(states_floor_6000)
     total_hits = result_floor_6000[-1]['floor_hits'].sum()
 
     # === WITHOUT FLOOR ===
@@ -257,7 +272,7 @@ def test_stationarity():
         floor_c=0.0
     )
     states_nofloor_3000 = result_nofloor_3000[-1]['final_log_states']
-    hill_nofloor_3000 = compute_avg_hill(states_nofloor_3000, M, N)
+    hill_nofloor_3000 = compute_pooled_hill(states_nofloor_3000)
 
     # Run to T=6000 without floor
     result_nofloor_6000 = cg.model(
@@ -269,7 +284,7 @@ def test_stationarity():
         floor_c=0.0
     )
     states_nofloor_6000 = result_nofloor_6000[-1]['final_log_states']
-    hill_nofloor_6000 = compute_avg_hill(states_nofloor_6000, M, N)
+    hill_nofloor_6000 = compute_pooled_hill(states_nofloor_6000)
 
     # === ASSERTIONS ===
     theoretical = 1 / (1 - FLOOR_C)  # 1.053
@@ -284,41 +299,34 @@ def test_stationarity():
 
     print(f"Theoretical 1/(1-c): {theoretical:.3f}")
 
-    # (i) With floor: estimates differ by <15% (stationary)
-    # Note: High variance across seeds; using 20% threshold for robustness
-    floor_diff = abs(hill_floor_6000 - hill_floor_3000) / hill_floor_3000
-    print(f"Floor drift: {100*floor_diff:.1f}%")
-    assert floor_diff < 0.20, (
-        f"With floor, Hill estimates should differ by <20%, got {100*floor_diff:.1f}%"
+    # (i) With floor: |hill(6000) − hill(3000)| / hill(3000) < 0.15 (stationary)
+    floor_drift = abs(hill_floor_6000 - hill_floor_3000) / hill_floor_3000
+    print(f"Floor drift: {100*floor_drift:.1f}%")
+    assert floor_drift < 0.15, (
+        f"With floor, Hill estimates should differ by <15%, got {100*floor_drift:.1f}%"
     )
 
-    # (ii) Without floor: t=6000 estimate below t=3000 (non-stationary drift)
-    # The drift should be meaningfully larger without floor than with floor
-    nofloor_drift = (hill_nofloor_3000 - hill_nofloor_6000) / hill_nofloor_3000
-    print(f"No-floor drift: {100*nofloor_drift:.1f}%")
-    assert nofloor_drift > 0.20, (
-        f"Without floor, t=6000 Hill should be >20% below t=3000, got {100*nofloor_drift:.1f}%"
+    # (ii) Without floor: hill(6000) < 0.75 × hill(3000) (non-stationary drift)
+    print(f"No-floor ratio: hill(6000)/hill(3000) = {hill_nofloor_6000/hill_nofloor_3000:.3f}")
+    assert hill_nofloor_6000 < 0.75 * hill_nofloor_3000, (
+        f"Without floor, hill(6000)={hill_nofloor_6000:.3f} should be < 0.75 × hill(3000)={0.75*hill_nofloor_3000:.3f}"
     )
 
-    # (iii) Floor should reduce drift compared to no-floor
-    # The ratio of drifts demonstrates floor effectiveness
-    assert floor_diff < nofloor_drift, (
-        f"Floor should reduce drift: floor_diff={100*floor_diff:.1f}% should be < "
-        f"nofloor_drift={100*nofloor_drift:.1f}%"
+    # (iii) With floor: hill(6000) within 40% of 1/(1−c) = 1.053, i.e. in (0.63, 1.47)
+    lower_bound = 0.63
+    upper_bound = 1.47
+    print(f"Target range: ({lower_bound:.2f}, {upper_bound:.2f})")
+    assert lower_bound < hill_floor_6000 < upper_bound, (
+        f"With floor, hill(6000)={hill_floor_6000:.3f} should be in ({lower_bound:.2f}, {upper_bound:.2f})"
     )
 
-    # Record gap to theoretical (using median produces different exponent than mean formula)
-    gap = abs(hill_floor_6000 - theoretical) / theoretical
-    print(f"Gap to theoretical: {100*gap:.1f}%")
-    # Note: The 1/(1-c) formula assumes mean; with median, gap is expected and goes in paper
-
-    print(f"PASS: stationarity - Hill={hill_floor_6000:.3f}, gap={100*gap:.1f}%, {total_hits} hits")
+    print(f"PASS: stationarity - Hill={hill_floor_6000:.3f}, {total_hits} floor hits")
 
 
 def test_floor_no_firm_below_threshold():
     """
     Detailed test: run model step by step and verify no firm ever ends up
-    below floor_c × market median after floor is applied.
+    below floor_c × market mean after floor is applied.
 
     This test requires access to intermediate states, so we use a custom
     simulation loop that mirrors the model logic.
@@ -349,27 +357,32 @@ def test_floor_no_firm_below_threshold():
         # Update states
         log_states = log_states + log_shocks
 
-        # Apply floor
+        # Apply floor (using mean, matching the model - iterate until convergence)
         for m in range(M):
             start_idx = m * N
             end_idx = (m + 1) * N
-            market_log_states = log_states[start_idx:end_idx]
 
-            # Compute median in levels
-            median_size = np.median(np.exp(market_log_states))
-            log_floor = np.log(FLOOR_C * median_size)
+            # Iterate: raising firms to floor raises mean, which raises floor
+            for _ in range(100):
+                market_log_states = log_states[start_idx:end_idx]
 
-            # Apply floor
-            below_floor = market_log_states < log_floor
-            log_states[start_idx:end_idx] = np.maximum(market_log_states, log_floor)
+                # Compute mean in levels
+                mean_size = np.mean(np.exp(market_log_states))
+                log_floor = np.log(FLOOR_C * mean_size)
+
+                # Apply floor
+                below_floor = market_log_states < log_floor
+                if not below_floor.any():
+                    break
+                log_states[start_idx:end_idx] = np.maximum(market_log_states, log_floor)
 
         # Check no firm is below floor
         for m in range(M):
             start_idx = m * N
             end_idx = (m + 1) * N
             market_sizes = np.exp(log_states[start_idx:end_idx])
-            median_size = np.median(market_sizes)
-            floor_size = FLOOR_C * median_size
+            mean_size = np.mean(market_sizes)
+            floor_size = FLOOR_C * mean_size
 
             firms_below = market_sizes < floor_size * 0.9999  # Small tolerance for float
             if firms_below.any():
