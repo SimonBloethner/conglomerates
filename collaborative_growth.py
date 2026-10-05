@@ -1047,7 +1047,7 @@ def iqr_to_scale(family, iqr, nu=3.0):
     elif family == 'laplace':
         # IQR = 2 * b * ln(2)
         return iqr / (2 * np.log(2))
-    elif family == 'student_t':
+    elif family == 'student_t' or family == 't3':
         # IQR = 2 * s * t_inv(0.75, df=nu)
         return iqr / (2 * student_t.ppf(0.75, df=nu))
     else:
@@ -1346,7 +1346,7 @@ def model(params, seed=None, market_corr="identity",
                     # For standard Laplace (b=1), IQR = 2*ln(2)
                     eps_raw = laplace.ppf(u)
                     eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
-                elif log_family == 'student_t':
+                elif log_family == 'student_t' or log_family == 't3':
                     eps_raw = student_t.ppf(u, df=nu)
                     eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
 
@@ -1363,7 +1363,7 @@ def model(params, seed=None, market_corr="identity",
                     eps_raw = np.random.laplace(0, 1, (markets, firms_per_market))
                     eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
                     log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
-                elif log_family == 'student_t':
+                elif log_family == 'student_t' or log_family == 't3':
                     # Independent Student-t draws (no correlation)
                     eps_raw = np.random.standard_t(df=nu, size=(markets, firms_per_market))
                     eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
