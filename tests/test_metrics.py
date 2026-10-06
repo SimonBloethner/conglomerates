@@ -159,6 +159,55 @@ def test_hill_pareto():
     print(f"PASS: Hill on Pareto(1.5) = {alpha_est:.3f} (error = {error:.4f})")
 
 
+def test_hill_2500_samples():
+    """
+    Hill estimator on 2,500 draws from Pareto(α=1.5) returns 1.5 ± 0.15.
+
+    Test catches: implementation that fails with moderate sample sizes.
+    """
+    from collaborative_growth import hill_estimator
+
+    np.random.seed(42)
+
+    alpha_true = 1.5
+    n_samples = 2500
+
+    samples = stats.pareto.rvs(b=alpha_true, size=n_samples)
+    alpha_est = hill_estimator(samples, k_fraction=0.1)
+
+    error = abs(alpha_est - alpha_true)
+    assert error < 0.15, f"Hill estimate = {alpha_est:.3f}, expected {alpha_true} ± 0.15"
+
+    print(f"PASS: Hill on 2500 Pareto(1.5) = {alpha_est:.3f} (error = {error:.4f})")
+
+
+def test_hill_5_draws_high_variance():
+    """
+    Hill estimator on 5 draws from Pareto(α=1.5), 50 repetitions,
+    has standard deviation exceeding 0.4.
+
+    Documents why pooling is needed: per-market Hill with N=50, k=5 is unstable.
+    Test catches: a pooled version that silently still uses per-market data.
+    """
+    from collaborative_growth import hill_estimator
+
+    alpha_true = 1.5
+    n_reps = 50
+    estimates = []
+
+    for rep in range(n_reps):
+        np.random.seed(rep)
+        samples = stats.pareto.rvs(b=alpha_true, size=5)
+        est = hill_estimator(samples, k_fraction=0.1)
+        estimates.append(est)
+
+    sd = np.std(estimates)
+    print(f"5-observation SD across {n_reps} reps: {sd:.4f}")
+    assert sd > 0.4, f"5-observation SD = {sd:.4f}, expected > 0.4"
+
+    print(f"PASS: 5-observation Hill SD = {sd:.4f} > 0.4")
+
+
 def test_pooled_hill_accuracy():
     """
     Pooled Hill on M=5 markets of N=400 shares all drawn from Pareto(α=1.5)
@@ -239,6 +288,79 @@ def test_pooled_hill_lower_variance():
     print(f"PASS: Pooled std = {pooled_std:.3f} < 0.15, per-market std = {avg_permarket_std:.3f} > 0.4")
 
 
+def test_pooled_hill_same_distribution():
+    """
+    Pooled Hill on a constructed economy where every market has the same
+    size vector equals the per-market Hill.
+
+    Test catches: wrong share normalization in pooled implementation.
+    """
+    from collaborative_growth import hill_estimator
+
+    # 5 markets, each with 10 firms, all having the same size vector
+    M, N = 5, 10
+    size_vector = np.array([10, 9, 8, 7, 6, 5, 4, 3, 2, 1], dtype=float)
+    all_sizes = np.tile(size_vector, M)  # Same distribution in each market
+
+    # Pooled Hill (economy-wide shares)
+    total_capital = all_sizes.sum()
+    market_shares = all_sizes / total_capital
+    pooled_hill = hill_estimator(market_shares, k_fraction=0.1)
+
+    # Per-market Hill (should be identical since all markets have same distribution)
+    market_total = size_vector.sum()
+    per_market_shares = size_vector / market_total
+    per_market_hill = hill_estimator(per_market_shares, k_fraction=0.1)
+
+    # They should be equal when all markets have identical distributions
+    assert abs(pooled_hill - per_market_hill) < 1e-10, (
+        f"Pooled Hill = {pooled_hill:.6f}, per-market Hill = {per_market_hill:.6f} - "
+        "should be equal when all markets have same distribution"
+    )
+
+    print(f"PASS: Pooled Hill = per-market Hill = {pooled_hill:.4f} (same distribution)")
+
+
+def test_cong_capital_share_zero_alpha():
+    """
+    M=N=20, T=200, α=0 (no conglomerates ever): cong_capital_share is exactly 0.0
+    at every recorded step and in the summary.
+
+    Test catches: NaN returned when no conglomerate is active.
+    """
+    from collaborative_growth import model
+
+    M, N, T = 20, 20, 200
+    params = [
+        M,                # markets
+        N,                # firms_per_market
+        T,                # steps
+        0.0,              # share (alpha=0 - no conglomerates)
+        M * N,            # total_firms
+        0.05,             # merge_thresh
+        4,                # comparison
+        0.85,             # break_thresh
+        False,            # proportional
+        50,               # lookback
+        'power_law',      # cost_type
+        None, None, None, # c0, c1, c2
+    ]
+
+    result = model(params, seed=42, metric_every=10, burn_in=0)
+    hyperparams = result[12]
+    ccs = hyperparams['cong_capital_share']
+    summary_ccs = hyperparams['summary']['cong_capital_share_median']
+
+    # All values must be exactly 0.0 (not NaN)
+    assert np.all(ccs == 0.0), (
+        f"cong_capital_share has non-zero values: min={ccs.min()}, max={ccs.max()}"
+    )
+    assert not np.any(np.isnan(ccs)), "cong_capital_share contains NaN"
+    assert summary_ccs == 0.0, f"Summary cong_capital_share_median = {summary_ccs}, expected 0.0"
+
+    print(f"PASS: cong_capital_share = 0.0 at all {len(ccs)} steps with α=0")
+
+
 def test_phase_b_identity_with_metrics():
     """
     test_phase_b_identity.py passes with new metrics.
@@ -272,11 +394,23 @@ if __name__ == '__main__':
     print("\nTesting Hill estimator on Pareto...")
     test_hill_pareto()
 
+    print("\nTesting Hill on 2500 samples...")
+    test_hill_2500_samples()
+
+    print("\nTesting Hill 5-observation high variance...")
+    test_hill_5_draws_high_variance()
+
     print("\nTesting pooled Hill accuracy...")
     test_pooled_hill_accuracy()
 
     print("\nTesting pooled Hill lower variance...")
     test_pooled_hill_lower_variance()
+
+    print("\nTesting pooled Hill same distribution...")
+    test_pooled_hill_same_distribution()
+
+    print("\nTesting cong_capital_share with α=0...")
+    test_cong_capital_share_zero_alpha()
 
     print("\nTesting Phase B identity...")
     test_phase_b_identity_with_metrics()
