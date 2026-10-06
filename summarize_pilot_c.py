@@ -55,6 +55,9 @@ def extract_post_burnin_metrics(result):
     else:
         metrics['cost_multiplier'] = 1.0
 
+    # Add floor_c for summary report
+    metrics['floor_c'] = scenario.get('floor_c', 0.0)
+
     # Summary scalars from model
     summary = result.get('summary', {})
     metrics['K_median'] = summary.get('K_median', np.nan)
@@ -81,11 +84,17 @@ def extract_post_burnin_metrics(result):
         metrics['hill_exponent_p25'] = np.nan
         metrics['hill_exponent_p75'] = np.nan
 
-    # HHI within-market: array of shape (n_observations,) - average across markets
+    # HHI within-market: array of shape (markets, n_observations)
+    # Take mean across markets, then extract post-burn-in
     hhi_within = result.get('hhi_within')
     if hhi_within is not None and len(hhi_within) > 0:
         burn_in_obs = burn_in // metric_every
-        hhi_post = hhi_within[burn_in_obs:]
+        # Handle both 2D (markets, obs) and 1D (obs) shapes
+        if hhi_within.ndim == 2:
+            hhi_mean = np.nanmean(hhi_within, axis=0)  # Mean across markets
+            hhi_post = hhi_mean[burn_in_obs:]
+        else:
+            hhi_post = hhi_within[burn_in_obs:]
         metrics['hhi_within_median'] = np.nanmedian(hhi_post)
         metrics['hhi_within_p25'] = np.nanpercentile(hhi_post, 25)
         metrics['hhi_within_p75'] = np.nanpercentile(hhi_post, 75)
@@ -168,12 +177,18 @@ def extract_post_burnin_metrics(result):
     # Endogenous alpha: final adopted alpha
     if scenario.get('alpha_endogenous', False):
         alpha_hist = result.get('alpha_history')
-        if alpha_hist is not None and isinstance(alpha_hist, dict) and len(alpha_hist) > 0:
-            # Get final alphas for each conglomerate
+        if alpha_hist is not None:
+            # alpha_history is a 2D array: (max_conglomerates, n_metric_steps)
+            # Get final alphas for each conglomerate that was active
             final_alphas = []
-            for cid, history in alpha_hist.items():
-                if history:
-                    final_alphas.append(history[-1][1])  # (step, alpha)
+            if isinstance(alpha_hist, np.ndarray) and alpha_hist.ndim == 2:
+                # Find conglomerates that had non-zero alpha at some point
+                for cid in range(alpha_hist.shape[0]):
+                    # Get last non-zero alpha for this conglomerate
+                    cid_alphas = alpha_hist[cid, :]
+                    valid_alphas = cid_alphas[cid_alphas > 0]
+                    if len(valid_alphas) > 0:
+                        final_alphas.append(valid_alphas[-1])
             if final_alphas:
                 metrics['alpha_adopted_median'] = np.median(final_alphas)
                 metrics['alpha_adopted_mean'] = np.mean(final_alphas)
