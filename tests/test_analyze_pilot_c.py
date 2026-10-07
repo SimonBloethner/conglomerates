@@ -448,9 +448,9 @@ def test_table5_equal_split():
     print("PASS: Table 5 Equal-split")
 
 
-def test_table8_assortativity():
+def test_table9_assortativity():
     """
-    Test Table 8: Assortativity.
+    Test Table 9: Assortativity.
 
     Verifies:
     - Assortativity ratio is grouped by (family, cost, alpha)
@@ -530,7 +530,7 @@ if __name__ == '__main__':
     test_table1_k_vs_kstar()
     test_table2_hill_vs_alpha()
     test_table5_equal_split()
-    test_table8_assortativity()
+    test_table9_assortativity()
     test_hhi_table_includes_ccs()
 
     print("\nAll Phase C analysis tests passed!")

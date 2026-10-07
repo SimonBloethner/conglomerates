@@ -7,6 +7,14 @@
 - **Mean ms/step**: 6.52 ± 2.07
 - **Grid**: 50 × 50 (M × N)
 
+### Known Issues
+
+**floor_c mismatch**: These simulations were run with `floor_c=0.0566` (the original
+uncalibrated value), not the C14-calibrated `floor_c=0.12717`. This affects the Hill
+exponent: observed values are ~0.90 instead of the expected ~1.06. The scenarios.json
+file was updated to 0.12717 after the simulations completed, but the pkl files were
+deleted so results cannot be regenerated without re-running all 1,275 scenarios.
+
 ### Block counts
 
 | Block | Count |
