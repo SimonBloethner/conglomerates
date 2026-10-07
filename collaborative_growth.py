@@ -1096,7 +1096,7 @@ def model(params, seed=None, market_corr="identity",
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
           log_family="normal", nu=3.0, floor_c=0.0,
           metric_every=100, burn_in=0, alpha_endogenous=False,
-          g=None, renorm_every=500):
+          g=None, renorm_every=500, market_size_fixed=False):
     """
     Main simulation model.
 
@@ -1157,10 +1157,23 @@ def model(params, seed=None, market_corr="identity",
         from all entries in firm_log_states_buffer to prevent numerical overflow.
         This is a scale-free transformation that doesn't affect any ratio-based
         decisions or metrics.
+    market_size_fixed : bool
+        Fixed market size mode. Default False.
+        When True (requires growth_process == 'log_family'):
+        - Draws raw log shocks x_{m,j} as usual
+        - Computes market growth factor G_m = Σ_j s_{m,j}·exp(x_{m,j}) / Σ_j s_{m,j}
+        - Stores relative returns r̃_{m,j} = x_{m,j} - log(G_m) instead of x
+        - By construction, a market of standalone firms keeps its total exactly
+        - After pooling/floor, renormalizes per market so mean size = 1
+        - Skips economy-wide renormalization (redundant when flag is on)
     """
     import time
 
     model_start_time = time.time()
+
+    # Validate market_size_fixed flag
+    if market_size_fixed and growth_process != "log_family":
+        raise ValueError("market_size_fixed=True requires growth_process='log_family'")
 
     # Seed both NumPy and Numba RNGs if seed is provided
     if seed is not None:
@@ -1270,6 +1283,9 @@ def model(params, seed=None, market_corr="identity",
     # Floor tracking arrays (only used when floor_c > 0)
     floor_hits = np.zeros(total_firms, dtype=np.int32)  # Per-firm count
     floor_hits_by_status = np.zeros((steps, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
+
+    # Per-market renormalization correction tracking (only used when market_size_fixed)
+    renorm_corrections = np.zeros(steps, dtype=np.float64)  # Mean |log(Σs/N)| per step
 
     # Outcome metrics arrays (computed every metric_every steps)
     n_metric_steps = (steps + metric_every - 1) // metric_every  # Ceiling division
@@ -1445,6 +1461,25 @@ def model(params, seed=None, market_corr="identity",
         curr_idx = step % (lookback + 1)
         next_idx = (step + 1) % (lookback + 1)
 
+        # MARKET_SIZE_FIXED: Transform raw shocks x to relative returns r̃
+        # r̃_{m,j} = x_{m,j} - log(G_m) where G_m = Σ_j s_{m,j}·exp(x_{m,j}) / Σ_j s_{m,j}
+        # By construction, a market of standalone firms keeps its total exactly (Σs=const)
+        if market_size_fixed:
+            current_log_states = firm_log_states_buffer[curr_idx]
+            # Reshape for per-market computation
+            x_2d = log_realizations_step.reshape(markets, firms_per_market)
+            s_2d = np.exp(current_log_states.reshape(markets, firms_per_market))
+
+            # G_m = Σ(s·exp(x)) / Σ(s) for each market
+            # Use logsumexp for numerical stability: log(G_m) = logsumexp(log(s) + x) - logsumexp(log(s))
+            log_s_2d = current_log_states.reshape(markets, firms_per_market)
+            log_numerator = logsumexp(log_s_2d + x_2d, axis=1)  # log(Σ s·exp(x))
+            log_denominator = logsumexp(log_s_2d, axis=1)       # log(Σ s)
+            log_G = log_numerator - log_denominator  # log(G_m) per market
+
+            # r̃_{m,j} = x_{m,j} - log(G_m)
+            log_realizations_step = (x_2d - log_G[:, np.newaxis]).ravel()
+
         # Store this step's log returns in circular buffer
         firm_log_returns_buffer[curr_idx] = log_realizations_step
 
@@ -1550,8 +1585,12 @@ def model(params, seed=None, market_corr="identity",
         # The floor is floor_c × market_mean = (floor_c/N) × total_market_capital,
         # i.e. a minimum market share of floor_c/N. This is the Levy-Solomon barrier.
         # Iterate until convergence: raising firms changes the mean, which raises the floor.
+        # C12 FIX: Count each firm once per period using boolean mask, not once per iteration.
         if floor_c > 0.0:
             current_log_states_flat = firm_log_states_buffer[next_idx]
+            # Per-period mask: track which firms hit floor at any iteration this period
+            period_hit_mask = np.zeros(total_firms, dtype=bool)
+
             for m in range(markets):
                 start_idx = m * firms_per_market
                 end_idx = (m + 1) * firms_per_market
@@ -1581,18 +1620,45 @@ def model(params, seed=None, market_corr="identity",
                     # Apply floor
                     firm_log_states_buffer[next_idx, below_floor_global] = log_floor
 
-                    # Track hits per firm
-                    floor_hits[below_floor_global] += 1
+                    # Mark firms as hit this period (will be counted once after loop)
+                    period_hit_mask[below_floor_global] = True
 
-                    # Track by status: 0=standalone, 1=member
-                    for firm_id in below_floor_global:
-                        status = 0 if firm_conglom[firm_id] == -1 else 1
-                        floor_hits_by_status[step, status] += 1
+            # After all markets/iterations converge, count hits once per firm per period
+            hit_firms = np.where(period_hit_mask)[0]
+            floor_hits[hit_firms] += 1
+            for firm_id in hit_firms:
+                status = 0 if firm_conglom[firm_id] == -1 else 1
+                floor_hits_by_status[step, status] += 1
+
+        # MARKET_SIZE_FIXED RENORMALIZATION: Per-market normalization to mean size = 1
+        # After pooling and floor, subtract log(Σ s/N) from every firm in each market
+        # (all rows of circular buffer). Records correction for diagnostics.
+        if market_size_fixed:
+            step_corrections = []
+            for m in range(markets):
+                start_idx = m * firms_per_market
+                end_idx = (m + 1) * firms_per_market
+
+                # Current log states for this market
+                market_log_states = firm_log_states_buffer[next_idx, start_idx:end_idx]
+
+                # Compute log(Σ s/N) = logsumexp(log_s) - log(N)
+                # This is the log of mean size; subtract to make mean size = 1
+                log_mean_size = logsumexp(market_log_states) - np.log(firms_per_market)
+                correction = abs(log_mean_size)
+                step_corrections.append(correction)
+
+                # Subtract from ALL rows of the circular buffer for this market
+                for row in range(lookback + 1):
+                    firm_log_states_buffer[row, start_idx:end_idx] -= log_mean_size
+
+            renorm_corrections[step] = np.mean(step_corrections)
 
         # RENORMALIZATION: Prevent numerical overflow under common growth
         # Subtract economy-wide max log state from ALL buffer rows to keep differences intact
         # This is scale-free: all ratio-based decisions/metrics are unaffected
-        if g is not None and renorm_every > 0 and (step + 1) % renorm_every == 0:
+        # SKIP when market_size_fixed is on (per-market renorm already handles it)
+        if not market_size_fixed and g is not None and renorm_every > 0 and (step + 1) % renorm_every == 0:
             # Find max log state across all firms at current timestep
             max_log_state = firm_log_states_buffer[next_idx].max()
             # Subtract from ALL rows of the circular buffer
@@ -1834,6 +1900,12 @@ def model(params, seed=None, market_corr="identity",
         summary['proposals_per_period'] = 0.0
         summary['exits_per_period'] = 0.0
 
+    # Renormalization correction mean (only meaningful when market_size_fixed)
+    if market_size_fixed and steps > burn_in:
+        summary['renorm_correction_mean'] = np.mean(renorm_corrections[burn_in:])
+    else:
+        summary['renorm_correction_mean'] = 0.0
+
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
@@ -1856,6 +1928,9 @@ def model(params, seed=None, market_corr="identity",
                        # C11 additions for assortativity analysis
                        'market_iqr': growth_vars[:, 1].copy(),  # Per-market IQR
                        'final_firm_conglom': firm_conglom.copy(),  # Final conglomerate membership
+                       # C12 additions for fixed market size
+                       'market_size_fixed': market_size_fixed,
+                       'renorm_corrections': renorm_corrections,
                        }
 
     # Model results: 13 elements

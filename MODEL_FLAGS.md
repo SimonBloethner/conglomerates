@@ -100,6 +100,43 @@ When `alpha_endogenous=True`:
 - `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
 - `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
 
+## Fixed Market Size
+
+### `market_size_fixed`
+Fixed market size mode for relative dynamics.
+
+Default: `False`
+
+When `market_size_fixed=True` (requires `growth_process='log_family'`):
+
+**Relative Returns:**
+1. Draw raw log shocks `x_{m,j}` as usual (family, IQR per market, g as location)
+2. Compute market growth factor: `G_m = Σ_j s_{m,j}·exp(x_{m,j}) / Σ_j s_{m,j}` (sizes at start of step)
+3. Compute relative return: `r̃_{m,j} = x_{m,j} - log(G_m)`
+4. Store `r̃` (not `x`) in `firm_log_returns_buffer` and `firm_outside_log_profits`
+5. Use `r̃` everywhere `x` was used (state update, pooling, replay in merger kernel, exit test)
+
+By construction, a market of standalone firms keeps its total capital exactly constant.
+
+**Per-Market Renormalization:**
+After pooling and floor reflection, the model renormalizes each market so its mean size equals 1:
+- Subtract `log(Σ_j s_{m,j} / N)` from every firm in market m (all rows of circular state buffer)
+- This absorbs small net capital flows from cross-market pooling and floor reflection
+- Records `|log(Σs/N)|` per market per period; returns mean as `renorm_correction_mean`
+
+**Interpretation:**
+- With fixed market size, every market has mean size 1 at every step
+- The floor `floor_c` represents a minimum market share of `floor_c/N`
+- Cross-market divergence is eliminated; markets differ only in relative dynamics
+- The g parameter has no effect on levels (already normalized), but is kept as a stored parameter
+
+**Skipped:**
+The C8 economy-wide renormalization is redundant when this flag is on and is skipped.
+
+**Returns:**
+- `renorm_correction_mean` in `summary`: mean correction per step (should be small, <1e-3)
+- `renorm_corrections` in `hyperparameters`: per-step correction array
+
 ## Outcome Metrics Flags
 
 ### `metric_every`
