@@ -7,7 +7,9 @@ Generates pilot_c/scenarios.json with factorial design for Phase C experiments.
 Fixed parameters:
 - M=N=50, merge_thresh=0.05, proportional=False
 - growth_process=log_family, mu_range=(0.01, 0.1), sigma_range=(0.1, 0.3)
-- sharing_rule=proportional (default), floor_c from C1 benchmark
+- sharing_rule=proportional (default), floor_c=0.12717 from C14 calibration
+- market_size_fixed=True (normalize sizes within each market)
+- T=11000, burn_in=8000 from C14
 - metric_every=100, 5 reps, common random numbers
 - α grid: [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 
@@ -41,8 +43,8 @@ SHARING_RULE = 'proportional'
 METRIC_EVERY = 100
 N_REPS = 5
 
-# Floor coefficient from C1: c_for_exponent(1.06) = 1 - 1/1.06
-FLOOR_C = 1.0 - 1.0 / 1.06  # ≈ 0.0566037736
+# Floor coefficient from C14: calibrated c_star = 0.12717
+FLOOR_C = 0.12717
 
 # Alpha grid (9 values)
 ALPHA_GRID = [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
@@ -64,9 +66,9 @@ COST_PARAMS = {
 # Base seed for common random numbers
 BASE_SEED = 42
 
-# Burn-in parameters (from burn_in_analysis.py)
-T = 6000
-BURN_IN = 2000
+# Burn-in parameters (from C14)
+T = 11000
+BURN_IN = 8000
 
 
 # ============================================================================
@@ -87,6 +89,7 @@ def make_base_params():
         'sigma_range': list(SIGMA_RANGE),
         'floor_c': FLOOR_C,
         'metric_every': METRIC_EVERY,
+        'market_size_fixed': True,  # C14: normalize sizes within each market
     }
 
 

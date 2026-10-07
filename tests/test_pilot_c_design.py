@@ -4,9 +4,11 @@ Tests for Phase C pilot design generator.
 
 Test requirements:
 1. Scenario count = 1275
-2. floor_c matches C1 benchmark (c_for_exponent(1.06))
+2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
+5. market_size_fixed = True in every scenario
+6. T = 11000, burn_in = 8000 (from C14)
 """
 import json
 import os
@@ -64,21 +66,21 @@ def test_scenario_count():
     print("PASS: scenario count = 1275")
 
 
-def test_floor_c_matches_c1():
-    """floor_c matches C1 benchmark (c_for_exponent(1.06))."""
-    expected = c_for_exponent(1.06)
+def test_floor_c_matches_c14():
+    """floor_c = 0.12717 (C14 calibration for Hill ~1.06 at N=50)."""
+    expected = 0.12717
 
     # Check constant
-    assert abs(FLOOR_C - expected) < 1e-10, \
+    assert abs(FLOOR_C - expected) < 1e-5, \
         f"FLOOR_C mismatch: {FLOOR_C} vs {expected}"
 
     # Check in scenarios
     scenarios = generate_all_scenarios()
     for s in scenarios:
-        assert abs(s['floor_c'] - expected) < 1e-10, \
-            f"Scenario {s['scenario_id']} floor_c mismatch"
+        assert abs(s['floor_c'] - expected) < 1e-5, \
+            f"Scenario {s['scenario_id']} floor_c mismatch: {s['floor_c']}"
 
-    print(f"PASS: floor_c = {FLOOR_C:.10f} matches c_for_exponent(1.06)")
+    print(f"PASS: floor_c = {FLOOR_C} matches C14 calibration (0.12717)")
 
 
 def test_alpha_grid_9_point():
@@ -198,7 +200,7 @@ def test_scenario_structure():
 
     required_fields = [
         'M', 'N', 'T', 'burn_in', 'merge_thresh', 'proportional', 'growth_process',
-        'mu_range', 'sigma_range', 'floor_c', 'metric_every',
+        'mu_range', 'sigma_range', 'floor_c', 'metric_every', 'market_size_fixed',
         'block', 'scenario_id', 'cell_id', 'log_family', 'cost_type',
         'c0', 'c1', 'c2', 'lookback', 'cross_corr', 'alpha',
         'sharing_rule', 'rep', 'seed', 'alpha_endogenous',
@@ -211,13 +213,26 @@ def test_scenario_structure():
     print(f"PASS: all {len(required_fields)} required fields present")
 
 
-def test_t_and_burn_in():
-    """T and burn_in are set correctly."""
+def test_market_size_fixed():
+    """market_size_fixed = True in every scenario (C14 requirement)."""
     scenarios = generate_all_scenarios()
 
-    # Check constants
-    assert T == 6000, f"T should be 6000, got {T}"
-    assert BURN_IN == 2000, f"BURN_IN should be 2000, got {BURN_IN}"
+    for s in scenarios:
+        assert 'market_size_fixed' in s, \
+            f"Scenario {s['scenario_id']} missing 'market_size_fixed'"
+        assert s['market_size_fixed'] is True, \
+            f"Scenario {s['scenario_id']} has market_size_fixed={s['market_size_fixed']}, expected True"
+
+    print(f"PASS: market_size_fixed=True in all {len(scenarios)} scenarios")
+
+
+def test_t_and_burn_in():
+    """T=11000, burn_in=8000 (from C14)."""
+    scenarios = generate_all_scenarios()
+
+    # Check constants (C14 values)
+    assert T == 11000, f"T should be 11000 (C14), got {T}"
+    assert BURN_IN == 8000, f"BURN_IN should be 8000 (C14), got {BURN_IN}"
 
     # Check all scenarios
     for s in scenarios:
@@ -227,20 +242,21 @@ def test_t_and_burn_in():
     # Verify burn_in < T
     assert BURN_IN < T, "burn_in should be less than T"
 
-    print(f"PASS: T={T}, burn_in={BURN_IN} set correctly")
+    print(f"PASS: T={T}, burn_in={BURN_IN} set correctly (C14)")
 
 
 if __name__ == '__main__':
     print("Testing Phase C pilot design...\n")
 
     test_scenario_count()
-    test_floor_c_matches_c1()
+    test_floor_c_matches_c14()
     test_alpha_grid_9_point()
     test_seeds_identical_across_alpha()
     test_seeds_differ_across_reps()
     test_seeds_differ_across_cells()
     test_burn_in_scenario_exists()
     test_scenario_structure()
+    test_market_size_fixed()
     test_t_and_burn_in()
 
     print("\nAll Phase C pilot design tests passed!")

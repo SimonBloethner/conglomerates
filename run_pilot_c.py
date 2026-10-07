@@ -55,6 +55,7 @@ def run_scenario(scenario):
         burn_in=scenario['burn_in'],
         alpha_endogenous=scenario.get('alpha_endogenous', False),
         g=scenario.get('g'),
+        market_size_fixed=scenario.get('market_size_fixed', False),
     )
 
     elapsed = time.time() - start_time
