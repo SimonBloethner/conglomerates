@@ -18,10 +18,13 @@ if parent_dir not in sys.path:
 
 from analyze_pilot_c import (
     agg_with_bands,
+    generate_k_vs_kstar_table,
     generate_hill_vs_alpha_table,
     generate_floor_hit_table,
+    generate_hhi_table,
     generate_equal_split_comparison,
     generate_runtime_stats,
+    generate_assortativity_table,
 )
 
 
@@ -100,6 +103,8 @@ def create_synthetic_tidy():
                     'mergers_per_period': 0.1,
                     'proposals_per_period': 0.5,
                     'exits_per_period': 0.05,
+                    'acceptance_rate': 0.2 + alpha * 0.1,  # C11: acceptance rate
+                    'assortativity_ratio': 0.8 - family_idx * 0.1,  # C11: assortativity
                     'alpha_adopted_median': np.nan,
                     'alpha_adopted_mean': np.nan,
                     'alpha_adopted_std': np.nan,
@@ -328,9 +333,190 @@ def test_groupby_catches_wrong_aggregation():
     print("PASS: groupby catches wrong aggregation")
 
 
+# ============================================================================
+# C11: Table-specific tests (tables 1, 2, 5, 8)
+# ============================================================================
+
+def create_benchmarks_df():
+    """Create synthetic benchmarks.csv for K* comparison."""
+    rows = []
+    families = ['normal', 'laplace', 't3']
+    alphas = [0.0, 0.1]
+
+    for family in families:
+        for alpha in alphas:
+            rows.append({
+                'family': family,
+                'cost_type': 'power_law',
+                'alpha': alpha,
+                'K_star': 5 + (families.index(family) + 1) * 2,  # 7, 9, 11
+            })
+
+    return pd.DataFrame(rows)
+
+
+def test_table1_k_vs_kstar():
+    """
+    Test Table 1: K vs K* with acceptance rate.
+
+    Verifies:
+    - K and K_eff are correctly grouped by (family, cost, alpha)
+    - Acceptance rate is included when available
+    - K* from benchmarks is merged correctly
+    """
+    df = create_synthetic_tidy()
+    benchmarks = create_benchmarks_df()
+
+    result = generate_k_vs_kstar_table(df, benchmarks)
+
+    # Should have rows for each (family, cost, alpha) combination
+    # 3 families × 1 cost × 2 alphas = 6 rows
+    assert len(result) == 6, f"Expected 6 rows, got {len(result)}"
+
+    # Verify K* is merged correctly
+    # normal at alpha=0: K*=7
+    normal_a0 = result[(result['log_family'] == 'normal') & (result['alpha'] == 0.0)]
+    assert len(normal_a0) == 1
+    assert normal_a0['K_star'].iloc[0] == 7
+
+    # Verify acceptance rate is included
+    assert 'acceptance_rate_median' in result.columns, "Missing acceptance_rate column"
+
+    # Design: acceptance_rate = 0.2 + alpha * 0.1
+    # At alpha=0: 0.2, at alpha=0.1: 0.21
+    acc_a0 = normal_a0['acceptance_rate_median'].iloc[0]
+    assert abs(acc_a0 - 0.2) < 0.01, f"Expected acc_rate~0.2, got {acc_a0}"
+
+    print("PASS: Table 1 K vs K*")
+
+
+def test_table2_hill_vs_alpha():
+    """
+    Test Table 2: Hill exponent vs α.
+
+    Verifies:
+    - Hill grouped by (family, alpha)
+    - Values differ by family (catching wrong aggregation)
+    """
+    df = create_synthetic_tidy()
+
+    result = generate_hill_vs_alpha_table(df)
+
+    # Design: hill = 1.0 + alpha*0.5 + family_idx*0.1
+    # normal, alpha=0.0: 1.0
+    # laplace, alpha=0.0: 1.1
+    # t3, alpha=0.0: 1.2
+    # normal, alpha=0.1: 1.05
+    # laplace, alpha=0.1: 1.15
+    # t3, alpha=0.1: 1.25
+
+    # Verify families differ at same alpha
+    normal_a0 = result[(result['log_family'] == 'normal') & (result['alpha'] == 0.0)]
+    laplace_a0 = result[(result['log_family'] == 'laplace') & (result['alpha'] == 0.0)]
+
+    hill_normal = normal_a0['hill_exponent_median_median'].iloc[0]
+    hill_laplace = laplace_a0['hill_exponent_median_median'].iloc[0]
+
+    assert hill_laplace > hill_normal, "Hill should increase with family_idx"
+    assert abs(hill_normal - 1.0) < 0.01
+    assert abs(hill_laplace - 1.1) < 0.01
+
+    print("PASS: Table 2 Hill vs α")
+
+
+def test_table5_equal_split():
+    """
+    Test Table 5: Equal-split comparison.
+
+    Verifies:
+    - Main and equal-split blocks are correctly separated
+    - K values for each block are correct
+    """
+    df = create_equal_split_synthetic()
+
+    result = generate_equal_split_comparison(df)
+
+    # Main: K=10,12 -> median=11
+    # Equal-split: K=20,22 -> median=21
+    assert result['K_main_median'].iloc[0] == 11.0
+    assert result['K_equal_median'].iloc[0] == 21.0
+
+    # Ratio should be ~2x (equal-split has 2x K)
+    ratio = result['K_equal_median'].iloc[0] / result['K_main_median'].iloc[0]
+    assert 1.8 < ratio < 2.2, f"Expected ratio ~2x, got {ratio}"
+
+    print("PASS: Table 5 Equal-split")
+
+
+def test_table8_assortativity():
+    """
+    Test Table 8: Assortativity.
+
+    Verifies:
+    - Assortativity ratio is grouped by (family, cost, alpha)
+    - Values differ by family
+    """
+    df = create_synthetic_tidy()
+
+    result = generate_assortativity_table(df)
+
+    if result is None:
+        print("SKIP: assortativity_ratio not in data")
+        return
+
+    # Design: assortativity_ratio = 0.8 - family_idx * 0.1
+    # normal: 0.8, laplace: 0.7, t3: 0.6
+
+    normal_a0 = result[(result['log_family'] == 'normal') &
+                       (result['cost_type'] == 'power_law') &
+                       (result['alpha'] == 0.0)]
+    laplace_a0 = result[(result['log_family'] == 'laplace') &
+                        (result['cost_type'] == 'power_law') &
+                        (result['alpha'] == 0.0)]
+
+    assert len(normal_a0) == 1
+    assert len(laplace_a0) == 1
+
+    assort_normal = normal_a0['assortativity_ratio_median'].iloc[0]
+    assort_laplace = laplace_a0['assortativity_ratio_median'].iloc[0]
+
+    # All ratios < 1 (positive assortativity)
+    assert assort_normal < 1.0
+    assert assort_laplace < 1.0
+
+    # Laplace has lower ratio (more assortative in synthetic data)
+    assert assort_laplace < assort_normal
+
+    print("PASS: Table 8 Assortativity")
+
+
+def test_hhi_table_includes_ccs():
+    """
+    Test that HHI table includes cong_capital_share.
+
+    Verifies:
+    - ccs_median column exists
+    - Values are grouped correctly
+    """
+    df = create_synthetic_tidy()
+
+    result = generate_hhi_table(df)
+
+    # Verify cong_capital_share column exists
+    assert 'ccs_median' in result.columns, "Missing ccs_median column"
+
+    # Design: cong_capital_share_median = 0.5 for all
+    laplace_a0 = result[(result['log_family'] == 'laplace') & (result['alpha'] == 0.0)]
+    ccs = laplace_a0['ccs_median'].iloc[0]
+    assert abs(ccs - 0.5) < 0.01, f"Expected ccs~0.5, got {ccs}"
+
+    print("PASS: HHI table includes cong_capital_share")
+
+
 if __name__ == '__main__':
     print("Testing Phase C pilot analysis...\n")
 
+    # Original tests
     test_agg_with_bands()
     test_hill_vs_alpha_groupby()
     test_floor_hit_groupby()
@@ -338,5 +524,13 @@ if __name__ == '__main__':
     test_runtime_stats()
     test_synthetic_csv_columns()
     test_groupby_catches_wrong_aggregation()
+
+    # C11: Table-specific tests
+    print("\n--- C11 Table Tests ---")
+    test_table1_k_vs_kstar()
+    test_table2_hill_vs_alpha()
+    test_table5_equal_split()
+    test_table8_assortativity()
+    test_hhi_table_includes_ccs()
 
     print("\nAll Phase C analysis tests passed!")

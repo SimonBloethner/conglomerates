@@ -56,7 +56,7 @@ def fmt_band(median, p25, p75):
 
 
 def generate_k_vs_kstar_table(df, benchmarks):
-    """Generate table: K and K_eff versus K* by family/cost/alpha."""
+    """Generate table: K and K_eff versus K* by family/cost/alpha, with acceptance rate."""
     # Filter main block
     main = df[df['block'] == 'main'].copy()
 
@@ -64,17 +64,27 @@ def generate_k_vs_kstar_table(df, benchmarks):
     k_agg = agg_with_bands(main, ['log_family', 'cost_type', 'alpha'], 'K_post_burnin_median')
     k_eff_agg = agg_with_bands(main, ['log_family', 'cost_type', 'alpha'], 'K_eff_post_burnin_median')
 
+    # Aggregate acceptance rate
+    if 'acceptance_rate' in main.columns:
+        acc_agg = agg_with_bands(main, ['log_family', 'cost_type', 'alpha'], 'acceptance_rate')
+    else:
+        acc_agg = None
+
     # Merge
     merged = k_agg.merge(k_eff_agg, on=['log_family', 'cost_type', 'alpha', 'n_reps'],
                          suffixes=('_K', '_K_eff'))
 
+    if acc_agg is not None:
+        merged = merged.merge(acc_agg, on=['log_family', 'cost_type', 'alpha', 'n_reps'])
+
     # Merge with benchmarks for K*
-    merged = merged.merge(
-        benchmarks[['family', 'cost_type', 'alpha', 'K_star']],
-        left_on=['log_family', 'cost_type', 'alpha'],
-        right_on=['family', 'cost_type', 'alpha'],
-        how='left'
-    )
+    if len(benchmarks) > 0:
+        merged = merged.merge(
+            benchmarks[['family', 'cost_type', 'alpha', 'K_star']],
+            left_on=['log_family', 'cost_type', 'alpha'],
+            right_on=['family', 'cost_type', 'alpha'],
+            how='left'
+        )
 
     return merged
 
@@ -100,20 +110,25 @@ def generate_floor_hit_table(df):
 
 
 def generate_hhi_table(df):
-    """Generate table: HHI and top-10 share versus α by family."""
+    """Generate table: HHI, top-10 share, and cong_capital_share versus α by family."""
     main = df[df['block'] == 'main'].copy()
 
     hhi_within = agg_with_bands(main, ['log_family', 'alpha'], 'hhi_within_median')
     hhi_agg = agg_with_bands(main, ['log_family', 'alpha'], 'hhi_aggregate_median')
     top10 = agg_with_bands(main, ['log_family', 'alpha'], 'top10_aggregate_median')
+    ccs = agg_with_bands(main, ['log_family', 'alpha'], 'cong_capital_share_median')
 
     merged = hhi_within.merge(hhi_agg, on=['log_family', 'alpha', 'n_reps'],
                               suffixes=('_within', '_agg'))
     merged = merged.merge(top10, on=['log_family', 'alpha', 'n_reps'])
+    merged = merged.merge(ccs, on=['log_family', 'alpha', 'n_reps'])
     merged = merged.rename(columns={
         'top10_aggregate_median_median': 'top10_median',
         'top10_aggregate_median_p25': 'top10_p25',
         'top10_aggregate_median_p75': 'top10_p75',
+        'cong_capital_share_median_median': 'ccs_median',
+        'cong_capital_share_median_p25': 'ccs_p25',
+        'cong_capital_share_median_p75': 'ccs_p75',
     })
     return merged
 
@@ -227,6 +242,127 @@ def generate_runtime_stats(df):
         'std_ms_per_step': std_ms_per_step,
         'n_scenarios': len(df),
     }
+
+
+def generate_assortativity_table(df):
+    """Generate table: Assortativity ratio by family/cost/alpha."""
+    main = df[df['block'] == 'main'].copy()
+
+    if 'assortativity_ratio' not in main.columns:
+        return None
+
+    assort_agg = agg_with_bands(main, ['log_family', 'cost_type', 'alpha'], 'assortativity_ratio')
+    return assort_agg
+
+
+def create_assortativity_figure(df, output_path='diagnostics/pilot_c_assortativity.png'):
+    """Create assortativity ratio figure versus α by family."""
+    main = df[(df['block'] == 'main') & (df['cost_type'] == 'power_law')].copy()
+
+    if 'assortativity_ratio' not in main.columns:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    families = ['normal', 'laplace', 't3']
+    colors = {'normal': 'blue', 'laplace': 'orange', 't3': 'green'}
+
+    for family in families:
+        subset = main[main['log_family'] == family]
+        assort_agg = agg_with_bands(subset, ['alpha'], 'assortativity_ratio')
+
+        valid = assort_agg['assortativity_ratio_median'].notna()
+        if not valid.any():
+            continue
+
+        ax.errorbar(
+            assort_agg.loc[valid, 'alpha'],
+            assort_agg.loc[valid, 'assortativity_ratio_median'],
+            yerr=[
+                assort_agg.loc[valid, 'assortativity_ratio_median'] - assort_agg.loc[valid, 'assortativity_ratio_p25'],
+                assort_agg.loc[valid, 'assortativity_ratio_p75'] - assort_agg.loc[valid, 'assortativity_ratio_median']
+            ],
+            label=family, color=colors[family], marker='o', capsize=3
+        )
+
+    ax.axhline(1.0, color='red', linestyle='--', label='Random baseline')
+    ax.set_xlabel('α (pooling fraction)')
+    ax.set_ylabel('Assortativity ratio (< 1 = positive assortment)')
+    ax.set_title('Member IQR SD / Random K-subset SD')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path
+
+
+def create_ccs_vs_alpha_figure(df, output_path='diagnostics/pilot_c_ccs_vs_alpha.png'):
+    """Create conglomerate capital share versus α figure."""
+    main = df[(df['block'] == 'main') & (df['log_family'] == 'laplace')].copy()
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ccs_agg = agg_with_bands(main, ['alpha'], 'cong_capital_share_median')
+
+    ax.errorbar(
+        ccs_agg['alpha'],
+        ccs_agg['cong_capital_share_median_median'],
+        yerr=[
+            ccs_agg['cong_capital_share_median_median'] - ccs_agg['cong_capital_share_median_p25'],
+            ccs_agg['cong_capital_share_median_p75'] - ccs_agg['cong_capital_share_median_median']
+        ],
+        color='purple', marker='o', capsize=3
+    )
+
+    ax.set_xlabel('α (pooling fraction)')
+    ax.set_ylabel('Conglomerate capital share')
+    ax.set_title('Conglomerate Capital Share vs α (laplace family)')
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path
+
+
+def create_endogenous_alpha_histogram(df, output_path='diagnostics/pilot_c_endo_alpha_hist.png'):
+    """Create histogram of adopted alpha values for endogenous-alpha block."""
+    endo = df[df['block'] == 'endogenous-alpha'].copy()
+
+    if len(endo) == 0 or 'alpha_adopted_median' not in endo.columns:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    # Get adopted alpha values (median per scenario)
+    alpha_values = endo['alpha_adopted_median'].dropna()
+
+    if len(alpha_values) == 0:
+        plt.close()
+        return None
+
+    ax.hist(alpha_values, bins=20, edgecolor='black', alpha=0.7)
+    ax.axvline(alpha_values.median(), color='red', linestyle='--',
+               label=f'Median: {alpha_values.median():.3f}')
+
+    ax.set_xlabel('Adopted α')
+    ax.set_ylabel('Count')
+    ax.set_title('Distribution of Adopted α (endogenous-alpha block)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path
 
 
 def create_hill_vs_alpha_figure(df, output_path='diagnostics/pilot_c_hill_vs_alpha.png'):
@@ -442,8 +578,13 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     if len(k_sub) > 0:
         lines.append("### At α = 0.1")
         lines.append("")
-        lines.append("| Family | Cost | K median [25,75] | K* | K_eff median [25,75] |")
-        lines.append("|--------|------|-----------------|-----|---------------------|")
+        has_acc = 'acceptance_rate_median' in k_sub.columns
+        if has_acc:
+            lines.append("| Family | Cost | K [25,75] | K* | K_eff [25,75] | Acc. rate |")
+            lines.append("|--------|------|-----------|-----|---------------|-----------|")
+        else:
+            lines.append("| Family | Cost | K median [25,75] | K* | K_eff median [25,75] |")
+            lines.append("|--------|------|-----------------|-----|---------------------|")
         for _, row in k_sub.iterrows():
             k_band = fmt_band(row['K_post_burnin_median_median'],
                               row['K_post_burnin_median_p25'],
@@ -454,7 +595,12 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
             k_star = row.get('K_star', '—')
             if pd.notna(k_star):
                 k_star = int(k_star)
-            lines.append(f"| {row['log_family']} | {row['cost_type']} | {k_band} | {k_star} | {k_eff_band} |")
+            if has_acc:
+                acc = row.get('acceptance_rate_median', np.nan)
+                acc_str = f"{acc:.3f}" if pd.notna(acc) else "—"
+                lines.append(f"| {row['log_family']} | {row['cost_type']} | {k_band} | {k_star} | {k_eff_band} | {acc_str} |")
+            else:
+                lines.append(f"| {row['log_family']} | {row['cost_type']} | {k_band} | {k_star} | {k_eff_band} |")
         lines.append("")
 
     # ========================================================================
@@ -544,8 +690,13 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
 
     lines.append("### Laplace family")
     lines.append("")
-    lines.append("| α | HHI within [25,75] | HHI agg [25,75] | Top-10 [25,75] |")
-    lines.append("|---|-------------------|-----------------|----------------|")
+    has_ccs = 'ccs_median' in hhi_laplace.columns
+    if has_ccs:
+        lines.append("| α | HHI within [25,75] | HHI agg [25,75] | Top-10 [25,75] | Cong. share [25,75] |")
+        lines.append("|---|-------------------|-----------------|----------------|---------------------|")
+    else:
+        lines.append("| α | HHI within [25,75] | HHI agg [25,75] | Top-10 [25,75] |")
+        lines.append("|---|-------------------|-----------------|----------------|")
     for _, row in hhi_laplace.iterrows():
         hhi_w = fmt_band(row['hhi_within_median_median'],
                          row['hhi_within_median_p25'],
@@ -556,10 +707,18 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
         top10 = fmt_band(row.get('top10_median', np.nan),
                          row.get('top10_p25', np.nan),
                          row.get('top10_p75', np.nan))
-        lines.append(f"| {row['alpha']} | {hhi_w} | {hhi_a} | {top10} |")
+        if has_ccs:
+            ccs = fmt_band(row.get('ccs_median', np.nan),
+                           row.get('ccs_p25', np.nan),
+                           row.get('ccs_p75', np.nan))
+            lines.append(f"| {row['alpha']} | {hhi_w} | {hhi_a} | {top10} | {ccs} |")
+        else:
+            lines.append(f"| {row['alpha']} | {hhi_w} | {hhi_a} | {top10} |")
     lines.append("")
 
     lines.append("![HHI](pilot_c_hhi.png)")
+    lines.append("")
+    lines.append("![Cong. Capital Share](pilot_c_ccs_vs_alpha.png)")
     lines.append("")
 
     # ========================================================================
@@ -688,6 +847,51 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
             lines.append(f"| {row['log_family']} | {row['cost_type']} | {alpha_med_str} | {alpha_mean_str} | {K_str} |")
         lines.append("")
 
+    lines.append("![Endogenous α histogram](pilot_c_endo_alpha_hist.png)")
+    lines.append("")
+
+    # ========================================================================
+    # Section: Assortativity
+    # ========================================================================
+    lines.append("## Assortativity")
+    lines.append("")
+    lines.append("SD of member IQR / SD of random K-subset. Ratio < 1 indicates positive assortment")
+    lines.append("(conglomerate members have more similar growth volatilities than random groups).")
+    lines.append("")
+    lines.append("Source: `pilot_c/tidy.csv` column `assortativity_ratio`")
+    lines.append("")
+
+    assort_table = generate_assortativity_table(df)
+    if assort_table is not None and len(assort_table) > 0:
+        # Show for α = 0.1
+        assort_sub = assort_table[assort_table['alpha'] == 0.1].copy()
+        if len(assort_sub) > 0:
+            lines.append("### At α = 0.1 (power_law cost)")
+            lines.append("")
+            lines.append("| Family | Assort. ratio [25,75] |")
+            lines.append("|--------|----------------------|")
+            for _, row in assort_sub[assort_sub['cost_type'] == 'power_law'].iterrows():
+                band = fmt_band(row['assortativity_ratio_median'],
+                                row['assortativity_ratio_p25'],
+                                row['assortativity_ratio_p75'])
+                lines.append(f"| {row['log_family']} | {band} |")
+            lines.append("")
+
+        lines.append("![Assortativity](pilot_c_assortativity.png)")
+        lines.append("")
+    else:
+        lines.append("*Assortativity data not available.*")
+        lines.append("")
+
+    # ========================================================================
+    # Section: Runtime
+    # ========================================================================
+    lines.append("## Runtime Statistics")
+    lines.append("")
+    lines.append(f"- **Total runtime**: {runtime['total_seconds']:.0f}s ({runtime['total_cpu_hours']:.2f} CPU-hours)")
+    lines.append(f"- **Mean ms/step**: {runtime['mean_ms_per_step']:.2f} ± {runtime['std_ms_per_step']:.2f}")
+    lines.append("")
+
     # ========================================================================
     # Footer
     # ========================================================================
@@ -697,6 +901,9 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("- `pilot_c_k_vs_alpha.png`: K versus α by family (power_law cost)")
     lines.append("- `pilot_c_floor_hit.png`: Floor-hit rate by status (laplace family)")
     lines.append("- `pilot_c_hhi.png`: HHI and top-10 share versus α (laplace family)")
+    lines.append("- `pilot_c_ccs_vs_alpha.png`: Conglomerate capital share versus α")
+    lines.append("- `pilot_c_assortativity.png`: Assortativity ratio versus α")
+    lines.append("- `pilot_c_endo_alpha_hist.png`: Histogram of adopted α (endogenous block)")
     lines.append("")
 
     # Write report
@@ -730,6 +937,9 @@ def main():
     create_k_vs_alpha_figure(df)
     create_floor_hit_figure(df)
     create_hhi_figure(df)
+    create_ccs_vs_alpha_figure(df)
+    create_assortativity_figure(df)
+    create_endogenous_alpha_histogram(df)
 
     # Generate report
     print("Generating summary report...")

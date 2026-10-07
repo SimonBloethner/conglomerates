@@ -68,6 +68,14 @@ def extract_post_burnin_metrics(result):
     metrics['proposals_per_period'] = summary.get('proposals_per_period', np.nan)
     metrics['exits_per_period'] = summary.get('exits_per_period', np.nan)
 
+    # Acceptance rate = mergers / proposals
+    mergers = summary.get('mergers_per_period', np.nan)
+    proposals = summary.get('proposals_per_period', np.nan)
+    if proposals and proposals > 0:
+        metrics['acceptance_rate'] = mergers / proposals
+    else:
+        metrics['acceptance_rate'] = np.nan
+
     # Time series metrics: extract post-burn-in window
     # Hill exponent: array of shape (markets, n_observations)
     hill = result.get('hill_exponent')
@@ -206,7 +214,87 @@ def extract_post_burnin_metrics(result):
         metrics['alpha_adopted_mean'] = np.nan
         metrics['alpha_adopted_std'] = np.nan
 
+    # Assortativity: SD of member IQR vs random K-subset
+    # Requires market_iqr and final_firm_conglom from hyperparameters
+    market_iqr = result.get('market_iqr')  # Not in current output structure
+    final_firm_conglom = result.get('final_firm_conglom')  # Not in current output structure
+
+    # If these exist, compute assortativity ratio
+    if market_iqr is not None and final_firm_conglom is not None:
+        assortativity = compute_assortativity_ratio(market_iqr, final_firm_conglom)
+        # Extract scalar from dict
+        metrics['assortativity_ratio'] = assortativity.get('ratio_median', np.nan) if isinstance(assortativity, dict) else np.nan
+        metrics['assortativity_n_conglom'] = assortativity.get('n_conglom', np.nan) if isinstance(assortativity, dict) else np.nan
+    else:
+        metrics['assortativity_ratio'] = np.nan
+        metrics['assortativity_n_conglom'] = np.nan
+
     return metrics
+
+
+def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
+    """
+    Compute assortativity ratio: SD of member IQR / SD of random K-subset.
+
+    Parameters:
+    -----------
+    market_iqr : array, shape (n_markets,)
+        Per-market IQR of growth rates
+    firm_conglom : array, shape (n_firms,)
+        Conglomerate ID for each firm (-1 for standalone)
+
+    Returns:
+    --------
+    dict with:
+        - ratio_median: median ratio across conglomerates
+        - ratio_mean: mean ratio
+        - n_conglom: number of multi-member conglomerates
+    """
+    # Build mapping from firm index to market IQR
+    n_firms = len(firm_conglom)
+    n_markets = len(market_iqr)
+
+    if n_markets == 0 or n_firms == 0:
+        return {'ratio_median': np.nan, 'ratio_mean': np.nan, 'n_conglom': 0}
+
+    # Map firms to markets (assuming firms_per_market = n_firms / n_markets)
+    firms_per_market = n_firms // n_markets
+    firm_iqr = np.repeat(market_iqr, firms_per_market)
+
+    # Find multi-member conglomerates
+    unique_conglom = np.unique(firm_conglom[firm_conglom >= 0])
+    ratios = []
+
+    for cid in unique_conglom:
+        member_mask = firm_conglom == cid
+        K = np.sum(member_mask)
+        if K < 2:
+            continue
+
+        # SD of member IQR
+        member_iqrs = firm_iqr[member_mask]
+        sd_member = np.std(member_iqrs, ddof=1)
+
+        # SD of random K-subsets
+        random_sds = []
+        for _ in range(n_random_samples):
+            random_idx = np.random.choice(n_firms, size=K, replace=False)
+            random_iqrs = firm_iqr[random_idx]
+            random_sds.append(np.std(random_iqrs, ddof=1))
+
+        sd_random = np.mean(random_sds)
+
+        if sd_random > 0:
+            ratios.append(sd_member / sd_random)
+
+    if len(ratios) == 0:
+        return {'ratio_median': np.nan, 'ratio_mean': np.nan, 'n_conglom': 0}
+
+    return {
+        'ratio_median': np.median(ratios),
+        'ratio_mean': np.mean(ratios),
+        'n_conglom': len(ratios),
+    }
 
 
 def load_results(results_dir='pilot_c/results'):
@@ -270,6 +358,7 @@ def create_medians_df(tidy_df):
         'hill_exponent_median', 'hhi_within_median', 'hhi_aggregate_median',
         'top10_aggregate_median', 'cong_capital_share_median',
         'mergers_per_period', 'proposals_per_period', 'exits_per_period',
+        'acceptance_rate', 'assortativity_ratio',
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
     ]

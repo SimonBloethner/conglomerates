@@ -46,7 +46,7 @@ def run_scenario(scenario):
         seed=scenario['seed'],
         growth_process=scenario['growth_process'],
         log_family=scenario['log_family'],
-        mu_range=tuple(scenario['mu_range']),
+        mu_range=tuple(scenario['mu_range']) if scenario.get('mu_range') else (0.01, 0.1),
         sigma_range=tuple(scenario['sigma_range']),
         floor_c=scenario['floor_c'],
         cross_corr=scenario['cross_corr'],
@@ -54,6 +54,7 @@ def run_scenario(scenario):
         sharing_rule=scenario['sharing_rule'],
         burn_in=scenario['burn_in'],
         alpha_endogenous=scenario.get('alpha_endogenous', False),
+        g=scenario.get('g'),
     )
 
     elapsed = time.time() - start_time
@@ -77,6 +78,9 @@ def run_scenario(scenario):
         'alpha_history': hyperparams.get('alpha_history'),
         # Summary scalars
         'summary': hyperparams.get('summary'),
+        # Assortativity data (C11)
+        'market_iqr': hyperparams.get('market_iqr'),
+        'final_firm_conglom': hyperparams.get('final_firm_conglom'),
     }
 
     return output
