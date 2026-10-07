@@ -1054,11 +1054,49 @@ def iqr_to_scale(family, iqr, nu=3.0):
         raise ValueError(f"Unknown family: {family}")
 
 
+def compute_volatility_premium(family, scale, nu=3.0):
+    """
+    Compute the volatility premium: log E[δ] - E[log δ] = r - g.
+
+    For log δ ~ F(0, scale), the premium is log E[exp(log δ)] - 0.
+
+    Parameters:
+    -----------
+    family : str
+        Distribution family: 'normal', 'laplace', 'student_t'
+    scale : float or array
+        Scale parameter (σ for normal, b for Laplace, s for Student-t)
+    nu : float
+        Degrees of freedom for Student-t (default 3.0)
+
+    Returns:
+    --------
+    float or array : Volatility premium
+    """
+    if family == 'normal':
+        # E[exp(σZ)] = exp(σ²/2) for Z ~ N(0,1)
+        # premium = σ²/2
+        return scale ** 2 / 2
+    elif family == 'laplace':
+        # E[exp(bL)] = 1/(1-b²) for L ~ Laplace(0,1), b < 1
+        # premium = -log(1 - b²) if b < 1 else inf
+        scale = np.asarray(scale)
+        result = np.where(scale < 1.0, -np.log(1 - scale ** 2), np.inf)
+        return result if result.ndim > 0 else float(result)
+    elif family == 'student_t' or family == 't3':
+        # E[exp(sT)] does not exist for Student-t with finite df
+        # premium = inf
+        return np.inf if np.isscalar(scale) else np.full_like(scale, np.inf)
+    else:
+        raise ValueError(f"Unknown family: {family}")
+
+
 def model(params, seed=None, market_corr="identity",
           growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
           log_family="normal", nu=3.0, floor_c=0.0,
-          metric_every=100, burn_in=0, alpha_endogenous=False):
+          metric_every=100, burn_in=0, alpha_endogenous=False,
+          g=None, renorm_every=500):
     """
     Main simulation model.
 
@@ -1106,6 +1144,19 @@ def model(params, seed=None, market_corr="identity",
         Enable endogenous alpha adaptation. Default False.
         When True, each conglomerate carries its own alpha, updated every
         lookback periods to maximize minimum member gain.
+    g : float, optional
+        Common time-average growth rate. Default None (off).
+        When g is not None and growth_process == 'log_family':
+        - Sets μ_m = g for every market (ignores mu_range)
+        - Draws only per-market scale from sigma_range (interpreted as IQR)
+        - Markets differ only in volatility, not expected growth
+    renorm_every : int
+        Steps between log-state renormalization. Default 500.
+        Only active when g is not None.
+        Every renorm_every steps, subtracts the economy-wide maximum log state
+        from all entries in firm_log_states_buffer to prevent numerical overflow.
+        This is a scale-free transformation that doesn't affect any ratio-based
+        decisions or metrics.
     """
     import time
 
@@ -1157,6 +1208,21 @@ def model(params, seed=None, market_corr="identity",
     growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
     growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
     growth_vars = min_bound + (growth_vars / growth_vars.max(axis=0)) * (max_bound - min_bound)
+
+    # Common time-average growth: when g is not None and log_family, set μ_m = g for all markets
+    # This makes markets differ only in volatility, preventing exponential divergence
+    implied_ensemble_growth = None  # Will be set below if g is used
+    volatility_premium = None       # r_m - g per market
+    if g is not None and growth_process == "log_family":
+        # Override μ_m with common g for all markets
+        growth_vars[:, 0] = g
+        # Compute scale from IQR (sigma_range interpreted as IQR)
+        iqr_m = growth_vars[:, 1]
+        scale_m = iqr_to_scale(log_family, iqr_m, nu)
+        # Compute volatility premium: r_m - g = log E[δ] - E[log δ]
+        volatility_premium = compute_volatility_premium(log_family, scale_m, nu)
+        # Implied ensemble growth rate: r_m = g + premium
+        implied_ensemble_growth = g + volatility_premium
 
     # Market correlation: identity (uncorrelated, paper baseline) or random
     if market_corr == "identity":
@@ -1494,9 +1560,14 @@ def model(params, seed=None, market_corr="identity",
                 for _ in range(100):  # Max iterations as safety
                     market_log_states = current_log_states_flat[start_idx:end_idx]
 
-                    # Compute mean in levels, then log floor
-                    mean_size = np.mean(np.exp(market_log_states))
-                    log_floor = np.log(floor_c * mean_size)
+                    # Compute log floor using log-sum-exp for numerical stability and scale-invariance
+                    # log_floor = log(floor_c * mean(exp(log_states)))
+                    #           = log(floor_c) + log(mean(exp(log_states)))
+                    #           = log(floor_c) + max_log + log(mean(exp(log_states - max_log)))
+                    # This is invariant to shifting all log_states by a constant
+                    max_log = market_log_states.max()
+                    log_mean = max_log + np.log(np.mean(np.exp(market_log_states - max_log)))
+                    log_floor = np.log(floor_c) + log_mean
 
                     # Find firms below floor
                     below_floor_mask = market_log_states < log_floor
@@ -1517,6 +1588,17 @@ def model(params, seed=None, market_corr="identity",
                     for firm_id in below_floor_global:
                         status = 0 if firm_conglom[firm_id] == -1 else 1
                         floor_hits_by_status[step, status] += 1
+
+        # RENORMALIZATION: Prevent numerical overflow under common growth
+        # Subtract economy-wide max log state from ALL buffer rows to keep differences intact
+        # This is scale-free: all ratio-based decisions/metrics are unaffected
+        if g is not None and renorm_every > 0 and (step + 1) % renorm_every == 0:
+            # Find max log state across all firms at current timestep
+            max_log_state = firm_log_states_buffer[next_idx].max()
+            # Subtract from ALL rows of the circular buffer
+            firm_log_states_buffer -= max_log_state
+            # Note: firm_log_returns_buffer and firm_outside_log_profits are NOT touched
+            # because they store differences (log returns), not levels
 
         # VECTORIZED: Exit checks using geometric means
         if step > lookback:
@@ -1628,11 +1710,15 @@ def model(params, seed=None, market_corr="identity",
                 # Get current firm sizes in levels
                 current_sizes = np.exp(firm_log_states_buffer[next_idx])
 
-                # Pooled Hill exponent: top 10% of all M×N market shares
-                total_capital = current_sizes.sum()
-                if total_capital > 0:
-                    market_shares = current_sizes / total_capital
-                    hill_exponent[metric_idx] = hill_estimator(market_shares, k_fraction=0.1)
+                # Pooled Hill exponent: top 10% of all M×N within-market shares
+                # Each firm's share is computed relative to its own market's total,
+                # not the economy total, so cross-market scale differences don't affect the estimate
+                current_sizes_2d = current_sizes.reshape(markets, firms_per_market)
+                market_totals = current_sizes_2d.sum(axis=1, keepdims=True)
+                # Avoid division by zero (shouldn't happen but be safe)
+                market_totals = np.where(market_totals > 0, market_totals, 1.0)
+                within_market_shares = (current_sizes_2d / market_totals).ravel()
+                hill_exponent[metric_idx] = hill_estimator(within_market_shares, k_fraction=0.1)
 
                 # Hill exponent per market (diagnostic only)
                 for m in range(markets):
@@ -1756,13 +1842,16 @@ def model(params, seed=None, market_corr="identity",
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
                        'log_family': log_family, 'nu': nu,
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
-                       'final_log_states': firm_log_states_buffer[(steps - 1) % (lookback + 1)].copy(),
+                       'final_log_states': firm_log_states_buffer[steps % (lookback + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,
                        'hhi_within': hhi_within,
                        'hhi_aggregate': hhi_aggregate, 'top10_aggregate': top10_aggregate,
                        'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
                        'alpha_endogenous': alpha_endogenous, 'alpha_history': alpha_history,
+                       'g': g, 'renorm_every': renorm_every,
+                       'implied_ensemble_growth': implied_ensemble_growth,
+                       'volatility_premium': volatility_premium,
                        'summary': summary}
 
     # Model results: 13 elements
