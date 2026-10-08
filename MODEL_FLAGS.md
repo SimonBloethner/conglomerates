@@ -100,6 +100,33 @@ When `alpha_endogenous=True`:
 - `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
 - `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
 
+## Decision Rule
+
+### `decision_rule`
+Specifies the rule used to evaluate merger proposals and exit decisions.
+
+Default: `"replay"`
+
+Values:
+- `"replay"` (default): Phase B behavior. Replay the last `lookback` periods under the proposed conglomerate and compare log growth. Accept if all members gain.
+- `"loggain"`: Demeaned log-growth rule. Removes first-order correlation noise by demeaning returns before computing gains.
+
+**Loggain Rule:**
+
+The `loggain` rule addresses a fundamental challenge: when firms share correlated shocks (e.g., a common market factor), the replay comparison is dominated by that common noise rather than the diversification benefit.
+
+*Demeaning procedure:*
+1. For each period τ in the lookback window:
+   - Compute pooled return: `p_iτ = Σ_j w_j · r̃_jτ - mc_i` where `w_j` are shares and `mc_i` is management cost
+   - Compute demeaned outside: `ε_iτ = r̃_iτ - mean_τ(r̃_jτ) + g` where mean is over conglomerate members
+2. Gain: `Δ̂_i = (1/h) Σ_τ [ log(1 + p_iτ) - log(1 + ε_iτ) ]`
+3. Merger accepted if `Δ̂_i > max(0, Δ̂_current)` for all members
+4. Exit if `Δ̂_current < 0`
+
+**Requires:** `g` must be specified when `decision_rule == "loggain"` (growth rate for demeaning).
+
+**Phase B identity:** With `decision_rule == "replay"` (default), behavior is byte-for-byte identical to Phase B.
+
 ## Fixed Market Size
 
 ### `market_size_fixed`

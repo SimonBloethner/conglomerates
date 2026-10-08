@@ -340,6 +340,121 @@ def compute_realized_growth(past_states, step_states):
     return realized_growth
 
 
+@nb.njit(cache=True)
+def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, sharing_rule_code, g):
+    """
+    Compute demeaned log-growth gain for member i in a proposed conglomerate.
+
+    The loggain rule removes first-order noise (α·(mean r̄ − mean r_i)) by demeaning
+    each partner's window returns before replay. This makes the decision:
+    - Independent of realized common growth (which cannot be controlled)
+    - Focused on the pooling benefit from idiosyncratic variance reduction
+
+    Parameters:
+    -----------
+    i : int
+        Index of the firm within members array (0-indexed position in members)
+    members : ndarray, shape (K,)
+        Indices of firms in the proposed set (used to slice window_returns/sizes)
+    alpha : float
+        Pooling fraction (share)
+    window_returns : ndarray, shape (h, total_firms) or (h, K)
+        Log returns for h historical steps. If total_firms, indexed by members[j].
+        If K, indexed directly by j.
+    window_sizes : ndarray, shape (h, total_firms) or (h, K)
+        Firm sizes (levels, not log) for h historical steps
+    Phi_K : float
+        Management cost for this conglomerate size
+    sharing_rule_code : int
+        0 = equal, 1 = proportional
+    g : float
+        Common growth rate (added back after demeaning)
+
+    Returns:
+    --------
+    delta_hat : float
+        Mean log gain from pooling: Δ̂_i = (1/h) Σ_τ [ log(1 + p_iτ) − log(1 + ε_iτ) ]
+        Returns -inf if any 1 + p_iτ <= 0 (invalid)
+    """
+    h = window_returns.shape[0]
+    K = len(members)
+
+    # Determine if window_returns is (h, total_firms) or (h, K)
+    # If window_returns.shape[1] > K, we need to index by members[j]
+    # Otherwise, assume it's already sliced to K firms
+    full_indexing = window_returns.shape[1] > K
+
+    # Step 1: Extract returns for members and compute per-firm demeaned returns
+    # ε_jτ = r̃_jτ − mean_τ(r̃_jτ) + g
+    epsilon = np.empty((h, K), dtype=np.float64)
+
+    for j in range(K):
+        if full_indexing:
+            firm_j = members[j]
+        else:
+            firm_j = j
+
+        # Compute mean of this firm's returns over the window
+        mean_r_j = 0.0
+        for tau in range(h):
+            mean_r_j += window_returns[tau, firm_j]
+        mean_r_j /= h
+
+        # Demean and add common growth
+        for tau in range(h):
+            epsilon[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
+
+    # Step 2: Extract sizes for members
+    sizes = np.empty((h, K), dtype=np.float64)
+    for tau in range(h):
+        for j in range(K):
+            if full_indexing:
+                sizes[tau, j] = window_sizes[tau, members[j]]
+            else:
+                sizes[tau, j] = window_sizes[tau, j]
+
+    # Step 3: Compute pooled net return for member i at each tau
+    delta_hat = 0.0
+
+    for tau in range(h):
+        # Compute weights and pool contribution
+        sum_s = 0.0
+        sum_s_eps = 0.0
+        for j in range(K):
+            s_j = sizes[tau, j]
+            e_j = np.expm1(epsilon[tau, j])  # Convert log return to linear return
+            sum_s += s_j
+            sum_s_eps += s_j * e_j
+
+        s_i = sizes[tau, i]
+        e_i = np.expm1(epsilon[tau, i])
+
+        if sharing_rule_code == 1:
+            # Proportional sharing: p_iτ = (1−α)·ε_iτ + α·Σ_j w_jτ ε_jτ − Φ(K̂)
+            # where w_jτ = s_jτ / Σ s_kτ
+            avg_weighted_gain = sum_s_eps / sum_s if sum_s > 0 else 0.0
+            p_i = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+        else:
+            # Equal sharing: p_iτ = (1−α)·ε_iτ + [α·Σ_j s_jτ ε_jτ − Φ(K̂)·Σ_j s_jτ] / (K̂·s_iτ)
+            # Pool in dollars: α·Σ_j Δ_jτ − Φ(K̂)·S_τ, distributed equally per firm
+            pool_dollars = alpha * sum_s_eps - Phi_K * sum_s
+            equal_share = pool_dollars / K
+            s_i_safe = max(s_i, 1e-300)
+            p_i = (1.0 - alpha) * e_i + equal_share / s_i_safe
+
+        # Check for invalid (would cause exit)
+        if p_i <= -1.0:
+            return -np.inf
+
+        # Accumulate: log(1 + p_i) - log(1 + ε_i)
+        delta_hat += np.log1p(p_i) - np.log1p(e_i)
+
+    # Mean over window
+    delta_hat /= h
+
+    return delta_hat
+
+
 # Alpha grid for endogenous alpha search
 ALPHA_GRID = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
                        0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0])
@@ -429,10 +544,17 @@ def merger_kernel_numba(
     cong_pool, management_costs_lookup,
     firm_log_states_buffer, firm_log_returns_buffer,
     total_firms, markets, firms_per_market,
-    sharing_rule_code
+    sharing_rule_code, decision_rule_code, g_common
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
+
+    Parameters:
+    -----------
+    decision_rule_code : int
+        0 = replay (compare synthetic to realized), 1 = loggain (demeaned comparison)
+    g_common : float
+        Common growth rate for loggain demeaning. Only used if decision_rule_code == 1.
 
     Returns tuple: (mergers_this_step, proposals_this_step)
     - proposals: feasible matches that reached the desirability test
@@ -544,84 +666,143 @@ def merger_kernel_numba(
         
         accept = True
 
-        # OPTIMIZATION: Precompute sum_Delta and sum_s for each tau ONCE before firm loop
-        # This reduces complexity from O(K²·h) to O(K·h)
-        sum_Delta_tau = np.empty(h, dtype=np.float64)
-        sum_s_tau = np.empty(h, dtype=np.float64)
-        for tau in range(h):
-            sum_Delta = 0.0
-            sum_s = 0.0
-            for k in range(K_hat):
-                s_k_tau = np.exp(past_states[tau, k])
-                r_k_tau = np.expm1(past_returns[tau, k])
-                sum_Delta += s_k_tau * r_k_tau
-                sum_s += s_k_tau
-            sum_Delta_tau[tau] = sum_Delta
-            sum_s_tau[tau] = sum_s
+        if decision_rule_code == 1:
+            # LOGGAIN: Demeaned log-growth comparison
+            # For each firm, compute Δ̂_proposed and compare to Δ̂_current (or 0 if standalone)
 
-        # For each firm in the merged set, compute synthetic vs realized growth
-        for j in range(K_hat):
-            firm_id = merged_firms[j]
+            # Compute sizes from states
+            sizes = np.exp(past_states)  # shape (h, K_hat)
 
-            # Compute synthetic log growth g_hat_i
-            g_hat = 0.0
-            has_invalid = False
+            for j in range(K_hat):
+                firm_id = merged_firms[j]
 
-            for tau in range(h):
-                # s_i_tau = exp(log_state)
-                s_i_tau = np.exp(past_states[tau, j])
-                # r_i_tau = expm1(log_return)
-                r_i_tau = np.expm1(past_returns[tau, j])
-                # Delta_i_tau = s_i_tau * r_i_tau
-                Delta_i_tau = s_i_tau * r_i_tau
+                # Compute gain in proposed merged set
+                gain_proposed = member_gain_loggain(
+                    j, merged_firms, share, past_returns, sizes,
+                    m, sharing_rule_code, g_common
+                )
 
-                # Use precomputed sums for synthetic pool Omega_hat_tau
-                sum_Delta = sum_Delta_tau[tau]
-                sum_s = sum_s_tau[tau]
-
-                if proportional:
-                    # Omega_hat = share * sum_Delta * (1 - m / sum_s)
-                    Omega_hat = share * sum_Delta * (1.0 - m / sum_s) if sum_s > 0 else 0.0
-                else:
-                    # Omega_hat = share * sum_Delta - m * sum_s
-                    Omega_hat = share * sum_Delta - m * sum_s
-
-                # Synthetic per-member profit depends on sharing rule
-                if sharing_rule_code == 0:
-                    # equal: each firm gets equal dollars from pool
-                    Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
-                else:
-                    # proportional: each firm gets share proportional to its size
-                    w_i = s_i_tau / sum_s if sum_s > 0 else 0.0
-                    Pi_hat_i = (1.0 - share) * Delta_i_tau + w_i * Omega_hat
-
-                # Check for invalid growth (would cause exit)
-                growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
-                if growth_ratio <= -1.0:
-                    has_invalid = True
+                if gain_proposed == -np.inf:
+                    accept = False
                     break
 
-                g_hat += np.log1p(growth_ratio)
-            
-            if has_invalid:
-                accept = False
-                break
-            
-            g_hat /= h  # Mean log growth
-            
-            # Compute realized log growth g_i under current arrangement
-            # g_i = (1/h) * sum_tau (log_state[tau+1] - log_state[tau])
-            g_realized = 0.0
-            for tau in range(h - 1):
-                g_realized += past_states[tau + 1, j] - past_states[tau, j]
-            # Last step: from past_states[h-1] to step_states[0]
-            g_realized += step_states[0, j] - past_states[h - 1, j]
-            g_realized /= h
-            
-            # Reject if firm would not benefit
-            if g_hat <= g_realized:
-                accept = False
-                break
+                # Determine current arrangement and compute gain_current
+                current_cong = firm_conglom[firm_id]
+                if current_cong == -1:
+                    # Standalone: Δ̂_current = 0 by definition
+                    gain_current = 0.0
+                else:
+                    # In a conglomerate: compute Δ̂ in current set
+                    current_size = cong_size[current_cong]
+                    current_members = cong_firms[current_cong, :current_size].copy()
+
+                    # Get historical data for current conglomerate
+                    current_past_states = get_historical_states_numba(
+                        firm_log_states_buffer, step - h, step, current_members
+                    )
+                    current_past_returns = get_historical_returns_numba(
+                        firm_log_returns_buffer, step - h, step, current_members
+                    )
+                    current_sizes = np.exp(current_past_states)
+
+                    # Find this firm's index within current conglomerate
+                    j_current = -1
+                    for idx in range(current_size):
+                        if current_members[idx] == firm_id:
+                            j_current = idx
+                            break
+
+                    current_m = management_costs_lookup[current_size]
+                    gain_current = member_gain_loggain(
+                        j_current, current_members, share, current_past_returns, current_sizes,
+                        current_m, sharing_rule_code, g_common
+                    )
+
+                # Accept only if proposed beats max(0, current)
+                if gain_proposed <= max(0.0, gain_current):
+                    accept = False
+                    break
+        else:
+            # REPLAY: Compare synthetic pooled growth to realized standalone growth
+
+            # OPTIMIZATION: Precompute sum_Delta and sum_s for each tau ONCE before firm loop
+            # This reduces complexity from O(K²·h) to O(K·h)
+            sum_Delta_tau = np.empty(h, dtype=np.float64)
+            sum_s_tau = np.empty(h, dtype=np.float64)
+            for tau in range(h):
+                sum_Delta = 0.0
+                sum_s = 0.0
+                for k in range(K_hat):
+                    s_k_tau = np.exp(past_states[tau, k])
+                    r_k_tau = np.expm1(past_returns[tau, k])
+                    sum_Delta += s_k_tau * r_k_tau
+                    sum_s += s_k_tau
+                sum_Delta_tau[tau] = sum_Delta
+                sum_s_tau[tau] = sum_s
+
+            # For each firm in the merged set, compute synthetic vs realized growth
+            for j in range(K_hat):
+                firm_id = merged_firms[j]
+
+                # Compute synthetic log growth g_hat_i
+                g_hat = 0.0
+                has_invalid = False
+
+                for tau in range(h):
+                    # s_i_tau = exp(log_state)
+                    s_i_tau = np.exp(past_states[tau, j])
+                    # r_i_tau = expm1(log_return)
+                    r_i_tau = np.expm1(past_returns[tau, j])
+                    # Delta_i_tau = s_i_tau * r_i_tau
+                    Delta_i_tau = s_i_tau * r_i_tau
+
+                    # Use precomputed sums for synthetic pool Omega_hat_tau
+                    sum_Delta = sum_Delta_tau[tau]
+                    sum_s = sum_s_tau[tau]
+
+                    if proportional:
+                        # Omega_hat = share * sum_Delta * (1 - m / sum_s)
+                        Omega_hat = share * sum_Delta * (1.0 - m / sum_s) if sum_s > 0 else 0.0
+                    else:
+                        # Omega_hat = share * sum_Delta - m * sum_s
+                        Omega_hat = share * sum_Delta - m * sum_s
+
+                    # Synthetic per-member profit depends on sharing rule
+                    if sharing_rule_code == 0:
+                        # equal: each firm gets equal dollars from pool
+                        Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
+                    else:
+                        # proportional: each firm gets share proportional to its size
+                        w_i = s_i_tau / sum_s if sum_s > 0 else 0.0
+                        Pi_hat_i = (1.0 - share) * Delta_i_tau + w_i * Omega_hat
+
+                    # Check for invalid growth (would cause exit)
+                    growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
+                    if growth_ratio <= -1.0:
+                        has_invalid = True
+                        break
+
+                    g_hat += np.log1p(growth_ratio)
+
+                if has_invalid:
+                    accept = False
+                    break
+
+                g_hat /= h  # Mean log growth
+
+                # Compute realized log growth g_i under current arrangement
+                # g_i = (1/h) * sum_tau (log_state[tau+1] - log_state[tau])
+                g_realized = 0.0
+                for tau in range(h - 1):
+                    g_realized += past_states[tau + 1, j] - past_states[tau, j]
+                # Last step: from past_states[h-1] to step_states[0]
+                g_realized += step_states[0, j] - past_states[h - 1, j]
+                g_realized /= h
+
+                # Reject if firm would not benefit
+                if g_hat <= g_realized:
+                    accept = False
+                    break
 
         if not accept:
             continue
@@ -697,12 +878,27 @@ def merger_kernel_numba(
 def compute_exit_candidates_numba(
     firm_outside_log_profits,      # shape (lookback, total_firms)
     firm_log_states_buffer,        # shape (lookback+1, total_firms)
+    firm_log_returns_buffer,       # shape (lookback, total_firms)
     exit_candidates,               # 1D array of firm IDs
     lookback,
-    step
+    step,
+    decision_rule_code,            # 0 = replay, 1 = loggain
+    g_common,                      # Common growth for loggain
+    share,
+    sharing_rule_code,
+    management_costs_lookup,
+    firm_conglom,
+    cong_firms,
+    cong_size
 ):
     """
     Numba-compiled exit evaluation logic.
+
+    Parameters:
+    -----------
+    decision_rule_code : int
+        0 = replay (compare outside to inside log profits)
+        1 = loggain (exit if Δ̂_current < 0)
 
     Returns array of firm IDs that should exit (not a mask).
     """
@@ -712,32 +908,73 @@ def compute_exit_candidates_numba(
 
     lookback_plus_1 = firm_log_states_buffer.shape[0]
     start_idx = (step - lookback) % lookback_plus_1
+    h = lookback
 
     # Track which firms should exit
     exit_list = np.empty(n, dtype=np.int64)
     exit_count = 0
 
-    for firm_id in exit_candidates:
-        # Outside profit: arithmetic mean of log profits → log of geometric mean
-        log_outside = 0.0
-        for t in range(lookback):
-            log_outside += firm_outside_log_profits[t, firm_id]
-        log_outside /= lookback
+    if decision_rule_code == 1:
+        # LOGGAIN: Exit if Δ̂_current < 0 (better off standalone)
+        for firm_id in exit_candidates:
+            cong_id = firm_conglom[firm_id]
+            if cong_id == -1:
+                # Not in a conglomerate (shouldn't happen but be safe)
+                continue
 
-        # Extract lookback+1 states and compute returns using direct modulo arithmetic
-        # This eliminates array allocation - just compute indices on the fly
-        log_inside = 0.0
-        for i in range(lookback):
-            curr_idx = (start_idx + i) % lookback_plus_1
-            next_idx = (start_idx + i + 1) % lookback_plus_1
-            curr_state = firm_log_states_buffer[curr_idx, firm_id]
-            next_state = firm_log_states_buffer[next_idx, firm_id]
-            log_inside += (next_state - curr_state)
-        log_inside /= lookback
+            # Get current conglomerate members
+            current_size = cong_size[cong_id]
+            current_members = cong_firms[cong_id, :current_size].copy()
 
-        if log_outside > log_inside:
-            exit_list[exit_count] = firm_id
-            exit_count += 1
+            # Find this firm's index within the conglomerate
+            j_current = -1
+            for idx in range(current_size):
+                if current_members[idx] == firm_id:
+                    j_current = idx
+                    break
+
+            # Get historical data for current conglomerate
+            past_states = get_historical_states_numba(
+                firm_log_states_buffer, step - h, step, current_members
+            )
+            past_returns = get_historical_returns_numba(
+                firm_log_returns_buffer, step - h, step, current_members
+            )
+            sizes = np.exp(past_states)
+
+            m = management_costs_lookup[current_size]
+            gain_current = member_gain_loggain(
+                j_current, current_members, share, past_returns, sizes,
+                m, sharing_rule_code, g_common
+            )
+
+            # Exit if gain in current conglomerate is negative (standalone gives 0)
+            if gain_current < 0:
+                exit_list[exit_count] = firm_id
+                exit_count += 1
+    else:
+        # REPLAY: Compare outside log profits to inside log growth
+        for firm_id in exit_candidates:
+            # Outside profit: arithmetic mean of log profits → log of geometric mean
+            log_outside = 0.0
+            for t in range(lookback):
+                log_outside += firm_outside_log_profits[t, firm_id]
+            log_outside /= lookback
+
+            # Extract lookback+1 states and compute returns using direct modulo arithmetic
+            # This eliminates array allocation - just compute indices on the fly
+            log_inside = 0.0
+            for i in range(lookback):
+                curr_idx = (start_idx + i) % lookback_plus_1
+                next_idx = (start_idx + i + 1) % lookback_plus_1
+                curr_state = firm_log_states_buffer[curr_idx, firm_id]
+                next_state = firm_log_states_buffer[next_idx, firm_id]
+                log_inside += (next_state - curr_state)
+            log_inside /= lookback
+
+            if log_outside > log_inside:
+                exit_list[exit_count] = firm_id
+                exit_count += 1
 
     return exit_list[:exit_count]
 
@@ -1096,7 +1333,8 @@ def model(params, seed=None, market_corr="identity",
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
           log_family="normal", nu=3.0, floor_c=0.0,
           metric_every=100, burn_in=0, alpha_endogenous=False,
-          g=None, renorm_every=500, market_size_fixed=False):
+          g=None, renorm_every=500, market_size_fixed=False,
+          decision_rule="replay"):
     """
     Main simulation model.
 
@@ -1166,6 +1404,15 @@ def model(params, seed=None, market_corr="identity",
         - By construction, a market of standalone firms keeps its total exactly
         - After pooling/floor, renormalizes per market so mean size = 1
         - Skips economy-wide renormalization (redundant when flag is on)
+    decision_rule : str
+        Merger/exit decision rule: 'replay' (default) or 'loggain'.
+        - replay: Compare synthetic pooled growth to realized standalone growth.
+          Original Phase A/B behavior; sensitive to common market shocks.
+        - loggain: Demean returns to remove first-order noise. Each firm's
+          window returns are centered at the common growth g, then the gain
+          from pooling is computed as Δ̂ = E[log(1+p) - log(1+ε)].
+          Accepts if Δ̂_proposed > max(0, Δ̂_current) for all members.
+          Requires g to be specified (raises ValueError if g is None).
     """
     import time
 
@@ -1174,6 +1421,13 @@ def model(params, seed=None, market_corr="identity",
     # Validate market_size_fixed flag
     if market_size_fixed and growth_process != "log_family":
         raise ValueError("market_size_fixed=True requires growth_process='log_family'")
+
+    # Validate decision_rule
+    if decision_rule not in ("replay", "loggain"):
+        raise ValueError(f"decision_rule must be 'replay' or 'loggain', got '{decision_rule}'")
+    if decision_rule == "loggain" and g is None:
+        raise ValueError("decision_rule='loggain' requires g to be specified")
+    decision_rule_code = 0 if decision_rule == "replay" else 1
 
     # Seed both NumPy and Numba RNGs if seed is provided
     if seed is not None:
@@ -1524,7 +1778,8 @@ def model(params, seed=None, market_corr="identity",
                 cong_pool, management_costs_lookup,
                 firm_log_states_buffer, firm_log_returns_buffer,
                 total_firms, markets, firms_per_market,
-                sharing_rule_code
+                sharing_rule_code, decision_rule_code,
+                g if g is not None else 0.0
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
@@ -1681,9 +1936,18 @@ def model(params, seed=None, market_corr="identity",
                 firms_to_exit = compute_exit_candidates_numba(
                     firm_outside_log_profits,
                     firm_log_states_buffer,
+                    firm_log_returns_buffer,
                     exit_candidates,
                     lookback,
-                    step
+                    step,
+                    decision_rule_code,
+                    g if g is not None else 0.0,
+                    share,
+                    sharing_rule_code,
+                    management_costs_lookup,
+                    firm_conglom,
+                    cong_firms,
+                    cong_size
                 )
 
                 # Process exits for firms that should leave
