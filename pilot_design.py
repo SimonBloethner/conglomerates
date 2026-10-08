@@ -18,13 +18,13 @@ Blocks:
 - main: 3 families × 4 costs × 9 α × 5 reps = 540 runs
 - equal-split: normal × 4 costs × 9 α × 5 reps = 180 runs
 - cost level: laplace × 4 costs × 2 multipliers × 9 α × 5 reps = 360 runs
-- lookback: laplace × power_law × 5 lookbacks × 2 α × 5 reps = 50 runs
+- lookback: (laplace + t3) × power_law × 4 lookbacks × 2 α × 5 reps = 80 runs
 - correlation: laplace × power_law × cross_corr=0.3 × 9 α × 5 reps = 45 runs
 - endogenous α: 3 families × 4 costs × 5 reps = 60 runs (α_start=0.1)
 - rule-replay: laplace × power_law × decision_rule=replay × 9 α × 5 reps = 45 runs
 - floor-level: laplace × power_law × 2 floor values × 9 α × 5 reps = 90 runs
 
-Total: 1370 runs
+Total: 1400 runs
 """
 import json
 import os
@@ -95,6 +95,7 @@ def make_base_params():
         'market_size_fixed': True,  # C14: normalize sizes within each market
         'decision_rule': 'loggain',  # C17: loggain decision rule
         'g': 0.055,  # C17: growth rate for demeaning (mid-range of mu_range)
+        'exit_review_every': 5,  # C21: one-tenth of default lookback=50
     }
 
 
@@ -217,40 +218,44 @@ def generate_cost_level_block(scenarios, scenario_id, cell_id):
 
 def generate_lookback_block(scenarios, scenario_id, cell_id):
     """
-    Lookback: laplace × power_law × 5 lookbacks × 2 α × 5 reps = 50 runs
-    Lookbacks: [20, 50, 100, 200, 500]
+    Lookback: (laplace + t3) × power_law × 4 lookbacks × 2 α × 5 reps = 80 runs
+    Lookbacks: [50, 100, 200, 500]
     α values: [0.1, 0.3]
+    exit_review_every = max(1, lookback // 10) for each lookback value
     """
-    family = 'laplace'
+    families = ['laplace', 't3']
     cost_type = 'power_law'
-    lookbacks = [20, 50, 100, 200, 500]
+    lookbacks = [50, 100, 200, 500]
     alpha_values = [0.1, 0.3]
 
-    for lookback in lookbacks:
-        # All α values within this (lookback) share seeds per rep
-        for alpha in alpha_values:
-            for rep in range(N_REPS):
-                s = make_base_params()
-                s.update({
-                    'block': 'lookback',
-                    'scenario_id': scenario_id,
-                    'cell_id': cell_id,
-                    'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
-                    'lookback': lookback,
-                    'cross_corr': 0.0,
-                    'alpha': alpha,
-                    'sharing_rule': SHARING_RULE,
-                    'rep': rep,
-                    'seed': cell_seed(cell_id, rep),
-                    'alpha_endogenous': False,
-                })
-                scenarios.append(s)
-                scenario_id += 1
-        cell_id += 1
+    for family in families:
+        for lookback in lookbacks:
+            # All α values within this (family, lookback) share seeds per rep
+            exit_review = max(1, lookback // 10)
+            for alpha in alpha_values:
+                for rep in range(N_REPS):
+                    s = make_base_params()
+                    s['exit_review_every'] = exit_review  # C21: proportional to lookback
+                    s.update({
+                        'block': 'lookback',
+                        'scenario_id': scenario_id,
+                        'cell_id': cell_id,
+                        'log_family': family,
+                        'cost_type': cost_type,
+                        'c0': COST_PARAMS[cost_type]['c0'],
+                        'c1': COST_PARAMS[cost_type]['c1'],
+                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'lookback': lookback,
+                        'cross_corr': 0.0,
+                        'alpha': alpha,
+                        'sharing_rule': SHARING_RULE,
+                        'rep': rep,
+                        'seed': cell_seed(cell_id, rep),
+                        'alpha_endogenous': False,
+                    })
+                    scenarios.append(s)
+                    scenario_id += 1
+            cell_id += 1
     return scenario_id, cell_id
 
 

@@ -45,6 +45,7 @@ def extract_post_burnin_metrics(result):
         'cross_corr': scenario['cross_corr'],
         'alpha_endogenous': scenario.get('alpha_endogenous', False),
         'decision_rule': scenario.get('decision_rule', 'replay'),  # C17
+        'exit_review_every': scenario.get('exit_review_every', 1),  # C21
         # Runtime
         'elapsed_seconds': result['elapsed_seconds'],
         'ms_per_step': result['ms_per_step'],

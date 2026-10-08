@@ -132,6 +132,8 @@ Periodic exit review interval for loggain decision rule.
 
 Default: `1` (every step)
 
+**C21 convention:** Main results use `exit_review_every = 5` (one-tenth of the default `lookback = 50`). The lookback block uses `exit_review_every = max(1, lookback // 10)` to maintain proportionality.
+
 When `exit_review_every > 1`:
 - Conglomerate members run the exit test only at steps where `(step - cong_created_step) % exit_review_every == 0`
 - The review schedule resets when a conglomerate's composition changes (merger or new member)

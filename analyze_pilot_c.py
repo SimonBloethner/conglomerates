@@ -159,28 +159,38 @@ def generate_equal_split_comparison(df):
 
 
 def generate_lookback_comparison(df):
-    """Compare lookback block to main laplace/power_law cell."""
-    # Main laplace/power_law reference
-    ref = df[(df['block'] == 'main') &
-             (df['log_family'] == 'laplace') &
-             (df['cost_type'] == 'power_law')].copy()
-    ref_k = agg_with_bands(ref, ['alpha'], 'K_post_burnin_median')
-    ref_k = ref_k.rename(columns={
-        'K_post_burnin_median_median': 'K_ref_median',
-        'K_post_burnin_median_p25': 'K_ref_p25',
-        'K_post_burnin_median_p75': 'K_ref_p75',
-    })
-    ref_hill = agg_with_bands(ref, ['alpha'], 'hill_exponent_median')
-    ref_hill = ref_hill.rename(columns={
-        'hill_exponent_median_median': 'hill_ref_median',
-        'hill_exponent_median_p25': 'hill_ref_p25',
-        'hill_exponent_median_p75': 'hill_ref_p75',
-    })
-    ref_merged = ref_k.merge(ref_hill, on=['alpha', 'n_reps'])
+    """Compare lookback block to main power_law cell by family."""
+    # Main power_law reference by family
+    ref_all = df[(df['block'] == 'main') &
+                 (df['cost_type'] == 'power_law')].copy()
 
-    # Lookback block (200 and 1000)
+    ref_list = []
+    for family in ['laplace', 't3']:
+        ref = ref_all[ref_all['log_family'] == family]
+        if len(ref) == 0:
+            continue
+        ref_k = agg_with_bands(ref, ['alpha'], 'K_post_burnin_median')
+        ref_k['log_family'] = family
+        ref_k = ref_k.rename(columns={
+            'K_post_burnin_median_median': 'K_ref_median',
+            'K_post_burnin_median_p25': 'K_ref_p25',
+            'K_post_burnin_median_p75': 'K_ref_p75',
+        })
+        ref_hill = agg_with_bands(ref, ['alpha'], 'hill_exponent_median')
+        ref_hill['log_family'] = family
+        ref_hill = ref_hill.rename(columns={
+            'hill_exponent_median_median': 'hill_ref_median',
+            'hill_exponent_median_p25': 'hill_ref_p25',
+            'hill_exponent_median_p75': 'hill_ref_p75',
+        })
+        ref_merged = ref_k.merge(ref_hill, on=['alpha', 'n_reps', 'log_family'])
+        ref_list.append(ref_merged)
+
+    ref_merged = pd.concat(ref_list, ignore_index=True) if ref_list else pd.DataFrame()
+
+    # Lookback block by family (C21: includes laplace and t3)
     lookback = df[df['block'] == 'lookback'].copy()
-    lookback_k = lookback.groupby(['lookback', 'alpha']).apply(
+    lookback_k = lookback.groupby(['log_family', 'lookback', 'alpha']).apply(
         lambda g: pd.Series({
             'K_median': g['K_post_burnin_median'].median(),
             'K_p25': np.nanpercentile(g['K_post_burnin_median'], 25),
@@ -698,6 +708,72 @@ def create_event_study_figure(df, output_path='diagnostics/pilot_c_event_study.p
     return output_path
 
 
+def create_lookback_k_figure(df, benchmarks=None, output_path='diagnostics/pilot_c_lookback_k.png'):
+    """Create K(l) figure for lookback block by family with K* dashed lines."""
+    lookback = df[df['block'] == 'lookback'].copy()
+
+    if len(lookback) == 0:
+        return None
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    families = ['laplace', 't3']
+    colors = {'0.1': 'blue', '0.3': 'red'}
+    markers = {'0.1': 'o', '0.3': 's'}
+
+    for ax, family in zip(axes, families):
+        fam_data = lookback[lookback['log_family'] == family]
+        if len(fam_data) == 0:
+            ax.set_title(f'{family} (no data)')
+            continue
+
+        # Group by lookback and alpha
+        agg = fam_data.groupby(['lookback', 'alpha']).apply(
+            lambda g: pd.Series({
+                'K_median': g['K_post_burnin_median'].median(),
+                'K_p25': np.nanpercentile(g['K_post_burnin_median'], 25),
+                'K_p75': np.nanpercentile(g['K_post_burnin_median'], 75),
+            })
+        ).reset_index()
+
+        for alpha in [0.1, 0.3]:
+            sub = agg[agg['alpha'] == alpha].sort_values('lookback')
+            if len(sub) == 0:
+                continue
+            ax.errorbar(
+                sub['lookback'],
+                sub['K_median'],
+                yerr=[sub['K_median'] - sub['K_p25'], sub['K_p75'] - sub['K_median']],
+                color=colors[str(alpha)],
+                marker=markers[str(alpha)],
+                capsize=3,
+                label=f'α={alpha}'
+            )
+
+        # Add K* dashed line if benchmarks available
+        if benchmarks is not None and len(benchmarks) > 0:
+            # Get K* for power_law cost (the cost used in lookback block)
+            k_star = benchmarks[benchmarks['cost_type'] == 'power_law']['K_star']
+            if len(k_star) > 0:
+                k_star_val = k_star.iloc[0]
+                ax.axhline(k_star_val, color='gray', linestyle='--', alpha=0.7, label=f'K*={k_star_val:.0f}')
+
+        ax.set_xlabel('Lookback (l)')
+        ax.set_ylabel('K')
+        ax.set_title(f'{family.capitalize()} family')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        ax.set_xscale('log')
+
+    plt.suptitle('Conglomerate Size vs Lookback Window')
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path
+
+
 def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_summary.md'):
     """Generate the full summary report."""
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -909,34 +985,34 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
         lines.append("")
 
     # ========================================================================
-    # Section: Lookback comparison
+    # Section: Lookback comparison (C21: laplace and t3)
     # ========================================================================
     lines.append("## Lookback Sensitivity")
     lines.append("")
-    lines.append("Comparison of lookback block (200, 1000) to main laplace/power_law cell (50).")
+    lines.append("Comparison of lookback block to main power_law cell by family (l ∈ {50, 100, 200, 500}).")
     lines.append("Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `hill_exponent_median`, filtered by `block` and `lookback`")
     lines.append("")
 
     ref_look, lookback_k = generate_lookback_comparison(df)
 
-    # Show for α = 0.1
-    ref_a01 = ref_look[ref_look['alpha'] == 0.1]
-    look_a01 = lookback_k[lookback_k['alpha'] == 0.1]
+    for family in ['laplace', 't3']:
+        # Show for α = 0.3 (more interesting for saturation)
+        ref_fam = ref_look[(ref_look['log_family'] == family) & (ref_look['alpha'] == 0.3)]
+        look_fam = lookback_k[(lookback_k['log_family'] == family) & (lookback_k['alpha'] == 0.3)]
 
-    if len(ref_a01) > 0:
-        lines.append("### At α = 0.1")
-        lines.append("")
-        lines.append("| Lookback | K [25,75] | Hill [25,75] |")
-        lines.append("|----------|-----------|--------------|")
-        for _, row in ref_a01.iterrows():
-            k_band = fmt_band(row['K_ref_median'], row['K_ref_p25'], row['K_ref_p75'])
-            h_band = fmt_band(row['hill_ref_median'], row['hill_ref_p25'], row['hill_ref_p75'])
-            lines.append(f"| 50 (ref) | {k_band} | {h_band} |")
-        for _, row in look_a01.iterrows():
-            k_band = fmt_band(row['K_median'], row['K_p25'], row['K_p75'])
-            h_band = fmt_band(row['hill_median'], row['hill_p25'], row['hill_p75'])
-            lines.append(f"| {int(row['lookback'])} | {k_band} | {h_band} |")
-        lines.append("")
+        if len(look_fam) > 0:
+            lines.append(f"### {family.capitalize()} family at α = 0.3")
+            lines.append("")
+            lines.append("| Lookback | K [25,75] | Hill [25,75] |")
+            lines.append("|----------|-----------|--------------|")
+            for _, row in look_fam.sort_values('lookback').iterrows():
+                k_band = fmt_band(row['K_median'], row['K_p25'], row['K_p75'])
+                h_band = fmt_band(row['hill_median'], row['hill_p25'], row['hill_p75'])
+                lines.append(f"| {int(row['lookback'])} | {k_band} | {h_band} |")
+            lines.append("")
+
+    lines.append("![Lookback K](pilot_c_lookback_k.png)")
+    lines.append("")
 
     # ========================================================================
     # Section: Correlation comparison
@@ -1182,6 +1258,7 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("- `pilot_c_endo_alpha_hist.png`: Histogram of adopted α (endogenous block)")
     lines.append("- `pilot_c_event_study.png`: Event study DiD versus α (laplace family)")
     lines.append("- `pilot_c_alpha_scatter.png`: Adopted α versus SD of member IQR")
+    lines.append("- `pilot_c_lookback_k.png`: K versus lookback by family (laplace + t3)")
     lines.append("")
 
     # Write report
@@ -1220,6 +1297,7 @@ def main():
     create_endogenous_alpha_histogram(df)
     create_event_study_figure(df)
     create_alpha_scatter_figure(df)
+    create_lookback_k_figure(df, benchmarks)  # C21
 
     # Generate report
     print("Generating summary report...")

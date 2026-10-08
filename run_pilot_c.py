@@ -57,6 +57,7 @@ def run_scenario(scenario):
         g=scenario.get('g'),
         market_size_fixed=scenario.get('market_size_fixed', False),
         decision_rule=scenario.get('decision_rule', 'loggain'),  # C18: default loggain
+        exit_review_every=scenario.get('exit_review_every', 5),  # C21: default 5
     )
 
     elapsed = time.time() - start_time
