@@ -183,7 +183,7 @@ Metrics are computed at steps where `(step + 1) % metric_every == 0` or at the f
 - `hill_exponent[market, k]`: Hill estimator for tail index on top 10% of firm sizes within each market
 - `hhi_within[market, k]`: Herfindahl-Hirschman Index (Σ(share_i)²) within each market
 - `hhi_aggregate[k]`: HHI over control units (conglomerates as single units + standalone firms)
-- `top10_aggregate[k]`: Top 10% share over control units
+- `top10pct_aggregate[k]`: Top 10% share over control units
 - `cong_capital_share[k]`: Capital under conglomerate control / total capital
 - `effective_members`: List of (step, [(cong_id, K, K_eff), ...]) tuples, where K_eff = 1/Σ(w_i²) is the effective number of members
 
@@ -194,7 +194,7 @@ Computed over steps `t >= burn_in` and stored in `hyperparameters['summary']`:
 - `hill_exponent_median`: Median Hill exponent per market
 - `hhi_within_median`: Median within-market HHI per market
 - `hhi_aggregate_median`: Median aggregate HHI
-- `top10_aggregate_median`: Median top 10% share
+- `top10pct_aggregate_median`: Median top 10% share
 - `cong_capital_share_median`: Median conglomerate capital share
 - `K_median`: Median conglomerate size K
 - `K_eff_over_K_median`: Median K_eff/K ratio

@@ -72,7 +72,7 @@ def run_scenario(scenario):
         'hill_exponent': hyperparams.get('hill_exponent'),
         'hhi_within': hyperparams.get('hhi_within'),
         'hhi_aggregate': hyperparams.get('hhi_aggregate'),
-        'top10_aggregate': hyperparams.get('top10_aggregate'),
+        'top10pct_aggregate': hyperparams.get('top10pct_aggregate'),
         'cong_capital_share': hyperparams.get('cong_capital_share'),
         'effective_members': hyperparams.get('effective_members'),
         'floor_hits_by_status': hyperparams.get('floor_hits_by_status'),

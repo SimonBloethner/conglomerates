@@ -94,9 +94,9 @@ def create_synthetic_tidy():
                     'hhi_aggregate_median': 0.02 + alpha * 0.01,
                     'hhi_aggregate_p25': 0.018 + alpha * 0.01,
                     'hhi_aggregate_p75': 0.022 + alpha * 0.01,
-                    'top10_aggregate_median': 0.3 + alpha * 0.05,
-                    'top10_aggregate_p25': 0.28 + alpha * 0.05,
-                    'top10_aggregate_p75': 0.32 + alpha * 0.05,
+                    'top10pct_aggregate_median': 0.3 + alpha * 0.05,
+                    'top10pct_aggregate_p25': 0.28 + alpha * 0.05,
+                    'top10pct_aggregate_p75': 0.32 + alpha * 0.05,
                     'cong_capital_share_median': 0.5,
                     'cong_capital_share_p25': 0.45,
                     'cong_capital_share_p75': 0.55,
@@ -294,7 +294,7 @@ def test_synthetic_csv_columns():
         'rep', 'seed', 'sharing_rule', 'lookback', 'cross_corr', 'alpha_endogenous',
         'K_post_burnin_median', 'hill_exponent_median',
         'floor_hit_rate_standalone', 'floor_hit_rate_member',
-        'hhi_within_median', 'hhi_aggregate_median', 'top10_aggregate_median',
+        'hhi_within_median', 'hhi_aggregate_median', 'top10pct_aggregate_median',
         'elapsed_seconds', 'ms_per_step',
     ]
 

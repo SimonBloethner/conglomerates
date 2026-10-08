@@ -125,17 +125,17 @@ def extract_post_burnin_metrics(result):
         metrics['hhi_aggregate_p75'] = np.nan
 
     # Top-10 aggregate share
-    top10 = result.get('top10_aggregate')
+    top10 = result.get('top10pct_aggregate')
     if top10 is not None and len(top10) > 0:
         burn_in_obs = burn_in // metric_every
         top10_post = top10[burn_in_obs:]
-        metrics['top10_aggregate_median'] = np.nanmedian(top10_post)
-        metrics['top10_aggregate_p25'] = np.nanpercentile(top10_post, 25)
-        metrics['top10_aggregate_p75'] = np.nanpercentile(top10_post, 75)
+        metrics['top10pct_aggregate_median'] = np.nanmedian(top10_post)
+        metrics['top10pct_aggregate_p25'] = np.nanpercentile(top10_post, 25)
+        metrics['top10pct_aggregate_p75'] = np.nanpercentile(top10_post, 75)
     else:
-        metrics['top10_aggregate_median'] = np.nan
-        metrics['top10_aggregate_p25'] = np.nan
-        metrics['top10_aggregate_p75'] = np.nan
+        metrics['top10pct_aggregate_median'] = np.nan
+        metrics['top10pct_aggregate_p25'] = np.nan
+        metrics['top10pct_aggregate_p75'] = np.nan
 
     # Conglomerate capital share
     ccs = result.get('cong_capital_share')
@@ -356,7 +356,7 @@ def create_medians_df(tidy_df):
         'K_post_burnin_median', 'K_eff_post_burnin_median',
         'floor_hit_rate_standalone', 'floor_hit_rate_member',
         'hill_exponent_median', 'hhi_within_median', 'hhi_aggregate_median',
-        'top10_aggregate_median', 'cong_capital_share_median',
+        'top10pct_aggregate_median', 'cong_capital_share_median',
         'mergers_per_period', 'proposals_per_period', 'exits_per_period',
         'acceptance_rate', 'assortativity_ratio',
         'elapsed_seconds', 'ms_per_step',

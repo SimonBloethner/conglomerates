@@ -115,7 +115,7 @@ def generate_hhi_table(df):
 
     hhi_within = agg_with_bands(main, ['log_family', 'alpha'], 'hhi_within_median')
     hhi_agg = agg_with_bands(main, ['log_family', 'alpha'], 'hhi_aggregate_median')
-    top10 = agg_with_bands(main, ['log_family', 'alpha'], 'top10_aggregate_median')
+    top10 = agg_with_bands(main, ['log_family', 'alpha'], 'top10pct_aggregate_median')
     ccs = agg_with_bands(main, ['log_family', 'alpha'], 'cong_capital_share_median')
 
     merged = hhi_within.merge(hhi_agg, on=['log_family', 'alpha', 'n_reps'],
@@ -123,9 +123,9 @@ def generate_hhi_table(df):
     merged = merged.merge(top10, on=['log_family', 'alpha', 'n_reps'])
     merged = merged.merge(ccs, on=['log_family', 'alpha', 'n_reps'])
     merged = merged.rename(columns={
-        'top10_aggregate_median_median': 'top10_median',
-        'top10_aggregate_median_p25': 'top10_p25',
-        'top10_aggregate_median_p75': 'top10_p75',
+        'top10pct_aggregate_median_median': 'top10_median',
+        'top10pct_aggregate_median_p25': 'top10_p25',
+        'top10pct_aggregate_median_p75': 'top10_p75',
         'cong_capital_share_median_median': 'ccs_median',
         'cong_capital_share_median_p25': 'ccs_p25',
         'cong_capital_share_median_p75': 'ccs_p75',
@@ -511,13 +511,13 @@ def create_hhi_figure(df, output_path='diagnostics/pilot_c_hhi.png'):
     ax1.grid(True, alpha=0.3)
 
     # Top-10 share
-    top10 = agg_with_bands(main, ['alpha'], 'top10_aggregate_median')
+    top10 = agg_with_bands(main, ['alpha'], 'top10pct_aggregate_median')
     ax2.errorbar(
         top10['alpha'],
-        top10['top10_aggregate_median_median'],
+        top10['top10pct_aggregate_median_median'],
         yerr=[
-            top10['top10_aggregate_median_median'] - top10['top10_aggregate_median_p25'],
-            top10['top10_aggregate_median_p75'] - top10['top10_aggregate_median_median']
+            top10['top10pct_aggregate_median_median'] - top10['top10pct_aggregate_median_p25'],
+            top10['top10pct_aggregate_median_p75'] - top10['top10pct_aggregate_median_median']
         ],
         label='Top-10 share', color='green', marker='o', capsize=3
     )
@@ -682,7 +682,7 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     # ========================================================================
     lines.append("## HHI and Top-10 Share")
     lines.append("")
-    lines.append("Source: `pilot_c/tidy.csv` columns `hhi_within_median`, `hhi_aggregate_median`, `top10_aggregate_median`")
+    lines.append("Source: `pilot_c/tidy.csv` columns `hhi_within_median`, `hhi_aggregate_median`, `top10pct_aggregate_median`")
     lines.append("")
 
     hhi_table = generate_hhi_table(df)

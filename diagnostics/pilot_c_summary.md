@@ -92,7 +92,7 @@ Source: `pilot_c/tidy.csv` columns `floor_hit_rate_standalone`, `floor_hit_rate_
 
 ## HHI and Top-10 Share
 
-Source: `pilot_c/tidy.csv` columns `hhi_within_median`, `hhi_aggregate_median`, `top10_aggregate_median`
+Source: `pilot_c/tidy.csv` columns `hhi_within_median`, `hhi_aggregate_median`, `top10pct_aggregate_median`
 
 ### Laplace family
 

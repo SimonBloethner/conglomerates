@@ -556,16 +556,20 @@ def merger_kernel_numba(
     g_common : float
         Common growth rate for loggain demeaning. Only used if decision_rule_code == 1.
 
-    Returns tuple: (mergers_this_step, proposals_this_step)
+    Returns tuple: (mergers_this_step, proposals_this_step,
+                    mergers_ss, proposals_ss,
+                    mergers_sc, proposals_sc,
+                    mergers_cc, proposals_cc)
     - proposals: feasible matches that reached the desirability test
     - mergers: proposals that were accepted
+    - _ss: solo+solo, _sc: solo+conglomerate, _cc: conglomerate+conglomerate
     """
     # Generate merger draws
     draws = np.random.random(total_firms) < merge_thresh
     candidates = np.where(draws)[0]
 
     if len(candidates) == 0:
-        return 0, 0
+        return 0, 0, 0, 0, 0, 0, 0, 0
 
     # Shuffle candidates
     n = len(candidates)
@@ -575,6 +579,13 @@ def merger_kernel_numba(
 
     mergers_this_step = 0
     proposals_this_step = 0
+    # Per-type counters: ss=solo+solo, sc=solo+cong, cc=cong+cong
+    mergers_ss = 0
+    proposals_ss = 0
+    mergers_sc = 0
+    proposals_sc = 0
+    mergers_cc = 0
+    proposals_cc = 0
 
     for init_idx in range(len(candidates)):
         initiator = candidates[init_idx]
@@ -645,9 +656,19 @@ def merger_kernel_numba(
         # Reject if no history available
         if h == 0:
             continue
-        
+
         # This is a feasible proposal reaching the desirability test
         proposals_this_step += 1
+        # Track by type: ss=solo+solo, sc=solo+cong, cc=cong+cong
+        if initiator_cong == -1 and target_cong == -1:
+            proposals_ss += 1
+            proposal_type = 0  # ss
+        elif initiator_cong != -1 and target_cong != -1:
+            proposals_cc += 1
+            proposal_type = 2  # cc
+        else:
+            proposals_sc += 1
+            proposal_type = 1  # sc
         
         hist_start = step - h
         K_hat = merged_size  # Size of proposed merged set
@@ -870,8 +891,18 @@ def merger_kernel_numba(
                 firm_entered[f] = step
 
         mergers_this_step += 1
+        # Track by type using proposal_type set earlier
+        if proposal_type == 0:
+            mergers_ss += 1
+        elif proposal_type == 1:
+            mergers_sc += 1
+        else:
+            mergers_cc += 1
 
-    return mergers_this_step, proposals_this_step
+    return (mergers_this_step, proposals_this_step,
+            mergers_ss, proposals_ss,
+            mergers_sc, proposals_sc,
+            mergers_cc, proposals_cc)
 
 
 @nb.njit(cache=True)
@@ -1547,8 +1578,13 @@ def model(params, seed=None, market_corr="identity",
     hill_exponent_by_market = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)  # Per-market (diagnostic)
     hhi_within = np.zeros((markets, n_metric_steps), dtype=np.float64)
     hhi_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
-    top10_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
+    top10pct_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
     cong_capital_share = np.zeros(n_metric_steps, dtype=np.float64)
+    # C17: Member-standalone growth gap (per market, per metric step)
+    growth_gap_by_market = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)
+    growth_gap = np.full(n_metric_steps, np.nan, dtype=np.float64)  # Market-averaged
+    # Track log market share at start of each metric block for computing log share changes
+    prev_log_market_share_block = None  # Will be set at end of each metric block
     # effective_members stored as list of (cong_id, K, K_eff) tuples per metric step
     effective_members_list = []
 
@@ -1620,6 +1656,13 @@ def model(params, seed=None, market_corr="identity",
     # Track merger frequency per period
     mergers_per_period = np.zeros(steps)
     proposals_per_period = np.zeros(steps)
+    # Per-type tracking: ss=solo+solo, sc=solo+cong, cc=cong+cong
+    mergers_ss_per_period = np.zeros(steps)
+    proposals_ss_per_period = np.zeros(steps)
+    mergers_sc_per_period = np.zeros(steps)
+    proposals_sc_per_period = np.zeros(steps)
+    mergers_cc_per_period = np.zeros(steps)
+    proposals_cc_per_period = np.zeros(steps)
 
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(steps)
@@ -1771,7 +1814,10 @@ def model(params, seed=None, market_corr="identity",
 
         # NUMBA OPTIMIZATION: Full merger pipeline in compiled code
         if merge_thresh > 0:
-            num_mergers, num_proposals = merger_kernel_numba(
+            (num_mergers, num_proposals,
+             num_mergers_ss, num_proposals_ss,
+             num_mergers_sc, num_proposals_sc,
+             num_mergers_cc, num_proposals_cc) = merger_kernel_numba(
                 step, lookback, share, proportional, merge_thresh,
                 firm_conglom, firm_home_market, firm_entered,
                 cong_firms, cong_size, cong_active, cong_occupies_market,
@@ -1783,6 +1829,12 @@ def model(params, seed=None, market_corr="identity",
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
+            mergers_ss_per_period[step] = num_mergers_ss
+            proposals_ss_per_period[step] = num_proposals_ss
+            mergers_sc_per_period[step] = num_mergers_sc
+            proposals_sc_per_period[step] = num_proposals_sc
+            mergers_cc_per_period[step] = num_mergers_cc
+            proposals_cc_per_period[step] = num_proposals_cc
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
@@ -2080,7 +2132,7 @@ def model(params, seed=None, market_corr="identity",
                     top_k = max(1, n_units // 10)
                     total_capital = sorted_units.sum()
                     if total_capital > 0:
-                        top10_aggregate[metric_idx] = sorted_units[:top_k].sum() / total_capital
+                        top10pct_aggregate[metric_idx] = sorted_units[:top_k].sum() / total_capital
 
                 # Conglomerate capital share
                 total_capital = current_sizes.sum()
@@ -2105,6 +2157,42 @@ def model(params, seed=None, market_corr="identity",
                         if cong_active[cid]:
                             alpha_history[cid, metric_idx] = cong_alpha[cid]
 
+                # C17: Member-standalone growth gap
+                # Growth = mean log share change over the metric block
+                if prev_log_market_share_block is not None:
+                    # Current log market share is already computed (line 2020)
+                    # Growth over block: current - previous (both in log share space)
+                    log_growth = log_market_share - prev_log_market_share_block
+
+                    # Compute gap per market
+                    for m in range(markets):
+                        start_idx = m * firms_per_market
+                        end_idx = (m + 1) * firms_per_market
+                        market_conglom = firm_conglom[start_idx:end_idx]
+                        market_log_growth = log_growth[m, :]
+
+                        # Identify members vs standalone
+                        is_member = market_conglom >= 0
+                        is_standalone = market_conglom == -1
+
+                        n_members = is_member.sum()
+                        n_standalone = is_standalone.sum()
+
+                        if n_members > 0 and n_standalone > 0:
+                            member_growth = market_log_growth[is_member].mean()
+                            standalone_growth = market_log_growth[is_standalone].mean()
+                            growth_gap_by_market[m, metric_idx] = member_growth - standalone_growth
+                        # else: leave as NaN
+
+                    # Market-averaged gap (mean of non-NaN market gaps)
+                    market_gaps = growth_gap_by_market[:, metric_idx]
+                    valid_gaps = market_gaps[~np.isnan(market_gaps)]
+                    if len(valid_gaps) > 0:
+                        growth_gap[metric_idx] = valid_gaps.mean()
+
+                # Update previous log market share for next block
+                prev_log_market_share_block = log_market_share.copy()
+
     # Compute final rank mobility statistics from online accumulators
     # rank_range: max - min rank for each firm (measures total rank mobility)
     rank_range = (rank_max - rank_min).astype(np.float32)
@@ -2126,7 +2214,7 @@ def model(params, seed=None, market_corr="identity",
         'hill_exponent_by_market_median': np.nanmedian(hill_exponent_by_market[:, valid_metric_indices], axis=1),  # Diagnostic
         'hhi_within_median': np.nanmedian(hhi_within[:, valid_metric_indices], axis=1),
         'hhi_aggregate_median': np.nanmedian(hhi_aggregate[valid_metric_indices]),
-        'top10_aggregate_median': np.nanmedian(top10_aggregate[valid_metric_indices]),
+        'top10pct_aggregate_median': np.nanmedian(top10pct_aggregate[valid_metric_indices]),
         'cong_capital_share_median': np.nanmedian(cong_capital_share[valid_metric_indices]),
     }
 
@@ -2140,6 +2228,7 @@ def model(params, seed=None, market_corr="identity",
                 if K > 0:
                     all_K_eff_over_K.append(K_eff / K)
     summary['K_median'] = np.median(all_K) if len(all_K) > 0 else np.nan
+    summary['K_mean'] = np.mean(all_K) if len(all_K) > 0 else np.nan  # C17
     summary['K_eff_over_K_median'] = np.median(all_K_eff_over_K) if len(all_K_eff_over_K) > 0 else np.nan
 
     # Floor-hit rate per firm-period by status (for steps >= burn_in)
@@ -2159,16 +2248,44 @@ def model(params, seed=None, market_corr="identity",
         summary['mergers_per_period'] = np.mean(mergers_per_period[burn_in:])
         summary['proposals_per_period'] = np.mean(proposals_per_period[burn_in:])
         summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
+        # Per-type acceptance rates
+        total_props_ss = np.sum(proposals_ss_per_period[burn_in:])
+        total_props_sc = np.sum(proposals_sc_per_period[burn_in:])
+        total_props_cc = np.sum(proposals_cc_per_period[burn_in:])
+        summary['acceptance_rate_ss'] = (np.sum(mergers_ss_per_period[burn_in:]) / total_props_ss
+                                         if total_props_ss > 0 else np.nan)
+        summary['acceptance_rate_sc'] = (np.sum(mergers_sc_per_period[burn_in:]) / total_props_sc
+                                         if total_props_sc > 0 else np.nan)
+        summary['acceptance_rate_cc'] = (np.sum(mergers_cc_per_period[burn_in:]) / total_props_cc
+                                         if total_props_cc > 0 else np.nan)
+        summary['proposals_ss_per_period'] = np.mean(proposals_ss_per_period[burn_in:])
+        summary['proposals_sc_per_period'] = np.mean(proposals_sc_per_period[burn_in:])
+        summary['proposals_cc_per_period'] = np.mean(proposals_cc_per_period[burn_in:])
+        summary['mergers_ss_per_period'] = np.mean(mergers_ss_per_period[burn_in:])
+        summary['mergers_sc_per_period'] = np.mean(mergers_sc_per_period[burn_in:])
+        summary['mergers_cc_per_period'] = np.mean(mergers_cc_per_period[burn_in:])
     else:
         summary['mergers_per_period'] = 0.0
         summary['proposals_per_period'] = 0.0
         summary['exits_per_period'] = 0.0
+        summary['acceptance_rate_ss'] = np.nan
+        summary['acceptance_rate_sc'] = np.nan
+        summary['acceptance_rate_cc'] = np.nan
+        summary['proposals_ss_per_period'] = 0.0
+        summary['proposals_sc_per_period'] = 0.0
+        summary['proposals_cc_per_period'] = 0.0
+        summary['mergers_ss_per_period'] = 0.0
+        summary['mergers_sc_per_period'] = 0.0
+        summary['mergers_cc_per_period'] = 0.0
 
     # Renormalization correction mean (only meaningful when market_size_fixed)
     if market_size_fixed and steps > burn_in:
         summary['renorm_correction_mean'] = np.mean(renorm_corrections[burn_in:])
     else:
         summary['renorm_correction_mean'] = 0.0
+
+    # C17: Growth gap summary (post-burn-in median)
+    summary['growth_gap_median'] = np.nanmedian(growth_gap[valid_metric_indices])
 
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
@@ -2182,7 +2299,7 @@ def model(params, seed=None, market_corr="identity",
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,
                        'hhi_within': hhi_within,
-                       'hhi_aggregate': hhi_aggregate, 'top10_aggregate': top10_aggregate,
+                       'hhi_aggregate': hhi_aggregate, 'top10pct_aggregate': top10pct_aggregate,
                        'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
                        'alpha_endogenous': alpha_endogenous, 'alpha_history': alpha_history,
                        'g': g, 'renorm_every': renorm_every,
@@ -2195,6 +2312,16 @@ def model(params, seed=None, market_corr="identity",
                        # C12 additions for fixed market size
                        'market_size_fixed': market_size_fixed,
                        'renorm_corrections': renorm_corrections,
+                       # C17 additions: per-type proposal/merger tracking
+                       'proposals_ss_per_period': proposals_ss_per_period,
+                       'proposals_sc_per_period': proposals_sc_per_period,
+                       'proposals_cc_per_period': proposals_cc_per_period,
+                       'mergers_ss_per_period': mergers_ss_per_period,
+                       'mergers_sc_per_period': mergers_sc_per_period,
+                       'mergers_cc_per_period': mergers_cc_per_period,
+                       # C17 additions: member-standalone growth gap
+                       'growth_gap': growth_gap,
+                       'growth_gap_by_market': growth_gap_by_market,
                        }
 
     # Model results: 13 elements

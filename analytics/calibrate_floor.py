@@ -78,7 +78,7 @@ def run_calibration_scenario(N, c, rep, seed):
     hhi_within_median = np.nanmedian(summary['hhi_within_median'])
 
     # Top10 aggregate
-    top10_median = summary['top10_aggregate_median']
+    top10_median = summary['top10pct_aggregate_median']
 
     # Floor hit rate (fraction of firms at floor per period)
     # Use total floor hits / (total firms * post-burn-in periods)

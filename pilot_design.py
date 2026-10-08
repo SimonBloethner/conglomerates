@@ -8,6 +8,7 @@ Fixed parameters:
 - M=N=50, merge_thresh=0.05, proportional=False
 - growth_process=log_family, mu_range=(0.01, 0.1), sigma_range=(0.1, 0.3)
 - sharing_rule=proportional (default), floor_c=0.12717 from C14 calibration
+- decision_rule=loggain (default), g=0.055 (mid-range growth)
 - market_size_fixed=True (normalize sizes within each market)
 - T=11000, burn_in=8000 from C14
 - metric_every=100, 5 reps, common random numbers
@@ -17,11 +18,13 @@ Blocks:
 - main: 3 families × 4 costs × 9 α × 5 reps = 540 runs
 - equal-split: normal × 4 costs × 9 α × 5 reps = 180 runs
 - cost level: laplace × 4 costs × 2 multipliers × 9 α × 5 reps = 360 runs
-- lookback: laplace × power_law × 2 lookbacks × 9 α × 5 reps = 90 runs
+- lookback: laplace × power_law × 5 lookbacks × 2 α × 5 reps = 50 runs
 - correlation: laplace × power_law × cross_corr=0.3 × 9 α × 5 reps = 45 runs
 - endogenous α: 3 families × 4 costs × 5 reps = 60 runs (α_start=0.1)
+- rule-replay: laplace × power_law × decision_rule=replay × 9 α × 5 reps = 45 runs
+- floor-level: laplace × power_law × 2 floor values × 9 α × 5 reps = 90 runs
 
-Total: 1275 runs
+Total: 1370 runs
 """
 import json
 import os
@@ -90,6 +93,8 @@ def make_base_params():
         'floor_c': FLOOR_C,
         'metric_every': METRIC_EVERY,
         'market_size_fixed': True,  # C14: normalize sizes within each market
+        'decision_rule': 'loggain',  # C17: loggain decision rule
+        'g': 0.055,  # C17: growth rate for demeaning (mid-range of mu_range)
     }
 
 
@@ -212,16 +217,18 @@ def generate_cost_level_block(scenarios, scenario_id, cell_id):
 
 def generate_lookback_block(scenarios, scenario_id, cell_id):
     """
-    Lookback: laplace × power_law × 2 lookbacks × 9 α × 5 reps = 90 runs
-    Lookbacks: 200, 1000
+    Lookback: laplace × power_law × 5 lookbacks × 2 α × 5 reps = 50 runs
+    Lookbacks: [20, 50, 100, 200, 500]
+    α values: [0.1, 0.3]
     """
     family = 'laplace'
     cost_type = 'power_law'
-    lookbacks = [200, 1000]
+    lookbacks = [20, 50, 100, 200, 500]
+    alpha_values = [0.1, 0.3]
 
     for lookback in lookbacks:
         # All α values within this (lookback) share seeds per rep
-        for alpha in ALPHA_GRID:
+        for alpha in alpha_values:
             for rep in range(N_REPS):
                 s = make_base_params()
                 s.update({
@@ -314,6 +321,83 @@ def generate_endogenous_alpha_block(scenarios, scenario_id, cell_id):
     return scenario_id, cell_id
 
 
+def generate_rule_replay_block(scenarios, scenario_id, cell_id):
+    """
+    Rule-replay: laplace × power_law × decision_rule=replay × 9 α × 5 reps = 45 runs
+    Compares replay decision rule (Phase B default) to loggain.
+    """
+    family = 'laplace'
+    cost_type = 'power_law'
+
+    # All α values share seeds per rep (one cell for this block)
+    for alpha in ALPHA_GRID:
+        for rep in range(N_REPS):
+            s = make_base_params()
+            s['decision_rule'] = 'replay'  # Override loggain default
+            del s['g']  # Not needed for replay rule
+            s.update({
+                'block': 'rule-replay',
+                'scenario_id': scenario_id,
+                'cell_id': cell_id,
+                'log_family': family,
+                'cost_type': cost_type,
+                'c0': COST_PARAMS[cost_type]['c0'],
+                'c1': COST_PARAMS[cost_type]['c1'],
+                'c2': COST_PARAMS[cost_type]['c2'],
+                'lookback': 50,
+                'cross_corr': 0.0,
+                'alpha': alpha,
+                'sharing_rule': SHARING_RULE,
+                'rep': rep,
+                'seed': cell_seed(cell_id, rep),
+                'alpha_endogenous': False,
+            })
+            scenarios.append(s)
+            scenario_id += 1
+    cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_floor_level_block(scenarios, scenario_id, cell_id):
+    """
+    Floor-level: laplace × power_law × 2 floor values × 9 α × 5 reps = 90 runs
+    Floor values: c ∈ {0.10, 0.35}
+    c=0.10 gives Hill ≈ 1.0 (steeper distribution)
+    c=0.35 gives Hill ≈ 1.5 (flatter distribution)
+    """
+    family = 'laplace'
+    cost_type = 'power_law'
+    floor_values = [0.10, 0.35]
+
+    for floor_c in floor_values:
+        # All α values within this (floor_c) share seeds per rep
+        for alpha in ALPHA_GRID:
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s['floor_c'] = floor_c  # Override default floor
+                s.update({
+                    'block': 'floor-level',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': 50,
+                    'cross_corr': 0.0,
+                    'alpha': alpha,
+                    'sharing_rule': SHARING_RULE,
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': False,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
 def generate_all_scenarios():
     """Generate all scenarios for Phase C pilot."""
     scenarios = []
@@ -326,6 +410,8 @@ def generate_all_scenarios():
     scenario_id, cell_id = generate_lookback_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_correlation_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_endogenous_alpha_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_rule_replay_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_floor_level_block(scenarios, scenario_id, cell_id)
 
     return scenarios
 
