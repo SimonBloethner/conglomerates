@@ -56,6 +56,7 @@ def run_scenario(scenario):
         alpha_endogenous=scenario.get('alpha_endogenous', False),
         g=scenario.get('g'),
         market_size_fixed=scenario.get('market_size_fixed', False),
+        decision_rule=scenario.get('decision_rule', 'loggain'),  # C18: default loggain
     )
 
     elapsed = time.time() - start_time

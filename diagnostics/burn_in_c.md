@@ -1,4 +1,4 @@
-# C14: Burn-in Rerun with market_size_fixed and c_star
+# C18: Burn-in with decision_rule=loggain
 
 ## Setup
 
@@ -8,6 +8,7 @@
 - sigma_range = (0.1, 0.3)
 - floor_c = 0.12717 (c_star from C13)
 - market_size_fixed = True
+- decision_rule = loggain (C18)
 - T = 8000 for burn-in analysis
 - 5 replications with seeds 42 to 46
 - metric_every = 100
@@ -35,13 +36,13 @@ Using 500-step rolling mean vs final 2000-step mean, 2% tolerance.
 
 | Metric | Convergence Step | Final Mean |
 |--------|-----------------|------------|
-| Hill exponent | 5600 | 1.0705 |
-| Mean K | 700 | 2.57 |
-| K_eff | 700 | 1.90 |
-| Cong capital share | 7900 | 0.2960 |
-| Floor-hit rate (standalone) | 4100 | 0.0908 |
-| Floor-hit rate (member) | 8000 | 0.0192 |
-| Growth gap | 8000 | 0.0236 |
+| Hill exponent | 2600 | 1.0806 |
+| Mean K | 3200 | 8.03 |
+| K_eff | 2500 | 4.03 |
+| Cong capital share | 7200 | 0.7990 |
+| Floor-hit rate (standalone) | 8000 | 0.0014 |
+| Floor-hit rate (member) | 2000 | 0.0985 |
+| Growth gap | 8000 | -0.0656 |
 
 ## Burn-in Recommendation
 
@@ -58,11 +59,12 @@ Using 500-step rolling mean vs final 2000-step mean, 2% tolerance.
 - Gap: 0.41%
 - Status: PASS (within 15%)
 
-### alpha=0.1
+### alpha=0.1 (C18 loggain thresholds)
 
-- cong_capital_share: 0.2960 > 0.02 -> PASS
-- mean K: 2.57 >= 2.5 -> PASS
-- K_eff/K: 0.7400 >= 0.5 -> PASS
+- mean K: 8.03 >= 3.0 -> PASS
+- cong_capital_share: 0.7990 > 0.05 -> PASS
+- mergers_per_period: 0.78 < 2.0 -> PASS
+- K_eff/K: 0.5021 >= 0.5 -> PASS
 
 ## Metric Tables (every 1000 steps)
 
@@ -83,14 +85,14 @@ Using 500-step rolling mean vs final 2000-step mean, 2% tolerance.
 
 | Step | Hill | Mean K | K_eff | Cong Share | FHR Stand | FHR Memb | Gap |
 |------|------|--------|-------|------------|-----------|----------|-----|
-| 1000 | 1.0767 | 2.56 | 1.88 | 0.3191 | 0.0906 | 0.0194 | 0.0224 |
-| 2000 | 1.0852 | 2.52 | 1.91 | 0.2979 | 0.0909 | 0.0192 | 0.0240 |
-| 3000 | 1.0487 | 2.56 | 1.89 | 0.2849 | 0.0928 | 0.0199 | 0.0231 |
-| 4000 | 1.0871 | 2.58 | 1.88 | 0.3029 | 0.0920 | 0.0192 | 0.0255 |
-| 5000 | 1.0712 | 2.54 | 1.89 | 0.3053 | 0.0903 | 0.0193 | 0.0224 |
-| 6000 | 1.0735 | 2.55 | 1.91 | 0.2792 | 0.0911 | 0.0200 | 0.0205 |
-| 7000 | 1.0511 | 2.58 | 1.95 | 0.2768 | 0.0916 | 0.0186 | 0.0276 |
-| 8000 | 1.0425 | 2.56 | 1.90 | 0.2872 | 0.0918 | 0.0189 | 0.0268 |
+| 1000 | 1.0860 | 7.11 | 3.75 | 0.8071 | 0.0012 | 0.0994 | -0.0722 |
+| 2000 | 1.0779 | 7.63 | 3.90 | 0.7923 | 0.0015 | 0.0989 | -0.0626 |
+| 3000 | 1.0753 | 7.88 | 4.02 | 0.7734 | 0.0013 | 0.1017 | -0.0735 |
+| 4000 | 1.0774 | 7.94 | 4.03 | 0.7819 | 0.0015 | 0.1003 | -0.0649 |
+| 5000 | 1.1081 | 8.04 | 4.02 | 0.8075 | 0.0015 | 0.0979 | -0.0625 |
+| 6000 | 1.0887 | 8.09 | 4.04 | 0.7962 | 0.0017 | 0.0987 | -0.0581 |
+| 7000 | 1.0727 | 8.13 | 4.15 | 0.7784 | 0.0012 | 0.0983 | -0.0702 |
+| 8000 | 1.0333 | 7.98 | 4.08 | 0.7989 | 0.0014 | 0.0992 | -0.0672 |
 
 ## Figures
 

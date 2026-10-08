@@ -44,6 +44,7 @@ def extract_post_burnin_metrics(result):
         'lookback': scenario['lookback'],
         'cross_corr': scenario['cross_corr'],
         'alpha_endogenous': scenario.get('alpha_endogenous', False),
+        'decision_rule': scenario.get('decision_rule', 'replay'),  # C17
         # Runtime
         'elapsed_seconds': result['elapsed_seconds'],
         'ms_per_step': result['ms_per_step'],
@@ -61,12 +62,19 @@ def extract_post_burnin_metrics(result):
     # Summary scalars from model
     summary = result.get('summary', {})
     metrics['K_median'] = summary.get('K_median', np.nan)
+    metrics['K_mean'] = summary.get('K_mean', np.nan)  # C17
     metrics['K_eff_over_K_median'] = summary.get('K_eff_over_K_median', np.nan)
     metrics['floor_hit_rate_standalone'] = summary.get('floor_hit_rate_standalone', np.nan)
     metrics['floor_hit_rate_member'] = summary.get('floor_hit_rate_member', np.nan)
     metrics['mergers_per_period'] = summary.get('mergers_per_period', np.nan)
     metrics['proposals_per_period'] = summary.get('proposals_per_period', np.nan)
     metrics['exits_per_period'] = summary.get('exits_per_period', np.nan)
+    metrics['growth_gap_median'] = summary.get('growth_gap_median', np.nan)  # C17
+
+    # Per-type acceptance rates (C17)
+    metrics['acceptance_rate_ss'] = summary.get('acceptance_rate_ss', np.nan)
+    metrics['acceptance_rate_sc'] = summary.get('acceptance_rate_sc', np.nan)
+    metrics['acceptance_rate_cc'] = summary.get('acceptance_rate_cc', np.nan)
 
     # Acceptance rate = mergers / proposals
     mergers = summary.get('mergers_per_period', np.nan)
@@ -348,17 +356,20 @@ def create_medians_df(tidy_df):
     and computes median and 25-75% bands across reps.
     """
     group_cols = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule',
-                  'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier']
+                  'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier',
+                  'decision_rule']  # C17
 
     # Numeric columns to aggregate
     value_cols = [
-        'K_median', 'K_eff_over_K_median',
+        'K_median', 'K_mean', 'K_eff_over_K_median',  # C17: K_mean added
         'K_post_burnin_median', 'K_eff_post_burnin_median',
         'floor_hit_rate_standalone', 'floor_hit_rate_member',
         'hill_exponent_median', 'hhi_within_median', 'hhi_aggregate_median',
         'top10pct_aggregate_median', 'cong_capital_share_median',
         'mergers_per_period', 'proposals_per_period', 'exits_per_period',
         'acceptance_rate', 'assortativity_ratio',
+        'acceptance_rate_ss', 'acceptance_rate_sc', 'acceptance_rate_cc',  # C17
+        'growth_gap_median',  # C17
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
     ]

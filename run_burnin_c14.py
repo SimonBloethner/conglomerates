@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-C14: Burn-in rerun with market_size_fixed and c_star.
+C18: Burn-in with decision_rule=loggain.
 
 Runs burn-in scenarios for:
 - Main block, laplace, power_law
@@ -8,11 +8,13 @@ Runs burn-in scenarios for:
 - T=8000, 5 reps
 - alpha=0 and alpha=0.1
 - market_size_fixed=True, floor_c=c_star=0.12717
+- decision_rule='loggain' (C18 update)
 
 Series tracked:
 - hill_exponent, mean K, K_eff, cong_capital_share
 - floor-hit rate (members, standalones)
 - member-standalone growth gap
+- mergers_per_period (C18)
 
 Convergence step per series; updates scenarios.json with burn_in and T.
 """
@@ -100,7 +102,7 @@ def compute_convergence_step(series, window=500, tolerance=0.02, final_window=20
 
 
 def run_burnin_scenario(alpha, seed, M=50, N=50, T=8000, metric_every=100, g=0.02,
-                        floor_c=0.12717, lookback=100):
+                        floor_c=0.12717, lookback=100, decision_rule='loggain'):
     """Run a single burn-in scenario."""
     total_firms = M * N
 
@@ -135,6 +137,7 @@ def run_burnin_scenario(alpha, seed, M=50, N=50, T=8000, metric_every=100, g=0.0
         g=g,
         renorm_every=500,
         market_size_fixed=True,  # C14: fixed market size
+        decision_rule=decision_rule,  # C18: loggain by default
     )
 
     return result
@@ -249,7 +252,7 @@ def compute_growth_gap(hyperparams, metric_every):
 
 
 def main():
-    print("C14: Burn-in rerun with market_size_fixed and c_star")
+    print("C18: Burn-in with decision_rule=loggain")
     print("=" * 70)
 
     # Parameters
@@ -278,6 +281,7 @@ def main():
             'fhr_standalone': np.zeros((n_reps, n_obs)),
             'fhr_member': np.zeros((n_reps, n_obs)),
             'growth_gap': np.zeros((n_reps, n_obs)),
+            'mergers_per_period': np.zeros(n_reps),  # C18: track mergers
         }
 
         print(f"\nRunning alpha={alpha} scenarios ({n_reps} reps)...")
@@ -302,6 +306,10 @@ def main():
 
             growth_gap = compute_growth_gap(hp, metric_every)
             results[alpha_key]['growth_gap'][rep] = growth_gap
+
+            # C18: Track mergers_per_period from summary
+            summary = hp.get('summary', {})
+            results[alpha_key]['mergers_per_period'][rep] = summary.get('mergers_per_period', np.nan)
 
             print("done")
 
@@ -379,35 +387,49 @@ def main():
     else:
         print(f"FAIL: alpha=0 hill_exponent = {hill_alpha0_final:.4f} NOT within 15% of {theoretical_hill}")
 
-    # alpha=0.1 assertions
+    # alpha=0.1 assertions (C18 thresholds)
     ccs_alpha01 = final_means['alpha_0.1']['ccs']
     mean_k_alpha01 = final_means['alpha_0.1']['mean_k']
     k_eff_alpha01 = final_means['alpha_0.1']['k_eff']
     k_ratio = k_eff_alpha01 / mean_k_alpha01 if mean_k_alpha01 > 0 else 0.0
+    mergers_alpha01 = np.nanmean(results['alpha_0.1']['mergers_per_period'])
 
-    if ccs_alpha01 > 0.02:
-        print(f"OK: alpha=0.1 cong_capital_share = {ccs_alpha01:.4f} > 0.02")
+    # C18: mean K >= 3.0 (vs 2.5 for replay)
+    if mean_k_alpha01 >= 3.0:
+        print(f"OK: alpha=0.1 mean_k = {mean_k_alpha01:.4f} >= 3.0")
     else:
-        print(f"FAIL: alpha=0.1 cong_capital_share = {ccs_alpha01:.4f} NOT > 0.02")
+        print(f"FAIL: alpha=0.1 mean_k = {mean_k_alpha01:.4f} NOT >= 3.0 (loggain should drive larger conglomerates)")
 
-    if mean_k_alpha01 >= 2.5:
-        print(f"OK: alpha=0.1 mean_k = {mean_k_alpha01:.4f} >= 2.5")
+    # C18: ccs > 0.05 (vs 0.02 for replay)
+    if ccs_alpha01 > 0.05:
+        print(f"OK: alpha=0.1 cong_capital_share = {ccs_alpha01:.4f} > 0.05")
     else:
-        print(f"FAIL: alpha=0.1 mean_k = {mean_k_alpha01:.4f} NOT >= 2.5")
+        print(f"FAIL: alpha=0.1 cong_capital_share = {ccs_alpha01:.4f} NOT > 0.05")
+
+    # C18: mergers_per_period < 2.0 (reduced churn)
+    if mergers_alpha01 < 2.0:
+        print(f"OK: alpha=0.1 mergers_per_period = {mergers_alpha01:.4f} < 2.0")
+    else:
+        print(f"FAIL: alpha=0.1 mergers_per_period = {mergers_alpha01:.4f} NOT < 2.0 (churn too high)")
 
     if k_ratio >= 0.5:
         print(f"OK: alpha=0.1 K_eff/K = {k_ratio:.4f} >= 0.5")
     else:
         print(f"FAIL: alpha=0.1 K_eff/K = {k_ratio:.4f} NOT >= 0.5")
 
+    # C18: Compute mean mergers_per_period per alpha
+    mergers_alpha0 = np.nanmean(results['alpha_0.0']['mergers_per_period'])
+    mergers_alpha01 = np.nanmean(results['alpha_0.1']['mergers_per_period'])
+
     # Write CSV
     csv_path = 'diagnostics/burn_in_c.csv'
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['step', 'alpha', 'hill', 'mean_k', 'k_eff', 'ccs',
-                         'fhr_standalone', 'fhr_member', 'growth_gap'])
+                         'fhr_standalone', 'fhr_member', 'growth_gap', 'mergers_per_period'])
         steps_axis = np.arange(1, n_obs + 1) * metric_every
-        for alpha_key, alpha_val in [('alpha_0.0', 0.0), ('alpha_0.1', 0.1)]:
+        for alpha_key, alpha_val, mergers_val in [('alpha_0.0', 0.0, mergers_alpha0),
+                                                   ('alpha_0.1', 0.1, mergers_alpha01)]:
             for i, step in enumerate(steps_axis):
                 row = [
                     step, alpha_val,
@@ -418,6 +440,7 @@ def main():
                     np.nanmean(results[alpha_key]['fhr_standalone'][:, i]),
                     np.nanmean(results[alpha_key]['fhr_member'][:, i]),
                     np.nanmean(results[alpha_key]['growth_gap'][:, i]),
+                    mergers_val,  # C18: constant per alpha
                 ]
                 writer.writerow(row)
     print(f"\nWrote {csv_path}")
@@ -464,7 +487,7 @@ def main():
         print(f"Wrote {fig_path}")
 
     # Write markdown report
-    report = f"""# C14: Burn-in Rerun with market_size_fixed and c_star
+    report = f"""# C18: Burn-in with decision_rule=loggain
 
 ## Setup
 
@@ -474,6 +497,7 @@ def main():
 - sigma_range = (0.1, 0.3)
 - floor_c = {floor_c} (c_star from C13)
 - market_size_fixed = True
+- decision_rule = loggain (C18)
 - T = {T} for burn-in analysis
 - {n_reps} replications with seeds {base_seed} to {base_seed + n_reps - 1}
 - metric_every = {metric_every}
@@ -524,10 +548,11 @@ Using 500-step rolling mean vs final 2000-step mean, 2% tolerance.
 - Gap: {gap_pct:.2f}%
 - Status: {"PASS" if gap_pct <= 15 else "FAIL"} (within 15%)
 
-### alpha=0.1
+### alpha=0.1 (C18 loggain thresholds)
 
-- cong_capital_share: {ccs_alpha01:.4f} {">" if ccs_alpha01 > 0.02 else "<="} 0.02 -> {"PASS" if ccs_alpha01 > 0.02 else "FAIL"}
-- mean K: {mean_k_alpha01:.2f} {">=" if mean_k_alpha01 >= 2.5 else "<"} 2.5 -> {"PASS" if mean_k_alpha01 >= 2.5 else "FAIL"}
+- mean K: {mean_k_alpha01:.2f} {">=" if mean_k_alpha01 >= 3.0 else "<"} 3.0 -> {"PASS" if mean_k_alpha01 >= 3.0 else "FAIL"}
+- cong_capital_share: {ccs_alpha01:.4f} {">" if ccs_alpha01 > 0.05 else "<="} 0.05 -> {"PASS" if ccs_alpha01 > 0.05 else "FAIL"}
+- mergers_per_period: {mergers_alpha01:.2f} {"<" if mergers_alpha01 < 2.0 else ">="} 2.0 -> {"PASS" if mergers_alpha01 < 2.0 else "FAIL"}
 - K_eff/K: {k_ratio:.4f} {">=" if k_ratio >= 0.5 else "<"} 0.5 -> {"PASS" if k_ratio >= 0.5 else "FAIL"}
 
 ## Metric Tables (every 1000 steps)
