@@ -833,8 +833,11 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
                                   row['K_eff_post_burnin_median_p25'],
                                   row['K_eff_post_burnin_median_p75'])
             k_star = row.get('K_star', '—')
-            if pd.notna(k_star):
-                k_star = int(k_star)
+            if pd.notna(k_star) and k_star != '—':
+                try:
+                    k_star = int(k_star)
+                except (ValueError, TypeError):
+                    k_star = '—'
             if has_acc:
                 acc = row.get('acceptance_rate_median', np.nan)
                 acc_str = f"{acc:.3f}" if pd.notna(acc) else "—"

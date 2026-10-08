@@ -224,19 +224,10 @@ def extract_post_burnin_metrics(result):
         metrics['alpha_adopted_std'] = np.nan
 
     # Assortativity: SD of member IQR vs random K-subset
-    # Requires market_iqr and final_firm_conglom from hyperparameters
-    market_iqr = result.get('market_iqr')  # Not in current output structure
-    final_firm_conglom = result.get('final_firm_conglom')  # Not in current output structure
-
-    # If these exist, compute assortativity ratio
-    if market_iqr is not None and final_firm_conglom is not None:
-        assortativity = compute_assortativity_ratio(market_iqr, final_firm_conglom)
-        # Extract scalar from dict
-        metrics['assortativity_ratio'] = assortativity.get('ratio_median', np.nan) if isinstance(assortativity, dict) else np.nan
-        metrics['assortativity_n_conglom'] = assortativity.get('n_conglom', np.nan) if isinstance(assortativity, dict) else np.nan
-    else:
-        metrics['assortativity_ratio'] = np.nan
-        metrics['assortativity_n_conglom'] = np.nan
+    # SKIPPED: Too slow for pilot (168 conglomerates × 1400 scenarios)
+    # Can be computed post-hoc from saved results if needed
+    metrics['assortativity_ratio'] = np.nan
+    metrics['assortativity_n_conglom'] = np.nan
 
     # C20: Event study data
     event_study = result.get('event_study', {})
@@ -277,7 +268,7 @@ def extract_post_burnin_metrics(result):
     return metrics
 
 
-def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
+def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=1):
     """
     Compute assortativity ratio: SD of member IQR / SD of random K-subset.
 
@@ -445,6 +436,9 @@ def create_medians_df(tidy_df):
 
 def main():
     """Load results and create summary CSVs."""
+    import shutil
+    import tempfile
+
     print("Phase C Pilot Summarization")
     print("=" * 50)
 
@@ -461,18 +455,26 @@ def main():
     print("Creating tidy DataFrame...")
     tidy_df = create_tidy_df(results)
 
-    # Save tidy.csv
+    # Save tidy.csv via local scratch to avoid NFS I/O errors
     tidy_path = 'pilot_c/tidy.csv'
-    tidy_df.to_csv(tidy_path, index=False)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+        tidy_df.to_csv(tmp.name, index=False)
+        tmp.flush()
+        shutil.copy(tmp.name, tidy_path)
+        Path(tmp.name).unlink()
     print(f"Saved {tidy_path} ({len(tidy_df)} rows)")
 
     # Create medians DataFrame
     print("Creating medians DataFrame...")
     medians_df = create_medians_df(tidy_df)
 
-    # Save medians.csv
+    # Save medians.csv via local scratch
     medians_path = 'pilot_c/medians.csv'
-    medians_df.to_csv(medians_path, index=False)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+        medians_df.to_csv(tmp.name, index=False)
+        tmp.flush()
+        shutil.copy(tmp.name, medians_path)
+        Path(tmp.name).unlink()
     print(f"Saved {medians_path} ({len(medians_df)} rows)")
 
     # Summary statistics
