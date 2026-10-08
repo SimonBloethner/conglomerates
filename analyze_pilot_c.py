@@ -18,6 +18,7 @@ import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import stats
 from pathlib import Path
 
 
@@ -534,6 +535,169 @@ def create_hhi_figure(df, output_path='diagnostics/pilot_c_hhi.png'):
     return output_path
 
 
+def generate_event_study_table(df):
+    """Generate table: Event study DiD by family and α."""
+    main = df[df['block'] == 'main'].copy()
+
+    if 'event_did_median' not in main.columns:
+        return None
+
+    did_agg = agg_with_bands(main, ['log_family', 'alpha'], 'event_did_median')
+    n_events_agg = main.groupby(['log_family', 'alpha'])['event_n_events'].agg([
+        ('n_events_median', 'median'),
+        ('n_events_mean', 'mean'),
+    ]).reset_index()
+
+    merged = did_agg.merge(n_events_agg, on=['log_family', 'alpha'], how='left')
+    return merged
+
+
+def generate_acceptance_by_type_table(df):
+    """Generate table: Acceptance rates by proposal type (s↔s, s↔c, c↔c)."""
+    main = df[df['block'] == 'main'].copy()
+
+    # Check if columns exist
+    cols = ['acc_rate_ss', 'acc_rate_sc', 'acc_rate_cc']
+    if not all(c in main.columns for c in cols):
+        return None
+
+    result = main.groupby(['log_family', 'alpha']).apply(
+        lambda g: pd.Series({
+            'acc_ss_median': g['acc_rate_ss'].median(),
+            'acc_ss_p25': np.nanpercentile(g['acc_rate_ss'], 25),
+            'acc_ss_p75': np.nanpercentile(g['acc_rate_ss'], 75),
+            'acc_sc_median': g['acc_rate_sc'].median(),
+            'acc_sc_p25': np.nanpercentile(g['acc_rate_sc'], 25),
+            'acc_sc_p75': np.nanpercentile(g['acc_rate_sc'], 75),
+            'acc_cc_median': g['acc_rate_cc'].median(),
+            'acc_cc_p25': np.nanpercentile(g['acc_rate_cc'], 25),
+            'acc_cc_p75': np.nanpercentile(g['acc_rate_cc'], 75),
+            'n_reps': len(g),
+        })
+    ).reset_index()
+
+    return result
+
+
+def generate_k_stats_table(df):
+    """Generate table: K median and mean by family and α."""
+    main = df[df['block'] == 'main'].copy()
+
+    k_median_agg = agg_with_bands(main, ['log_family', 'alpha'], 'K_post_burnin_median')
+
+    # Also get mean if available
+    if 'K_post_burnin_mean' in main.columns:
+        k_mean_agg = agg_with_bands(main, ['log_family', 'alpha'], 'K_post_burnin_mean')
+        merged = k_median_agg.merge(k_mean_agg, on=['log_family', 'alpha', 'n_reps'],
+                                     suffixes=('_med', '_mean'))
+        return merged
+
+    return k_median_agg
+
+
+def create_alpha_scatter_figure(df, output_path='diagnostics/pilot_c_alpha_scatter.png'):
+    """
+    Create endogenous α scatter plot: adopted α vs SD of member IQR.
+    Includes Spearman correlation per family.
+
+    C20b: For each active conglomerate at end of run, plot adopted α against
+    SD of member IQR (volatility dispersion within the conglomerate).
+    """
+    endo = df[df['block'] == 'endogenous-alpha'].copy()
+
+    if len(endo) == 0:
+        return None
+
+    # Check for alpha_scatter data column (JSON-encoded list)
+    if 'alpha_scatter_json' not in endo.columns:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    families = ['normal', 'laplace', 't3']
+    colors = {'normal': 'blue', 'laplace': 'orange', 't3': 'green'}
+    markers = {'normal': 'o', 'laplace': 's', 't3': '^'}
+
+    correlations = {}
+
+    for family in families:
+        subset = endo[endo['log_family'] == family]
+
+        all_alphas = []
+        all_sd_iqrs = []
+
+        for _, row in subset.iterrows():
+            try:
+                scatter_data = json.loads(row['alpha_scatter_json'])
+                for adopted_alpha, sd_iqr, mean_iqr, K in scatter_data:
+                    all_alphas.append(adopted_alpha)
+                    all_sd_iqrs.append(sd_iqr)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                continue
+
+        if len(all_alphas) > 2:
+            rho, pval = stats.spearmanr(all_alphas, all_sd_iqrs)
+            correlations[family] = (rho, pval, len(all_alphas))
+
+            ax.scatter(all_sd_iqrs, all_alphas, alpha=0.3, color=colors[family],
+                       marker=markers[family], label=f'{family} (ρ={rho:.2f}, n={len(all_alphas)})')
+
+    ax.set_xlabel('SD of member IQR (volatility dispersion)')
+    ax.set_ylabel('Adopted α')
+    ax.set_title('Endogenous α vs Member Volatility Dispersion')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path, correlations
+
+
+def create_event_study_figure(df, output_path='diagnostics/pilot_c_event_study.png'):
+    """Create event study DiD figure by α (laplace family)."""
+    main = df[(df['block'] == 'main') & (df['log_family'] == 'laplace')].copy()
+
+    if 'event_did_median' not in main.columns:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    did_agg = agg_with_bands(main, ['alpha'], 'event_did_median')
+
+    # Filter out NaN values
+    valid = did_agg['event_did_median_median'].notna()
+    if not valid.any():
+        plt.close()
+        return None
+
+    ax.errorbar(
+        did_agg.loc[valid, 'alpha'],
+        did_agg.loc[valid, 'event_did_median_median'],
+        yerr=[
+            did_agg.loc[valid, 'event_did_median_median'] - did_agg.loc[valid, 'event_did_median_p25'],
+            did_agg.loc[valid, 'event_did_median_p75'] - did_agg.loc[valid, 'event_did_median_median']
+        ],
+        color='blue', marker='o', capsize=3
+    )
+
+    ax.axhline(0, color='red', linestyle='--', label='No effect')
+    ax.set_xlabel('α (pooling fraction)')
+    ax.set_ylabel('DiD (log share change)')
+    ax.set_title('Event Study: Joiner vs Control DiD (laplace family)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+    return output_path
+
+
 def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_summary.md'):
     """Generate the full summary report."""
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -884,6 +1048,118 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
         lines.append("")
 
     # ========================================================================
+    # Section: Event Study DiD (C20)
+    # ========================================================================
+    lines.append("## Event Study: Joiner Growth Gap")
+    lines.append("")
+    lines.append("Matched difference-in-differences: log share change for joiners vs controls.")
+    lines.append("Controls matched by closest log share at entry, standalone throughout 2l window.")
+    lines.append("Source: `pilot_c/tidy.csv` column `event_did_median`")
+    lines.append("")
+
+    event_table = generate_event_study_table(df)
+    if event_table is not None and len(event_table) > 0:
+        # Show for laplace family
+        event_laplace = event_table[event_table['log_family'] == 'laplace'].copy()
+        if len(event_laplace) > 0:
+            lines.append("### Laplace family")
+            lines.append("")
+            lines.append("| α | DiD median [25,75] | n events |")
+            lines.append("|---|-------------------|----------|")
+            for _, row in event_laplace.iterrows():
+                did_band = fmt_band(row['event_did_median_median'],
+                                    row['event_did_median_p25'],
+                                    row['event_did_median_p75'])
+                n_events = row.get('n_events_median', np.nan)
+                n_str = f"{n_events:.0f}" if pd.notna(n_events) else "—"
+                lines.append(f"| {row['alpha']} | {did_band} | {n_str} |")
+            lines.append("")
+
+        lines.append("![Event Study](pilot_c_event_study.png)")
+        lines.append("")
+    else:
+        lines.append("*Event study data not available.*")
+        lines.append("")
+
+    # ========================================================================
+    # Section: Acceptance by Proposal Type (C20)
+    # ========================================================================
+    lines.append("## Acceptance by Proposal Type")
+    lines.append("")
+    lines.append("Three acceptance rates: standalone↔standalone (s↔s), standalone↔conglomerate (s↔c),")
+    lines.append("conglomerate↔conglomerate (c↔c).")
+    lines.append("Source: `pilot_c/tidy.csv` columns `acc_rate_ss`, `acc_rate_sc`, `acc_rate_cc`")
+    lines.append("")
+
+    acc_table = generate_acceptance_by_type_table(df)
+    if acc_table is not None and len(acc_table) > 0:
+        # Show for laplace family
+        acc_laplace = acc_table[acc_table['log_family'] == 'laplace'].copy()
+        if len(acc_laplace) > 0:
+            lines.append("### Laplace family")
+            lines.append("")
+            lines.append("| α | s↔s [25,75] | s↔c [25,75] | c↔c [25,75] |")
+            lines.append("|---|-------------|-------------|-------------|")
+            for _, row in acc_laplace.iterrows():
+                ss_band = fmt_band(row['acc_ss_median'], row['acc_ss_p25'], row['acc_ss_p75'])
+                sc_band = fmt_band(row['acc_sc_median'], row['acc_sc_p25'], row['acc_sc_p75'])
+                cc_band = fmt_band(row['acc_cc_median'], row['acc_cc_p25'], row['acc_cc_p75'])
+                lines.append(f"| {row['alpha']} | {ss_band} | {sc_band} | {cc_band} |")
+            lines.append("")
+    else:
+        lines.append("*Acceptance by type data not available.*")
+        lines.append("")
+
+    # ========================================================================
+    # Section: K Statistics (C20)
+    # ========================================================================
+    lines.append("## K Statistics (Median and Mean)")
+    lines.append("")
+    lines.append("Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `K_post_burnin_mean`")
+    lines.append("")
+
+    k_stats = generate_k_stats_table(df)
+    if k_stats is not None and len(k_stats) > 0:
+        # Show for laplace family
+        k_laplace = k_stats[k_stats['log_family'] == 'laplace'].copy()
+        if len(k_laplace) > 0:
+            has_mean = 'K_post_burnin_mean_median' in k_laplace.columns
+            lines.append("### Laplace family")
+            lines.append("")
+            if has_mean:
+                lines.append("| α | K median [25,75] | K mean [25,75] |")
+                lines.append("|---|-----------------|----------------|")
+            else:
+                lines.append("| α | K median [25,75] |")
+                lines.append("|---|-----------------|")
+            for _, row in k_laplace.iterrows():
+                k_med = fmt_band(row['K_post_burnin_median_median'],
+                                 row['K_post_burnin_median_p25'],
+                                 row['K_post_burnin_median_p75'])
+                if has_mean:
+                    k_mean = fmt_band(row['K_post_burnin_mean_median'],
+                                      row['K_post_burnin_mean_p25'],
+                                      row['K_post_burnin_mean_p75'])
+                    lines.append(f"| {row['alpha']} | {k_med} | {k_mean} |")
+                else:
+                    lines.append(f"| {row['alpha']} | {k_med} |")
+            lines.append("")
+
+    lines.append("![K vs α](pilot_c_k_vs_alpha.png)")
+    lines.append("")
+
+    # ========================================================================
+    # Section: Alpha Scatter (C20)
+    # ========================================================================
+    lines.append("## Endogenous α Scatter")
+    lines.append("")
+    lines.append("Scatter of adopted α vs SD of member IQR (volatility dispersion).")
+    lines.append("Spearman correlation tests whether conglomerates with more diverse members adopt higher α.")
+    lines.append("")
+    lines.append("![Alpha Scatter](pilot_c_alpha_scatter.png)")
+    lines.append("")
+
+    # ========================================================================
     # Section: Runtime
     # ========================================================================
     lines.append("## Runtime Statistics")
@@ -904,6 +1180,8 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("- `pilot_c_ccs_vs_alpha.png`: Conglomerate capital share versus α")
     lines.append("- `pilot_c_assortativity.png`: Assortativity ratio versus α")
     lines.append("- `pilot_c_endo_alpha_hist.png`: Histogram of adopted α (endogenous block)")
+    lines.append("- `pilot_c_event_study.png`: Event study DiD versus α (laplace family)")
+    lines.append("- `pilot_c_alpha_scatter.png`: Adopted α versus SD of member IQR")
     lines.append("")
 
     # Write report
@@ -940,6 +1218,8 @@ def main():
     create_ccs_vs_alpha_figure(df)
     create_assortativity_figure(df)
     create_endogenous_alpha_histogram(df)
+    create_event_study_figure(df)
+    create_alpha_scatter_figure(df)
 
     # Generate report
     print("Generating summary report...")

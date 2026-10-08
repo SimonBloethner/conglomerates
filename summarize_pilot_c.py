@@ -237,6 +237,42 @@ def extract_post_burnin_metrics(result):
         metrics['assortativity_ratio'] = np.nan
         metrics['assortativity_n_conglom'] = np.nan
 
+    # C20: Event study data
+    event_study = result.get('event_study', {})
+    metrics['event_n_events'] = event_study.get('n_events', np.nan)
+    metrics['event_did_median'] = event_study.get('did_median', np.nan)
+    metrics['event_did_p25'] = event_study.get('did_p25', np.nan)
+    metrics['event_did_p75'] = event_study.get('did_p75', np.nan)
+    metrics['event_joiner_before_median'] = event_study.get('joiner_before_median', np.nan)
+    metrics['event_joiner_after_median'] = event_study.get('joiner_after_median', np.nan)
+    metrics['event_control_before_median'] = event_study.get('control_before_median', np.nan)
+    metrics['event_control_after_median'] = event_study.get('control_after_median', np.nan)
+
+    # Also add from summary
+    metrics['event_did_median'] = summary.get('event_did_median', metrics['event_did_median'])
+
+    # C20: Alpha scatter data (for endogenous alpha runs)
+    alpha_scatter = result.get('alpha_scatter', [])
+    if alpha_scatter:
+        # Store as JSON string for later analysis
+        metrics['alpha_scatter_json'] = json.dumps(alpha_scatter)
+        # Also compute summary stats
+        adopted_alphas = [x[0] for x in alpha_scatter]
+        sd_iqrs = [x[1] for x in alpha_scatter]
+        metrics['alpha_scatter_n'] = len(alpha_scatter)
+        metrics['alpha_scatter_alpha_median'] = np.median(adopted_alphas) if adopted_alphas else np.nan
+        metrics['alpha_scatter_sd_iqr_median'] = np.median(sd_iqrs) if sd_iqrs else np.nan
+    else:
+        metrics['alpha_scatter_json'] = None
+        metrics['alpha_scatter_n'] = 0
+        metrics['alpha_scatter_alpha_median'] = np.nan
+        metrics['alpha_scatter_sd_iqr_median'] = np.nan
+
+    # C20: Per-type acceptance rates (renamed from C17)
+    metrics['acc_rate_ss'] = summary.get('acceptance_rate_ss', np.nan)
+    metrics['acc_rate_sc'] = summary.get('acceptance_rate_sc', np.nan)
+    metrics['acc_rate_cc'] = summary.get('acceptance_rate_cc', np.nan)
+
     return metrics
 
 
@@ -372,6 +408,14 @@ def create_medians_df(tidy_df):
         'growth_gap_median',  # C17
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
+        # C20: Event study metrics
+        'event_n_events', 'event_did_median', 'event_did_p25', 'event_did_p75',
+        'event_joiner_before_median', 'event_joiner_after_median',
+        'event_control_before_median', 'event_control_after_median',
+        # C20: Per-type acceptance rates
+        'acc_rate_ss', 'acc_rate_sc', 'acc_rate_cc',
+        # C20: Alpha scatter
+        'alpha_scatter_n', 'alpha_scatter_alpha_median', 'alpha_scatter_sd_iqr_median',
     ]
 
     agg_dict = {}

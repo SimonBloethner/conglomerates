@@ -10,10 +10,12 @@ Test catches: any change to default behaviour in later cards.
 """
 import numpy as np
 import sys
-sys.path.insert(0, '..')
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import Phase B reference (vendored from commit 1650ea9)
-import _phase_b_reference as phase_b
+from tests import _phase_b_reference as phase_b
 
 # Import current code
 import collaborative_growth as current
