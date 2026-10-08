@@ -127,6 +127,18 @@ The `loggain` rule addresses a fundamental challenge: when firms share correlate
 
 **Phase B identity:** With `decision_rule == "replay"` (default), behavior is byte-for-byte identical to Phase B.
 
+### `exit_review_every`
+Periodic exit review interval for loggain decision rule.
+
+Default: `1` (every step)
+
+When `exit_review_every > 1`:
+- Conglomerate members run the exit test only at steps where `(step - cong_created_step) % exit_review_every == 0`
+- The review schedule resets when a conglomerate's composition changes (merger or new member)
+- Models "boards review the arrangement every n periods"
+
+**Only affects loggain:** Under `decision_rule == "replay"` (default), this flag is ignored and exits are evaluated every step.
+
 ## Fixed Market Size
 
 ### `market_size_fixed`

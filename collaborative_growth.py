@@ -341,6 +341,135 @@ def compute_realized_growth(past_states, step_states):
 
 
 @nb.njit(cache=True)
+def prepare_window_loggain(members, window_returns, window_sizes, g):
+    """
+    Precompute per-τ sums for loggain decision.
+
+    These sums are independent of which member i we're evaluating, so we
+    compute them once per candidate set (O(h·K)) then reuse for each member.
+
+    Parameters:
+    -----------
+    members : ndarray, shape (K,)
+        Indices of firms in the proposed set
+    window_returns : ndarray, shape (h, total_firms) or (h, K)
+        Log returns for h historical steps
+    window_sizes : ndarray, shape (h, total_firms) or (h, K)
+        Firm sizes (levels, not log) for h historical steps
+    g : float
+        Common growth rate (added back after demeaning)
+
+    Returns:
+    --------
+    epsilon : ndarray, shape (h, K)
+        Demeaned returns: ε_jτ = r̃_jτ − mean_τ(r̃_jτ) + g
+    sizes : ndarray, shape (h, K)
+        Extracted sizes for members
+    sum_s : ndarray, shape (h,)
+        Per-τ sum of sizes: Σ_j s_jτ
+    sum_s_eps : ndarray, shape (h,)
+        Per-τ weighted sum: Σ_j s_jτ · expm1(ε_jτ)
+    """
+    h = window_returns.shape[0]
+    K = len(members)
+    full_indexing = window_returns.shape[1] > K
+
+    # Step 1: Extract returns and compute demeaned returns
+    epsilon = np.empty((h, K), dtype=np.float64)
+    for j in range(K):
+        firm_j = members[j] if full_indexing else j
+
+        mean_r_j = 0.0
+        for tau in range(h):
+            mean_r_j += window_returns[tau, firm_j]
+        mean_r_j /= h
+
+        for tau in range(h):
+            epsilon[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
+
+    # Step 2: Extract sizes
+    sizes = np.empty((h, K), dtype=np.float64)
+    for tau in range(h):
+        for j in range(K):
+            if full_indexing:
+                sizes[tau, j] = window_sizes[tau, members[j]]
+            else:
+                sizes[tau, j] = window_sizes[tau, j]
+
+    # Step 3: Precompute per-τ sums (independent of i)
+    sum_s = np.empty(h, dtype=np.float64)
+    sum_s_eps = np.empty(h, dtype=np.float64)
+    for tau in range(h):
+        s_sum = 0.0
+        se_sum = 0.0
+        for j in range(K):
+            s_j = sizes[tau, j]
+            e_j = np.expm1(epsilon[tau, j])
+            s_sum += s_j
+            se_sum += s_j * e_j
+        sum_s[tau] = s_sum
+        sum_s_eps[tau] = se_sum
+
+    return epsilon, sizes, sum_s, sum_s_eps
+
+
+@nb.njit(cache=True)
+def member_gain_from_prepared(i, K, epsilon, sizes, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code):
+    """
+    Compute gain for member i using precomputed window data.
+
+    O(h) computation per member vs O(h·K) for the full function.
+
+    Parameters:
+    -----------
+    i : int
+        Index of the firm within the candidate set (0 to K-1)
+    K : int
+        Number of firms in the set
+    epsilon, sizes, sum_s, sum_s_eps : ndarrays
+        Precomputed arrays from prepare_window_loggain
+    alpha : float
+        Pooling fraction
+    Phi_K : float
+        Management cost for this conglomerate size
+    sharing_rule_code : int
+        0 = equal, 1 = proportional
+
+    Returns:
+    --------
+    delta_hat : float
+        Mean log gain from pooling
+    """
+    h = epsilon.shape[0]
+    delta_hat = 0.0
+
+    for tau in range(h):
+        s_i = sizes[tau, i]
+        e_i = np.expm1(epsilon[tau, i])
+        s_sum = sum_s[tau]
+        se_sum = sum_s_eps[tau]
+
+        if sharing_rule_code == 1:
+            # Proportional sharing
+            avg_weighted_gain = se_sum / s_sum if s_sum > 0 else 0.0
+            p_i = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+        else:
+            # Equal sharing
+            pool_dollars = alpha * se_sum - Phi_K * s_sum
+            equal_share = pool_dollars / K
+            s_i_safe = max(s_i, 1e-300)
+            p_i = (1.0 - alpha) * e_i + equal_share / s_i_safe
+
+        if p_i <= -1.0:
+            return -np.inf
+
+        delta_hat += np.log1p(p_i) - np.log1p(e_i)
+
+    delta_hat /= h
+    return delta_hat
+
+
+@nb.njit(cache=True)
 def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, sharing_rule_code, g):
     """
     Compute demeaned log-growth gain for member i in a proposed conglomerate.
@@ -544,7 +673,8 @@ def merger_kernel_numba(
     cong_pool, management_costs_lookup,
     firm_log_states_buffer, firm_log_returns_buffer,
     total_firms, markets, firms_per_market,
-    sharing_rule_code, decision_rule_code, g_common
+    sharing_rule_code, decision_rule_code, g_common,
+    cong_created_step
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
@@ -694,13 +824,18 @@ def merger_kernel_numba(
             # Compute sizes from states
             sizes = np.exp(past_states)  # shape (h, K_hat)
 
+            # C19: Precompute window data for proposed set ONCE (O(h·K) instead of O(h·K²))
+            eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop = prepare_window_loggain(
+                merged_firms, past_returns, sizes, g_common
+            )
+
             for j in range(K_hat):
                 firm_id = merged_firms[j]
 
-                # Compute gain in proposed merged set
-                gain_proposed = member_gain_loggain(
-                    j, merged_firms, share, past_returns, sizes,
-                    m, sharing_rule_code, g_common
+                # Compute gain in proposed merged set using precomputed data (O(h))
+                gain_proposed = member_gain_from_prepared(
+                    j, K_hat, eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop,
+                    share, m, sharing_rule_code
                 )
 
                 if gain_proposed == -np.inf:
@@ -733,10 +868,14 @@ def merger_kernel_numba(
                             j_current = idx
                             break
 
+                    # For current cong, use hoisted version (prepare once, evaluate once)
+                    eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr = prepare_window_loggain(
+                        current_members, current_past_returns, current_sizes, g_common
+                    )
                     current_m = management_costs_lookup[current_size]
-                    gain_current = member_gain_loggain(
-                        j_current, current_members, share, current_past_returns, current_sizes,
-                        current_m, sharing_rule_code, g_common
+                    gain_current = member_gain_from_prepared(
+                        j_current, current_size, eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr,
+                        share, current_m, sharing_rule_code
                     )
 
                 # Accept only if proposed beats max(0, current)
@@ -835,6 +974,7 @@ def merger_kernel_numba(
             # Two congs → keep target, deallocate initiator
             cong_firms[target_cong, :merged_size] = merged_firms
             cong_size[target_cong] = merged_size
+            cong_created_step[target_cong] = step  # C19: Reset review schedule
 
             # Update occupancy
             for m in merged_markets:
@@ -855,6 +995,7 @@ def merger_kernel_numba(
             cong_firms[target_cong, :merged_size] = merged_firms
             cong_size[target_cong] = merged_size
             cong_occupies_market[target_cong, firm_home_market[initiator]] = True
+            cong_created_step[target_cong] = step  # C19: Reset review schedule
             firm_conglom[initiator] = target_cong
             firm_entered[initiator] = step
 
@@ -863,6 +1004,7 @@ def merger_kernel_numba(
             cong_firms[initiator_cong, :merged_size] = merged_firms
             cong_size[initiator_cong] = merged_size
             cong_occupies_market[initiator_cong, firm_home_market[target_firm]] = True
+            cong_created_step[initiator_cong] = step  # C19: Reset review schedule
             firm_conglom[target_firm] = initiator_cong
             firm_entered[target_firm] = step
 
@@ -880,6 +1022,7 @@ def merger_kernel_numba(
             cong_active[new_id] = True
             cong_firms[new_id, :merged_size] = merged_firms
             cong_size[new_id] = merged_size
+            cong_created_step[new_id] = step  # C19: Track creation for exit_review_every
 
             for m in merged_markets:
                 cong_occupies_market[new_id, m] = True
@@ -973,10 +1116,14 @@ def compute_exit_candidates_numba(
             )
             sizes = np.exp(past_states)
 
+            # C19: Use hoisted functions for consistency
+            eps, sz, sum_s, sum_s_eps = prepare_window_loggain(
+                current_members, past_returns, sizes, g_common
+            )
             m = management_costs_lookup[current_size]
-            gain_current = member_gain_loggain(
-                j_current, current_members, share, past_returns, sizes,
-                m, sharing_rule_code, g_common
+            gain_current = member_gain_from_prepared(
+                j_current, current_size, eps, sz, sum_s, sum_s_eps,
+                share, m, sharing_rule_code
             )
 
             # Exit if gain in current conglomerate is negative (standalone gives 0)
@@ -1365,7 +1512,7 @@ def model(params, seed=None, market_corr="identity",
           log_family="normal", nu=3.0, floor_c=0.0,
           metric_every=100, burn_in=0, alpha_endogenous=False,
           g=None, renorm_every=500, market_size_fixed=False,
-          decision_rule="replay"):
+          decision_rule="replay", exit_review_every=1):
     """
     Main simulation model.
 
@@ -1444,6 +1591,12 @@ def model(params, seed=None, market_corr="identity",
           from pooling is computed as Δ̂ = E[log(1+p) - log(1+ε)].
           Accepts if Δ̂_proposed > max(0, Δ̂_current) for all members.
           Requires g to be specified (raises ValueError if g is None).
+    exit_review_every : int
+        Periodic exit review interval. Default 1 (every step).
+        When > 1, members run the exit test only at steps where
+        (step - cong_created_step) % exit_review_every == 0.
+        Models "boards review the arrangement every n periods".
+        Only affects loggain decision rule; ignored under replay.
     """
     import time
 
@@ -1611,6 +1764,7 @@ def model(params, seed=None, market_corr="identity",
     cong_active = np.zeros(MAX_CONGLOMERATES, dtype=bool)
     cong_occupies_market = np.zeros((MAX_CONGLOMERATES, markets), dtype=bool)  # Fast market occupancy lookup
     cong_alpha = np.full(MAX_CONGLOMERATES, share, dtype=np.float64)  # Per-conglomerate alpha (endogenous)
+    cong_created_step = np.zeros(MAX_CONGLOMERATES, dtype=np.int32)  # C19: Track creation step for exit_review_every
 
     # ID management for conglomerate slots
     free_ids = []
@@ -1825,7 +1979,8 @@ def model(params, seed=None, market_corr="identity",
                 firm_log_states_buffer, firm_log_returns_buffer,
                 total_firms, markets, firms_per_market,
                 sharing_rule_code, decision_rule_code,
-                g if g is not None else 0.0
+                g if g is not None else 0.0,
+                cong_created_step
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
@@ -1981,6 +2136,16 @@ def model(params, seed=None, market_corr="identity",
             in_cong = firm_conglom != -1
             old_enough = firm_entered < step - lookback
             exit_candidates = np.where(in_cong & old_enough)[0]
+
+            # C19: Periodic exit review (only for loggain; replay ignores this flag)
+            if decision_rule_code == 1 and exit_review_every > 1 and len(exit_candidates) > 0:
+                # Filter to firms whose conglomerate is due for review
+                # (step - cong_created_step) % exit_review_every == 0
+                review_mask = np.array([
+                    (step - cong_created_step[firm_conglom[fid]]) % exit_review_every == 0
+                    for fid in exit_candidates
+                ])
+                exit_candidates = exit_candidates[review_mask]
 
             if len(exit_candidates) > 0:
                 # NUMBA OPTIMIZATION: Compute exit decisions using JIT-compiled function
