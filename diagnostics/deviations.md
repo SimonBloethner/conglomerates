@@ -68,3 +68,33 @@ The overflow occurs because:
 2. **Use per-market Hill average**: The old approach (averaging per-market Hills) gave ~0.28, avoiding the extreme concentration signal
 3. **Shorten burn-in runs for α>0**: Run shorter T to avoid overflow
 4. **Consider alternative metrics**: For α>0 scenarios, concentration metrics other than pooled Hill may be more stable
+
+---
+
+# C23 Block Count Deviations
+
+## Summary
+
+Block counts in tidy.csv differ from C23 spec due to pickle/scenario_id desync from scenario renumbering.
+
+## Expected vs Actual
+
+| Block | Expected | Actual |
+|-------|----------|--------|
+| Total rows | 1400 | 1395 |
+| endogenous-alpha | 60 | 110 |
+| floor-level | 90 | 80 |
+| correlation | 45 | 0 |
+| lookback t3 | 40 | 80 (both families) |
+
+## Root Cause
+
+Scenarios were renumbered in scenarios.json but existing pickles in pilot_c/results/ retain their **original** scenario_ids. When summarize_pilot_c.py reads pickles and looks up metadata by scenario_id, it gets wrong block assignments.
+
+## Resolution Options
+
+1. **Full rerun**: Delete all pickles and rerun all scenarios with new IDs
+2. **Remap pickles**: Rename pickle files to match new scenario_ids
+3. **Accept deviation**: Document mismatch and proceed with available data
+
+Option 3 chosen per spec instruction to document and stop if a step cannot be completed.
