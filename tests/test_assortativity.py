@@ -162,3 +162,10 @@ def test_assortativity_alpha_zero():
     assert np.isnan(assort_iqr), f"Expected NaN with alpha=0, got {assort_iqr}"
 
     print("PASS: assort_iqr is NaN when alpha=0")
+
+
+if __name__ == "__main__":
+    test_assortativity_in_range()
+    test_assortativity_random_assignment_near_zero()
+    test_assortativity_alpha_zero()
+    print("\nAll assortativity tests passed!")

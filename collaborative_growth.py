@@ -2281,8 +2281,8 @@ def model(params, seed=None, market_corr="identity",
             lorenz = cum_shares / sums
             lorenz = np.nan_to_num(lorenz)
 
-        # Use np.trapz for compatibility with older NumPy versions
-        area = np.trapz(lorenz, dx=1 / firms_per_market, axis=1)
+        # Use np.trapezoid (NumPy 2.0+)
+        area = np.trapezoid(lorenz, dx=1 / firms_per_market, axis=1)
         gini_coefficient[:, step] = (1 - 2 * area).astype(np.float32)
 
         # Ranks (double argsort trick, vectorized) - online statistics

@@ -45,7 +45,6 @@ def extract_post_burnin_metrics(result):
         'cross_corr': scenario['cross_corr'],
         'alpha_endogenous': scenario.get('alpha_endogenous', False),
         'decision_rule': scenario.get('decision_rule', 'replay'),  # C17
-        'exit_review_every': scenario.get('exit_review_every', 1),  # C21
         # Runtime
         'elapsed_seconds': result['elapsed_seconds'],
         'ms_per_step': result['ms_per_step'],
@@ -223,52 +222,13 @@ def extract_post_burnin_metrics(result):
         metrics['alpha_adopted_mean'] = np.nan
         metrics['alpha_adopted_std'] = np.nan
 
-    # Assortativity: SD of member IQR vs random K-subset
-    # SKIPPED: Too slow for pilot (168 conglomerates × 1400 scenarios)
-    # Can be computed post-hoc from saved results if needed
-    metrics['assortativity_ratio'] = np.nan
-    metrics['assortativity_n_conglom'] = np.nan
-
-    # C20: Event study data
-    event_study = result.get('event_study', {})
-    metrics['event_n_events'] = event_study.get('n_events', np.nan)
-    metrics['event_did_median'] = event_study.get('did_median', np.nan)
-    metrics['event_did_p25'] = event_study.get('did_p25', np.nan)
-    metrics['event_did_p75'] = event_study.get('did_p75', np.nan)
-    metrics['event_joiner_before_median'] = event_study.get('joiner_before_median', np.nan)
-    metrics['event_joiner_after_median'] = event_study.get('joiner_after_median', np.nan)
-    metrics['event_control_before_median'] = event_study.get('control_before_median', np.nan)
-    metrics['event_control_after_median'] = event_study.get('control_after_median', np.nan)
-
-    # Also add from summary
-    metrics['event_did_median'] = summary.get('event_did_median', metrics['event_did_median'])
-
-    # C20: Alpha scatter data (for endogenous alpha runs)
-    alpha_scatter = result.get('alpha_scatter', [])
-    if alpha_scatter:
-        # Store as JSON string for later analysis
-        metrics['alpha_scatter_json'] = json.dumps(alpha_scatter)
-        # Also compute summary stats
-        adopted_alphas = [x[0] for x in alpha_scatter]
-        sd_iqrs = [x[1] for x in alpha_scatter]
-        metrics['alpha_scatter_n'] = len(alpha_scatter)
-        metrics['alpha_scatter_alpha_median'] = np.median(adopted_alphas) if adopted_alphas else np.nan
-        metrics['alpha_scatter_sd_iqr_median'] = np.median(sd_iqrs) if sd_iqrs else np.nan
-    else:
-        metrics['alpha_scatter_json'] = None
-        metrics['alpha_scatter_n'] = 0
-        metrics['alpha_scatter_alpha_median'] = np.nan
-        metrics['alpha_scatter_sd_iqr_median'] = np.nan
-
-    # C20: Per-type acceptance rates (renamed from C17)
-    metrics['acc_rate_ss'] = summary.get('acceptance_rate_ss', np.nan)
-    metrics['acc_rate_sc'] = summary.get('acceptance_rate_sc', np.nan)
-    metrics['acc_rate_cc'] = summary.get('acceptance_rate_cc', np.nan)
+    # Assortativity: use pre-computed assort_iqr from model (C22c)
+    metrics["assort_iqr"] = summary.get("assort_iqr", np.nan)
 
     return metrics
 
 
-def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=1):
+def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
     """
     Compute assortativity ratio: SD of member IQR / SD of random K-subset.
 
@@ -395,19 +355,11 @@ def create_medians_df(tidy_df):
         'hill_exponent_median', 'hhi_within_median', 'hhi_aggregate_median',
         'top10pct_aggregate_median', 'cong_capital_share_median',
         'mergers_per_period', 'proposals_per_period', 'exits_per_period',
-        'acceptance_rate', 'assortativity_ratio',
+        'acceptance_rate', 'assort_iqr',
         'acceptance_rate_ss', 'acceptance_rate_sc', 'acceptance_rate_cc',  # C17
         'growth_gap_median',  # C17
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
-        # C20: Event study metrics
-        'event_n_events', 'event_did_median', 'event_did_p25', 'event_did_p75',
-        'event_joiner_before_median', 'event_joiner_after_median',
-        'event_control_before_median', 'event_control_after_median',
-        # C20: Per-type acceptance rates
-        'acc_rate_ss', 'acc_rate_sc', 'acc_rate_cc',
-        # C20: Alpha scatter
-        'alpha_scatter_n', 'alpha_scatter_alpha_median', 'alpha_scatter_sd_iqr_median',
     ]
 
     agg_dict = {}
@@ -436,9 +388,6 @@ def create_medians_df(tidy_df):
 
 def main():
     """Load results and create summary CSVs."""
-    import shutil
-    import tempfile
-
     print("Phase C Pilot Summarization")
     print("=" * 50)
 
@@ -455,26 +404,18 @@ def main():
     print("Creating tidy DataFrame...")
     tidy_df = create_tidy_df(results)
 
-    # Save tidy.csv via local scratch to avoid NFS I/O errors
+    # Save tidy.csv
     tidy_path = 'pilot_c/tidy.csv'
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
-        tidy_df.to_csv(tmp.name, index=False)
-        tmp.flush()
-        shutil.copy(tmp.name, tidy_path)
-        Path(tmp.name).unlink()
+    tidy_df.to_csv(tidy_path, index=False)
     print(f"Saved {tidy_path} ({len(tidy_df)} rows)")
 
     # Create medians DataFrame
     print("Creating medians DataFrame...")
     medians_df = create_medians_df(tidy_df)
 
-    # Save medians.csv via local scratch
+    # Save medians.csv
     medians_path = 'pilot_c/medians.csv'
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
-        medians_df.to_csv(tmp.name, index=False)
-        tmp.flush()
-        shutil.copy(tmp.name, medians_path)
-        Path(tmp.name).unlink()
+    medians_df.to_csv(medians_path, index=False)
     print(f"Saved {medians_path} ({len(medians_df)} rows)")
 
     # Summary statistics

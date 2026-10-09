@@ -23,8 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def load_burnin_csv(filepath='diagnostics/burn_in_c.csv'):
     """Load burn-in CSV and return data by alpha."""
-    data = {'alpha_0.0': {'steps': [], 'hill': [], 'mean_k': [], 'k_eff': [], 'ccs': [], 'fhr': []},
-            'alpha_0.1': {'steps': [], 'hill': [], 'mean_k': [], 'k_eff': [], 'ccs': [], 'fhr': []}}
+    data = {'alpha_0.0': {'steps': [], 'hill': [], 'mean_k': [], 'k_eff': [], 'ccs': [], 'fhr_standalone': []},
+            'alpha_0.1': {'steps': [], 'hill': [], 'mean_k': [], 'k_eff': [], 'ccs': [], 'fhr_standalone': []}}
 
     with open(filepath, 'r') as f:
         reader = csv.DictReader(f)
@@ -35,7 +35,7 @@ def load_burnin_csv(filepath='diagnostics/burn_in_c.csv'):
             data[alpha_key]['mean_k'].append(float(row['mean_k']))
             data[alpha_key]['k_eff'].append(float(row['k_eff']))
             data[alpha_key]['ccs'].append(float(row['ccs']))
-            data[alpha_key]['fhr'].append(float(row['fhr']))
+            data[alpha_key]['fhr_standalone'].append(float(row['fhr_standalone']))
 
     # Convert to numpy arrays
     for alpha_key in data:
@@ -111,7 +111,7 @@ def test_no_nan_inf():
     """
     data = load_burnin_csv()
 
-    metrics = ['hill', 'mean_k', 'k_eff', 'ccs', 'fhr']
+    metrics = ['hill', 'mean_k', 'k_eff', 'ccs', 'fhr_standalone']
 
     for alpha_key in ['alpha_0.0', 'alpha_0.1']:
         for metric in metrics:
