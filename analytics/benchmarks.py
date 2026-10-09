@@ -186,9 +186,15 @@ def pooling_gain(K, alpha, family, mu, iqr, cost, n_draws=MC_DRAWS, seed=MC_SEED
     return mean_gain, se
 
 
-def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None):
+def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None, M=None):
     """
     Find the optimal pool size K* that maximizes pooling_gain - Φ(K).
+
+    WARNING: K* is only economically interpretable when K* ≤ M (number of markets).
+    A conglomerate cannot have more members than there are markets. For very low
+    management costs or heavy-tailed distributions, the theoretical optimal K* may
+    exceed M; in that case, the monopoly-reversion result applies (all firms merge
+    into a single entity). When M is provided, K* is capped at M.
 
     Parameters:
     -----------
@@ -204,6 +210,8 @@ def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None):
         Cost function type
     c0, c1, c2 : float, optional
         Cost function parameters
+    M : int, optional
+        Number of markets. If provided, K* is capped at M.
 
     Returns:
     --------
@@ -212,7 +220,10 @@ def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None):
     best_K = 1
     best_gain = float('-inf')
 
-    for K in range(1, 61):
+    # Search up to 60 or M if specified
+    max_search = min(60, M) if M is not None else 60
+
+    for K in range(1, max_search + 1):
         cost = management_cost_function(K, cost_type, c0, c1, c2)
         gain, _ = pooling_gain(K, alpha, family, mu, iqr, cost)
 
@@ -330,9 +341,16 @@ def body_tail_split(alpha, K, family, mu, iqr, q=0.01, n_draws=MC_DRAWS, seed=MC
     return tail_gain / total_gain
 
 
-def generate_benchmarks_csv(output_path='analytics/benchmarks.csv'):
+def generate_benchmarks_csv(output_path='analytics/benchmarks.csv', M=50):
     """
     Generate benchmarks.csv with K* and gain for various parameter combinations.
+
+    Parameters:
+    -----------
+    output_path : str
+        Path to output CSV file
+    M : int
+        Number of markets (caps K* at this value)
     """
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -344,14 +362,14 @@ def generate_benchmarks_csv(output_path='analytics/benchmarks.csv'):
 
     rows = []
 
-    print("Generating benchmarks...")
+    print(f"Generating benchmarks (K* capped at M={M})...")
 
     for family in families:
         for cost_type in cost_types:
             for alpha in alphas:
                 print(f"  {family}, {cost_type}, alpha={alpha}...")
 
-                K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_type)
+                K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_type, M=M)
 
                 # Body/tail split at K=5
                 tail_share = body_tail_split(alpha, 5, family, mu, iqr, q=0.01)
