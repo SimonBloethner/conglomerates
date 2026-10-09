@@ -2771,6 +2771,38 @@ def model(params, seed=None, market_corr="identity",
     # Format: alpha_scatter[step] = {cong_id: (alpha, K)}
     # Only populated when alpha_endogenous=True
 
+    # C22c: Assortativity by IQR - vectorized computation at end of run
+    # Pearson correlation of per-firm IQR with mean IQR of same conglomerate
+    market_iqr = growth_vars[:, 1]  # Per-market IQR
+    firm_iqr = market_iqr[firm_home_market]  # Per-firm IQR (via home market)
+
+    # Find firms in conglomerates
+    in_cong_mask = firm_conglom >= 0
+    firms_in_cong = np.where(in_cong_mask)[0]
+
+    if len(firms_in_cong) >= 2:
+        # For each firm in a conglomerate, compute mean IQR of its conglomerate
+        cong_mean_iqr = np.zeros(total_firms, dtype=np.float64)
+
+        for cid in range(MAX_CONGLOMERATES):
+            if cong_active[cid]:
+                K = cong_size[cid]
+                if K >= 2:
+                    member_firms = cong_firms[cid, :K]
+                    member_iqrs = firm_iqr[member_firms]
+                    mean_iqr_val = np.mean(member_iqrs)
+                    for fid in member_firms:
+                        cong_mean_iqr[fid] = mean_iqr_val
+
+        # Pearson correlation: firm IQR vs conglomerate mean IQR
+        x = firm_iqr[firms_in_cong]
+        y = cong_mean_iqr[firms_in_cong]
+        assort_iqr = np.corrcoef(x, y)[0, 1] if len(x) > 1 else np.nan
+    else:
+        assort_iqr = np.nan
+
+    summary['assort_iqr'] = assort_iqr
+
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
@@ -2809,6 +2841,8 @@ def model(params, seed=None, market_corr="identity",
                        # C20 additions: event study and alpha scatter
                        'event_study': event_study_data,
                        'alpha_scatter': alpha_scatter,
+                       # C22c: Assortativity by IQR
+                       'assort_iqr': assort_iqr,
                        }
 
     # Model results: 13 elements
