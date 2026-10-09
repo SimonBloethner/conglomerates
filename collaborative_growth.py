@@ -2067,7 +2067,12 @@ def model(params, seed=None, market_corr="identity",
                         if K >= 2:
                             if step not in alpha_scatter:
                                 alpha_scatter[step] = {}
-                            alpha_scatter[step][cid] = (cong_alpha[cid], int(K))
+                            # Compute IQR stats for conglomerate members
+                            member_firms = cong_firms[cid, :K]
+                            member_iqrs = growth_vars[firm_home_market[member_firms], 1]
+                            sd_iqr = np.std(member_iqrs, ddof=1) if K > 1 else 0.0
+                            mean_iqr = np.mean(member_iqrs)
+                            alpha_scatter[step][cid] = (cong_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
                             cong_recorded_first_step[cid] = True
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
@@ -2411,7 +2416,12 @@ def model(params, seed=None, market_corr="identity",
                         if cong_active[cid]:
                             K = cong_size[cid]
                             if K >= 2:
-                                alpha_scatter[step][cid] = (cong_alpha[cid], int(K))
+                                # Compute IQR stats for conglomerate members
+                                member_firms_scatter = cong_firms[cid, :K]
+                                member_iqrs_scatter = growth_vars[firm_home_market[member_firms_scatter], 1]
+                                sd_iqr = np.std(member_iqrs_scatter, ddof=1) if K > 1 else 0.0
+                                mean_iqr = np.mean(member_iqrs_scatter)
+                                alpha_scatter[step][cid] = (cong_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
                                 cong_recorded_first_step[cid] = True  # Mark as recorded
 
                 # C17: Member-standalone growth gap
@@ -2767,6 +2777,12 @@ def model(params, seed=None, market_corr="identity",
     summary['event_n_matched'] = event_study_data['n_matched']
     summary['event_did_median'] = event_study_data['did_median']
     summary['event_did_post_median'] = event_study_data['did_post_median']
+    summary['event_did_p25'] = event_study_data.get('did_p25', np.nan)
+    summary['event_did_p75'] = event_study_data.get('did_p75', np.nan)
+    summary['event_joiner_before_median'] = event_study_data.get('joiner_before_median', np.nan)
+    summary['event_joiner_after_median'] = event_study_data.get('joiner_after_median', np.nan)
+    summary['event_control_before_median'] = event_study_data.get('control_before_median', np.nan)
+    summary['event_control_after_median'] = event_study_data.get('control_after_median', np.nan)
 
     # C22b: alpha_scatter is now a dict keyed by step, populated during simulation
     # Format: alpha_scatter[step] = {cong_id: (alpha, K)}
