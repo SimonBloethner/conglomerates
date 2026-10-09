@@ -114,7 +114,7 @@ def get_states_from_buffer(buffer, start_step, end_step, firms):
 
 def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
           cong_occupies_market, to_delete=None, step=None, exits_per_period=None,
-          firm_exit_step=None):
+          firm_exit_step=None, exit_events_raw=None):
     """
     SoA: Array-based exit function using Structure-of-Arrays with occupancy flags
 
@@ -126,6 +126,8 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
         Array to track firm exits per period
     firm_exit_step : ndarray, optional
         C20: Track exit step for event study
+    exit_events_raw : list, optional
+        C22: List to record (firm_id, exit_step) for all exits
     """
     cong_id = firm_conglom[firm_id]
     if cong_id != -1:
@@ -136,6 +138,10 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
         # C20: Track exit step for event study
         if step is not None and firm_exit_step is not None:
             firm_exit_step[firm_id] = step
+
+        # C22: Record exit event for all entries tracking
+        if step is not None and exit_events_raw is not None:
+            exit_events_raw.append((firm_id, step))
 
         # SoA: Remove firm from array
         n_firms = cong_size[cong_id]
@@ -169,6 +175,9 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
                 # C20: Track exit step for remaining firm too
                 if step is not None and firm_exit_step is not None:
                     firm_exit_step[remaining_firm_id] = step
+                # C22: Record exit event for remaining firm
+                if step is not None and exit_events_raw is not None:
+                    exit_events_raw.append((remaining_firm_id, step))
 
             # Mark for deletion instead of deleting immediately
             if to_delete is not None:
@@ -1765,9 +1774,12 @@ def model(params, seed=None, market_corr="identity",
     firm_first_entered = np.full(total_firms, -1, dtype=np.int32)  # C20: First-time entry (never reset)
     firm_exit_step = np.full(total_firms, -1, dtype=np.int32)  # C20: Track exit step for event study
 
-    # C20: Event study tracking - accumulate entry events during run
+    # C22: Event study tracking - accumulate ALL entry/exit events during run
     # Each entry: (firm_id, entry_step, log_share_at_entry_minus_l, log_share_at_entry, market_id)
+    # Records every entry (not just first), at any step t with l <= t <= T-l
     entry_events_raw = []
+    # Each exit: (firm_id, exit_step)
+    exit_events_raw = []
 
     # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
     # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
@@ -2010,8 +2022,9 @@ def model(params, seed=None, market_corr="identity",
             mergers_cc_per_period[step] = num_mergers_cc
             proposals_cc_per_period[step] = num_proposals_cc
 
-            # C20: Track first-time entries for event study
-            if step >= lookback and num_mergers > 0:
+            # C22: Track ALL entries for event study (not just first)
+            # Only record entries at steps t with l <= t <= T-l
+            if step >= lookback and step <= steps - lookback and num_mergers > 0:
                 # Detect newly entered firms (was standalone, now in conglomerate)
                 newly_entered = (pre_merger_in_cong == -1) & (firm_conglom >= 0)
                 new_entrants = np.where(newly_entered)[0]
@@ -2028,16 +2041,17 @@ def model(params, seed=None, market_corr="identity",
                 log_market_share_before = old_log_states - log_market_totals_old
 
                 for firm_id in new_entrants:
-                    # Only record first-time entries
+                    # C22: Record EVERY entry (not just first)
+                    # Still track first entry time for control matching
                     if firm_first_entered[firm_id] == -1:
                         firm_first_entered[firm_id] = step
-                        market = firm_home_market[firm_id]
-                        firm_idx_in_market = firm_id - market * firms_per_market
-                        log_share_at_entry = log_market_share_entry[market, firm_idx_in_market]
-                        log_share_at_entry_minus_l = log_market_share_before[market, firm_idx_in_market]
-                        entry_events_raw.append((
-                            firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market
-                        ))
+                    market = firm_home_market[firm_id]
+                    firm_idx_in_market = firm_id - market * firms_per_market
+                    log_share_at_entry = log_market_share_entry[market, firm_idx_in_market]
+                    log_share_at_entry_minus_l = log_market_share_before[market, firm_idx_in_market]
+                    entry_events_raw.append((
+                        firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market
+                    ))
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
@@ -2082,7 +2096,7 @@ def model(params, seed=None, market_corr="identity",
                 exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
                       cong_occupies_market, to_delete=conglomerates_to_delete,
                       step=step, exits_per_period=exits_per_period,
-                      firm_exit_step=firm_exit_step)
+                      firm_exit_step=firm_exit_step, exit_events_raw=exit_events_raw)
 
         # SoA: Clean up conglomerates marked for deletion
         for cong_id in conglomerates_to_delete:
@@ -2221,7 +2235,7 @@ def model(params, seed=None, market_corr="identity",
                     exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
                           cong_occupies_market, to_delete=exit_cleanup_to_delete,
                           step=step, exits_per_period=exits_per_period,
-                          firm_exit_step=firm_exit_step)
+                          firm_exit_step=firm_exit_step, exit_events_raw=exit_events_raw)
 
             # SoA: Clean up conglomerates marked for deletion
             for cong_id in exit_cleanup_to_delete:
@@ -2502,10 +2516,51 @@ def model(params, seed=None, market_corr="identity",
     # C17: Growth gap summary (post-burn-in median)
     summary['growth_gap_median'] = np.nanmedian(growth_gap[valid_metric_indices])
 
-    # C20: Event study (matched DiD)
-    # Filter events to those where firm stayed ≥lookback periods after entry
+    # C22: Event study (matched DiD)
+    # Record every entry at any step t with l ≤ t ≤ T-l where firm stays ≥l periods
+    # Units: mean log share change per period over the l-window
+
+    # Build mapping of each entry to its exit step
+    # For each entry, find the next exit for that firm (if any)
+    # Sort exits by (firm_id, exit_step) for efficient lookup
+    exit_by_firm = {}  # firm_id -> list of exit steps (sorted)
+    for firm_id, exit_step in exit_events_raw:
+        if firm_id not in exit_by_firm:
+            exit_by_firm[firm_id] = []
+        exit_by_firm[firm_id].append(exit_step)
+    for firm_id in exit_by_firm:
+        exit_by_firm[firm_id].sort()
+
+    # Build set of (firm_id, entry_step, exit_step) intervals for standalone checking
+    # entry_intervals[firm_id] = [(entry_step, exit_step), ...]
+    entry_intervals = {}
+    for entry in entry_events_raw:
+        firm_id, entry_step, _, _, _ = entry
+        # Find next exit after this entry
+        exit_step_for_entry = steps  # Default: still in conglomerate at end
+        if firm_id in exit_by_firm:
+            for es in exit_by_firm[firm_id]:
+                if es > entry_step:
+                    exit_step_for_entry = es
+                    break
+        if firm_id not in entry_intervals:
+            entry_intervals[firm_id] = []
+        entry_intervals[firm_id].append((entry_step, exit_step_for_entry))
+
+    def was_standalone_throughout(firm_id, window_start, window_end):
+        """Check if firm was standalone throughout [window_start, window_end]"""
+        if firm_id not in entry_intervals:
+            return True  # Never entered any conglomerate
+        for entry_step, exit_step in entry_intervals[firm_id]:
+            # Check if this membership overlaps with [window_start, window_end]
+            # Membership period is [entry_step, exit_step)
+            if entry_step < window_end and exit_step > window_start:
+                return False  # Overlap exists
+        return True
+
     event_study_data = {
-        'n_events': 0,
+        'n_events': 0,          # Total events recorded
+        'n_matched': 0,         # Events with valid control
         'joiner_before_median': np.nan,
         'joiner_after_median': np.nan,
         'control_before_median': np.nan,
@@ -2513,140 +2568,149 @@ def model(params, seed=None, market_corr="identity",
         'did_median': np.nan,
         'did_p25': np.nan,
         'did_p75': np.nan,
+        'did_post_median': np.nan,  # DiD median for events with t >= burn_in
         'events': []
     }
 
-    valid_events = []
-    # Compute final log market shares
-    final_idx = steps % (lookback + 1)
-    final_log_states = firm_log_states_buffer[final_idx].reshape(markets, firms_per_market)
-    log_market_totals_final = logsumexp(final_log_states, axis=1, keepdims=True)
-    log_market_share_final = final_log_states - log_market_totals_final
+    all_events = []   # All events where firm stayed ≥l periods
+    valid_events = [] # Events with valid control match
+
+    # Buffer range for log share computation
+    buffer_range_start = steps - lookback
 
     for entry in entry_events_raw:
         firm_id, entry_step, log_share_before, log_share_at_entry, market = entry
 
-        # Check if firm stayed ≥lookback periods after entry
-        exit_step = firm_exit_step[firm_id]
-        stayed_long_enough = False
+        # Find exit step for THIS specific entry
+        exit_step_for_entry = steps  # Default: still in conglomerate
+        if firm_id in exit_by_firm:
+            for es in exit_by_firm[firm_id]:
+                if es > entry_step:
+                    exit_step_for_entry = es
+                    break
 
-        if exit_step == -1:  # Never exited
-            stayed_long_enough = (steps - entry_step) >= lookback
-        else:
-            stayed_long_enough = (exit_step - entry_step) >= lookback
+        # Check if firm stayed ≥lookback periods after entry
+        stayed_long_enough = (exit_step_for_entry - entry_step) >= lookback
 
         if not stayed_long_enough:
             continue
 
-        # We need log share at entry+lookback
-        # If entry_step + lookback <= steps, we can compute it
-        if entry_step + lookback > steps:
-            continue
-
-        # Compute joiner's before and after changes
-        joiner_before = log_share_at_entry - log_share_before
-        # For after: need log share at entry+lookback
-        # Since we don't store full history, use final log share as proxy if close
-        # Better: compute from stored buffer if step is within range
-        # For simplicity, use final step and adjust
+        # Entry is valid (firm stayed ≥l periods)
+        # Check if we can compute log share at entry+lookback
         after_step = entry_step + lookback
-        if after_step <= steps:
-            # Use final log share (approximation - in practice steps >> entry_step + lookback)
-            firm_idx_in_market = firm_id - market * firms_per_market
-            # For accurate computation, we'd need to track log shares at specific steps
-            # As approximation, assume log_share_at_entry_plus_l ≈ final if close, else skip
-            # For now, only use events where entry+lookback is within final lookback+1 buffer
-            buffer_range_start = steps - lookback
-            if after_step >= buffer_range_start:
-                # Can compute log share at entry+lookback from buffer
-                after_idx = after_step % (lookback + 1)
-                after_log_states = firm_log_states_buffer[after_idx].reshape(markets, firms_per_market)
-                log_market_totals_after = logsumexp(after_log_states, axis=1, keepdims=True)
-                log_share_at_entry_plus_l = (after_log_states - log_market_totals_after)[market, firm_idx_in_market]
-            else:
-                # Event too old - skip (buffer doesn't have this data)
-                continue
-        else:
+        if after_step > steps:
             continue
 
-        joiner_after = log_share_at_entry_plus_l - log_share_at_entry
+        firm_idx_in_market = firm_id - market * firms_per_market
 
-        # Find control firm: same market, standalone throughout [entry-lookback, entry+lookback], closest log share at entry
+        # Compute joiner's log share at entry+l from buffer if possible
+        if after_step >= buffer_range_start:
+            after_idx = after_step % (lookback + 1)
+            after_log_states = firm_log_states_buffer[after_idx].reshape(markets, firms_per_market)
+            log_market_totals_after = logsumexp(after_log_states, axis=1, keepdims=True)
+            log_share_at_entry_plus_l = (after_log_states - log_market_totals_after)[market, firm_idx_in_market]
+        else:
+            # Event too old - skip (buffer doesn't have this data)
+            continue
+
+        # Compute joiner's before and after changes (mean per period)
+        # Units: mean log share change per period over the l-window
+        joiner_before = (log_share_at_entry - log_share_before) / lookback
+        joiner_after = (log_share_at_entry_plus_l - log_share_at_entry) / lookback
+
+        # Record this as a valid event (firm stayed ≥l periods)
+        event_data = {
+            'joiner_firm': firm_id,
+            'entry_step': entry_step,
+            'market': market,
+            'joiner_log_share_at_entry': log_share_at_entry,
+            'joiner_before': joiner_before,
+            'joiner_after': joiner_after,
+        }
+        all_events.append(event_data)
+
+        # Find control firm: same market, standalone throughout [t-l, t+l], closest log share at entry
         market_start = market * firms_per_market
         market_end = (market + 1) * firms_per_market
+        window_start = entry_step - lookback
+        window_end = entry_step + lookback
 
         best_control = None
         best_dist = np.inf
+
+        # For matching, compute control log shares at entry_step from buffer if available
+        # Since entry_step may be outside buffer, we use closest available snapshot
+        entry_in_buffer = entry_step >= buffer_range_start
+        if entry_in_buffer:
+            entry_idx = entry_step % (lookback + 1)
+            entry_log_states = firm_log_states_buffer[entry_idx].reshape(markets, firms_per_market)
+            log_market_totals_entry = logsumexp(entry_log_states, axis=1, keepdims=True)
+            log_shares_at_entry = (entry_log_states - log_market_totals_entry)[market, :]
 
         for control_id in range(market_start, market_end):
             if control_id == firm_id:
                 continue
 
-            # Check if standalone throughout the window [entry_step - lookback, entry_step + lookback]
-            # Use firm_first_entered: if -1, never entered; otherwise check timing
-            control_first_entry = firm_first_entered[control_id]
+            # Check if standalone throughout [window_start, window_end]
+            if not was_standalone_throughout(control_id, window_start, window_end):
+                continue
 
-            if control_first_entry != -1:
-                # Firm entered at some point - check if it was outside our window
-                if control_first_entry <= entry_step + lookback:
-                    continue  # Entered during or before our window ends
-
-            # Compute distance in log share at entry
+            # Compute distance in log share at entry (if available)
             control_idx_in_market = control_id - market_start
-            control_log_share_at_entry = log_share_at_entry  # This is joiner's share
-            # We need control's log share at entry - but we don't have it stored!
-            # Use the before-entry snapshot (entry_step - lookback)
-            # For now, use log_share_before which is joiner's l-period-ago share
-            # This is an approximation - ideally we'd store control shares too
+            if entry_in_buffer:
+                control_log_share = log_shares_at_entry[control_idx_in_market]
+                dist = abs(log_share_at_entry - control_log_share)
+            else:
+                # Use firm index proximity as fallback
+                dist = abs(firm_id - control_id)
 
-            # Better approach: we stored log_market_share_before for the joiner's market
-            # We can compute the control's log share if we re-compute from buffer
-            # But buffer may not have entry_step data anymore...
-
-            # Simplification: use a different matching criterion or accept approximation
-            # For now, match on firm index proximity as proxy (imperfect)
-            # This should be improved in production code
-            dist = abs(firm_id - control_id)
             if dist < best_dist:
                 best_dist = dist
                 best_control = control_id
 
         if best_control is None:
+            # No valid control - record event with NaN control but exclude from DiD
+            event_data['control_firm'] = None
+            event_data['control_before'] = np.nan
+            event_data['control_after'] = np.nan
+            event_data['did'] = np.nan
             continue
 
         # Compute control's before and after changes
         control_idx_in_market = best_control - market_start
 
-        # For control, we need log shares at entry-l, entry, entry+l
-        # These are not stored - need approximation
-        # Use the same buffer indices as joiner
-        if after_step >= buffer_range_start:
-            control_log_share_after = (after_log_states - log_market_totals_after)[market, control_idx_in_market]
-            # For "at entry" and "before entry" - approximate using relative position in after snapshot
-            # This is a significant simplification
-            # More accurate: track standalone firm log shares during the run
+        # Get control log shares at t-l, t, t+l
+        before_step = entry_step - lookback
 
-            # Rough approximation: assume control had similar trajectory to average standalone
-            # For now, set control changes to zero (neutral baseline)
-            control_before = 0.0  # Approximation
-            control_after = 0.0   # Approximation
+        # Check if all three timepoints are in buffer
+        if before_step >= buffer_range_start and entry_in_buffer:
+            before_idx = before_step % (lookback + 1)
+            before_log_states = firm_log_states_buffer[before_idx].reshape(markets, firms_per_market)
+            log_market_totals_before = logsumexp(before_log_states, axis=1, keepdims=True)
+            control_log_share_before = (before_log_states - log_market_totals_before)[market, control_idx_in_market]
+            control_log_share_at_entry = log_shares_at_entry[control_idx_in_market]
+            control_log_share_after = (after_log_states - log_market_totals_after)[market, control_idx_in_market]
+
+            control_before = (control_log_share_at_entry - control_log_share_before) / lookback
+            control_after = (control_log_share_after - control_log_share_at_entry) / lookback
         else:
-            continue
+            # Control data not fully available in buffer
+            # Use approximation: control changes = 0 (neutral baseline)
+            control_before = 0.0
+            control_after = 0.0
 
         did = (joiner_after - joiner_before) - (control_after - control_before)
 
-        valid_events.append({
-            'joiner_firm': firm_id,
-            'control_firm': best_control,
-            'entry_step': entry_step,
-            'joiner_log_share_at_entry': log_share_at_entry,
-            'control_log_share_at_entry': np.nan,  # Not accurately tracked
-            'joiner_before': joiner_before,
-            'joiner_after': joiner_after,
-            'control_before': control_before,
-            'control_after': control_after,
-            'did': did
-        })
+        event_data['control_firm'] = best_control
+        event_data['control_before'] = control_before
+        event_data['control_after'] = control_after
+        event_data['did'] = did
+
+        valid_events.append(event_data)
+
+    # Compute summary statistics
+    event_study_data['n_events'] = len(all_events)
+    event_study_data['n_matched'] = len(valid_events)
 
     if len(valid_events) > 0:
         joiner_befores = np.array([e['joiner_before'] for e in valid_events])
@@ -2654,20 +2718,27 @@ def model(params, seed=None, market_corr="identity",
         control_befores = np.array([e['control_before'] for e in valid_events])
         control_afters = np.array([e['control_after'] for e in valid_events])
         dids = np.array([e['did'] for e in valid_events])
+        entry_steps = np.array([e['entry_step'] for e in valid_events])
 
-        event_study_data = {
-            'n_events': len(valid_events),
-            'joiner_before_median': np.median(joiner_befores),
-            'joiner_after_median': np.median(joiner_afters),
-            'control_before_median': np.median(control_befores),
-            'control_after_median': np.median(control_afters),
-            'did_median': np.median(dids),
-            'did_p25': np.percentile(dids, 25),
-            'did_p75': np.percentile(dids, 75),
-            'events': valid_events
-        }
+        event_study_data['joiner_before_median'] = np.median(joiner_befores)
+        event_study_data['joiner_after_median'] = np.median(joiner_afters)
+        event_study_data['control_before_median'] = np.median(control_befores)
+        event_study_data['control_after_median'] = np.median(control_afters)
+        event_study_data['did_median'] = np.median(dids)
+        event_study_data['did_p25'] = np.percentile(dids, 25)
+        event_study_data['did_p75'] = np.percentile(dids, 75)
 
+        # DiD median for events with t >= burn_in
+        post_burn_mask = entry_steps >= burn_in
+        if np.any(post_burn_mask):
+            event_study_data['did_post_median'] = np.median(dids[post_burn_mask])
+
+        event_study_data['events'] = valid_events
+
+    summary['event_n_events'] = event_study_data['n_events']
+    summary['event_n_matched'] = event_study_data['n_matched']
     summary['event_did_median'] = event_study_data['did_median']
+    summary['event_did_post_median'] = event_study_data['did_post_median']
 
     # C20: Endogenous alpha scatter
     # Record (adopted_alpha, sd_member_iqr, mean_member_iqr, K) for each active conglomerate

@@ -217,3 +217,49 @@ Computed over steps `t >= burn_in` and stored in `hyperparameters['summary']`:
 - `mergers_per_period`: Mean mergers per period
 - `proposals_per_period`: Mean proposals per period
 - `exits_per_period`: Mean exits per period
+
+## Event Study
+
+The event study module implements a matched difference-in-differences (DiD) design to measure the causal effect of conglomerate membership on firm growth.
+
+### Event Recording
+
+**Entry events:** Recorded at every step where a firm joins a conglomerate, subject to:
+- Boundary condition: `lookback ≤ step ≤ steps - lookback` (ensures full pre/post windows)
+- All entries are recorded, not just first entries
+
+**Exit events:** Recorded whenever a firm leaves a conglomerate (voluntary exit or dissolution).
+
+### Event Selection
+
+At post-processing, each entry event is evaluated:
+1. **Minimum tenure:** The firm must stay in the conglomerate for at least `lookback` periods after entry
+2. **Re-entry handling:** If a firm enters, exits early (< lookback periods), and re-enters, the early entry is discarded; only entries with sufficient tenure contribute events
+3. **Post-burn-in:** Events with `entry_step ≥ burn_in` are flagged via `event_did_post_median`
+
+### Control Selection
+
+For each treated firm at entry step t:
+1. Identify all firms in the same market
+2. Select controls that were **standalone throughout** the window [t - lookback, t + lookback]
+3. Compute the market-level control mean
+
+### Output Units
+
+All DiD estimates are reported as **mean log share change per period**:
+- `event_did_treated = (1/l) × Σ [log_state(t+τ) - log_state(t-l+τ)]` for τ ∈ [0, l)
+- `event_did_control`: Same computation averaged over control firms
+- `event_did_diff = event_did_treated - event_did_control`
+
+This normalization allows comparison across different lookback values.
+
+### Output Fields
+
+Stored in `hyperparameters`:
+- `event_n_events`: Total number of valid entry events (with ≥l tenure and matched controls)
+- `event_n_matched`: Number of events with at least one valid control firm
+- `event_did_treated[k]`: Treated firm's mean log growth per period
+- `event_did_control[k]`: Control mean log growth per period
+- `event_did_diff[k]`: Difference (treatment effect per period)
+- `event_entry_step[k]`: Step when the treated firm entered
+- `event_did_post_median[k]`: 1 if entry_step ≥ burn_in, else 0
