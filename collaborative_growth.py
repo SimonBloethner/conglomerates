@@ -1781,6 +1781,12 @@ def model(params, seed=None, market_corr="identity",
     # Each exit: (firm_id, exit_step)
     exit_events_raw = []
 
+    # C22b: Alpha scatter - track (alpha, K) per conglomerate at key moments
+    # Dict: step -> {cong_id: (alpha, K)}
+    # Records at: first step per conglomerate (after creation) AND every metric_every
+    alpha_scatter = {}
+    cong_recorded_first_step = np.zeros(MAX_CONGLOMERATES, dtype=bool)  # Track which congs have been recorded
+
     # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
     # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
     # Max conglomerates = total_firms/2 (each conglomerate has ≥2 firms, max 1 firm per market)
@@ -2052,6 +2058,17 @@ def model(params, seed=None, market_corr="identity",
                     entry_events_raw.append((
                         firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market
                     ))
+
+            # C22b: Record alpha scatter for newly created conglomerates
+            if alpha_endogenous and num_mergers > 0:
+                for cid in range(next_cong_id):
+                    if cong_active[cid] and cong_created_step[cid] == step and not cong_recorded_first_step[cid]:
+                        K = cong_size[cid]
+                        if K >= 2:
+                            if step not in alpha_scatter:
+                                alpha_scatter[step] = {}
+                            alpha_scatter[step][cid] = (cong_alpha[cid], int(K))
+                            cong_recorded_first_step[cid] = True
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
@@ -2385,6 +2402,16 @@ def model(params, seed=None, market_corr="identity",
                     for cid in active_cong_ids:
                         if cong_active[cid]:
                             alpha_history[cid, metric_idx] = cong_alpha[cid]
+
+                    # C22b: Record alpha scatter at metric checkpoints
+                    if step not in alpha_scatter:
+                        alpha_scatter[step] = {}
+                    for cid in active_cong_ids:
+                        if cong_active[cid]:
+                            K = cong_size[cid]
+                            if K >= 2:
+                                alpha_scatter[step][cid] = (cong_alpha[cid], int(K))
+                                cong_recorded_first_step[cid] = True  # Mark as recorded
 
                 # C17: Member-standalone growth gap
                 # Growth = mean log share change over the metric block
@@ -2740,22 +2767,9 @@ def model(params, seed=None, market_corr="identity",
     summary['event_did_median'] = event_study_data['did_median']
     summary['event_did_post_median'] = event_study_data['did_post_median']
 
-    # C20: Endogenous alpha scatter
-    # Record (adopted_alpha, sd_member_iqr, mean_member_iqr, K) for each active conglomerate
-    alpha_scatter = []
-    active_cong_ids_final = np.where(cong_active)[0]
-    market_iqr = growth_vars[:, 1]  # IQR per market
-
-    for cid in active_cong_ids_final:
-        K = cong_size[cid]
-        if K >= 2:
-            adopted_alpha = cong_alpha[cid]
-            member_firms = cong_firms[cid, :K]
-            member_markets = firm_home_market[member_firms]
-            member_iqrs = market_iqr[member_markets]
-            sd_iqr = np.std(member_iqrs) if len(member_iqrs) > 1 else 0.0
-            mean_iqr = np.mean(member_iqrs)
-            alpha_scatter.append((adopted_alpha, sd_iqr, mean_iqr, K))
+    # C22b: alpha_scatter is now a dict keyed by step, populated during simulation
+    # Format: alpha_scatter[step] = {cong_id: (alpha, K)}
+    # Only populated when alpha_endogenous=True
 
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,

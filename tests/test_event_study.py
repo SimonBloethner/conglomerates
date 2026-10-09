@@ -350,10 +350,14 @@ def test_endogenous_alpha_scatter():
     """
     Test: Endogenous alpha scatter data is correctly recorded.
 
-    Records (adopted_alpha, sd_member_iqr, mean_member_iqr, K) for each
-    active conglomerate at end of run.
+    C22b format: alpha_scatter is a dict keyed by sample step,
+    containing {cong_id: (alpha, K)} for each active conglomerate.
 
-    Test catches: scatter data not being collected.
+    Records at:
+    - First step per conglomerate (after creation)
+    - Every metric_every periods
+
+    Test catches: scatter data not being collected or wrong format.
     """
     np.random.seed(42)
     cg.seed_numba(42)
@@ -362,6 +366,7 @@ def test_endogenous_alpha_scatter():
     T = 600
     alpha = 0.3
     lookback = 50
+    metric_every = 100
 
     params = [
         M, N, T, alpha, M * N,
@@ -376,7 +381,8 @@ def test_endogenous_alpha_scatter():
         sigma_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain',
-        alpha_endogenous=True
+        alpha_endogenous=True,
+        metric_every=metric_every
     )
 
     hyper = result[-1]
@@ -386,27 +392,39 @@ def test_endogenous_alpha_scatter():
 
     scatter = hyper['alpha_scatter']
 
-    # Should be a list of tuples (adopted_alpha, sd_member_iqr, mean_member_iqr, K)
-    assert isinstance(scatter, list), "alpha_scatter should be a list"
+    # C22b: Should be a dict keyed by step
+    assert isinstance(scatter, dict), f"alpha_scatter should be a dict, got {type(scatter)}"
 
     if len(scatter) > 0:
-        # Check structure of first entry
-        first = scatter[0]
-        assert len(first) == 4, f"Expected 4 elements per scatter entry, got {len(first)}"
-        adopted_alpha, sd_iqr, mean_iqr, K = first
-
-        assert 0.0 <= adopted_alpha <= 1.0, f"adopted_alpha {adopted_alpha} out of range"
-        assert sd_iqr >= 0.0, f"sd_member_iqr {sd_iqr} should be non-negative"
-        assert mean_iqr > 0.0, f"mean_member_iqr {mean_iqr} should be positive"
-        assert K >= 2, f"K {K} should be >= 2 for conglomerates"
-
+        # Check structure
+        steps_recorded = sorted(scatter.keys())
         print(f"Alpha scatter data:")
-        print(f"  {len(scatter)} conglomerates recorded")
-        print(f"  First entry: alpha={adopted_alpha:.2f}, sd_iqr={sd_iqr:.4f}, mean_iqr={mean_iqr:.4f}, K={K}")
-    else:
-        print("No conglomerates at end of run (test passes trivially)")
+        print(f"  {len(steps_recorded)} steps recorded: {steps_recorded[:5]}...")
 
-    print("PASS: Endogenous alpha scatter data structure present")
+        # Check that at least some steps are metric checkpoints
+        metric_steps = [s for s in steps_recorded if (s + 1) % metric_every == 0 or s == T - 1]
+        print(f"  {len(metric_steps)} are metric checkpoints")
+
+        # Check structure of first non-empty step
+        for step in steps_recorded:
+            cong_data = scatter[step]
+            if len(cong_data) > 0:
+                assert isinstance(cong_data, dict), f"scatter[{step}] should be dict"
+                for cid, (alpha_val, K) in cong_data.items():
+                    assert 0.0 <= alpha_val <= 1.0, f"alpha {alpha_val} out of range"
+                    assert K >= 2, f"K {K} should be >= 2"
+                    print(f"  Step {step}, cong {cid}: alpha={alpha_val:.2f}, K={K}")
+                break
+    else:
+        print("No conglomerates recorded (alpha_endogenous may not have triggered)")
+
+    # Test round-trip via pickle
+    import pickle
+    pickled = pickle.dumps(scatter)
+    unpickled = pickle.loads(pickled)
+    assert unpickled == scatter, "alpha_scatter should round-trip via pickle"
+
+    print("PASS: Endogenous alpha scatter data structure present and round-trips")
 
 
 def test_event_study_with_replay():
