@@ -3,8 +3,8 @@
 ## Overview
 
 - **Scenarios**: 1370
-- **Total runtime**: 419367s (116.49 CPU-hours)
-- **Mean ms/step**: 27.83 ± 29.87
+- **Total runtime**: 420043s (116.68 CPU-hours)
+- **Mean ms/step**: 27.87 ± 29.86
 - **Grid**: 50 × 50 (M × N)
 
 ### Block counts
@@ -191,16 +191,16 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 | Family | Assort. ratio [25,75] |
 |--------|----------------------|
-| laplace | — |
-| normal | — |
-| t3 | — |
+| laplace | 0.488 [0.478, 0.490] |
+| normal | 0.523 [0.523, 0.531] |
+| t3 | 0.445 [0.434, 0.455] |
 
 ![Assortativity](pilot_c_assortativity.png)
 
 ## Runtime Statistics
 
-- **Total runtime**: 419367s (116.49 CPU-hours)
-- **Mean ms/step**: 27.83 ± 29.87
+- **Total runtime**: 420043s (116.68 CPU-hours)
+- **Mean ms/step**: 27.87 ± 29.86
 
 ## Figures
 
