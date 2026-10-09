@@ -410,7 +410,9 @@ def test_endogenous_alpha_scatter():
             cong_data = scatter[step]
             if len(cong_data) > 0:
                 assert isinstance(cong_data, dict), f"scatter[{step}] should be dict"
-                for cid, (alpha_val, K) in cong_data.items():
+                for cid, data in cong_data.items():
+                    alpha_val = data[0]
+                    K = data[1] if len(data) < 3 else data[1]
                     assert 0.0 <= alpha_val <= 1.0, f"alpha {alpha_val} out of range"
                     assert K >= 2, f"K {K} should be >= 2"
                     print(f"  Step {step}, cong {cid}: alpha={alpha_val:.2f}, K={K}")

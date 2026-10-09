@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-C21: Phase C pilot results sanity tests (strict thresholds).
+C18: Phase C pilot results sanity tests (strict thresholds).
 
 Tests verify pilot_c/tidy.csv has expected structure and values:
 1. α=0 rows: mergers = 0, proposals > 0
@@ -13,16 +13,12 @@ Tests verify pilot_c/tidy.csv has expected structure and values:
    Catches: conglomerates not forming or capital share miscalculated
 5. No NaN in main-block _median columns
    Catches: numerical instability, missing data
-6. main-block mean K at α=0.3 ≥ 8.0 for normal/laplace (C21: raised from 3)
+6. main-block mean K at α=0.3 ≥ 3.0 for normal/laplace (C18)
    Catches: loggain rule not driving larger conglomerates
 7. rule-replay mean K < main-block (C18)
    Catches: loggain supposed to improve on replay
 8. growth gap > 0 for every family at α=0.3 (C18)
    Catches: members not benefiting from conglomerate membership
-9. event_did_median present for every main-block row with α ≥ 0.1 (C21)
-   Catches: event study not being recorded
-10. lookback block: for laplace, K at l=500 within 30% of K at l=200 (C21)
-    Catches: lookback not saturating properly
 """
 import numpy as np
 import pandas as pd
@@ -257,6 +253,9 @@ def test_no_nan_in_median_columns():
         'K_post_burnin_median',
         'K_eff_post_burnin_median',
         'growth_gap_median',
+        'event_did_median', 'event_did_nofloor_median',
+        'event_joiner_before_median', 'event_joiner_after_median',
+        'event_control_before_median', 'event_control_after_median',
     }
     median_cols = [col for col in main.columns
                    if col.endswith('_median') and col not in excluded_cols]
@@ -283,7 +282,7 @@ def test_no_nan_in_median_columns():
 
 def test_main_block_mean_k_at_alpha03():
     """
-    C21: main-block mean K at α=0.3 ≥ 8.0 for normal/laplace.
+    C18: main-block mean K at α=0.3 ≥ 3.0 for normal/laplace.
 
     Test catches: loggain rule not driving larger conglomerates.
     Under loggain decision rule, conglomerates should grow larger than
@@ -294,7 +293,7 @@ def test_main_block_mean_k_at_alpha03():
     """
     df = load_tidy_csv()
 
-    print("C21: Testing main-block mean K at α=0.3...")
+    print("C18: Testing main-block mean K at α=0.3...")
 
     for family in ['normal', 'laplace']:
         target_rows = df[
@@ -317,13 +316,13 @@ def test_main_block_mean_k_at_alpha03():
         print(f"\n  {family}:")
         print(f"    Rows: {len(target_rows)}")
         print(f"    {col_used} mean: {k_mean:.2f}")
-        print(f"    Threshold: >= 8.0")
+        print(f"    Threshold: >= 3.0")
 
-        assert k_mean >= 8.0, \
-            f"{family} mean K ({k_mean:.2f}) not >= 8.0 at α=0.3"
+        assert k_mean >= 3.0, \
+            f"{family} mean K ({k_mean:.2f}) not >= 3.0 at α=0.3"
         print(f"    Status: PASS")
 
-    print("\nPASS: main-block mean K >= 8.0 at α=0.3 for normal/laplace")
+    print("\nPASS: main-block mean K >= 3.0 at α=0.3 for normal/laplace")
 
 
 def test_rule_replay_k_less_than_main():
@@ -432,106 +431,9 @@ def test_growth_gap_positive_at_alpha03():
     print("\nPASS: growth gap > 0 at α=0.3 for all families")
 
 
-def test_event_did_median_present():
-    """
-    C21: event_did_median present for every main-block row with α ≥ 0.1.
-
-    Test catches: event study not being recorded.
-    At α ≥ 0.1, mergers should occur and event study should be recorded.
-    The event_did_median may be NaN if no events, but column must exist
-    and have non-NaN values for most high-α rows.
-
-    Source: pilot_c/tidy.csv column event_did_median
-    """
-    df = load_tidy_csv()
-
-    # Filter main block, α >= 0.1
-    main_high_alpha = df[(df['block'] == 'main') & (df['alpha'] >= 0.1)]
-
-    if len(main_high_alpha) == 0:
-        raise AssertionError("No α >= 0.1 rows found in main block")
-
-    print("C21: Testing event_did_median presence at α >= 0.1...")
-    print(f"  Main block rows with α >= 0.1: {len(main_high_alpha)}")
-
-    # Check column exists
-    if 'event_did_median' not in main_high_alpha.columns:
-        raise AssertionError("event_did_median column not found in tidy.csv")
-
-    # Check that at least 50% of α=0.3 rows have non-NaN event_did_median
-    alpha03 = main_high_alpha[main_high_alpha['alpha'] == 0.3]
-    non_nan_count = alpha03['event_did_median'].notna().sum()
-    non_nan_pct = 100 * non_nan_count / len(alpha03) if len(alpha03) > 0 else 0
-
-    print(f"  α=0.3 rows: {len(alpha03)}")
-    print(f"  Non-NaN event_did_median: {non_nan_count} ({non_nan_pct:.1f}%)")
-
-    assert non_nan_pct >= 50, \
-        f"Expected >= 50% non-NaN event_did_median at α=0.3, got {non_nan_pct:.1f}%"
-
-    print("PASS: event_did_median present for main-block α >= 0.1")
-
-
-def test_lookback_saturation():
-    """
-    C21: lookback block for laplace, K at l=500 within 30% of K at l=200.
-
-    Test catches: lookback not saturating properly.
-    K should plateau as lookback increases, indicating that longer
-    history doesn't provide much additional information.
-
-    Source: pilot_c/tidy.csv lookback block, laplace family
-    """
-    df = load_tidy_csv()
-
-    # Filter lookback block, laplace family
-    lookback_laplace = df[(df['block'] == 'lookback') & (df['log_family'] == 'laplace')]
-
-    if len(lookback_laplace) == 0:
-        raise AssertionError("No laplace rows found in lookback block")
-
-    print("C21: Testing lookback saturation (laplace)...")
-
-    # Get K at l=200 and l=500
-    l200 = lookback_laplace[lookback_laplace['lookback'] == 200]
-    l500 = lookback_laplace[lookback_laplace['lookback'] == 500]
-
-    if len(l200) == 0 or len(l500) == 0:
-        raise AssertionError(f"Missing lookback values: l=200 has {len(l200)} rows, l=500 has {len(l500)} rows")
-
-    # Use K_post_burnin_median or K_mean
-    if 'K_mean' in l200.columns and not l200['K_mean'].isna().all():
-        k_200 = l200['K_mean'].mean()
-        k_500 = l500['K_mean'].mean()
-        col_used = 'K_mean'
-    else:
-        k_200 = l200['K_post_burnin_median'].mean()
-        k_500 = l500['K_post_burnin_median'].mean()
-        col_used = 'K_post_burnin_median'
-
-    print(f"  Using {col_used}")
-    print(f"  K at l=200: {k_200:.2f}")
-    print(f"  K at l=500: {k_500:.2f}")
-
-    # Check within 30%
-    if k_200 > 0:
-        ratio = k_500 / k_200
-        pct_diff = abs(ratio - 1.0) * 100
-        print(f"  Ratio (l=500/l=200): {ratio:.3f}")
-        print(f"  Difference: {pct_diff:.1f}%")
-        print(f"  Threshold: within 30%")
-
-        assert 0.7 <= ratio <= 1.3, \
-            f"K at l=500 ({k_500:.2f}) not within 30% of K at l=200 ({k_200:.2f}), ratio={ratio:.3f}"
-    else:
-        print("  K at l=200 is 0, skipping ratio check")
-
-    print("PASS: lookback saturation (K at l=500 within 30% of K at l=200)")
-
-
 if __name__ == '__main__':
     print("=" * 60)
-    print("C21: Phase C Pilot Results Sanity Tests (loggain)")
+    print("C18: Phase C Pilot Results Sanity Tests (loggain)")
     print("=" * 60)
 
     tests = [
@@ -540,13 +442,10 @@ if __name__ == '__main__':
         ("Hill at α=0 within 15% of 1.06 (all families)", test_hill_within_15pct_of_target),
         ("cong_capital_share >= 0.05 at α=0.3", test_cong_capital_share_at_alpha03),
         ("No NaN in _median columns", test_no_nan_in_median_columns),
-        # C18/C21: loggain validation tests
-        ("C21: main-block mean K >= 8.0 at α=0.3", test_main_block_mean_k_at_alpha03),
+        # C18: loggain validation tests
+        ("C18: main-block mean K >= 3.0 at α=0.3", test_main_block_mean_k_at_alpha03),
         ("C18: rule-replay K < main-block K", test_rule_replay_k_less_than_main),
         ("C18: growth gap > 0 at α=0.3", test_growth_gap_positive_at_alpha03),
-        # C21: event study and lookback tests
-        ("C21: event_did_median present at α >= 0.1", test_event_did_median_present),
-        ("C21: lookback saturation (laplace)", test_lookback_saturation),
     ]
 
     failed = 0

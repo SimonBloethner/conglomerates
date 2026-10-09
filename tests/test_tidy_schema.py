@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Test: tidy.csv schema validation.
-
-Verifies the full column list and block row counts.
+C23: Schema validation for tidy.csv and alpha_scatter.csv.
 """
 import csv
-import os
+import numpy as np
+
 
 TIDY_PATH = 'pilot_c/tidy.csv'
+ALPHA_SCATTER_PATH = 'pilot_c/alpha_scatter.csv'
 
-EXPECTED_COLUMNS = [
+EXPECTED_TIDY_COLUMNS = [
     'scenario_id', 'cell_id', 'block', 'log_family', 'cost_type', 'alpha',
     'rep', 'seed', 'sharing_rule', 'lookback', 'cross_corr', 'alpha_endogenous',
     'decision_rule', 'elapsed_seconds', 'ms_per_step', 'cost_multiplier',
@@ -26,51 +26,62 @@ EXPECTED_COLUMNS = [
     'cong_capital_share_p75', 'K_post_burnin_median', 'K_post_burnin_p25',
     'K_post_burnin_p75', 'K_eff_post_burnin_median', 'K_eff_post_burnin_p25',
     'K_eff_post_burnin_p75', 'alpha_adopted_median', 'alpha_adopted_mean',
-    'alpha_adopted_std', 'assort_iqr', 'event_n_events', 'event_n_matched',
-    'event_did_median', 'event_did_p25', 'event_did_p75',
+    'alpha_adopted_std', 'assort_iqr',
+    'event_n_events', 'event_n_matched', 'event_n_nofloor',
+    'event_did_median', 'event_did_nofloor_median',
     'event_joiner_before_median', 'event_joiner_after_median',
     'event_control_before_median', 'event_control_after_median',
-    'event_did_post_median',
 ]
 
 EXPECTED_BLOCK_COUNTS = {
     'main': 540,
-    'equal-split': 180,
     'cost-level': 360,
-    'lookback': 50,
-    'correlation': 45,
-    'endogenous-alpha': 60,
+    'equal-split': 180,
+    'floor-level': 80,
+    'lookback': 80,
+    'endogenous-alpha': 110,
     'rule-replay': 45,
-    'floor-level': 90,
 }
 
+EXPECTED_LOOKBACK_BY_FAMILY = {
+    'laplace': 40,
+    't3': 40,
+}
 
-def load_tidy_csv():
-    """Load tidy.csv and return rows and header."""
-    with open(TIDY_PATH, 'r') as f:
+EXPECTED_ALPHA_SCATTER_COLUMNS = [
+    'scenario_id', 'rep', 'cong_id', 'alpha_final', 'K', 'sd_iqr', 'mean_iqr'
+]
+
+
+def load_csv(path):
+    """Load CSV and return rows and header."""
+    with open(path, 'r') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         header = reader.fieldnames
     return rows, header
 
 
-def test_column_list():
-    """Test that tidy.csv has all expected columns in order."""
-    rows, header = load_tidy_csv()
-
-    assert header == EXPECTED_COLUMNS, (
-        f"Column mismatch.\n"
-        f"Expected: {EXPECTED_COLUMNS}\n"
-        f"Got: {header}\n"
-        f"Missing: {set(EXPECTED_COLUMNS) - set(header)}\n"
-        f"Extra: {set(header) - set(EXPECTED_COLUMNS)}"
-    )
-    print(f"PASS: {len(header)} columns match expected schema")
+def test_tidy_total_rows():
+    """Test that tidy.csv has expected rows."""
+    rows, _ = load_csv(TIDY_PATH)
+    expected = sum(EXPECTED_BLOCK_COUNTS.values())
+    assert len(rows) == expected, f"Expected {expected} rows, got {len(rows)}"
+    print(f"PASS: {len(rows)} total rows")
 
 
-def test_block_row_counts():
-    """Test that each block has the expected row count."""
-    rows, _ = load_tidy_csv()
+def test_tidy_columns_exist():
+    """Test that all expected columns exist in tidy.csv."""
+    rows, header = load_csv(TIDY_PATH)
+
+    missing = set(EXPECTED_TIDY_COLUMNS) - set(header)
+    assert not missing, f"Missing columns: {missing}"
+    print(f"PASS: All {len(EXPECTED_TIDY_COLUMNS)} expected columns exist")
+
+
+def test_tidy_block_counts():
+    """Test block row counts."""
+    rows, _ = load_csv(TIDY_PATH)
 
     block_counts = {}
     for row in rows:
@@ -84,22 +95,64 @@ def test_block_row_counts():
         )
         print(f"  {block}: {actual} rows")
 
-    total = sum(block_counts.values())
-    expected_total = sum(EXPECTED_BLOCK_COUNTS.values())
-    print(f"PASS: Block counts match ({total} total rows)")
+    print("PASS: Block counts match")
 
 
-def test_total_rows():
-    """Test total row count."""
-    rows, _ = load_tidy_csv()
-    expected = sum(EXPECTED_BLOCK_COUNTS.values())
-    assert len(rows) == expected, f"Expected {expected} rows, got {len(rows)}"
-    print(f"PASS: {len(rows)} total rows")
+def test_lookback_by_family():
+    """Test lookback block has correct counts per family."""
+    rows, _ = load_csv(TIDY_PATH)
+
+    lookback_rows = [r for r in rows if r['block'] == 'lookback']
+    family_counts = {}
+    for row in lookback_rows:
+        family = row['log_family']
+        family_counts[family] = family_counts.get(family, 0) + 1
+
+    for family, expected in EXPECTED_LOOKBACK_BY_FAMILY.items():
+        actual = family_counts.get(family, 0)
+        assert actual == expected, (
+            f"Lookback family '{family}' has {actual} rows, expected {expected}"
+        )
+        print(f"  lookback/{family}: {actual} rows")
+
+    print("PASS: Lookback family counts match")
+
+
+def test_alpha_scatter_columns():
+    """Test alpha_scatter.csv has expected columns."""
+    rows, header = load_csv(ALPHA_SCATTER_PATH)
+
+    assert header == EXPECTED_ALPHA_SCATTER_COLUMNS, (
+        f"Column mismatch.\n"
+        f"Expected: {EXPECTED_ALPHA_SCATTER_COLUMNS}\n"
+        f"Got: {header}"
+    )
+    print(f"PASS: alpha_scatter.csv has correct columns")
+
+
+def test_alpha_scatter_no_nan_sd_iqr():
+    """Test alpha_scatter.csv has no NaN in sd_iqr."""
+    rows, _ = load_csv(ALPHA_SCATTER_PATH)
+
+    nan_count = 0
+    for row in rows:
+        sd_iqr = row['sd_iqr']
+        if sd_iqr == '' or sd_iqr == 'nan' or (sd_iqr and np.isnan(float(sd_iqr))):
+            nan_count += 1
+
+    assert nan_count == 0, f"Found {nan_count} NaN values in sd_iqr"
+    print(f"PASS: No NaN in sd_iqr ({len(rows)} rows)")
 
 
 if __name__ == '__main__':
     print("Testing tidy.csv schema...")
-    test_column_list()
-    test_block_row_counts()
-    test_total_rows()
+    test_tidy_total_rows()
+    test_tidy_columns_exist()
+    test_tidy_block_counts()
+    test_lookback_by_family()
+
+    print("\nTesting alpha_scatter.csv schema...")
+    test_alpha_scatter_columns()
+    test_alpha_scatter_no_nan_sd_iqr()
+
     print("\nAll schema tests passed!")

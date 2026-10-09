@@ -1740,6 +1740,7 @@ def model(params, seed=None, market_corr="identity",
     # Floor tracking arrays (only used when floor_c > 0)
     floor_hits = np.zeros(total_firms, dtype=np.int32)  # Per-firm count
     floor_hits_by_status = np.zeros((steps, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
+    floor_hits_by_firm_step = np.zeros((total_firms, steps), dtype=np.bool_)  # C23: Per-firm per-step floor hits
 
     # Per-market renormalization correction tracking (only used when market_size_fixed)
     renorm_corrections = np.zeros(steps, dtype=np.float64)  # Mean |log(Σs/N)| per step
@@ -2173,6 +2174,7 @@ def model(params, seed=None, market_corr="identity",
             # After all markets/iterations converge, count hits once per firm per period
             hit_firms = np.where(period_hit_mask)[0]
             floor_hits[hit_firms] += 1
+            floor_hits_by_firm_step[hit_firms, step] = True  # C23: Track per-firm per-step
             for firm_id in hit_firms:
                 status = 0 if firm_conglom[firm_id] == -1 else 1
                 floor_hits_by_status[step, status] += 1
@@ -2657,6 +2659,10 @@ def model(params, seed=None, market_corr="identity",
         joiner_after = (log_share_at_entry_plus_l - log_share_at_entry) / lookback
 
         # Record this as a valid event (firm stayed ≥l periods)
+        # C23: Check if joiner hit floor in before-window [entry_step - lookback, entry_step)
+        before_start = max(0, entry_step - lookback)
+        joiner_floor_before = np.any(floor_hits_by_firm_step[firm_id, before_start:entry_step])
+        
         event_data = {
             'joiner_firm': firm_id,
             'entry_step': entry_step,
@@ -2664,6 +2670,7 @@ def model(params, seed=None, market_corr="identity",
             'joiner_log_share_at_entry': log_share_at_entry,
             'joiner_before': joiner_before,
             'joiner_after': joiner_after,
+            'joiner_floor_before': joiner_floor_before,  # C23
         }
         all_events.append(event_data)
 
@@ -2702,7 +2709,8 @@ def model(params, seed=None, market_corr="identity",
                 # Use firm index proximity as fallback
                 dist = abs(firm_id - control_id)
 
-            if dist < best_dist:
+            # C23: Match tolerance - control valid only if |log_share_diff| <= 0.25
+            if dist < best_dist and dist <= 0.25:
                 best_dist = dist
                 best_control = control_id
 
@@ -2772,10 +2780,20 @@ def model(params, seed=None, market_corr="identity",
             event_study_data['did_post_median'] = np.median(dids[post_burn_mask])
 
         event_study_data['events'] = valid_events
+        
+        # C23: Compute DiD for events where joiner did NOT hit floor in before-window
+        nofloor_mask = np.array([not e.get('joiner_floor_before', True) for e in valid_events])
+        event_study_data['n_nofloor'] = int(np.sum(nofloor_mask))
+        if np.any(nofloor_mask):
+            event_study_data['did_nofloor_median'] = np.median(dids[nofloor_mask])
+        else:
+            event_study_data['did_nofloor_median'] = np.nan
 
     summary['event_n_events'] = event_study_data['n_events']
     summary['event_n_matched'] = event_study_data['n_matched']
+    summary['event_n_nofloor'] = event_study_data.get('n_nofloor', 0)
     summary['event_did_median'] = event_study_data['did_median']
+    summary['event_did_nofloor_median'] = event_study_data.get('did_nofloor_median', np.nan)
     summary['event_did_post_median'] = event_study_data['did_post_median']
     summary['event_did_p25'] = event_study_data.get('did_p25', np.nan)
     summary['event_did_p75'] = event_study_data.get('did_p75', np.nan)
@@ -2820,6 +2838,24 @@ def model(params, seed=None, market_corr="identity",
 
     summary['assort_iqr'] = assort_iqr
 
+    # C23: Capture final state of each active conglomerate for alpha_scatter.csv
+    alpha_scatter_final = []
+    for cid in range(MAX_CONGLOMERATES):
+        if cong_active[cid]:
+            K = cong_size[cid]
+            if K >= 2:
+                member_firms = cong_firms[cid, :K]
+                member_iqrs = growth_vars[firm_home_market[member_firms], 1]
+                sd_iqr = float(np.std(member_iqrs, ddof=1)) if K > 1 else 0.0
+                mean_iqr = float(np.mean(member_iqrs))
+                alpha_scatter_final.append({
+                    'cong_id': int(cid),
+                    'alpha_final': float(cong_alpha[cid]),
+                    'K': int(K),
+                    'sd_iqr': sd_iqr,
+                    'mean_iqr': mean_iqr,
+                })
+
     # Add hyperparameter metadata for result organization
     hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
                        'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
@@ -2860,6 +2896,8 @@ def model(params, seed=None, market_corr="identity",
                        'alpha_scatter': alpha_scatter,
                        # C22c: Assortativity by IQR
                        'assort_iqr': assort_iqr,
+                       # C23: Final conglomerate state for alpha_scatter.csv
+                       'alpha_scatter_final': alpha_scatter_final,
                        }
 
     # Model results: 13 elements

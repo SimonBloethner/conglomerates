@@ -85,6 +85,7 @@ def run_scenario(scenario):
         'final_firm_conglom': hyperparams.get('final_firm_conglom'),
         # C22b: alpha scatter for endogenous alpha
         'alpha_scatter': hyperparams.get('alpha_scatter'),
+        'alpha_scatter_final': hyperparams.get('alpha_scatter_final'),
     }
 
     return output
