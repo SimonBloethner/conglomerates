@@ -874,9 +874,6 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
         pairs = [('did_itt_median', 'did_owner_median'), ('did_nofloor_median', 'did_owner_nofloor_median'),
                  ('did_small', 'did_owner_small'), ('did_mid', 'did_owner_mid'), ('did_large', 'did_owner_large')]
         cols = ['n_events', 'n_matched', 'share_floor_before'] + [c for p in pairs for c in p if c in es.columns]
-        tab = es.groupby(['family', 'alpha'])[cols].mean().reset_index()
-        tab = tab.sort_values(['family', 'alpha'],
-                              key=lambda c: c.map({'normal': 0, 'laplace': 1, 't3': 2}) if c.name == 'family' else c)
         lines.append("## Event study (ITT and owner path)")
         lines.append("")
         lines.append("Conglomerate entry, main block power_law, 27 traced scenarios; mean over reps 0-2 of per-scenario medians. "
@@ -884,12 +881,30 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
                      "floor jumps (what owners earned, excluding recapitalisation).")
         lines.append("Source: `pilot_c/event_study_summary.csv`")
         lines.append("")
-        lines.append("| " + " | ".join(['Family', 'α'] + cols) + " |")
-        lines.append("|" + "---|" * (len(cols) + 2))
-        for _, row in tab.iterrows():
-            vals = [f"{row[c]:.0f}" if c.startswith('n_') else f"{row[c]:.5f}" for c in cols]
-            lines.append("| " + " | ".join([row['family'], f"{row['alpha']:g}"] + vals) + " |")
-        lines.append("")
+        extra = [
+            ("Means (heavy tails: the median of a 50-period window can hide rare large losses) and the joiner's owner path",
+             ['did_itt_mean', 'did_owner_mean', 'did_owner_trim_mean', 'joiner_before_owner', 'joiner_after_owner',
+              'joiner_before_owner_mean', 'joiner_after_owner_mean']),
+            ("Owner DiD by conglomerate size at entry (K = 2, 3–4, ≥ 5)",
+             ['n_K2', 'n_K3_4', 'n_K5p', 'did_owner_K2_median', 'did_owner_K2_mean', 'did_owner_K3_4_median',
+              'did_owner_K3_4_mean', 'did_owner_K5p_median', 'did_owner_K5p_mean']),
+        ]
+        tables = [(None, cols)] + [(title, [c for c in ecols if c in es.columns]) for title, ecols in extra]
+        for title, tcols in tables:
+            if not tcols:
+                continue
+            if title:
+                lines.append(f"**{title}**")
+                lines.append("")
+            ttab = es.groupby(['family', 'alpha'])[tcols].mean().reset_index()
+            ttab = ttab.sort_values(['family', 'alpha'],
+                                    key=lambda c: c.map({'normal': 0, 'laplace': 1, 't3': 2}) if c.name == 'family' else c)
+            lines.append("| " + " | ".join(['Family', 'α'] + tcols) + " |")
+            lines.append("|" + "---|" * (len(tcols) + 2))
+            for _, row in ttab.iterrows():
+                vals = [f"{row[c]:.0f}" if c.startswith('n_') else f"{row[c]:.5f}" for c in tcols]
+                lines.append("| " + " | ".join([row['family'], f"{row['alpha']:g}"] + vals) + " |")
+            lines.append("")
 
     # ========================================================================
     # Section: Correlation comparison

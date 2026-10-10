@@ -277,3 +277,5 @@ The files over 100 MB are laplace α ∈ {0.05, 0.1} and t3 α ∈ {0.05, 0.1}. 
 ## Resolution (C29)
 
 Option (c) chosen. Per-event files `pilot_c/events/*_events.csv` are no longer tracked (`git rm --cached`, ignored via `.gitignore`); they stay on Festus in `/scratch/bt307958/c29/IOxEE/pilot_c/events` (2.4 GB). The commit includes `pilot_c/event_study_summary.csv` and the 27 per-scenario `pilot_c/events/*_summary.csv`. Earlier versions of the per-event files remain in git history (C26–C28).
+
+Follow-up pass (C29): `analysis/event_study.py` replaced with the extended `summarize()` (sha256 `42d1db45…28bf`; `events_from_trace` unchanged) and the event study rerun on the C29 traces with `--reuse` (array 823726, max 27.2 s per task); `n_events` and `did_owner_median` are identical to the first C29 run for all 27 tags.

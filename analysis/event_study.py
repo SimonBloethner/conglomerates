@@ -32,7 +32,9 @@ Summary (over matched events):
                  selected on survival, reported for comparison)
   did_nofloor   ITT, joiner and control hit no floor in [t-l, t)
   did_small/mid/large   ITT by tercile of the joiner's log share at entry
-  did_owner_*   the same three (all, nofloor, terciles) on the owner path, when `jump` is given
+  did_owner_*   the same three (all, nofloor, terciles) on the owner path, when `jump` is given,
+                plus means (did_itt_mean, did_owner_mean, did_owner_trim_mean) and the owner DiD by
+                conglomerate size at entry (K2, K3_4, K5p), median and mean
 
 Output: one row per event, plus a summary function.
 """
@@ -109,6 +111,23 @@ def summarize(ev):
         out['did_owner_p25'] = m.did_owner.quantile(.25)
         out['did_owner_p75'] = m.did_owner.quantile(.75)
         out['did_owner_nofloor_median'] = nofloor.did_owner.median()
+        # means: with heavy tails the median of a 50-period window hides the rare large loss that
+        # pooling averts, so the mean (and a 1%-trimmed mean) is reported next to the median
+        out['did_itt_mean'] = m.did.mean()
+        out['did_owner_mean'] = m.did_owner.mean()
+        lo, hi = m.did_owner.quantile([.01, .99])
+        out['did_owner_trim_mean'] = m.did_owner[(m.did_owner >= lo) & (m.did_owner <= hi)].mean()
+        out['joiner_before_owner'] = ev.before_owner.median()
+        out['joiner_after_owner'] = ev.after_owner.median()
+        out['joiner_before_owner_mean'] = ev.before_owner.mean()
+        out['joiner_after_owner_mean'] = ev.after_owner.mean()
+        # by conglomerate size at entry (K = 2 is a two-firm pool; the diversification gain grows with K)
+        for name, sel in (('K2', m.K_at_entry == 2), ('K3_4', m.K_at_entry.between(3, 4)),
+                          ('K5p', m.K_at_entry >= 5)):
+            g = m[sel]
+            out[f'n_{name}'] = len(g)
+            out[f'did_owner_{name}_median'] = g.did_owner.median()
+            out[f'did_owner_{name}_mean'] = g.did_owner.mean()
     # by size tercile of the joiner's market share at entry (ITT)
     if len(m) >= 9:
         m = m.assign(tercile=pd.qcut(m.logshare_entry, 3, labels=['small', 'mid', 'large']))
