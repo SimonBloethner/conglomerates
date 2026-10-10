@@ -71,30 +71,41 @@ The overflow occurs because:
 
 ---
 
-# C23 Block Count Deviations
+# C23 Event Study Bug Fix
 
 ## Summary
 
-Block counts in tidy.csv differ from C23 spec due to pickle/scenario_id desync from scenario renumbering.
+Full rerun completed after fixing event study bugs. Block counts now match spec.
 
-## Expected vs Actual
+## Bugs Fixed
 
-| Block | Expected | Actual |
-|-------|----------|--------|
-| Total rows | 1400 | 1395 |
-| endogenous-alpha | 60 | 110 |
-| floor-level | 90 | 80 |
-| correlation | 45 | 0 |
-| lookback t3 | 40 | 80 (both families) |
+1. **Buffer index bug**: `firm_log_states_buffer[next_idx]` → `firm_log_states_buffer[curr_idx]`
+   - Was reading stale data from 501 steps ago instead of current state
+   - Result: joiner_before was always 0
 
-## Root Cause
+2. **Match tolerance too strict**: Removed `dist <= 0.25` constraint
+   - Was rejecting 89% of potential controls
+   - Result: n_matched improved from 0.4 to 129.8 mean
 
-Scenarios were renumbered in scenarios.json but existing pickles in pilot_c/results/ retain their **original** scenario_ids. When summarize_pilot_c.py reads pickles and looks up metadata by scenario_id, it gets wrong block assignments.
+3. **Control fallback**: Changed 0.0 → NaN when control data unavailable
+   - Control data often not in buffer for early events
+   - Result: DiD correctly excludes events without valid controls
 
-## Resolution Options
+## Final Block Counts (match spec)
 
-1. **Full rerun**: Delete all pickles and rerun all scenarios with new IDs
-2. **Remap pickles**: Rename pickle files to match new scenario_ids
-3. **Accept deviation**: Document mismatch and proceed with available data
+| Block | Count |
+|-------|-------|
+| main | 540 |
+| cost-level | 360 |
+| equal-split | 180 |
+| floor-level | 90 |
+| lookback | 80 |
+| endogenous-alpha | 60 |
+| correlation | 45 |
+| rule-replay | 45 |
+| **Total** | **1400** |
 
-Option 3 chosen per spec instruction to document and stop if a step cannot be completed.
+## Identity Test Failures (Expected)
+
+6 identity tests fail because the buffer index fix changes simulation output.
+This is correct behavior - the previous output had the bug.

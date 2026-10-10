@@ -37,9 +37,10 @@ EXPECTED_BLOCK_COUNTS = {
     'main': 540,
     'cost-level': 360,
     'equal-split': 180,
-    'floor-level': 80,
+    'floor-level': 90,
     'lookback': 80,
-    'endogenous-alpha': 110,
+    'endogenous-alpha': 60,
+    'correlation': 45,
     'rule-replay': 45,
 }
 

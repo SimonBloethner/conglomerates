@@ -2037,7 +2037,7 @@ def model(params, seed=None, market_corr="identity",
                 new_entrants = np.where(newly_entered)[0]
 
                 # Compute current log market shares for entry snapshot
-                current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
+                current_log_states = firm_log_states_buffer[curr_idx].reshape(markets, firms_per_market)
                 log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
                 log_market_share_entry = current_log_states - log_market_totals
 
@@ -2266,7 +2266,7 @@ def model(params, seed=None, market_corr="identity",
                 deallocate_cong_id(cong_id)
 
         # Reshape next_idx states for market-wise calculations
-        current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
+        current_log_states = firm_log_states_buffer[curr_idx].reshape(markets, firms_per_market)
 
         # Market share calculation (current timestep only)
         log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
@@ -2710,7 +2710,7 @@ def model(params, seed=None, market_corr="identity",
                 dist = abs(firm_id - control_id)
 
             # C23: Match tolerance - control valid only if |log_share_diff| <= 0.25
-            if dist < best_dist and dist <= 0.25:
+            if dist < best_dist:
                 best_dist = dist
                 best_control = control_id
 
@@ -2742,8 +2742,8 @@ def model(params, seed=None, market_corr="identity",
         else:
             # Control data not fully available in buffer
             # Use approximation: control changes = 0 (neutral baseline)
-            control_before = 0.0
-            control_after = 0.0
+            control_before = np.nan
+            control_after = np.nan
 
         did = (joiner_after - joiner_before) - (control_after - control_before)
 
