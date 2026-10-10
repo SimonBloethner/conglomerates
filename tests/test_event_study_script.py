@@ -63,33 +63,37 @@ def test_summarize_empty():
     """Test summarize with no matched events (control=-1 for all)."""
     ev = pd.DataFrame([
         {'step': 100, 'firm': 0, 'market': 0, 'K_at_entry': 2, 'logshare_entry': -3.0,
-         'before': -0.001, 'after': 0.002, 'floor_before': False, 'control': -1,
+         'before': -0.001, 'after': 0.002, 'floor_before': False, 'stayed': True, 'floor_after': False,
+         'control_stayed_standalone': False, 'control_floor_before': False, 'control': -1,
          'control_before': np.nan, 'control_after': np.nan, 'did': np.nan},
     ])
     summary = summarize(ev)
     assert summary['n_events'] == 1
     assert summary['n_matched'] == 0
-    assert np.isnan(summary['did_median'])
+    assert np.isnan(summary['did_itt_median'])
 
 
 def test_summarize_with_events():
     """Test summarize with some events."""
     ev = pd.DataFrame([
         {'step': 100, 'firm': 0, 'market': 0, 'K_at_entry': 2, 'logshare_entry': -3.0,
-         'before': -0.001, 'after': 0.002, 'floor_before': False, 'control': 1,
+         'before': -0.001, 'after': 0.002, 'floor_before': False, 'stayed': True, 'floor_after': False,
+         'control_stayed_standalone': True, 'control_floor_before': False, 'control': 1,
          'control_before': -0.001, 'control_after': -0.001, 'did': 0.01},
         {'step': 150, 'firm': 2, 'market': 0, 'K_at_entry': 3, 'logshare_entry': -4.0,
-         'before': -0.002, 'after': 0.003, 'floor_before': False, 'control': 3,
+         'before': -0.002, 'after': 0.003, 'floor_before': False, 'stayed': True, 'floor_after': False,
+         'control_stayed_standalone': True, 'control_floor_before': False, 'control': 3,
          'control_before': -0.001, 'control_after': -0.002, 'did': 0.02},
         {'step': 200, 'firm': 4, 'market': 1, 'K_at_entry': 2, 'logshare_entry': -2.5,
-         'before': 0.000, 'after': 0.001, 'floor_before': True, 'control': 5,
+         'before': 0.000, 'after': 0.001, 'floor_before': True, 'stayed': False, 'floor_after': False,
+         'control_stayed_standalone': True, 'control_floor_before': False, 'control': 5,
          'control_before': 0.001, 'control_after': 0.002, 'did': -0.01},
     ])
     summary = summarize(ev)
     assert summary['n_events'] == 3
     assert summary['n_matched'] == 3
-    assert not np.isnan(summary['did_median'])
-    assert summary['did_p25'] <= summary['did_median'] <= summary['did_p75']
+    assert not np.isnan(summary['did_itt_median'])
+    assert summary['did_itt_p25'] <= summary['did_itt_median'] <= summary['did_itt_p75']
 
 
 def test_trace_roundtrip():

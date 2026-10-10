@@ -172,3 +172,58 @@ All five rows are scenarios 95–99 (normal, exponential cost, α = 0.01, reps 0
 ## Where the outputs are
 
 All Step 3 outputs are on Festus in `/scratch/bt307958/c27/IOxEE`: `pilot_c/results` (1400), `pilot_c/tidy.csv`, `pilot_c/medians.csv`, `pilot_c/events/` (27 events + 27 per-scenario summaries), `pilot_c/event_study_summary.csv`, `diagnostics/pilot_c_summary.md` and figures. Traces are in `/scratch/bt307958/traces_c27`. Logs: `/scratch/bt307958/c27/{summarize,analyze,pytest_all}.log`. `alpha_scatter.csv` was not regenerated: it comes from `create_alpha_scatter.py`, which Step 3d excludes.
+
+---
+
+# C28 Search intensity, lookback 500, ITT event study, test repair — stopped at Step 3(d)
+
+## What was done (working tree only, nothing committed, no simulations submitted)
+
+- Step 1:
+  - (a) `voluntary_exits_per_period` added to tidy in `summarize_pilot_c.py`.
+  - (b) `test_exit_review_every_10` now uses `exits_per_period - floor_exits_per_period`; the `<= 0.75` threshold is unchanged.
+  - (c) `test_tidy_schema.py`: new required columns, total 1540, Step 2(c) block counts, lookback 50/50.
+- Step 2:
+  - (a) `test_phase_a_identity.py` imports `from tests import _phase_a_reference`; the `sys.path.insert(0, '..')` line is removed. Not yet run.
+  - (b) `git rm tests/test_pilot_design.py`.
+  - (c) not started (it depends on Step 3).
+- Step 3:
+  - (a)–(c) applied to `pilot_design.py`.
+  - (e) partly: `merge_thresh` written into tidy, and added to the `medians.csv` grouping. Without it the search block's two `merge_thresh` cells would be pooled; there is no change for blocks where it is 0.05.
+- Step 3(d): `python pilot_design.py` was run in the snapshot `/scratch/bt307958/c28/IOxEE`. It writes 1540 entries; 1400–1419 are lookback 500 and 1420–1539 are search (60 at 0.2, 60 at 1.0).
+  - **Identity check `all(a == b for a, b in zip(old, new[:1400]))`: False (320 of the first 1400 entries differ).**
+  - The local `pilot_c/scenarios.json` is unchanged.
+
+## Why the committed scenarios.json cannot be reproduced by the listed edits
+
+Compared block by block, every field of every scenario matches except `scenario_id`, `cell_id` and `seed`. The 1–1080 range (main, equal-split, cost-level) is identical. The differences:
+
+1. **Block order.** The committed file has the lookback block last (ids 1320–1399, after floor-level). `generate_all_scenarios` puts it fourth, so correlation, endogenous-alpha, rule-replay, floor-level and lookback all shift `scenario_id` by 80 or −240.
+2. **Cell ids and seeds after cost-level.** In the committed file:
+
+   | Block | Cells | Seeds |
+   |---|---|---|
+   | correlation | 29 | 2942… |
+   | endogenous-alpha | 30–41 | 3042… |
+   | rule-replay | 42 | 4242… |
+   | floor-level | 43–44 | 4342… |
+
+   The generator gives 32, 33–44, 45 and 46–47 (seeds 3242…, 3342…, 4542…, 4642…), because it numbers the t3 lookback cells 28–31. So those blocks were run with different seeds than the design produces.
+3. **t3 lookback cells.** The committed laplace lookback cells are 24–27 (seeds 2442…2746, 5 per cell). The t3 lookback entries have string cell ids (`'lookback_t3_power_law_a0.1_l20'` etc., one per (α, lookback)), and **all 40 use seed 2442 for every rep**.
+
+Reproducing this needs changes the card doesn't list: reorder the blocks, hard-code the string cell ids, and special-case the t3 seeds. The design test in Step 2(c) (`scenarios.json == pilot_design.main()` output) has the same problem.
+
+## Data issue found on the way
+
+Because of (3), the t3 lookback block's "5 reps" are 5 identical copies of each of 8 runs (same seed, same parameters). The 40 t3 rows of the lookback block in `tidy.csv` therefore carry no replication. Any spread or median across them is a single run, and t3 rep 0 shares its seed with laplace lookback=20 rep 0 (2442). This has been true since C21.
+
+## Options
+
+- (A) Treat the committed `scenarios.json` as authoritative.
+  - Append the 140 new entries to it, with fresh integer cell ids above 44 and seeds from `cell_seed`.
+  - Make `pilot_design.py` reproduce the file, or relax the Step 2(c) and 3(d) checks.
+  - Keeps the C27 results; the t3 lookback duplication stays.
+- (B) Fix the design and regenerate all 1540 from `pilot_design.py`.
+  - Removes the t3 seed duplication and makes the design and file consistent.
+  - Correlation, endogenous-alpha, rule-replay, floor-level and lookback get new seeds, so all 1400 + 140 must be rerun (about 70 CPU-hours, about 1–2 h wall time on parallel arrays). The C27 pickles are then superseded.
+- (C) As (A), but rerun only the 40 t3 lookback scenarios with distinct seeds.

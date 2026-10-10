@@ -2,8 +2,8 @@
 """
 Tests for Phase C pilot design generator.
 
-Test requirements (updated for C17):
-1. Scenario count = 1370
+Test requirements (updated for C28):
+1. Scenario count = 1540
 2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
@@ -12,7 +12,8 @@ Test requirements (updated for C17):
 7. decision_rule = 'loggain' in all blocks except rule-replay
 8. rule-replay block uses decision_rule = 'replay' (45 runs)
 9. floor-level block exists with floor_c ∈ {0.10, 0.35} (90 runs)
-10. lookback block: 5 values × 2 α × 5 reps = 50 runs
+10. lookback block: 2 families × 5 values × 2 α × 5 reps = 100 runs
+11. pilot_c/scenarios.json equals the list pilot_design.main() writes
 """
 import json
 import os
@@ -26,6 +27,7 @@ if parent_dir not in sys.path:
 
 from pilot_design import (
     generate_all_scenarios,
+    set_burn_in_params,
     FLOOR_C,
     ALPHA_GRID,
     FAMILIES,
@@ -42,11 +44,11 @@ def c_for_exponent(target):
 
 
 def test_scenario_count():
-    """Scenario count = 1370 (updated for C17)."""
+    """Scenario count = 1540 (updated for C28)."""
     scenarios = generate_all_scenarios()
 
     # Check total count
-    assert len(scenarios) == 1370, f"Expected 1370 scenarios, got {len(scenarios)}"
+    assert len(scenarios) == 1540, f"Expected 1540 scenarios, got {len(scenarios)}"
 
     # Check block counts
     blocks = {}
@@ -58,18 +60,19 @@ def test_scenario_count():
         'main': 540,  # 3 × 4 × 9 × 5
         'equal-split': 180,  # 1 × 4 × 9 × 5
         'cost-level': 360,  # 1 × 4 × 2 × 9 × 5
-        'lookback': 50,  # C17: 1 × 1 × 5 × 2 × 5 (5 lookback × 2 α × 5 reps)
+        'lookback': 100,  # C28: 2 families × 5 lookbacks × 2 α × 5 reps
         'correlation': 45,  # 1 × 1 × 1 × 9 × 5
         'endogenous-alpha': 60,  # 3 × 4 × 5
         'rule-replay': 45,  # C17: 1 × 1 × 9 × 5
         'floor-level': 90,  # C17: 1 × 1 × 2 × 9 × 5 (2 floor values × 9 α × 5 reps)
+        'search': 120,  # C28: 3 families × 2 merge_thresh × 4 α × 5 reps
     }
 
     for block, count in expected.items():
         actual = blocks.get(block, 0)
         assert actual == count, f"Block {block}: expected {count}, got {actual}"
 
-    print("PASS: scenario count = 1370")
+    print("PASS: scenario count = 1540")
 
 
 def test_floor_c_matches_c14():
@@ -324,34 +327,48 @@ def test_floor_level_block():
     print("PASS: floor-level block (90 runs, floor_c ∈ {0.10, 0.35})")
 
 
-def test_lookback_block_c17():
-    """C17: lookback block has 5 values × 2 α × 5 reps = 50 runs."""
+def test_lookback_block_c28():
+    """C28: lookback block = {laplace, t3} × 5 lookbacks × 2 α × 5 reps = 100 runs."""
     scenarios = generate_all_scenarios()
 
     lookback_scenarios = [s for s in scenarios if s['block'] == 'lookback']
 
-    assert len(lookback_scenarios) == 50, \
-        f"Expected 50 lookback scenarios, got {len(lookback_scenarios)}"
+    assert len(lookback_scenarios) == 100, \
+        f"Expected 100 lookback scenarios, got {len(lookback_scenarios)}"
 
-    # Check lookback values: 20, 50, 100, 200, 500
-    lookbacks = sorted(set(s['lookback'] for s in lookback_scenarios))
-    expected_lookbacks = [20, 50, 100, 200, 500]
-    assert lookbacks == expected_lookbacks, \
-        f"lookback values: {lookbacks}, expected {expected_lookbacks}"
+    families = set(s['log_family'] for s in lookback_scenarios)
+    assert families == {'laplace', 't3'}, f"lookback families: {families}"
 
-    # Check α values: 0.1, 0.3 only
-    alphas = sorted(set(s['alpha'] for s in lookback_scenarios))
-    expected_alphas = [0.1, 0.3]
-    assert alphas == expected_alphas, \
-        f"lookback α values: {alphas}, expected {expected_alphas}"
+    lookbacks = set(s['lookback'] for s in lookback_scenarios)
+    assert lookbacks == {20, 50, 100, 200, 500}, f"lookback values: {lookbacks}"
 
-    # Check count per lookback value: 5 lookback × 2 α × 5 reps = 50 total
-    # Per lookback: 2 α × 5 reps = 10
-    for lb in expected_lookbacks:
-        count = len([s for s in lookback_scenarios if s['lookback'] == lb])
-        assert count == 10, f"lookback={lb} should have 10 scenarios, got {count}"
+    alphas = set(s['alpha'] for s in lookback_scenarios)
+    assert alphas == {0.1, 0.3}, f"lookback α values: {alphas}"
 
-    print("PASS: lookback block (50 runs, 5 values × 2 α × 5 reps)")
+    # Per (family, lookback): 2 α × 5 reps = 10
+    for family in ['laplace', 't3']:
+        for lb in [20, 50, 100, 200, 500]:
+            count = len([s for s in lookback_scenarios
+                         if s['log_family'] == family and s['lookback'] == lb])
+            assert count == 10, f"lookback ({family}, {lb}) should have 10 scenarios, got {count}"
+
+    print("PASS: lookback block (100 runs, 2 families × 5 values × 2 α × 5 reps)")
+
+
+def test_scenarios_json_matches_design():
+    """C28: committed pilot_c/scenarios.json equals what pilot_design.main() writes."""
+    expected = generate_all_scenarios()
+    set_burn_in_params(expected, T, BURN_IN)
+    expected = json.loads(json.dumps(expected))  # same round trip as write_scenarios_json
+
+    with open('pilot_c/scenarios.json') as f:
+        actual = json.load(f)
+
+    assert len(actual) == len(expected), f"{len(actual)} scenarios in json, design has {len(expected)}"
+    for i, (a, e) in enumerate(zip(actual, expected)):
+        assert a == e, f"scenario {i} differs from design"
+
+    print(f"PASS: scenarios.json matches design ({len(actual)} scenarios)")
 
 
 if __name__ == '__main__':
@@ -370,6 +387,7 @@ if __name__ == '__main__':
     test_decision_rule_loggain_default()
     test_rule_replay_block()
     test_floor_level_block()
-    test_lookback_block_c17()
+    test_lookback_block_c28()
+    test_scenarios_json_matches_design()
 
-    print("\nAll Phase C pilot design tests passed (C17)!")
+    print("\nAll Phase C pilot design tests passed (C28)!")

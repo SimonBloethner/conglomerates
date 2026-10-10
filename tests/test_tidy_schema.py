@@ -16,7 +16,7 @@ EXPECTED_TIDY_COLUMNS = [
     'floor_c', 'K_median', 'K_mean', 'K_eff_over_K_median',
     'floor_hit_rate_standalone', 'floor_hit_rate_member',
     'mergers_per_period', 'proposals_per_period', 'exits_per_period',
-    'floor_exits_per_period',
+    'floor_exits_per_period', 'voluntary_exits_per_period', 'merge_thresh',
     'growth_gap_median', 'acceptance_rate_ss', 'acceptance_rate_sc',
     'acceptance_rate_cc', 'acceptance_rate', 'hill_exponent_median',
     'hill_exponent_p25', 'hill_exponent_p75', 'hhi_within_median',
@@ -30,20 +30,23 @@ EXPECTED_TIDY_COLUMNS = [
     'alpha_adopted_std', 'assort_iqr',
 ]
 
+EXPECTED_TOTAL_ROWS = 1540
+
 EXPECTED_BLOCK_COUNTS = {
     'main': 540,
-    'cost-level': 360,
     'equal-split': 180,
-    'floor-level': 90,
-    'lookback': 80,
-    'endogenous-alpha': 60,
+    'cost-level': 360,
+    'lookback': 100,
     'correlation': 45,
+    'endogenous-alpha': 60,
     'rule-replay': 45,
+    'floor-level': 90,
+    'search': 120,
 }
 
 EXPECTED_LOOKBACK_BY_FAMILY = {
-    'laplace': 40,
-    't3': 40,
+    'laplace': 50,
+    't3': 50,
 }
 
 EXPECTED_ALPHA_SCATTER_COLUMNS = [
@@ -63,7 +66,8 @@ def load_csv(path):
 def test_tidy_total_rows():
     """Test that tidy.csv has expected rows."""
     rows, _ = load_csv(TIDY_PATH)
-    expected = sum(EXPECTED_BLOCK_COUNTS.values())
+    expected = EXPECTED_TOTAL_ROWS
+    assert sum(EXPECTED_BLOCK_COUNTS.values()) == expected
     assert len(rows) == expected, f"Expected {expected} rows, got {len(rows)}"
     print(f"PASS: {len(rows)} total rows")
 

@@ -84,8 +84,9 @@ def test_exit_review_every_10():
     summary_baseline = hyper_baseline.get('summary', {})
     summary_review = hyper.get('summary', {})
 
-    exits_baseline = summary_baseline.get('exits_per_period', 0)
-    exits_review = summary_review.get('exits_per_period', 0)
+    # Voluntary exits only: floor exits (C27) happen every step regardless of exit_review_every
+    exits_baseline = summary_baseline['exits_per_period'] - summary_baseline['floor_exits_per_period']
+    exits_review = summary_review['exits_per_period'] - summary_review['floor_exits_per_period']
 
     print(f"\nexit_review_every test:")
     print(f"  Baseline (every=1): {exits_baseline:.4f} exits/period")

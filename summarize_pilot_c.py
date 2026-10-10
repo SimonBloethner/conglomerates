@@ -42,6 +42,7 @@ def extract_post_burnin_metrics(result):
         'seed': scenario['seed'],
         'sharing_rule': scenario['sharing_rule'],
         'lookback': scenario['lookback'],
+        'merge_thresh': scenario['merge_thresh'],
         'cross_corr': scenario['cross_corr'],
         'alpha_endogenous': scenario.get('alpha_endogenous', False),
         'decision_rule': scenario.get('decision_rule', 'replay'),  # C17
@@ -70,6 +71,7 @@ def extract_post_burnin_metrics(result):
     metrics['proposals_per_period'] = summary.get('proposals_per_period', np.nan)
     metrics['exits_per_period'] = summary.get('exits_per_period', np.nan)
     metrics['floor_exits_per_period'] = summary.get('floor_exits_per_period', np.nan)
+    metrics['voluntary_exits_per_period'] = metrics['exits_per_period'] - metrics['floor_exits_per_period']
     metrics['growth_gap_median'] = summary.get('growth_gap_median', np.nan)  # C17
 
     # Per-type acceptance rates (C17)
@@ -346,7 +348,7 @@ def create_medians_df(tidy_df):
     """
     group_cols = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule',
                   'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier',
-                  'decision_rule']  # C17
+                  'decision_rule', 'merge_thresh']  # C17; C28 merge_thresh
 
     # Numeric columns to aggregate
     value_cols = [

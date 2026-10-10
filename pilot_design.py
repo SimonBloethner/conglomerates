@@ -23,8 +23,10 @@ Blocks:
 - endogenous α: 3 families × 4 costs × 5 reps = 60 runs (α_start=0.1)
 - rule-replay: laplace × power_law × decision_rule=replay × 9 α × 5 reps = 45 runs
 - floor-level: laplace × power_law × 2 floor values × 9 α × 5 reps = 90 runs
+- lookback 500: (laplace + t3) × power_law × 2 α × 5 reps = 20 runs (block 'lookback')
+- search: 3 families × power_law × merge_thresh {0.2, 1.0} × 4 α × 5 reps = 120 runs
 
-Total: 1400 runs
+Total: 1540 runs
 """
 import json
 import os
@@ -95,7 +97,6 @@ def make_base_params():
         'market_size_fixed': True,  # C14: normalize sizes within each market
         'decision_rule': 'loggain',  # C17: loggain decision rule
         'g': 0.055,  # C17: growth rate for demeaning (mid-range of mu_range)
-        'exit_review_every': 5,  # C21: one-tenth of default lookback=50
     }
 
 
@@ -219,23 +220,20 @@ def generate_cost_level_block(scenarios, scenario_id, cell_id):
 def generate_lookback_block(scenarios, scenario_id, cell_id):
     """
     Lookback: (laplace + t3) × power_law × 4 lookbacks × 2 α × 5 reps = 80 runs
-    Lookbacks: [50, 100, 200, 500]
+    Lookbacks: [20, 50, 100, 200] (lookback 500 is generate_lookback500_block)
     α values: [0.1, 0.3]
-    exit_review_every = max(1, lookback // 10) for each lookback value
     """
     families = ['laplace', 't3']
     cost_type = 'power_law'
-    lookbacks = [50, 100, 200, 500]
+    lookbacks = [20, 50, 100, 200]
     alpha_values = [0.1, 0.3]
 
     for family in families:
         for lookback in lookbacks:
             # All α values within this (family, lookback) share seeds per rep
-            exit_review = max(1, lookback // 10)
             for alpha in alpha_values:
                 for rep in range(N_REPS):
                     s = make_base_params()
-                    s['exit_review_every'] = exit_review  # C21: proportional to lookback
                     s.update({
                         'block': 'lookback',
                         'scenario_id': scenario_id,
@@ -403,6 +401,82 @@ def generate_floor_level_block(scenarios, scenario_id, cell_id):
     return scenario_id, cell_id
 
 
+def generate_lookback500_block(scenarios, scenario_id, cell_id):
+    """
+    Lookback 500: (laplace + t3) × power_law × lookback 500 × 2 α × 5 reps = 20 runs
+    block = 'lookback'; one cell per family; α values share seeds within a cell.
+    """
+    families = ['laplace', 't3']
+    cost_type = 'power_law'
+    lookback = 500
+    alpha_values = [0.1, 0.3]
+
+    for family in families:
+        for alpha in alpha_values:
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s.update({
+                    'block': 'lookback',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': lookback,
+                    'cross_corr': 0.0,
+                    'alpha': alpha,
+                    'sharing_rule': SHARING_RULE,
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': False,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
+def generate_search_block(scenarios, scenario_id, cell_id):
+    """
+    Search: 3 families × power_law × merge_thresh {0.2, 1.0} × 4 α × 5 reps = 120 runs
+    α values: [0.05, 0.1, 0.3, 0.5]; lookback 50, cross_corr 0.0.
+    One cell per (family, merge_thresh); α values share seeds within a cell.
+    """
+    cost_type = 'power_law'
+    merge_threshs = [0.2, 1.0]
+    alpha_values = [0.05, 0.1, 0.3, 0.5]
+
+    for family in FAMILIES:
+        for merge_thresh in merge_threshs:
+            for alpha in alpha_values:
+                for rep in range(N_REPS):
+                    s = make_base_params()
+                    s['merge_thresh'] = merge_thresh  # Override default search intensity
+                    s.update({
+                        'block': 'search',
+                        'scenario_id': scenario_id,
+                        'cell_id': cell_id,
+                        'log_family': family,
+                        'cost_type': cost_type,
+                        'c0': COST_PARAMS[cost_type]['c0'],
+                        'c1': COST_PARAMS[cost_type]['c1'],
+                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'lookback': 50,
+                        'cross_corr': 0.0,
+                        'alpha': alpha,
+                        'sharing_rule': SHARING_RULE,
+                        'rep': rep,
+                        'seed': cell_seed(cell_id, rep),
+                        'alpha_endogenous': False,
+                    })
+                    scenarios.append(s)
+                    scenario_id += 1
+            cell_id += 1
+    return scenario_id, cell_id
+
+
 def generate_all_scenarios():
     """Generate all scenarios for Phase C pilot."""
     scenarios = []
@@ -417,6 +491,8 @@ def generate_all_scenarios():
     scenario_id, cell_id = generate_endogenous_alpha_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_rule_replay_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_floor_level_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_lookback500_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_search_block(scenarios, scenario_id, cell_id)
 
     return scenarios
 

@@ -12,10 +12,9 @@ and validates that rank_range/rank_std match offline computation from reference 
 """
 import numpy as np
 import sys
-sys.path.insert(0, '..')
 
 # Import Phase A reference (vendored from commit 56ee13f)
-import _phase_a_reference as phase_a
+from tests import _phase_a_reference as phase_a
 
 # Import current code
 import collaborative_growth as current

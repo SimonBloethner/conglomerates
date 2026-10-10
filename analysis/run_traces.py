@@ -5,6 +5,7 @@ Usage (from the repository root):
     python analysis/run_traces.py <trace_dir> [--quick]            # all 27 in sequence
     python analysis/run_traces.py <trace_dir> --index K [--quick]  # only scenario K (0..26), for a SLURM array
     python analysis/run_traces.py <trace_dir> --merge              # merge the 27 per-scenario summaries
+    --reuse: if <trace_dir>/<tag>.npz already exists, skip the model run and only redo the event study.
 
 Selects, from pilot_c/scenarios.json, the main-block power_law scenarios for
 family in {normal, laplace, t3}, alpha in {0.05, 0.1, 0.3}, rep in {0, 1, 2};
@@ -81,7 +82,8 @@ def main():
         tag = f"{s['log_family']}_a{s['alpha']}_r{s['rep']}"
         tp = os.path.join(trace_dir, tag + '.npz')
         t0 = time.time()
-        run_one(s, tp, quick)
+        if not ('--reuse' in sys.argv and os.path.exists(tp)):
+            run_one(s, tp, quick)
         z = np.load(tp)
         ls, cg, fl, home = z['logshare'].astype(float), z['cong'], z['floor'], z['home']
         assert ls.shape[0] == (300 if quick else s['T']) + 1, ls.shape

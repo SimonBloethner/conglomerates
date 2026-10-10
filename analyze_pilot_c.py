@@ -177,9 +177,9 @@ def generate_lookback_comparison(df):
     })
     ref_merged = ref_k.merge(ref_hill, on=['alpha', 'n_reps'])
 
-    # Lookback block (200 and 1000)
+    # Lookback block (20, 50, 100, 200, 500), by family
     lookback = df[df['block'] == 'lookback'].copy()
-    lookback_k = lookback.groupby(['lookback', 'alpha']).apply(
+    lookback_k = lookback.groupby(['log_family', 'lookback', 'alpha']).apply(
         lambda g: pd.Series({
             'K_median': g['K_post_burnin_median'].median(),
             'K_p25': np.nanpercentile(g['K_post_burnin_median'], 25),
@@ -187,11 +187,84 @@ def generate_lookback_comparison(df):
             'hill_median': g['hill_exponent_median'].median(),
             'hill_p25': np.nanpercentile(g['hill_exponent_median'], 25),
             'hill_p75': np.nanpercentile(g['hill_exponent_median'], 75),
+            'K_mean': g['K_mean'].median(),
+            'ccs_median': g['cong_capital_share_median'].median(),
+            'floor_exits': g['floor_exits_per_period'].median(),
             'n_reps': len(g),
         })
     ).reset_index()
 
     return ref_merged, lookback_k
+
+
+SEARCH_COLS = ['K_mean', 'K_post_burnin_median', 'cong_capital_share_median',
+               'mergers_per_period', 'floor_exits_per_period', 'hill_exponent_median']
+
+
+def generate_search_table(df):
+    """Search block (merge_thresh 0.2, 1.0) plus main power_law cell (0.05), medians over reps."""
+    search = df[df['block'] == 'search']
+    alphas = sorted(search['alpha'].unique())
+    main = df[(df['block'] == 'main') & (df['cost_type'] == 'power_law') & (df['alpha'].isin(alphas))]
+    both = pd.concat([main, search])
+    table = both.groupby(['log_family', 'alpha', 'merge_thresh'])[SEARCH_COLS].median().reset_index()
+    order = {'normal': 0, 'laplace': 1, 't3': 2}
+    return table.sort_values(['log_family', 'alpha', 'merge_thresh'],
+                             key=lambda c: c.map(order) if c.name == 'log_family' else c)
+
+
+def create_search_figure(df, benchmarks, output_path='diagnostics/pilot_c_search.png'):
+    """K_mean vs α, one line per merge_thresh, one panel per family; K* dashed."""
+    table = generate_search_table(df)
+    families = ['normal', 'laplace', 't3']
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
+    for ax, family in zip(axes, families):
+        sub = table[table['log_family'] == family]
+        for mt in sorted(sub['merge_thresh'].unique()):
+            line = sub[sub['merge_thresh'] == mt]
+            ax.plot(line['alpha'], line['K_mean'], marker='o', label=f'merge_thresh={mt:g}')
+        if len(benchmarks) > 0:
+            ks = benchmarks[(benchmarks['family'] == family) & (benchmarks['cost_type'] == 'power_law')]
+            ks = ks.sort_values('alpha')
+            ax.plot(ks['alpha'], ks['K_star'], 'k--', marker='x', label='K*')
+        ax.set_yscale('log')
+        ax.set_title(f'{family} (power_law)')
+        ax.set_xlabel('α (pooling fraction)')
+        ax.grid(True, alpha=0.3, which='both')
+    axes[0].set_ylabel('K_mean (log scale)')
+    axes[0].legend(fontsize=8)
+    fig.suptitle('Search intensity: K_mean vs α')
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    return output_path
+
+
+def create_lookback_figure(df, output_path='diagnostics/pilot_c_lookback_k.png'):
+    """K_mean vs lookback (20..500), one line per (family, α), lookback block."""
+    _, lookback_k = generate_lookback_comparison(df)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    styles = {'laplace': '-', 't3': '--'}
+    for (family, alpha), g in lookback_k.groupby(['log_family', 'alpha']):
+        g = g.sort_values('lookback')
+        ax.plot(g['lookback'], g['K_mean'], linestyle=styles.get(family, '-'), marker='o',
+                label=f'{family}, α={alpha:g}')
+    ax.set_xscale('log')
+    ax.set_xticks([20, 50, 100, 200, 500])
+    ax.set_xticklabels(['20', '50', '100', '200', '500'])
+    ax.set_xlabel('lookback l')
+    ax.set_ylabel('K_mean (median over reps)')
+    ax.set_title('K_mean vs lookback (power_law cost)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    return output_path
 
 
 def generate_correlation_comparison(df):
@@ -749,30 +822,48 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     # ========================================================================
     lines.append("## Lookback Sensitivity")
     lines.append("")
-    lines.append("Comparison of lookback block (200, 1000) to main laplace/power_law cell (50).")
-    lines.append("Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `hill_exponent_median`, filtered by `block` and `lookback`")
+    lines.append("Lookback block (l = 20, 50, 100, 200, 500) by family and α; reference row: main laplace/power_law cell (l = 50).")
+    lines.append("Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `K_mean`, `cong_capital_share_median`, `floor_exits_per_period`, `hill_exponent_median`, filtered by `block` and `lookback`")
+    lines.append("Figure: `diagnostics/pilot_c_lookback_k.png`")
     lines.append("")
 
     ref_look, lookback_k = generate_lookback_comparison(df)
 
-    # Show for α = 0.1
-    ref_a01 = ref_look[ref_look['alpha'] == 0.1]
-    look_a01 = lookback_k[lookback_k['alpha'] == 0.1]
-
-    if len(ref_a01) > 0:
-        lines.append("### At α = 0.1")
+    for alpha in sorted(lookback_k['alpha'].unique()):
+        ref_a = ref_look[ref_look['alpha'] == alpha]
+        look_a = lookback_k[lookback_k['alpha'] == alpha]
+        lines.append(f"### At α = {alpha:g}")
         lines.append("")
-        lines.append("| Lookback | K [25,75] | Hill [25,75] |")
-        lines.append("|----------|-----------|--------------|")
-        for _, row in ref_a01.iterrows():
+        lines.append("| Family | Lookback | K [25,75] | K_mean | CCS | Floor exits/period | Hill [25,75] |")
+        lines.append("|--------|----------|-----------|--------|-----|--------------------|--------------|")
+        for _, row in ref_a.iterrows():
             k_band = fmt_band(row['K_ref_median'], row['K_ref_p25'], row['K_ref_p75'])
             h_band = fmt_band(row['hill_ref_median'], row['hill_ref_p25'], row['hill_ref_p75'])
-            lines.append(f"| 50 (ref) | {k_band} | {h_band} |")
-        for _, row in look_a01.iterrows():
+            lines.append(f"| laplace (main ref) | 50 | {k_band} | — | — | — | {h_band} |")
+        for _, row in look_a.sort_values(['log_family', 'lookback']).iterrows():
             k_band = fmt_band(row['K_median'], row['K_p25'], row['K_p75'])
             h_band = fmt_band(row['hill_median'], row['hill_p25'], row['hill_p75'])
-            lines.append(f"| {int(row['lookback'])} | {k_band} | {h_band} |")
+            lines.append(f"| {row['log_family']} | {int(row['lookback'])} | {k_band} | {row['K_mean']:.3f} | "
+                         f"{row['ccs_median']:.3f} | {row['floor_exits']:.2f} | {h_band} |")
         lines.append("")
+
+    # ========================================================================
+    # Section: Search intensity
+    # ========================================================================
+    lines.append("## Search intensity")
+    lines.append("")
+    lines.append("Search block (merge_thresh = 0.2, 1.0) and the main power_law cell (merge_thresh = 0.05), by family × α × merge_thresh; medians over reps.")
+    lines.append("Source: `pilot_c/tidy.csv`, blocks `search` and `main` (power_law). Figure: `diagnostics/pilot_c_search.png` (K* dashed).")
+    lines.append("")
+    search_table = generate_search_table(df)
+    lines.append("| Family | α | merge_thresh | K_mean | K_post_burnin_median | CCS | Mergers/period | Floor exits/period | Hill |")
+    lines.append("|--------|---|--------------|--------|----------------------|-----|----------------|--------------------|------|")
+    for _, row in search_table.iterrows():
+        lines.append(f"| {row['log_family']} | {row['alpha']:g} | {row['merge_thresh']:g} | {row['K_mean']:.3f} | "
+                     f"{row['K_post_burnin_median']:.1f} | {row['cong_capital_share_median']:.3f} | "
+                     f"{row['mergers_per_period']:.2f} | {row['floor_exits_per_period']:.2f} | "
+                     f"{row['hill_exponent_median']:.3f} |")
+    lines.append("")
 
     # ========================================================================
     # Section: Correlation comparison
@@ -940,6 +1031,8 @@ def main():
     create_ccs_vs_alpha_figure(df)
     create_assortativity_figure(df)
     create_endogenous_alpha_histogram(df)
+    create_search_figure(df, benchmarks)
+    create_lookback_figure(df)
 
     # Generate report
     print("Generating summary report...")
