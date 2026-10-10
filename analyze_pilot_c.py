@@ -607,6 +607,50 @@ def create_hhi_figure(df, output_path='diagnostics/pilot_c_hhi.png'):
     return output_path
 
 
+STATUS_PANEL_PATH = 'pilot_c/status_panel_summary.csv'
+FAMILY_ORDER = {'normal': 0, 'laplace': 1, 't3': 2}
+
+
+def status_panel_tables(path=STATUS_PANEL_PATH):
+    """Status panel by family x alpha (mean over reps): main table and diff by size decile."""
+    sp = pd.read_csv(path)
+    main_cols = ['diff_fe_mean', 'diff_fe_median', 'diff_K2_mean', 'diff_K3_4_mean', 'diff_K5p_mean',
+                 'floor_rate_member', 'floor_rate_standalone', 'inc_member_mean', 'inc_standalone_mean']
+    dec_cols = [f'diff_dec{d}_mean' for d in range(1, 11)]
+    g = sp.groupby(['family', 'alpha'])
+    order = lambda c: c.map(FAMILY_ORDER) if c.name == 'family' else c
+    main = g[main_cols].mean().reset_index().sort_values(['family', 'alpha'], key=order)
+    dec = g[dec_cols].mean().reset_index().sort_values(['family', 'alpha'], key=order)
+    return main, dec
+
+
+def create_status_panel_figure(output_path='diagnostics/pilot_c_status_panel.png'):
+    """Member - standalone owner return by size decile; one line per alpha, one panel per family."""
+    if not Path(STATUS_PANEL_PATH).exists():
+        return None
+    _, dec = status_panel_tables()
+    deciles = np.arange(1, 11)
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
+    for ax, family in zip(axes, ['normal', 'laplace', 't3']):
+        sub = dec[dec['family'] == family]
+        for _, row in sub.iterrows():
+            ax.plot(deciles, [row[f'diff_dec{d}_mean'] for d in deciles], marker='o', label=f"α={row['alpha']:g}")
+        ax.axhline(0.0, color='k', linestyle='--', linewidth=1)
+        ax.set_title(f'{family} (power_law)')
+        ax.set_xlabel('size decile within market')
+        ax.set_xticks(deciles)
+        ax.grid(True, alpha=0.3)
+    axes[0].set_ylabel('member − standalone owner return / period')
+    axes[0].legend(fontsize=8)
+    fig.suptitle('Owner-return growth by status, by size decile (mean over reps)')
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    return output_path
+
+
 def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_summary.md'):
     """Generate the full summary report."""
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -866,6 +910,28 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("")
 
     # ========================================================================
+    # Section: Owner-return growth by status (panel)
+    # ========================================================================
+    if Path(STATUS_PANEL_PATH).exists():
+        sp_main, sp_dec = status_panel_tables()
+        lines.append("## Owner-return growth by status")
+        lines.append("")
+        lines.append("Next-period owner return (log share change net of floor recapitalisation) of members minus "
+                     "standalones within (market, size decile) cells, weighted by member firm-periods; all firm-periods "
+                     "after burn-in of the 27 traced main-block power_law scenarios; mean over reps 0-2. "
+                     "Status is taken at the start of the period. Primary result; the event study below is secondary.")
+        lines.append(f"Source: `{STATUS_PANEL_PATH}`. Figure: `diagnostics/pilot_c_status_panel.png`")
+        lines.append("")
+        for tab in (sp_main, sp_dec):
+            tcols = [c for c in tab.columns if c not in ('family', 'alpha')]
+            lines.append("| " + " | ".join(['Family', 'α'] + tcols) + " |")
+            lines.append("|" + "---|" * (len(tcols) + 2))
+            for _, row in tab.iterrows():
+                lines.append("| " + " | ".join([row['family'], f"{row['alpha']:g}"] +
+                                               [f"{row[c]:.5f}" for c in tcols]) + " |")
+            lines.append("")
+
+    # ========================================================================
     # Section: Event study (ITT and owner path)
     # ========================================================================
     es_path = Path('pilot_c/event_study_summary.csv')
@@ -1074,6 +1140,7 @@ def main():
     create_endogenous_alpha_histogram(df)
     create_search_figure(df, benchmarks)
     create_lookback_figure(df)
+    create_status_panel_figure()
 
     # Generate report
     print("Generating summary report...")

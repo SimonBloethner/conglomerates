@@ -211,6 +211,35 @@ Source: `pilot_c/tidy.csv`, blocks `search` and `main` (power_law). Figure: `dia
 | t3 | 0.5 | 0.2 | 7.755 | 8.0 | 0.962 | 53.38 | 53.28 | 1.221 |
 | t3 | 0.5 | 1 | 9.775 | 10.0 | 0.984 | 96.94 | 96.86 | 1.229 |
 
+## Owner-return growth by status
+
+Next-period owner return (log share change net of floor recapitalisation) of members minus standalones within (market, size decile) cells, weighted by member firm-periods; all firm-periods after burn-in of the 27 traced main-block power_law scenarios; mean over reps 0-2. Status is taken at the start of the period. Primary result; the event study below is secondary.
+Source: `pilot_c/status_panel_summary.csv`. Figure: `diagnostics/pilot_c_status_panel.png`
+
+| Family | α | diff_fe_mean | diff_fe_median | diff_K2_mean | diff_K3_4_mean | diff_K5p_mean | floor_rate_member | floor_rate_standalone | inc_member_mean | inc_standalone_mean |
+|---|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.05 | 0.00054 | -0.00003 | 0.00043 | 0.00060 | 0.00070 | 0.02029 | 0.15227 | -0.01046 | -0.01090 |
+| normal | 0.1 | 0.00131 | 0.00045 | 0.00089 | 0.00136 | 0.00176 | 0.01805 | 0.16238 | -0.00953 | -0.01085 |
+| normal | 0.3 | 0.00427 | 0.00242 | 0.00267 | 0.00406 | 0.00474 | 0.01159 | 0.17325 | -0.00629 | -0.01053 |
+| laplace | 0.05 | 0.00103 | 0.00015 | 0.00087 | 0.00109 | 0.00126 | 0.02745 | 0.18919 | -0.01835 | -0.01962 |
+| laplace | 0.1 | 0.00272 | 0.00084 | 0.00204 | 0.00288 | 0.00335 | 0.02499 | 0.19614 | -0.01671 | -0.01963 |
+| laplace | 0.3 | 0.00815 | 0.00378 | 0.00560 | 0.00769 | 0.00920 | 0.01704 | 0.20643 | -0.01131 | -0.01935 |
+| t3 | 0.05 | 0.00266 | 0.00028 | 0.00233 | 0.00278 | 0.00342 | 0.03206 | 0.20114 | -0.02300 | -0.02590 |
+| t3 | 0.1 | 0.00452 | 0.00067 | 0.00379 | 0.00471 | 0.00544 | 0.02955 | 0.20713 | -0.02096 | -0.02582 |
+| t3 | 0.3 | 0.01136 | 0.00358 | 0.00837 | 0.01106 | 0.01296 | 0.02121 | 0.21750 | -0.01445 | -0.02563 |
+
+| Family | α | diff_dec1_mean | diff_dec2_mean | diff_dec3_mean | diff_dec4_mean | diff_dec5_mean | diff_dec6_mean | diff_dec7_mean | diff_dec8_mean | diff_dec9_mean | diff_dec10_mean |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.05 | 0.00080 | 0.00032 | 0.00080 | 0.00061 | 0.00059 | 0.00043 | 0.00055 | 0.00027 | 0.00092 | 0.00036 |
+| normal | 0.1 | 0.00120 | 0.00168 | 0.00138 | 0.00134 | 0.00138 | 0.00149 | 0.00127 | 0.00159 | 0.00128 | 0.00054 |
+| normal | 0.3 | 0.00405 | 0.00456 | 0.00484 | 0.00470 | 0.00483 | 0.00455 | 0.00482 | 0.00503 | 0.00300 | 0.00255 |
+| laplace | 0.05 | 0.00068 | 0.00161 | 0.00172 | 0.00116 | 0.00090 | 0.00109 | 0.00109 | 0.00113 | 0.00079 | 0.00057 |
+| laplace | 0.1 | 0.00182 | 0.00272 | 0.00328 | 0.00288 | 0.00280 | 0.00313 | 0.00308 | 0.00209 | 0.00327 | 0.00164 |
+| laplace | 0.3 | 0.00501 | 0.00890 | 0.00866 | 0.00863 | 0.00850 | 0.00912 | 0.00853 | 0.00790 | 0.00872 | 0.00555 |
+| t3 | 0.05 | 0.00211 | 0.00265 | 0.00270 | 0.00332 | 0.00259 | 0.00311 | 0.00283 | 0.00327 | 0.00230 | 0.00145 |
+| t3 | 0.1 | 0.00037 | 0.00373 | 0.00581 | 0.00464 | 0.00496 | 0.00553 | 0.00523 | 0.00443 | 0.00442 | 0.00247 |
+| t3 | 0.3 | 0.00749 | 0.01106 | 0.01184 | 0.01197 | 0.01251 | 0.01196 | 0.01215 | 0.01239 | 0.01086 | 0.00840 |
+
 ## Event study (ITT and owner path)
 
 Conglomerate entry, main block power_law, 27 traced scenarios; mean over reps 0-2 of per-scenario medians. ITT = all matched entries on raw log share; owner = the same DiD on log share net of cumulative floor jumps (what owners earned, excluding recapitalisation).

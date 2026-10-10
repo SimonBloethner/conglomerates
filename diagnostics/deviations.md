@@ -279,3 +279,50 @@ The files over 100 MB are laplace α ∈ {0.05, 0.1} and t3 α ∈ {0.05, 0.1}. 
 Option (c) chosen. Per-event files `pilot_c/events/*_events.csv` are no longer tracked (`git rm --cached`, ignored via `.gitignore`); they stay on Festus in `/scratch/bt307958/c29/IOxEE/pilot_c/events` (2.4 GB). The commit includes `pilot_c/event_study_summary.csv` and the 27 per-scenario `pilot_c/events/*_summary.csv`. Earlier versions of the per-event files remain in git history (C26–C28).
 
 Follow-up pass (C29): `analysis/event_study.py` replaced with the extended `summarize()` (sha256 `42d1db45…28bf`; `events_from_trace` unchanged) and the event study rerun on the C29 traces with `--reuse` (array 823726, max 27.2 s per task); `n_events` and `did_owner_median` are identical to the first C29 run for all 27 tags.
+
+---
+
+# C30 Owner-return growth by status (panel) — stopped at Step 5 (floor-rate cross-check)
+
+## Completed (nothing committed)
+
+- Step 1: `analysis/status_panel.py` (`ab6dcc09…2527`) and `analysis/run_panel.py` (`c0c62124…473c`) added; hashes verified.
+- Step 2: `tests/test_status_panel.py` passes.
+  - (a) The hand-built trace gives the exact values to 1e-12.
+  - Mutation check (not committed): a jump subtracted on the wrong side gives `inc_standalone_mean` 0.05. Status taken at the end of the period gives `diff_fe_mean` 0.0667 and a floor rate of 1/22. K+1 gives `diff_K2_mean` NaN.
+  - (b) On the seeded M=N=20, T=600, burn_in=100 trace: n_rows 200000, counts consistent, `floor_rate_member < floor_rate_standalone`.
+- Step 3: array 823761, 27/27 COMPLETED (max 11 s per task); `--merge` printed `merged 27`.
+- Step 4: `analyze_pilot_c.py` section "Owner-return growth by status" (two tables) and `diagnostics/pilot_c_status_panel.png`; analyze exits 0.
+- Step 5:
+  - Pass: 27 rows; `n_rows == 2500*3000` in every row; `n_member + n_standalone == n_rows`; `floor_rate_member < floor_rate_standalone` in every row.
+  - Pass: `pytest -q tests/`: 174 passed, 0 failed, 0 errors.
+  - **Fail: `floor_rate_standalone` within 20% of tidy `floor_hit_rate_standalone`: 0 of 27 rows (relative difference 0.97–2.44).**
+
+## Why the floor-rate check fails
+
+The two columns are not the same quantity; they have different denominators.
+
+- In `collaborative_growth.py`, `floor_hit_rate_standalone = sum(floor_hits_by_status[burn_in:, 0]) / total_firm_periods`, with `total_firm_periods = valid_steps * total_firms`. That is standalone floor hits per firm-period of **all** firms.
+- In `status_panel.summarize`, `floor_rate_standalone = df.hit[~df.member].mean()`. That is standalone hits per **standalone** firm-period.
+
+So tidy ≈ panel × (standalone share of firm-periods); the share is 0.30–0.55 here. Rescaling the tidy rate by the panel's standalone share (`tidy / (n_standalone / n_rows)`) brings all 27 rows within 5.0–7.1% of the panel rate. For members the rescaled gap is up to 33%.
+
+The remaining gap fits a difference in status timing. The model records status at floor time, after that step's mergers and before a C27 floor exit. The panel uses status at the start of the period (`cong[t]`). A firm that joins in step t and hits the floor in the same step counts as a member in the model and as a standalone in the panel; this enlarges the panel's standalone hits and shrinks the model's member denominator relative to the panel's.
+
+## Options
+
+- (a) Compare like with like: check `floor_rate_standalone` against `floor_hit_rate_standalone / (n_standalone / n_rows)` with the 20% tolerance (passes, max 7.1%).
+- (b) Compare the unconditional rate instead: `floor_rate_standalone * n_standalone / n_rows` against the tidy column (the same comparison from the other side).
+- (c) Keep the check as written. That requires changing one of the two definitions; it is not a code bug.
+
+## State
+
+Outputs are on Festus in `/scratch/bt307958/c30/IOxEE`: `pilot_c/status_panel_summary.csv`, `pilot_c/panel/*_summary.csv`, `diagnostics/pilot_c_summary.md`, `diagnostics/pilot_c_status_panel.png`. Logs: `/scratch/bt307958/c30/{check5.txt,pytest.log}`. The working tree holds the C30 changes, uncommitted.
+
+## Resolution (C30)
+
+Options (a) and (b) were both applied in place of the check as written:
+
+- (a) Panel `floor_rate_standalone` vs tidy `floor_hit_rate_standalone / (n_standalone / n_rows)`: max relative difference 0.0714 (min 0.0499); 27 of 27 within 20%.
+- (b) Panel `floor_rate_standalone * n_standalone / n_rows` vs tidy `floor_hit_rate_standalone`: max relative difference 0.0714 (min 0.0499); 27 of 27 within 20%.
+- As relative differences, (a) and (b) are algebraically identical (|p − t/s|/(t/s) = |p·s − t|/t) and agree row by row. The check as written (raw columns, 0 of 27 within 20%) compares different denominators and is not used.
