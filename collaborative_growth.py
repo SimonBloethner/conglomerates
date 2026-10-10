@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from scipy.stats import random_correlation, norm, laplace, t as student_t
 from scipy.special import logsumexp, expm1
@@ -114,7 +115,7 @@ def get_states_from_buffer(buffer, start_step, end_step, firms):
 
 def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
           cong_occupies_market, to_delete=None, step=None, exits_per_period=None,
-          firm_exit_step=None, exit_events_raw=None):
+          firm_exit_step=None):
     """
     SoA: Array-based exit function using Structure-of-Arrays with occupancy flags
 
@@ -125,9 +126,7 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
     exits_per_period : ndarray, optional
         Array to track firm exits per period
     firm_exit_step : ndarray, optional
-        C20: Track exit step for event study
-    exit_events_raw : list, optional
-        C22: List to record (firm_id, exit_step) for all exits
+        Track exit step
     """
     cong_id = firm_conglom[firm_id]
     if cong_id != -1:
@@ -135,13 +134,9 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
         if step is not None and exits_per_period is not None:
             exits_per_period[step] += 1
 
-        # C20: Track exit step for event study
+        # Track exit step
         if step is not None and firm_exit_step is not None:
             firm_exit_step[firm_id] = step
-
-        # C22: Record exit event for all entries tracking
-        if step is not None and exit_events_raw is not None:
-            exit_events_raw.append((firm_id, step))
 
         # SoA: Remove firm from array
         n_firms = cong_size[cong_id]
@@ -172,12 +167,9 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
                 remaining_firm_id = new_firms[0]
                 firm_conglom[remaining_firm_id] = -1
                 firm_entered[remaining_firm_id] = -1
-                # C20: Track exit step for remaining firm too
+                # Track exit step for remaining firm too
                 if step is not None and firm_exit_step is not None:
                     firm_exit_step[remaining_firm_id] = step
-                # C22: Record exit event for remaining firm
-                if step is not None and exit_events_raw is not None:
-                    exit_events_raw.append((remaining_firm_id, step))
 
             # Mark for deletion instead of deleting immediately
             if to_delete is not None:
@@ -1531,7 +1523,7 @@ def model(params, seed=None, market_corr="identity",
           log_family="normal", nu=3.0, floor_c=0.0,
           metric_every=100, burn_in=0, alpha_endogenous=False,
           g=None, renorm_every=500, market_size_fixed=False,
-          decision_rule="replay", exit_review_every=1):
+          decision_rule="replay", exit_review_every=1, trace_path=None):
     """
     Main simulation model.
 
@@ -1775,18 +1767,17 @@ def model(params, seed=None, market_corr="identity",
     firm_first_entered = np.full(total_firms, -1, dtype=np.int32)  # C20: First-time entry (never reset)
     firm_exit_step = np.full(total_firms, -1, dtype=np.int32)  # C20: Track exit step for event study
 
-    # C22: Event study tracking - accumulate ALL entry/exit events during run
-    # Each entry: (firm_id, entry_step, log_share_at_entry_minus_l, log_share_at_entry, market_id)
-    # Records every entry (not just first), at any step t with l <= t <= T-l
-    entry_events_raw = []
-    # Each exit: (firm_id, exit_step)
-    exit_events_raw = []
 
     # C22b: Alpha scatter - track (alpha, K) per conglomerate at key moments
     # Dict: step -> {cong_id: (alpha, K)}
     # Records at: first step per conglomerate (after creation) AND every metric_every
     alpha_scatter = {}
     cong_recorded_first_step = np.zeros(MAX_CONGLOMERATES, dtype=bool)  # Track which congs have been recorded
+
+    # C24: Trace recording for external event study
+    if trace_path is not None:
+        TRACE_logshare = np.zeros((steps + 1, total_firms), dtype=np.float32)
+        TRACE_cong = np.full((steps + 1, total_firms), -1, dtype=np.int16)
 
     # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
     # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
@@ -1868,6 +1859,13 @@ def model(params, seed=None, market_corr="identity",
     firm_to_market = markets_structure[:, 0]
     firm_to_local_idx = markets_structure[:, 1]
 
+    # C24: Record initial state for trace (step 0)
+    if trace_path is not None:
+        init_log_states = firm_log_states_buffer[0].reshape(markets, firms_per_market)
+        init_log_totals = logsumexp(init_log_states, axis=1, keepdims=True)
+        init_log_share = init_log_states - init_log_totals
+        TRACE_logshare[0] = init_log_share.ravel().astype(np.float32)
+        TRACE_cong[0] = firm_conglom.astype(np.int16)
 
     for step in range(steps):
         # PERFORMANCE OPTIMIZATION: Use precomputed Cholesky decomposition for random generation
@@ -2029,52 +2027,6 @@ def model(params, seed=None, market_corr="identity",
             mergers_cc_per_period[step] = num_mergers_cc
             proposals_cc_per_period[step] = num_proposals_cc
 
-            # C22: Track ALL entries for event study (not just first)
-            # Only record entries at steps t with l <= t <= T-l
-            if step >= lookback and step <= steps - lookback and num_mergers > 0:
-                # Detect newly entered firms (was standalone, now in conglomerate)
-                newly_entered = (pre_merger_in_cong == -1) & (firm_conglom >= 0)
-                new_entrants = np.where(newly_entered)[0]
-
-                # Compute current log market shares for entry snapshot
-                current_log_states = firm_log_states_buffer[curr_idx].reshape(markets, firms_per_market)
-                log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
-                log_market_share_entry = current_log_states - log_market_totals
-
-                # Compute log market shares from l periods ago
-                old_idx = (step - lookback) % (lookback + 1)
-                old_log_states = firm_log_states_buffer[old_idx].reshape(markets, firms_per_market)
-                log_market_totals_old = logsumexp(old_log_states, axis=1, keepdims=True)
-                log_market_share_before = old_log_states - log_market_totals_old
-
-                for firm_id in new_entrants:
-                    # C22: Record EVERY entry (not just first)
-                    # Still track first entry time for control matching
-                    if firm_first_entered[firm_id] == -1:
-                        firm_first_entered[firm_id] = step
-                    market = firm_home_market[firm_id]
-                    firm_idx_in_market = firm_id - market * firms_per_market
-                    log_share_at_entry = log_market_share_entry[market, firm_idx_in_market]
-                    log_share_at_entry_minus_l = log_market_share_before[market, firm_idx_in_market]
-                    
-                    # C23 fix: Capture control candidates' log shares at detection time
-                    # so we don't need buffer data later
-                    market_start = market * firms_per_market
-                    control_candidates = {}
-                    for ctrl_id in range(market_start, market_start + firms_per_market):
-                        if ctrl_id != firm_id and firm_conglom[ctrl_id] == -1:
-                            # Standalone firm - record their log shares
-                            ctrl_idx = ctrl_id - market_start
-                            control_candidates[ctrl_id] = (
-                                log_market_share_before[market, ctrl_idx],
-                                log_market_share_entry[market, ctrl_idx]
-                            )
-                    
-                    entry_events_raw.append((
-                        firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market,
-                        control_candidates
-                    ))
-
             # C22b: Record alpha scatter for newly created conglomerates
             if alpha_endogenous and num_mergers > 0:
                 for cid in range(next_cong_id):
@@ -2134,7 +2086,7 @@ def model(params, seed=None, market_corr="identity",
                 exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
                       cong_occupies_market, to_delete=conglomerates_to_delete,
                       step=step, exits_per_period=exits_per_period,
-                      firm_exit_step=firm_exit_step, exit_events_raw=exit_events_raw)
+                      firm_exit_step=firm_exit_step)
 
         # SoA: Clean up conglomerates marked for deletion
         for cong_id in conglomerates_to_delete:
@@ -2274,19 +2226,24 @@ def model(params, seed=None, market_corr="identity",
                     exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
                           cong_occupies_market, to_delete=exit_cleanup_to_delete,
                           step=step, exits_per_period=exits_per_period,
-                          firm_exit_step=firm_exit_step, exit_events_raw=exit_events_raw)
+                          firm_exit_step=firm_exit_step)
 
             # SoA: Clean up conglomerates marked for deletion
             for cong_id in exit_cleanup_to_delete:
                 deallocate_cong_id(cong_id)
 
         # Reshape next_idx states for market-wise calculations
-        current_log_states = firm_log_states_buffer[curr_idx].reshape(markets, firms_per_market)
+        current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
 
         # Market share calculation (current timestep only)
         log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
         log_market_share = current_log_states - log_market_totals
         market_share_current[:, :] = np.exp(log_market_share).astype(np.float32)
+
+        # C24: Record trace at each step
+        if trace_path is not None:
+            TRACE_logshare[step + 1] = log_market_share.ravel().astype(np.float32)
+            TRACE_cong[step + 1] = firm_conglom.astype(np.int16)
 
         # VECTORIZED: Ranks and Gini for ALL markets at this timestep (not per-market loop)
         # Sort indices for all markets at once
@@ -2571,247 +2528,6 @@ def model(params, seed=None, market_corr="identity",
     # C17: Growth gap summary (post-burn-in median)
     summary['growth_gap_median'] = np.nanmedian(growth_gap[valid_metric_indices])
 
-    # C22: Event study (matched DiD)
-    # Record every entry at any step t with l ≤ t ≤ T-l where firm stays ≥l periods
-    # Units: mean log share change per period over the l-window
-
-    # Build mapping of each entry to its exit step
-    # For each entry, find the next exit for that firm (if any)
-    # Sort exits by (firm_id, exit_step) for efficient lookup
-    exit_by_firm = {}  # firm_id -> list of exit steps (sorted)
-    for firm_id, exit_step in exit_events_raw:
-        if firm_id not in exit_by_firm:
-            exit_by_firm[firm_id] = []
-        exit_by_firm[firm_id].append(exit_step)
-    for firm_id in exit_by_firm:
-        exit_by_firm[firm_id].sort()
-
-    # Build set of (firm_id, entry_step, exit_step) intervals for standalone checking
-    # entry_intervals[firm_id] = [(entry_step, exit_step), ...]
-    entry_intervals = {}
-    for entry in entry_events_raw:
-        firm_id, entry_step, _, _, _, _ = entry
-        # Find next exit after this entry
-        exit_step_for_entry = steps  # Default: still in conglomerate at end
-        if firm_id in exit_by_firm:
-            for es in exit_by_firm[firm_id]:
-                if es > entry_step:
-                    exit_step_for_entry = es
-                    break
-        if firm_id not in entry_intervals:
-            entry_intervals[firm_id] = []
-        entry_intervals[firm_id].append((entry_step, exit_step_for_entry))
-
-    def was_standalone_throughout(firm_id, window_start, window_end):
-        """Check if firm was standalone throughout [window_start, window_end]"""
-        if firm_id not in entry_intervals:
-            return True  # Never entered any conglomerate
-        for entry_step, exit_step in entry_intervals[firm_id]:
-            # Check if this membership overlaps with [window_start, window_end]
-            # Membership period is [entry_step, exit_step)
-            if entry_step < window_end and exit_step > window_start:
-                return False  # Overlap exists
-        return True
-
-    event_study_data = {
-        'n_events': 0,          # Total events recorded
-        'n_matched': 0,         # Events with valid control
-        'joiner_before_median': np.nan,
-        'joiner_after_median': np.nan,
-        'control_before_median': np.nan,
-        'control_after_median': np.nan,
-        'did_median': np.nan,
-        'did_p25': np.nan,
-        'did_p75': np.nan,
-        'did_post_median': np.nan,  # DiD median for events with t >= burn_in
-        'events': []
-    }
-
-    all_events = []   # All events where firm stayed ≥l periods
-    valid_events = [] # Events with valid control match
-
-    # Buffer range for log share computation
-    buffer_range_start = steps - lookback
-
-    for entry in entry_events_raw:
-        firm_id, entry_step, log_share_before, log_share_at_entry, market, control_candidates = entry
-
-        # Find exit step for THIS specific entry
-        exit_step_for_entry = steps  # Default: still in conglomerate
-        if firm_id in exit_by_firm:
-            for es in exit_by_firm[firm_id]:
-                if es > entry_step:
-                    exit_step_for_entry = es
-                    break
-
-        # Check if firm stayed ≥lookback periods after entry
-        stayed_long_enough = (exit_step_for_entry - entry_step) >= lookback
-
-        if not stayed_long_enough:
-            continue
-
-        # Entry is valid (firm stayed ≥l periods)
-        # Check if we can compute log share at entry+lookback
-        after_step = entry_step + lookback
-        if after_step > steps:
-            continue
-
-        firm_idx_in_market = firm_id - market * firms_per_market
-
-        # Compute joiner's log share at entry+l from buffer if possible
-        if after_step >= buffer_range_start:
-            after_idx = after_step % (lookback + 1)
-            after_log_states = firm_log_states_buffer[after_idx].reshape(markets, firms_per_market)
-            log_market_totals_after = logsumexp(after_log_states, axis=1, keepdims=True)
-            log_share_at_entry_plus_l = (after_log_states - log_market_totals_after)[market, firm_idx_in_market]
-        else:
-            # Event too old - skip (buffer doesn't have this data)
-            continue
-
-        # Compute joiner's before and after changes (mean per period)
-        # Units: mean log share change per period over the l-window
-        joiner_before = (log_share_at_entry - log_share_before) / lookback
-        joiner_after = (log_share_at_entry_plus_l - log_share_at_entry) / lookback
-
-        # Record this as a valid event (firm stayed ≥l periods)
-        # C23: Check if joiner hit floor in before-window [entry_step - lookback, entry_step)
-        before_start = max(0, entry_step - lookback)
-        joiner_floor_before = np.any(floor_hits_by_firm_step[firm_id, before_start:entry_step])
-        
-        event_data = {
-            'joiner_firm': firm_id,
-            'entry_step': entry_step,
-            'market': market,
-            'joiner_log_share_at_entry': log_share_at_entry,
-            'joiner_before': joiner_before,
-            'joiner_after': joiner_after,
-            'joiner_floor_before': joiner_floor_before,  # C23
-        }
-        all_events.append(event_data)
-
-        # Find control firm: same market, standalone throughout [t-l, t+l], closest log share at entry
-        market_start = market * firms_per_market
-        market_end = (market + 1) * firms_per_market
-        window_start = entry_step - lookback
-        window_end = entry_step + lookback
-
-        best_control = None
-        best_dist = np.inf
-
-        # For matching, compute control log shares at entry_step from buffer if available
-        # Since entry_step may be outside buffer, we use closest available snapshot
-        entry_in_buffer = entry_step >= buffer_range_start
-        if entry_in_buffer:
-            entry_idx = entry_step % (lookback + 1)
-            entry_log_states = firm_log_states_buffer[entry_idx].reshape(markets, firms_per_market)
-            log_market_totals_entry = logsumexp(entry_log_states, axis=1, keepdims=True)
-            log_shares_at_entry = (entry_log_states - log_market_totals_entry)[market, :]
-
-        for control_id in range(market_start, market_end):
-            if control_id == firm_id:
-                continue
-
-            # Check if standalone throughout [window_start, window_end]
-            if not was_standalone_throughout(control_id, window_start, window_end):
-                continue
-
-            # Compute distance in log share at entry (if available)
-            control_idx_in_market = control_id - market_start
-            if entry_in_buffer:
-                control_log_share = log_shares_at_entry[control_idx_in_market]
-                dist = abs(log_share_at_entry - control_log_share)
-            else:
-                # Use firm index proximity as fallback
-                dist = abs(firm_id - control_id)
-
-            # C23: Match tolerance - control valid only if |log_share_diff| <= 0.25
-            if dist < best_dist:
-                best_dist = dist
-                best_control = control_id
-
-        if best_control is None:
-            # No valid control - record event with NaN control but exclude from DiD
-            event_data['control_firm'] = None
-            event_data['control_before'] = np.nan
-            event_data['control_after'] = np.nan
-            event_data['did'] = np.nan
-            continue
-
-        # Compute control's before and after changes
-        control_idx_in_market = best_control - market_start
-
-        # Get control log shares at t-l, t, t+l
-        before_step = entry_step - lookback
-
-        # C23 fix: Use pre-captured control data from detection time
-        if best_control in control_candidates:
-            ctrl_log_share_before, ctrl_log_share_at_entry = control_candidates[best_control]
-            control_log_share_after = (after_log_states - log_market_totals_after)[market, control_idx_in_market]
-
-            control_before = (ctrl_log_share_at_entry - ctrl_log_share_before) / lookback
-            control_after = (control_log_share_after - ctrl_log_share_at_entry) / lookback
-        else:
-            # Control wasn't standalone at detection time
-            control_before = np.nan
-            control_after = np.nan
-
-        did = (joiner_after - joiner_before) - (control_after - control_before)
-
-        event_data['control_firm'] = best_control
-        event_data['control_before'] = control_before
-        event_data['control_after'] = control_after
-        event_data['did'] = did
-
-        valid_events.append(event_data)
-
-    # Compute summary statistics
-    event_study_data['n_events'] = len(all_events)
-    event_study_data['n_matched'] = len(valid_events)
-
-    if len(valid_events) > 0:
-        joiner_befores = np.array([e['joiner_before'] for e in valid_events])
-        joiner_afters = np.array([e['joiner_after'] for e in valid_events])
-        control_befores = np.array([e['control_before'] for e in valid_events])
-        control_afters = np.array([e['control_after'] for e in valid_events])
-        dids = np.array([e['did'] for e in valid_events])
-        entry_steps = np.array([e['entry_step'] for e in valid_events])
-
-        event_study_data['joiner_before_median'] = np.median(joiner_befores)
-        event_study_data['joiner_after_median'] = np.median(joiner_afters)
-        event_study_data['control_before_median'] = np.median(control_befores)
-        event_study_data['control_after_median'] = np.median(control_afters)
-        event_study_data['did_median'] = np.median(dids)
-        event_study_data['did_p25'] = np.percentile(dids, 25)
-        event_study_data['did_p75'] = np.percentile(dids, 75)
-
-        # DiD median for events with t >= burn_in
-        post_burn_mask = entry_steps >= burn_in
-        if np.any(post_burn_mask):
-            event_study_data['did_post_median'] = np.median(dids[post_burn_mask])
-
-        event_study_data['events'] = valid_events
-        
-        # C23: Compute DiD for events where joiner did NOT hit floor in before-window
-        nofloor_mask = np.array([not e.get('joiner_floor_before', True) for e in valid_events])
-        event_study_data['n_nofloor'] = int(np.sum(nofloor_mask))
-        if np.any(nofloor_mask):
-            event_study_data['did_nofloor_median'] = np.median(dids[nofloor_mask])
-        else:
-            event_study_data['did_nofloor_median'] = np.nan
-
-    summary['event_n_events'] = event_study_data['n_events']
-    summary['event_n_matched'] = event_study_data['n_matched']
-    summary['event_n_nofloor'] = event_study_data.get('n_nofloor', 0)
-    summary['event_did_median'] = event_study_data['did_median']
-    summary['event_did_nofloor_median'] = event_study_data.get('did_nofloor_median', np.nan)
-    summary['event_did_post_median'] = event_study_data['did_post_median']
-    summary['event_did_p25'] = event_study_data.get('did_p25', np.nan)
-    summary['event_did_p75'] = event_study_data.get('did_p75', np.nan)
-    summary['event_joiner_before_median'] = event_study_data.get('joiner_before_median', np.nan)
-    summary['event_joiner_after_median'] = event_study_data.get('joiner_after_median', np.nan)
-    summary['event_control_before_median'] = event_study_data.get('control_before_median', np.nan)
-    summary['event_control_after_median'] = event_study_data.get('control_after_median', np.nan)
-
     # C22b: alpha_scatter is now a dict keyed by step, populated during simulation
     # Format: alpha_scatter[step] = {cong_id: (alpha, K)}
     # Only populated when alpha_endogenous=True
@@ -2901,14 +2617,34 @@ def model(params, seed=None, market_corr="identity",
                        # C17 additions: member-standalone growth gap
                        'growth_gap': growth_gap,
                        'growth_gap_by_market': growth_gap_by_market,
-                       # C20 additions: event study and alpha scatter
-                       'event_study': event_study_data,
+                       # C20 additions: alpha scatter
                        'alpha_scatter': alpha_scatter,
                        # C22c: Assortativity by IQR
                        'assort_iqr': assort_iqr,
                        # C23: Final conglomerate state for alpha_scatter.csv
                        'alpha_scatter_final': alpha_scatter_final,
                        }
+
+    # C24: Handle trace data
+    if trace_path is not None:
+        if trace_path == '__internal__':
+            # Return trace arrays in hyperparameters for inline event study
+            hyperparameters['TRACE_logshare'] = TRACE_logshare
+            hyperparameters['TRACE_cong'] = TRACE_cong
+        else:
+            # Save to file (write to /tmp first, then copy to avoid NFS issues)
+            import subprocess
+            tmp_path = f"/tmp/trace_{os.getpid()}.npz"
+            try:
+                np.savez(tmp_path, logshare=TRACE_logshare, cong=TRACE_cong,
+                         floor=np.array([floor_c]), home=firm_home_market.astype(np.int16))
+                subprocess.run(['cp', tmp_path, trace_path], check=True)
+                os.remove(tmp_path)
+                print(f"Trace saved to {trace_path}")
+            except Exception as e:
+                print(f"Warning: Failed to save trace: {e}")
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)

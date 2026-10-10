@@ -27,10 +27,6 @@ EXPECTED_TIDY_COLUMNS = [
     'K_post_burnin_p75', 'K_eff_post_burnin_median', 'K_eff_post_burnin_p25',
     'K_eff_post_burnin_p75', 'alpha_adopted_median', 'alpha_adopted_mean',
     'alpha_adopted_std', 'assort_iqr',
-    'event_n_events', 'event_n_matched', 'event_n_nofloor',
-    'event_did_median', 'event_did_nofloor_median',
-    'event_joiner_before_median', 'event_joiner_after_median',
-    'event_control_before_median', 'event_control_after_median',
 ]
 
 EXPECTED_BLOCK_COUNTS = {

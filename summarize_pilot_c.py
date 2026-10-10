@@ -225,17 +225,6 @@ def extract_post_burnin_metrics(result):
     # Assortativity: use pre-computed assort_iqr from model (C22c)
     metrics["assort_iqr"] = summary.get("assort_iqr", np.nan)
 
-    # Event-study fields (C22a, C23)
-    metrics["event_n_events"] = summary.get("event_n_events", 0)
-    metrics["event_n_matched"] = summary.get("event_n_matched", 0)
-    metrics["event_n_nofloor"] = summary.get("event_n_nofloor", 0)
-    metrics["event_did_median"] = summary.get("event_did_median", np.nan)
-    metrics["event_did_nofloor_median"] = summary.get("event_did_nofloor_median", np.nan)
-    metrics["event_joiner_before_median"] = summary.get("event_joiner_before_median", np.nan)
-    metrics["event_joiner_after_median"] = summary.get("event_joiner_after_median", np.nan)
-    metrics["event_control_before_median"] = summary.get("event_control_before_median", np.nan)
-    metrics["event_control_after_median"] = summary.get("event_control_after_median", np.nan)
-
     return metrics
 
 
@@ -371,11 +360,6 @@ def create_medians_df(tidy_df):
         'growth_gap_median',  # C17
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
-        # Event-study fields (C23)
-        'event_n_events', 'event_n_matched', 'event_n_nofloor',
-        'event_did_median', 'event_did_nofloor_median',
-        'event_joiner_before_median', 'event_joiner_after_median',
-        'event_control_before_median', 'event_control_after_median',
     ]
 
     agg_dict = {}
