@@ -2056,8 +2056,23 @@ def model(params, seed=None, market_corr="identity",
                     firm_idx_in_market = firm_id - market * firms_per_market
                     log_share_at_entry = log_market_share_entry[market, firm_idx_in_market]
                     log_share_at_entry_minus_l = log_market_share_before[market, firm_idx_in_market]
+                    
+                    # C23 fix: Capture control candidates' log shares at detection time
+                    # so we don't need buffer data later
+                    market_start = market * firms_per_market
+                    control_candidates = {}
+                    for ctrl_id in range(market_start, market_start + firms_per_market):
+                        if ctrl_id != firm_id and firm_conglom[ctrl_id] == -1:
+                            # Standalone firm - record their log shares
+                            ctrl_idx = ctrl_id - market_start
+                            control_candidates[ctrl_id] = (
+                                log_market_share_before[market, ctrl_idx],
+                                log_market_share_entry[market, ctrl_idx]
+                            )
+                    
                     entry_events_raw.append((
-                        firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market
+                        firm_id, step, log_share_at_entry_minus_l, log_share_at_entry, market,
+                        control_candidates
                     ))
 
             # C22b: Record alpha scatter for newly created conglomerates
@@ -2575,7 +2590,7 @@ def model(params, seed=None, market_corr="identity",
     # entry_intervals[firm_id] = [(entry_step, exit_step), ...]
     entry_intervals = {}
     for entry in entry_events_raw:
-        firm_id, entry_step, _, _, _ = entry
+        firm_id, entry_step, _, _, _, _ = entry
         # Find next exit after this entry
         exit_step_for_entry = steps  # Default: still in conglomerate at end
         if firm_id in exit_by_firm:
@@ -2619,7 +2634,7 @@ def model(params, seed=None, market_corr="identity",
     buffer_range_start = steps - lookback
 
     for entry in entry_events_raw:
-        firm_id, entry_step, log_share_before, log_share_at_entry, market = entry
+        firm_id, entry_step, log_share_before, log_share_at_entry, market, control_candidates = entry
 
         # Find exit step for THIS specific entry
         exit_step_for_entry = steps  # Default: still in conglomerate
@@ -2728,20 +2743,15 @@ def model(params, seed=None, market_corr="identity",
         # Get control log shares at t-l, t, t+l
         before_step = entry_step - lookback
 
-        # Check if all three timepoints are in buffer
-        if before_step >= buffer_range_start and entry_in_buffer:
-            before_idx = before_step % (lookback + 1)
-            before_log_states = firm_log_states_buffer[before_idx].reshape(markets, firms_per_market)
-            log_market_totals_before = logsumexp(before_log_states, axis=1, keepdims=True)
-            control_log_share_before = (before_log_states - log_market_totals_before)[market, control_idx_in_market]
-            control_log_share_at_entry = log_shares_at_entry[control_idx_in_market]
+        # C23 fix: Use pre-captured control data from detection time
+        if best_control in control_candidates:
+            ctrl_log_share_before, ctrl_log_share_at_entry = control_candidates[best_control]
             control_log_share_after = (after_log_states - log_market_totals_after)[market, control_idx_in_market]
 
-            control_before = (control_log_share_at_entry - control_log_share_before) / lookback
-            control_after = (control_log_share_after - control_log_share_at_entry) / lookback
+            control_before = (ctrl_log_share_at_entry - ctrl_log_share_before) / lookback
+            control_after = (control_log_share_after - ctrl_log_share_at_entry) / lookback
         else:
-            # Control data not fully available in buffer
-            # Use approximation: control changes = 0 (neutral baseline)
+            # Control wasn't standalone at detection time
             control_before = np.nan
             control_after = np.nan
 
