@@ -16,6 +16,7 @@ EXPECTED_TIDY_COLUMNS = [
     'floor_c', 'K_median', 'K_mean', 'K_eff_over_K_median',
     'floor_hit_rate_standalone', 'floor_hit_rate_member',
     'mergers_per_period', 'proposals_per_period', 'exits_per_period',
+    'floor_exits_per_period',
     'growth_gap_median', 'acceptance_rate_ss', 'acceptance_rate_sc',
     'acceptance_rate_cc', 'acceptance_rate', 'hill_exponent_median',
     'hill_exponent_p25', 'hill_exponent_p75', 'hhi_within_median',

@@ -69,6 +69,7 @@ def extract_post_burnin_metrics(result):
     metrics['mergers_per_period'] = summary.get('mergers_per_period', np.nan)
     metrics['proposals_per_period'] = summary.get('proposals_per_period', np.nan)
     metrics['exits_per_period'] = summary.get('exits_per_period', np.nan)
+    metrics['floor_exits_per_period'] = summary.get('floor_exits_per_period', np.nan)
     metrics['growth_gap_median'] = summary.get('growth_gap_median', np.nan)  # C17
 
     # Per-type acceptance rates (C17)
@@ -355,6 +356,7 @@ def create_medians_df(tidy_df):
         'hill_exponent_median', 'hhi_within_median', 'hhi_aggregate_median',
         'top10pct_aggregate_median', 'cong_capital_share_median',
         'mergers_per_period', 'proposals_per_period', 'exits_per_period',
+        'floor_exits_per_period',
         'acceptance_rate', 'assort_iqr',
         'acceptance_rate_ss', 'acceptance_rate_sc', 'acceptance_rate_cc',  # C17
         'growth_gap_median',  # C17

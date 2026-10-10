@@ -1846,6 +1846,7 @@ def model(params, seed=None, market_corr="identity",
 
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(steps)
+    floor_exits_per_period = np.zeros(steps)
 
     # Pre-allocate lists for conglomerate metrics (computed on-the-fly)
     avg_shares = []
@@ -2145,6 +2146,17 @@ def model(params, seed=None, market_corr="identity",
             for firm_id in hit_firms:
                 status = 0 if firm_conglom[firm_id] == -1 else 1
                 floor_hits_by_status[step, status] += 1
+            # C27: a firm at the floor is a new entrant at minimum scale; it keeps no affiliation.
+            floor_cleanup_to_delete = set()
+            for firm_id in hit_firms:
+                if firm_conglom[firm_id] != -1:
+                    floor_exits_per_period[step] += 1
+                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
+                          cong_occupies_market, to_delete=floor_cleanup_to_delete,
+                          step=step, exits_per_period=exits_per_period,
+                          firm_exit_step=firm_exit_step)
+            for cong_id in floor_cleanup_to_delete:
+                deallocate_cong_id(cong_id)
 
         # MARKET_SIZE_FIXED RENORMALIZATION: Per-market normalization to mean size = 1
         # After pooling and floor, subtract log(Σ s/N) from every firm in each market
@@ -2489,6 +2501,7 @@ def model(params, seed=None, market_corr="identity",
         summary['mergers_per_period'] = np.mean(mergers_per_period[burn_in:])
         summary['proposals_per_period'] = np.mean(proposals_per_period[burn_in:])
         summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
+        summary['floor_exits_per_period'] = np.mean(floor_exits_per_period[burn_in:])
         # Per-type acceptance rates
         total_props_ss = np.sum(proposals_ss_per_period[burn_in:])
         total_props_sc = np.sum(proposals_sc_per_period[burn_in:])
@@ -2509,6 +2522,7 @@ def model(params, seed=None, market_corr="identity",
         summary['mergers_per_period'] = 0.0
         summary['proposals_per_period'] = 0.0
         summary['exits_per_period'] = 0.0
+        summary['floor_exits_per_period'] = 0.0
         summary['acceptance_rate_ss'] = np.nan
         summary['acceptance_rate_sc'] = np.nan
         summary['acceptance_rate_cc'] = np.nan
@@ -2590,6 +2604,7 @@ def model(params, seed=None, market_corr="identity",
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
                        'log_family': log_family, 'nu': nu,
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
+                       'floor_exits_per_period': floor_exits_per_period,
                        'final_log_states': firm_log_states_buffer[steps % (lookback + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,

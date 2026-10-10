@@ -126,3 +126,49 @@ This is correct behavior - the previous output had the bug.
 **Deviation from Spec**: The spec says "Do not modify any file other than those named." However, `collaborative_growth.py` must be modified to include the `floor` array in saved traces, as the new event study script requires `floor[i, t-l:t].any()` for the `floor_before` field.
 
 **Resolution**: Proceeding with the necessary model modification to enable trace generation.
+
+---
+
+# C27 Floor Hit Ends Affiliation — stopped at Step 4
+
+Steps 1–3 completed; Step 4 fails on two checks, so nothing was committed.
+
+## What ran
+
+- Step 1: floor-exit block, `floor_exits_per_period` (allocation, `hyperparameters`, both `summary` branches), column in `summarize_pilot_c.py` and `tests/test_tidy_schema.py`.
+- Step 2: `tests/test_floor_exit.py` (3 tests) and `tests/test_phase_b_identity.py` pass.
+- Step 3: `analysis/run_traces.py` hash `cab8d5af…c9bd3` verified. Pilot 1400/1400 tasks COMPLETED (arrays 820647, 0–999, and 821674, 0–399 offset by 1000); traces 27/27 COMPLETED (821647); `--merge` printed `merged 27`; `summarize_pilot_c.py` and `analyze_pilot_c.py` exit 0.
+- Execution notes:
+  - The committed `submit_pilot_c.sh`/`submit_pilot_c_part2.sh` date from C7: they cover 1275 scenarios and `cd` into the stale `/groups/m-larch/bt307958/IOxEE/programs` copy. C21 actually ran two `sbatch --wrap` arrays from `/groups/m-larch/bt307958/IOxEE` (1000 + 400 tasks, `python3 run_pilot_c.py <idx>`); those settings were reproduced.
+  - Everything ran in a clean snapshot of the repo (tracked files plus C27 changes) at `/scratch/bt307958/c27/IOxEE`. This avoids NFS write errors and leaves C23's results in `/groups/.../IOxEE` untouched.
+  - The per-user submit limit (1000 jobs) required submitting the traces and part 2 after part 1 drained.
+
+## Check results
+
+| Check | Result |
+|---|---|
+| `tidy.csv` rows / block counts | 1400; all eight block counts match |
+| `floor_exits_per_period` present | yes |
+| `floor_exits_per_period` > 0, main block, α > 0 | **FAIL: 5 of 480 rows are 0** |
+| `floor_hit_rate_member` ≤ `floor_hit_rate_standalone` (report only) | holds in 1400/1400 rows |
+| `event_study_summary.csv` | 27 rows, T = 11000, `dlogshare_sd` 0.1268–0.2161: pass |
+| `pytest -q tests/` | **FAIL: 3 failed, 163 passed, 2 errors** |
+
+## Failure 1: zero floor exits in one cell
+
+All five rows are scenarios 95–99 (normal, exponential cost, α = 0.01, reps 0–4). These runs form no conglomerates after burn-in (`mergers_per_period` = 0, `K_post_burnin_median` empty), so no member can hit the floor. The same rows already had 0 mergers in the C23 `tidy.csv`. This is a property of the cell, not a C27 defect; the check assumes every α > 0 main cell forms conglomerates.
+
+## Failure 2: pytest
+
+- **Caused by C27:** `tests/test_exit_review.py::test_exit_review_every_10`, ratio 0.97 vs required ≤ 0.75. The spec's floor-exit call passes `exits_per_period=exits_per_period` to `exit_`, so floor exits also count as exits. They occur every step regardless of `exit_review_every`, which dilutes the every-10 vs every-1 contrast the test measures. It passed in C25b.
+  - One option: pass `exits_per_period=None` in the floor-exit call, so floor exits are counted only in `floor_exits_per_period`.
+  - The other option: compare `exits_per_period - floor_exits_per_period` in the test.
+  - Either is outside what the C27 steps name.
+- **Pre-existing at 152bb7a/74bb460, not caused by C27:**
+  - `tests/test_phase_a_identity.py`, collection error: `import _phase_a_reference` fails. The module lives in `tests/`, which is not on `sys.path` under pytest's rootdir import.
+  - `tests/test_pilot_design.py`, collection error: `pilot_design.py` has no `generate_factorial_design`.
+  - `tests/test_pilot_c_design.py::test_scenario_count` and `::test_lookback_block_c17`: the same failures appeared in the C25b run.
+
+## Where the outputs are
+
+All Step 3 outputs are on Festus in `/scratch/bt307958/c27/IOxEE`: `pilot_c/results` (1400), `pilot_c/tidy.csv`, `pilot_c/medians.csv`, `pilot_c/events/` (27 events + 27 per-scenario summaries), `pilot_c/event_study_summary.csv`, `diagnostics/pilot_c_summary.md` and figures. Traces are in `/scratch/bt307958/traces_c27`. Logs: `/scratch/bt307958/c27/{summarize,analyze,pytest_all}.log`. `alpha_scatter.csv` was not regenerated: it comes from `create_alpha_scatter.py`, which Step 3d excludes.

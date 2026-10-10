@@ -2,7 +2,9 @@
 Run the 27 traced scenarios and the event study on each.
 
 Usage (from the repository root):
-    python analysis/run_traces.py <trace_dir> [--quick]
+    python analysis/run_traces.py <trace_dir> [--quick]            # all 27 in sequence
+    python analysis/run_traces.py <trace_dir> --index K [--quick]  # only scenario K (0..26), for a SLURM array
+    python analysis/run_traces.py <trace_dir> --merge              # merge the 27 per-scenario summaries
 
 Selects, from pilot_c/scenarios.json, the main-block power_law scenarios for
 family in {normal, laplace, t3}, alpha in {0.05, 0.1, 0.3}, rep in {0, 1, 2};
@@ -58,12 +60,24 @@ def run_one(s, trace_path, quick):
 def main():
     trace_dir = sys.argv[1]
     quick = '--quick' in sys.argv
-    os.makedirs(trace_dir, exist_ok=True)
-    os.makedirs(os.path.join(ROOT, 'pilot_c', 'events'), exist_ok=True)
-    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    events_dir = os.path.join(ROOT, 'pilot_c', 'events')
     summary_path = os.path.join(ROOT, 'pilot_c', 'event_study_summary.csv')
+    os.makedirs(trace_dir, exist_ok=True)
+    os.makedirs(events_dir, exist_ok=True)
+    if '--merge' in sys.argv:
+        parts = sorted(f for f in os.listdir(events_dir) if f.endswith('_summary.csv'))
+        assert len(parts) == 27, f'expected 27 per-scenario summaries, found {len(parts)}'
+        pd.concat([pd.read_csv(os.path.join(events_dir, f)) for f in parts]).to_csv(summary_path, index=False)
+        print('merged', len(parts))
+        return
+    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    chosen = select(scenarios)
+    if '--index' in sys.argv:
+        k = int(sys.argv[sys.argv.index('--index') + 1])
+        assert 0 <= k < 27, k
+        chosen = [chosen[k]]
     rows = []
-    for s in select(scenarios):
+    for s in chosen:
         tag = f"{s['log_family']}_a{s['alpha']}_r{s['rep']}"
         tp = os.path.join(trace_dir, tag + '.npz')
         t0 = time.time()
@@ -79,7 +93,9 @@ def main():
                    dlogshare_sd=sd, seconds=round(time.time() - t0, 1))
         row.update(summarize(ev))
         rows.append(row)
-        pd.DataFrame(rows).to_csv(summary_path, index=False)
+        pd.DataFrame([row]).to_csv(os.path.join(events_dir, tag + '_summary.csv'), index=False)
+        if '--index' not in sys.argv:
+            pd.DataFrame(rows).to_csv(summary_path, index=False)
         print(tag, f"sd={sd:.4f}", {k: (round(v, 5) if isinstance(v, float) else v)
                                      for k, v in row.items() if k.startswith(('n_', 'did'))}, flush=True)
 
