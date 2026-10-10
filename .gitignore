@@ -5,3 +5,6 @@ diagnostics/*.pkl
 check_pkl_structure.py
 debug_model.py
 generate_summary.py
+
+# C29: per-event event-study files are kept on /scratch, not in git (GitHub 100 MB limit)
+pilot_c/events/*_events.csv

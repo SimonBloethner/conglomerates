@@ -211,6 +211,23 @@ Source: `pilot_c/tidy.csv`, blocks `search` and `main` (power_law). Figure: `dia
 | t3 | 0.5 | 0.2 | 7.755 | 8.0 | 0.962 | 53.38 | 53.28 | 1.221 |
 | t3 | 0.5 | 1 | 9.775 | 10.0 | 0.984 | 96.94 | 96.86 | 1.229 |
 
+## Event study (ITT and owner path)
+
+Conglomerate entry, main block power_law, 27 traced scenarios; mean over reps 0-2 of per-scenario medians. ITT = all matched entries on raw log share; owner = the same DiD on log share net of cumulative floor jumps (what owners earned, excluding recapitalisation).
+Source: `pilot_c/event_study_summary.csv`
+
+| Family | α | n_events | n_matched | share_floor_before | did_itt_median | did_owner_median | did_nofloor_median | did_owner_nofloor_median | did_small | did_owner_small | did_mid | did_owner_mid | did_large | did_owner_large |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.05 | 470901 | 243728 | 0.75352 | 0.00295 | 0.00085 | -0.00198 | -0.00235 | 0.00434 | 0.00061 | 0.00288 | 0.00123 | 0.00120 | 0.00071 |
+| normal | 0.1 | 429736 | 208214 | 0.78225 | 0.00312 | 0.00151 | 0.00114 | 0.00103 | 0.00441 | 0.00095 | 0.00287 | 0.00140 | 0.00181 | 0.00211 |
+| normal | 0.3 | 289978 | 138034 | 0.84619 | 0.00240 | 0.00195 | 0.00294 | 0.00331 | 0.00388 | 0.00063 | 0.00203 | 0.00170 | 0.00110 | 0.00354 |
+| laplace | 0.05 | 563595 | 270911 | 0.83302 | 0.00384 | -0.00011 | -0.00185 | -0.00221 | 0.00495 | -0.00137 | 0.00376 | 0.00007 | 0.00261 | 0.00097 |
+| laplace | 0.1 | 528041 | 244922 | 0.85079 | 0.00390 | 0.00065 | 0.00195 | 0.00174 | 0.00505 | -0.00080 | 0.00362 | 0.00021 | 0.00284 | 0.00250 |
+| laplace | 0.3 | 390683 | 177493 | 0.89460 | 0.00341 | 0.00127 | 0.00495 | 0.00579 | 0.00472 | -0.00084 | 0.00297 | 0.00069 | 0.00242 | 0.00387 |
+| t3 | 0.05 | 616212 | 306120 | 0.85482 | 0.00357 | -0.00075 | -0.00212 | -0.00289 | 0.00463 | -0.00184 | 0.00332 | -0.00080 | 0.00257 | 0.00042 |
+| t3 | 0.1 | 585135 | 280712 | 0.86717 | 0.00368 | -0.00055 | 0.00160 | 0.00149 | 0.00474 | -0.00172 | 0.00337 | -0.00106 | 0.00283 | 0.00109 |
+| t3 | 0.3 | 458074 | 216788 | 0.90298 | 0.00344 | -0.00037 | 0.00453 | 0.00571 | 0.00465 | -0.00212 | 0.00302 | -0.00126 | 0.00253 | 0.00211 |
+
 ## Correlation Sensitivity
 
 Comparison of correlation block (cross_corr=0.3) to main laplace/power_law cell (cross_corr=0).

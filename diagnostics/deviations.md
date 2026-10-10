@@ -227,3 +227,53 @@ Because of (3), the t3 lookback block's "5 reps" are 5 identical copies of each 
   - Removes the t3 seed duplication and makes the design and file consistent.
   - Correlation, endogenous-alpha, rule-replay, floor-level and lookback get new seeds, so all 1400 + 140 must be rerun (about 70 CPU-hours, about 1–2 h wall time on parallel arrays). The C27 pickles are then superseded.
 - (C) As (A), but rerun only the 40 t3 lookback scenarios with distinct seeds.
+
+---
+
+# C29 Owner-return event study — stopped at Step 6 (commit)
+
+Steps 1–5 completed and all checks pass; the commit was not made because 11 of the 27 event files exceed GitHub's 100 MB per-file limit, so the commit could not be pushed.
+
+## Completed
+
+- Step 1: `c29_trace_jump.patch` sha256 `6076ddcd…c131` verified, `git apply` clean; `tests/test_phase_b_identity.py` passes.
+- Step 2: `tests/test_trace_jump.py`, (a)–(c) on the seeded M=N=20, T=600 run from `tests/test_floor_exit.py` (settings imported from it): pass.
+- Step 3:
+  - `analysis/event_study.py` (`b22b197c…b59f`) and `analysis/run_traces.py` (`ca8c38b6…d7ad9`) verified.
+  - The fixture in `test_events_from_trace_with_entry` lifts control firm 1 by 0.5 at step 55, inside the after-window [50, 70].
+  - Its log share was switched to float64: float32 rounding of −log 5 + 0.5 alone exceeds the 1e-12 tolerance, and `run_traces.py` passes float64.
+  - Asserts `did == -0.5/l` and `did_owner == did + 0.5/l`; all existing assertions kept.
+- Step 4:
+  - Array 823694, 27/27 COMPLETED, into `/scratch/bt307958/traces_c29`, without `--reuse`; `--merge` printed `merged 27`.
+  - `analyze_pilot_c.py` had no event-study section (it was removed in C22e-f with the old tidy event columns). A minimal section "Event study (ITT and owner path)" was added, built from `pilot_c/event_study_summary.csv`, with each ITT column next to its owner counterpart.
+- Step 5:
+  - 27 rows, T = 11000, `dlogshare_sd` 0.1268–0.2161; owner columns present and finite.
+  - `n_events` identical to C28 for all 27 tags (max relative difference 0).
+  - `pytest -q tests/`: 171 passed, 0 failed, 0 errors.
+
+## Why not committed
+
+The event files gained the columns `before_owner`, `after_owner` and `did_owner`. Sizes:
+
+| Version | Largest file | Total | Files > 100 MB | Files > 50 MB |
+|---|---|---|---|---|
+| C28 (in HEAD) | 87.7 MB | 1.82 GB | 0 | — |
+| C29 | 121 MB (`t3_a0.05_r0_events.csv`) | 2.4 GB | 11 | 27 |
+
+The files over 100 MB are laplace α ∈ {0.05, 0.1} and t3 α ∈ {0.05, 0.1}. GitHub rejects pushes containing files over 100 MB, so a commit with `pilot_c/events/*` could be made locally but not pushed without rewriting history. `gzip` reduces the largest file to 43 MB.
+
+## Options
+
+- (a) Commit the event files gzip-compressed (`*_events.csv.gz`; pandas reads them directly). This needs a change to `run_traces.py`, or a post-processing step, and to the commit list.
+- (b) Track `pilot_c/events/*.csv` with Git LFS.
+- (c) Do not commit per-event files; keep them on `/scratch` and commit only `event_study_summary.csv` and the 27 per-scenario `*_summary.csv`.
+- (d) Commit locally anyway and do not push (not recommended).
+
+## State
+
+- Outputs are in `/scratch/bt307958/c29/IOxEE` (`pilot_c/events`, `pilot_c/event_study_summary.csv`, `diagnostics/pilot_c_summary.md`). Traces are in `/scratch/bt307958/traces_c29`.
+- The local working tree holds all C29 changes, uncommitted.
+
+## Resolution (C29)
+
+Option (c) chosen. Per-event files `pilot_c/events/*_events.csv` are no longer tracked (`git rm --cached`, ignored via `.gitignore`); they stay on Festus in `/scratch/bt307958/c29/IOxEE/pilot_c/events` (2.4 GB). The commit includes `pilot_c/event_study_summary.csv` and the 27 per-scenario `pilot_c/events/*_summary.csv`. Earlier versions of the per-event files remain in git history (C26–C28).

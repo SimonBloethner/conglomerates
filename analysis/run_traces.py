@@ -88,7 +88,8 @@ def main():
         ls, cg, fl, home = z['logshare'].astype(float), z['cong'], z['floor'], z['home']
         assert ls.shape[0] == (300 if quick else s['T']) + 1, ls.shape
         sd = np.diff(ls, axis=0).std()
-        ev = events_from_trace(ls, cg, fl, home, l=s['lookback'])
+        ev = events_from_trace(ls, cg, fl, home, l=s['lookback'],
+                               jump=z['jump'].astype(float) if 'jump' in z.files else None)
         ev.to_csv(os.path.join(ROOT, 'pilot_c', 'events', tag + '_events.csv'), index=False)
         row = dict(family=s['log_family'], alpha=s['alpha'], rep=s['rep'], scenario_id=s['scenario_id'],
                    T=ls.shape[0] - 1, sigma_lo=s['sigma_range'][0], sigma_hi=s['sigma_range'][1],

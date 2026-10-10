@@ -33,14 +33,16 @@ def test_events_from_trace_basic():
 
 
 def test_events_from_trace_with_entry():
-    """Test event detection when an entry occurs."""
+    """Test event detection when an entry occurs.
+    C29: the control is lifted by 0.5 at one step inside its after-window; did (raw) must include the
+    lift and did_owner must remove it. Catches a jump subtracted on the wrong side or not at all."""
     T = 200
     N = 10
     markets = 2
     firms_per_market = 5
     l = 20
 
-    logshare = np.zeros((T + 1, N), dtype=np.float32)
+    logshare = np.zeros((T + 1, N), dtype=np.float64)
     for i in range(N):
         logshare[:, i] = -np.log(firms_per_market)
 
@@ -52,11 +54,26 @@ def test_events_from_trace_with_entry():
     joiner = 0
     cong[entry_time:entry_time + l + 10, joiner] = 0
 
-    events = events_from_trace(logshare, cong, floor, home, l=l, tol=1.0)
+    # C29: firm 1 (first matched candidate: all market-0 firms tie at gap 0) is lifted by 0.5 at a step
+    # inside its after-window (entry_time, entry_time + l]; the raw path includes the lift.
+    control = 1
+    lift_step = entry_time + 5
+    logshare[lift_step:, control] += 0.5
+    jump = np.zeros((T + 1, N), dtype=np.float64)
+    jump[lift_step, control] = 0.5
+
+    events = events_from_trace(logshare, cong, floor, home, l=l, tol=1.0, jump=jump)
 
     assert len(events) >= 1
     joiner_events = events[(events['firm'] == joiner) & (events['step'] == entry_time)]
     assert len(joiner_events) == 1
+
+    ev = joiner_events.iloc[0]
+    assert ev['control'] == control
+    # joiner flat before and after; control flat before, +0.5 over l steps after
+    did_raw_expected = (0.0 - 0.0) - (0.5 / l - 0.0)
+    assert abs(ev['did'] - did_raw_expected) < 1e-12
+    assert abs(ev['did_owner'] - (did_raw_expected + 0.5 / l)) < 1e-12
 
 
 def test_summarize_empty():

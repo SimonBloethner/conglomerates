@@ -1778,6 +1778,7 @@ def model(params, seed=None, market_corr="identity",
     if trace_path is not None:
         TRACE_logshare = np.zeros((steps + 1, total_firms), dtype=np.float32)
         TRACE_cong = np.full((steps + 1, total_firms), -1, dtype=np.int16)
+        TRACE_jump = np.zeros((steps + 1, total_firms), dtype=np.float32)  # C29: log-size jump at the floor
 
     # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
     # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
@@ -2104,6 +2105,8 @@ def model(params, seed=None, market_corr="identity",
         # C12 FIX: Count each firm once per period using boolean mask, not once per iteration.
         if floor_c > 0.0:
             current_log_states_flat = firm_log_states_buffer[next_idx]
+            if trace_path is not None:
+                pre_floor_log_states = current_log_states_flat.copy()  # C29
             # Per-period mask: track which firms hit floor at any iteration this period
             period_hit_mask = np.zeros(total_firms, dtype=bool)
 
@@ -2141,6 +2144,8 @@ def model(params, seed=None, market_corr="identity",
 
             # After all markets/iterations converge, count hits once per firm per period
             hit_firms = np.where(period_hit_mask)[0]
+            if trace_path is not None:
+                TRACE_jump[step + 1] = (firm_log_states_buffer[next_idx] - pre_floor_log_states).astype(np.float32)  # C29
             floor_hits[hit_firms] += 1
             floor_hits_by_firm_step[hit_firms, step] = True  # C23: Track per-firm per-step
             for firm_id in hit_firms:
@@ -2650,7 +2655,8 @@ def model(params, seed=None, market_corr="identity",
             import io, shutil
             buf = io.BytesIO()
             np.savez_compressed(buf, logshare=TRACE_logshare, cong=TRACE_cong,
-                                floor=floor_hits_by_firm_step, home=firm_home_market)
+                                floor=floor_hits_by_firm_step, home=firm_home_market,
+                                jump=TRACE_jump)
             buf.seek(0)
             scratch_dir = f'/scratch/{os.environ.get("USER", "unknown")}'
             os.makedirs(scratch_dir, exist_ok=True)

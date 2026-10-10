@@ -866,6 +866,32 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("")
 
     # ========================================================================
+    # Section: Event study (ITT and owner path)
+    # ========================================================================
+    es_path = Path('pilot_c/event_study_summary.csv')
+    if es_path.exists():
+        es = pd.read_csv(es_path)
+        pairs = [('did_itt_median', 'did_owner_median'), ('did_nofloor_median', 'did_owner_nofloor_median'),
+                 ('did_small', 'did_owner_small'), ('did_mid', 'did_owner_mid'), ('did_large', 'did_owner_large')]
+        cols = ['n_events', 'n_matched', 'share_floor_before'] + [c for p in pairs for c in p if c in es.columns]
+        tab = es.groupby(['family', 'alpha'])[cols].mean().reset_index()
+        tab = tab.sort_values(['family', 'alpha'],
+                              key=lambda c: c.map({'normal': 0, 'laplace': 1, 't3': 2}) if c.name == 'family' else c)
+        lines.append("## Event study (ITT and owner path)")
+        lines.append("")
+        lines.append("Conglomerate entry, main block power_law, 27 traced scenarios; mean over reps 0-2 of per-scenario medians. "
+                     "ITT = all matched entries on raw log share; owner = the same DiD on log share net of cumulative "
+                     "floor jumps (what owners earned, excluding recapitalisation).")
+        lines.append("Source: `pilot_c/event_study_summary.csv`")
+        lines.append("")
+        lines.append("| " + " | ".join(['Family', 'α'] + cols) + " |")
+        lines.append("|" + "---|" * (len(cols) + 2))
+        for _, row in tab.iterrows():
+            vals = [f"{row[c]:.0f}" if c.startswith('n_') else f"{row[c]:.5f}" for c in cols]
+            lines.append("| " + " | ".join([row['family'], f"{row['alpha']:g}"] + vals) + " |")
+        lines.append("")
+
+    # ========================================================================
     # Section: Correlation comparison
     # ========================================================================
     lines.append("## Correlation Sensitivity")
