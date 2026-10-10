@@ -2632,19 +2632,19 @@ def model(params, seed=None, market_corr="identity",
             hyperparameters['TRACE_logshare'] = TRACE_logshare
             hyperparameters['TRACE_cong'] = TRACE_cong
         else:
-            # Save to file (write to /tmp first, then copy to avoid NFS issues)
-            import subprocess
-            tmp_path = f"/tmp/trace_{os.getpid()}.npz"
-            try:
-                np.savez(tmp_path, logshare=TRACE_logshare, cong=TRACE_cong,
-                         floor=np.array([floor_c]), home=firm_home_market.astype(np.int16))
-                subprocess.run(['cp', tmp_path, trace_path], check=True)
-                os.remove(tmp_path)
-                print(f"Trace saved to {trace_path}")
-            except Exception as e:
-                print(f"Warning: Failed to save trace: {e}")
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
+            import io, shutil
+            buf = io.BytesIO()
+            np.savez_compressed(buf, logshare=TRACE_logshare, cong=TRACE_cong,
+                                floor=floor_hits_by_firm_step, home=firm_home_market)
+            buf.seek(0)
+            scratch_dir = f'/scratch/{os.environ.get("USER", "unknown")}'
+            os.makedirs(scratch_dir, exist_ok=True)
+            scratch_path = os.path.join(scratch_dir, os.path.basename(trace_path))
+            with open(scratch_path, 'wb') as fh:
+                shutil.copyfileobj(buf, fh, length=512 * 1024)
+            shutil.copy2(scratch_path, trace_path)
+            os.remove(scratch_path)
+            print(f"Trace saved to {trace_path}")
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)
