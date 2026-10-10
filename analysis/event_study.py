@@ -1,198 +1,86 @@
-#!/usr/bin/env python3
 """
-C24: External event study from trace files.
+Event study of conglomerate entry on a per-firm share trace.
 
-Reads .npz trace files with:
-- logshare: (steps+1, total_firms) log market share
-- cong: (steps+1, total_firms) conglomerate membership (-1 = standalone)
-- floor: scalar floor_c parameter
-- home: (total_firms,) home market for each firm
+Input: an .npz with
+  logshare : float array (T, F)  log market share of each firm at each step
+  cong     : int   array (T, F)  conglomerate id of each firm (-1 = standalone)
+  floor    : bool  array (F, T)  True where the firm hit the floor at that step
+  home     : int   array (F,)    market of each firm
 
-Detects entry events and computes DiD vs matched controls.
+Definitions (l = window length):
+  event      = step t at which cong[t-1, i] == -1 and cong[t, i] >= 0, with t-l >= 0,
+               t+l <= T-1, and the firm affiliated throughout [t, t+l).
+  before_i   = (logshare[t, i]   - logshare[t-l, i]) / l
+  after_i    = (logshare[t+l, i] - logshare[t, i])   / l
+  control    = firm c in the same market, standalone throughout [t-l, t+l],
+               minimising |logshare[t, c] - logshare[t, i]|, with that gap <= tol.
+  did        = (after_i - before_i) - (after_c - before_c)
+  floor_before = floor[i, t-l : t].any()
+
+Output: one row per event, plus a summary function.
 """
+import sys
 import numpy as np
-import argparse
-from pathlib import Path
+import pandas as pd
 
 
 def events_from_trace(logshare, cong, floor, home, l=50, tol=0.25):
-    """
-    Extract entry events and compute DiD from trace arrays.
-
-    Parameters
-    ----------
-    logshare : ndarray, shape (T+1, N)
-        Log market share at each step for each firm.
-    cong : ndarray, shape (T+1, N)
-        Conglomerate membership at each step (-1 = standalone).
-    floor : float
-        Floor parameter (not used in current implementation).
-    home : ndarray, shape (N,)
-        Home market for each firm.
-    l : int
-        Lookback window (default 50).
-    tol : float
-        Match tolerance for control selection (default 0.25).
-
-    Returns
-    -------
-    events : list of dict
-        Each dict contains entry event data including DiD.
-    """
-    T, N = logshare.shape[0] - 1, logshare.shape[1]
-    markets = int(home.max()) + 1
-    firms_per_market = N // markets
-
-    events = []
-
-    for t in range(l, T - l + 1):
-        prev_cong = cong[t - 1]
-        curr_cong = cong[t]
-
-        newly_entered = (prev_cong == -1) & (curr_cong >= 0)
-        new_entrants = np.where(newly_entered)[0]
-
-        for firm_id in new_entrants:
-            market = home[firm_id]
-            market_start = market * firms_per_market
-            market_end = (market + 1) * firms_per_market
-
-            joiner_before = logshare[t, firm_id] - logshare[t - l, firm_id]
-            joiner_after = logshare[t + l, firm_id] - logshare[t, firm_id]
-
-            stayed = True
-            for s in range(t + 1, t + l + 1):
-                if cong[s, firm_id] == -1:
-                    stayed = False
-                    break
-            if not stayed:
-                continue
-
-            best_control = None
-            best_dist = np.inf
-
-            for ctrl_id in range(market_start, market_end):
-                if ctrl_id == firm_id:
-                    continue
-
-                standalone_throughout = True
-                for s in range(t - l, t + l + 1):
-                    if cong[s, ctrl_id] != -1:
-                        standalone_throughout = False
-                        break
-                if not standalone_throughout:
-                    continue
-
-                dist = abs(logshare[t, firm_id] - logshare[t, ctrl_id])
-                if dist <= tol and dist < best_dist:
-                    best_dist = dist
-                    best_control = ctrl_id
-
-            if best_control is None:
-                continue
-
-            ctrl_before = logshare[t, best_control] - logshare[t - l, best_control]
-            ctrl_after = logshare[t + l, best_control] - logshare[t, best_control]
-
-            did = (joiner_after - joiner_before) - (ctrl_after - ctrl_before)
-
-            events.append({
-                'joiner': firm_id,
-                't': t,
-                'market': market,
-                'joiner_before': joiner_before / l,
-                'joiner_after': joiner_after / l,
-                'control': best_control,
-                'ctrl_before': ctrl_before / l,
-                'ctrl_after': ctrl_after / l,
-                'did': did / l,
-            })
-
-    return events
+    T, F = logshare.shape
+    entered = (cong[:-1] == -1) & (cong[1:] >= 0)          # (T-1, F): entry at step t+1
+    steps, firms = np.nonzero(entered)
+    steps = steps + 1
+    rows = []
+    for t, i in zip(steps, firms):
+        if t - l < 0 or t + l > T - 1:
+            continue
+        if not (cong[t:t + l, i] >= 0).all():
+            continue
+        m = home[i]
+        in_market = np.nonzero(home == m)[0]
+        in_market = in_market[in_market != i]
+        standalone = (cong[t - l:t + l + 1][:, in_market] == -1).all(axis=0)
+        cands = in_market[standalone]
+        before_i = (logshare[t, i] - logshare[t - l, i]) / l
+        after_i = (logshare[t + l, i] - logshare[t, i]) / l
+        row = dict(step=t, firm=i, market=m, K_at_entry=int((cong[t] == cong[t, i]).sum()),
+                   logshare_entry=float(logshare[t, i]), before=before_i, after=after_i,
+                   floor_before=bool(floor[i, t - l:t].any()), control=-1,
+                   control_before=np.nan, control_after=np.nan, did=np.nan)
+        if len(cands):
+            gaps = np.abs(logshare[t, cands] - logshare[t, i])
+            j = int(np.argmin(gaps))
+            if gaps[j] <= tol:
+                c = cands[j]
+                cb = (logshare[t, c] - logshare[t - l, c]) / l
+                ca = (logshare[t + l, c] - logshare[t, c]) / l
+                row.update(control=int(c), control_before=cb, control_after=ca,
+                           did=(after_i - before_i) - (ca - cb))
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
 def summarize(ev):
-    """
-    Summarize event study results.
-
-    Parameters
-    ----------
-    ev : list of dict
-        Events from events_from_trace.
-
-    Returns
-    -------
-    summary : dict
-        Summary statistics including n_events, did_median, did_p25, did_p75.
-    """
-    if not ev:
-        return {
-            'n_events': 0,
-            'did_median': np.nan,
-            'did_p25': np.nan,
-            'did_p75': np.nan,
-            'joiner_before_median': np.nan,
-            'joiner_after_median': np.nan,
-            'ctrl_before_median': np.nan,
-            'ctrl_after_median': np.nan,
-        }
-
-    dids = np.array([e['did'] for e in ev])
-    joiner_befores = np.array([e['joiner_before'] for e in ev])
-    joiner_afters = np.array([e['joiner_after'] for e in ev])
-    ctrl_befores = np.array([e['ctrl_before'] for e in ev])
-    ctrl_afters = np.array([e['ctrl_after'] for e in ev])
-
-    return {
-        'n_events': len(ev),
-        'did_median': np.median(dids),
-        'did_p25': np.percentile(dids, 25),
-        'did_p75': np.percentile(dids, 75),
-        'joiner_before_median': np.median(joiner_befores),
-        'joiner_after_median': np.median(joiner_afters),
-        'ctrl_before_median': np.median(ctrl_befores),
-        'ctrl_after_median': np.median(ctrl_afters),
-    }
-
-
-def main():
-    parser = argparse.ArgumentParser(description='Event study from trace files')
-    parser.add_argument('trace_files', nargs='+', help='Path(s) to .npz trace files')
-    parser.add_argument('--output', '-o', default='events.csv', help='Output CSV path')
-    parser.add_argument('-l', '--lookback', type=int, default=50, help='Lookback window')
-    parser.add_argument('--tol', type=float, default=0.25, help='Match tolerance')
-    args = parser.parse_args()
-
-    all_events = []
-
-    for trace_file in args.trace_files:
-        data = np.load(trace_file, allow_pickle=True)
-        logshare = data['logshare']
-        cong = data['cong']
-        floor_val = data['floor']
-        floor = float(floor_val[0]) if hasattr(floor_val, '__len__') else float(floor_val)
-        home = data['home']
-
-        events = events_from_trace(logshare, cong, floor, home, l=args.lookback, tol=args.tol)
-        for e in events:
-            e['trace'] = Path(trace_file).stem
-        all_events.extend(events)
-
-    summary = summarize(all_events)
-    print(f"Events: {summary['n_events']}")
-    print(f"DiD median: {summary['did_median']:.6f}")
-    print(f"DiD IQR: [{summary['did_p25']:.6f}, {summary['did_p75']:.6f}]")
-
-    if all_events:
-        import csv
-        with open(args.output, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['trace', 'joiner', 't', 'market',
-                                                   'joiner_before', 'joiner_after',
-                                                   'control', 'ctrl_before', 'ctrl_after', 'did'])
-            writer.writeheader()
-            writer.writerows(all_events)
-        print(f"Wrote {args.output}")
+    m = ev[ev.control >= 0]
+    out = dict(n_events=len(ev), n_matched=len(m),
+               n_nofloor=int((~m.floor_before).sum()),
+               joiner_before=ev.before.median(), joiner_after=ev.after.median(),
+               control_before=m.control_before.median(), control_after=m.control_after.median(),
+               did_median=m.did.median(),
+               did_p25=m.did.quantile(.25), did_p75=m.did.quantile(.75),
+               did_nofloor_median=m[~m.floor_before].did.median())
+    # by size tercile of the joiner's market share at entry
+    if len(m) >= 9:
+        m = m.assign(tercile=pd.qcut(m.logshare_entry, 3, labels=['small', 'mid', 'large']))
+        for k, g in m.groupby('tercile', observed=True):
+            out[f'did_{k}'] = g.did.median()
+            out[f'n_{k}'] = len(g)
+    return out
 
 
 if __name__ == '__main__':
-    main()
+    z = np.load(sys.argv[1])
+    l = int(sys.argv[2]) if len(sys.argv) > 2 else 50
+    ev = events_from_trace(z['logshare'], z['cong'], z['floor'], z['home'], l=l)
+    ev.to_csv(sys.argv[1].replace('.npz', '_events.csv'), index=False)
+    for k, v in summarize(ev).items():
+        print(f'{k:22s} {v:.5f}' if isinstance(v, float) else f'{k:22s} {v}')
