@@ -3,8 +3,8 @@
 ## Overview
 
 - **Scenarios**: 1540
-- **Total runtime**: 305570s (84.88 CPU-hours)
-- **Mean ms/step**: 18.04 ± 7.70
+- **Total runtime**: 346019s (96.12 CPU-hours)
+- **Mean ms/step**: 20.43 ± 16.01
 - **Grid**: 50 × 50 (M × N)
 
 ### Block counts
@@ -38,7 +38,7 @@ Reference: `analytics/benchmarks.csv` column `K_star`
 | normal | linear | 3.000 [3.000, 3.000] | 7 | 1.988 [1.987, 1.988] | 0.303 |
 | normal | power_law | 3.000 [3.000, 3.000] | 8 | 1.990 [1.990, 1.990] | 0.325 |
 | normal | quadratic | 3.000 [3.000, 3.000] | 10 | 2.068 [2.050, 2.128] | 0.341 |
-| t3 | exponential | 2.000 [2.000, 2.000] | 47 | 1.923 [1.922, 1.928] | 0.395 |
+| t3 | exponential | 2.000 [2.000, 2.000] | 47 | 1.925 [1.922, 1.928] | 0.396 |
 | t3 | linear | 2.000 [2.000, 2.000] | 28 | 1.919 [1.918, 1.926] | 0.479 |
 | t3 | power_law | 2.000 [2.000, 2.000] | 20 | 1.934 [1.930, 1.937] | 0.452 |
 | t3 | quadratic | 2.000 [2.000, 3.000] | 24 | 1.935 [1.935, 1.954] | 0.497 |
@@ -202,8 +202,8 @@ Source: `pilot_c/tidy.csv`, blocks `search` and `main` (power_law). Figure: `dia
 | t3 | 0.05 | 0.2 | 3.251 | 3.0 | 0.745 | 111.81 | 109.87 | 1.012 |
 | t3 | 0.05 | 1 | 3.884 | 4.0 | 0.857 | 206.59 | 204.92 | 1.002 |
 | t3 | 0.1 | 0.05 | 2.866 | 2.0 | 0.627 | 53.69 | 52.13 | 1.018 |
-| t3 | 0.1 | 0.2 | 3.669 | 3.0 | 0.808 | 106.48 | 104.98 | 1.031 |
-| t3 | 0.1 | 1 | 4.500 | 4.0 | 0.888 | 194.35 | 193.24 | 1.027 |
+| t3 | 0.1 | 0.2 | 3.682 | 3.0 | 0.796 | 106.48 | 104.98 | 1.031 |
+| t3 | 0.1 | 1 | 4.500 | 4.0 | 0.886 | 194.35 | 193.24 | 1.023 |
 | t3 | 0.3 | 0.05 | 3.667 | 3.0 | 0.773 | 44.12 | 43.18 | 1.096 |
 | t3 | 0.3 | 0.2 | 5.213 | 5.0 | 0.903 | 80.49 | 79.99 | 1.101 |
 | t3 | 0.3 | 1 | 6.661 | 6.0 | 0.954 | 144.23 | 143.91 | 1.104 |
@@ -306,20 +306,33 @@ Source: `pilot_c/tidy.csv` columns `alpha_adopted_median`, `alpha_adopted_mean`,
 
 | Family | Cost | α adopted (median) | α adopted (mean) | K |
 |--------|------|--------------------|------------------|---|
-| laplace | exponential | 0.800 | 0.782 | 4.0 |
-| laplace | linear | 0.800 | 0.732 | 4.0 |
-| laplace | power_law | 0.800 | 0.720 | 4.0 |
-| laplace | quadratic | 0.750 | 0.703 | 5.0 |
-| normal | exponential | 0.850 | 0.810 | 4.0 |
-| normal | linear | 0.800 | 0.717 | 4.0 |
-| normal | power_law | 0.800 | 0.697 | 4.0 |
-| normal | quadratic | 0.750 | 0.655 | 6.0 |
-| t3 | exponential | 0.800 | 0.800 | 4.0 |
-| t3 | linear | 0.800 | 0.752 | 3.0 |
-| t3 | power_law | 0.800 | 0.745 | 4.0 |
-| t3 | quadratic | 0.800 | 0.726 | 4.0 |
+| laplace | exponential | 0.800 | 0.741 | 10.0 |
+| laplace | linear | 0.800 | 0.731 | 7.0 |
+| laplace | power_law | 0.800 | 0.728 | 7.0 |
+| laplace | quadratic | 0.800 | 0.733 | 8.0 |
+| normal | exponential | 0.800 | 0.781 | 20.0 |
+| normal | linear | 0.800 | 0.748 | 9.0 |
+| normal | power_law | 0.800 | 0.748 | 9.0 |
+| normal | quadratic | 0.800 | 0.742 | 11.0 |
+| t3 | exponential | 0.750 | 0.700 | 5.0 |
+| t3 | linear | 0.750 | 0.694 | 5.0 |
+| t3 | power_law | 0.750 | 0.694 | 5.0 |
+| t3 | quadratic | 0.750 | 0.691 | 5.0 |
 
 ![Endogenous α histogram](pilot_c_endo_alpha_hist.png)
+
+### α and member volatility (one row per active unit at T)
+
+Spearman rank correlation of the unit's time-averaged post-burn-in α (`alpha_tavg`) with the sd and the mean of its member markets' IQR.
+Source: `pilot_c/alpha_scatter.csv`. Figure: `diagnostics/pilot_c_alpha_scatter.png`
+
+| Family | n | ρ(α, sd_iqr) | p | ρ(α, mean_iqr) | p |
+|--------|---|--------------|---|----------------|---|
+| normal | 3244 | 0.062 | 0.000441 | 0.363 | 1.49e-101 |
+| laplace | 3323 | 0.047 | 0.00666 | 0.320 | 7.1e-80 |
+| t3 | 4124 | 0.102 | 5.01e-11 | 0.240 | 5.59e-55 |
+
+![α vs sd of member IQR](pilot_c_alpha_scatter.png)
 
 ## Assortativity
 
@@ -340,8 +353,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 305570s (84.88 CPU-hours)
-- **Mean ms/step**: 18.04 ± 7.70
+- **Total runtime**: 346019s (96.12 CPU-hours)
+- **Mean ms/step**: 20.43 ± 16.01
 
 ## Figures
 

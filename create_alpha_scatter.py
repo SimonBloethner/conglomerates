@@ -1,60 +1,51 @@
 #!/usr/bin/env python3
 """
-C23: Create alpha_scatter.csv from endogenous-α scenario pickles.
-Columns: scenario_id, rep, cong_id, alpha_final, K, sd_iqr, mean_iqr
-One row per active conglomerate at end of run.
+Create pilot_c/alpha_scatter.csv from the endogenous-alpha scenario pickles.
+
+Columns: scenario_id, rep, log_family, cost_type, cong_id, alpha_final, alpha_tavg, K, sd_iqr, mean_iqr
+One row per active unit at T. alpha_tavg is the unit's mean alpha over post-burn-in snapshots (C31).
 """
+import csv
 import gzip
 import pickle
-import csv
-import os
+from pathlib import Path
 
-RESULT_DIR = 'pilot_c/results'
-OUT_FILE = '/tmp/alpha_scatter.csv'
+RESULT_DIR = Path('pilot_c/results')
+OUT_FILE = 'pilot_c/alpha_scatter.csv'
+FIELDS = ['scenario_id', 'rep', 'log_family', 'cost_type', 'cong_id', 'alpha_final', 'alpha_tavg',
+          'K', 'sd_iqr', 'mean_iqr']
 
-ENDO_ALPHA_START = 1125
-ENDO_ALPHA_END = 1184
 
-rows = []
+def main():
+    rows = []
+    n_scen = 0
+    for fname in sorted(RESULT_DIR.glob('scenario_*.pkl.gz')):
+        with gzip.open(fname, 'rb') as f:
+            result = pickle.load(f)
+        scenario = result.get('scenario', {})
+        if scenario.get('block') != 'endogenous-alpha':
+            continue
+        n_scen += 1
+        for unit in result.get('alpha_scatter_final', []):
+            rows.append({
+                'scenario_id': scenario['scenario_id'],
+                'rep': scenario['rep'],
+                'log_family': scenario['log_family'],
+                'cost_type': scenario['cost_type'],
+                'cong_id': unit['cong_id'],
+                'alpha_final': unit['alpha_final'],
+                'alpha_tavg': unit['alpha_tavg'],
+                'K': unit['K'],
+                'sd_iqr': unit['sd_iqr'],
+                'mean_iqr': unit['mean_iqr'],
+            })
 
-for idx in range(ENDO_ALPHA_START, ENDO_ALPHA_END + 1):
-    fname = os.path.join(RESULT_DIR, f'scenario_{idx:04d}.pkl.gz')
-    if not os.path.exists(fname):
-        print(f'Missing: {fname}')
-        continue
-    
-    with gzip.open(fname, 'rb') as f:
-        result = pickle.load(f)
-    
-    scenario = result.get('scenario', {})
-    alpha_scatter_final = result.get('alpha_scatter_final', [])
-    
-    if not alpha_scatter_final:
-        print(f'No alpha_scatter_final in scenario {idx}')
-        continue
-    
-    scenario_id = idx
-    rep = scenario.get('rep', 0)
-    
-    for cong_data in alpha_scatter_final:
-        rows.append({
-            'scenario_id': scenario_id,
-            'rep': rep,
-            'cong_id': cong_data['cong_id'],
-            'alpha_final': cong_data['alpha_final'],
-            'K': cong_data['K'],
-            'sd_iqr': cong_data['sd_iqr'],
-            'mean_iqr': cong_data['mean_iqr'],
-        })
-
-print(f'Writing {len(rows)} rows to {OUT_FILE}')
-
-if rows:
-    fieldnames = ['scenario_id', 'rep', 'cong_id', 'alpha_final', 'K', 'sd_iqr', 'mean_iqr']
     with open(OUT_FILE, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-    print(f'Done. Unique scenarios: {len(set(r["scenario_id"] for r in rows))}')
-else:
-    print('No rows to write!')
+    print(f'Wrote {len(rows)} rows from {n_scen} endogenous-alpha scenarios to {OUT_FILE}')
+
+
+if __name__ == '__main__':
+    main()

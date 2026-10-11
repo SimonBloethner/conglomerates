@@ -50,7 +50,8 @@ EXPECTED_LOOKBACK_BY_FAMILY = {
 }
 
 EXPECTED_ALPHA_SCATTER_COLUMNS = [
-    'scenario_id', 'rep', 'cong_id', 'alpha_final', 'K', 'sd_iqr', 'mean_iqr'
+    'scenario_id', 'rep', 'log_family', 'cost_type', 'cong_id', 'alpha_final', 'alpha_tavg',
+    'K', 'sd_iqr', 'mean_iqr'
 ]
 
 

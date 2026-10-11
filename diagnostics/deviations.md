@@ -326,3 +326,67 @@ Options (a) and (b) were both applied in place of the check as written:
 - (a) Panel `floor_rate_standalone` vs tidy `floor_hit_rate_standalone / (n_standalone / n_rows)`: max relative difference 0.0714 (min 0.0499); 27 of 27 within 20%.
 - (b) Panel `floor_rate_standalone * n_standalone / n_rows` vs tidy `floor_hit_rate_standalone`: max relative difference 0.0714 (min 0.0499); 27 of 27 within 20%.
 - As relative differences, (a) and (b) are algebraically identical (|p − t/s|/(t/s) = |p·s − t|/t) and agree row by row. The check as written (raw columns, 0 of 27 within 20%) compares different denominators and is not used.
+
+---
+
+# C31 Endogenous alpha consistency, limited liability under equal sharing
+
+## Step 3(a): equal-sharing seeded run changes (pool-ruin events occur)
+
+The seeded configuration of `tests/test_floor_exit.py` with `sharing_rule='equal'` has 4 pool-ruin events on the unmodified code (c144756). They occur at steps 204, 353, 497 and 530, found by counting pooling exits with δ ≤ −1. So C31 changes this run by design.
+
+| | K_mean | cong_capital_share_median | mergers_per_period | floor_exits_per_period | sha256(final_log_states) |
+|---|---|---|---|---|---|
+| c144756 (pre-change) | 2.458955223880597 | 0.3359852344423004 | 6.638 | 6.214 | `d331af00…35db` |
+| C31 | 2.503846153846154 | 0.3570244317626654 | 6.55 | 6.178 | `367a3827…dfb` |
+
+`tests/test_c31_identity.py` keeps the pre-change values as constants. Instead of identity it asserts that `pool_ruin_per_period.sum() > 0`, that the counter equals the number of capped members, and that every ruined firm hit the floor in that step and is standalone in the following step. The proportional case is asserted bit-identical (hash exact, floats to 1e-12).
+
+## Step 4/5: all 1540 scenarios rerun (not only the 240)
+
+The Step 5 check "`pool_ruin_per_period == 0` in every row with `sharing_rule == 'proportional'`" could not be evaluated on the 1300 untouched rows. Their pickles come from c144756-era code without the counter (NaN). Under the old code a ruin event triggered an exit that is not separable from other exits, so the value cannot be recovered from those pickles.
+
+On the 240-scenario run:
+- the 60 measured proportional rows (endogenous-alpha) were all 0;
+- all 1300 untouched rows were identical to the C30 `tidy.csv` (51 numeric columns, 0 cells differing by more than 1e-12; reused pickles, so not a test of the model).
+
+Decision: rerun the remaining 1300 scenarios with the C31 code as well (arrays over `/scratch/bt307958/c31/ids_rest.txt`). `tidy.csv` is then built entirely from C31 pickles. This makes the identity check outside the two blocks a direct test of the claim that every other block is unchanged, and measures `pool_ruin_per_period` everywhere. It departs from "No other scenario is rerun".
+
+## Stopped at Step 5: limited liability also fires under proportional sharing (t3)
+
+With all 1540 scenarios rerun on C31 code, two Step 5 checks fail as written. Every other check passes:
+- 1540 rows, block counts unchanged;
+- `pool_ruin_per_period > 0` in all 60 equal-split rows with α ≥ 0.3;
+- `alpha_adopted_n > 0` in every endogenous-alpha row (min 2418);
+- `alpha_scatter.csv` has 10691 rows, equal to the number of active units at T, with no NaN in `sd_iqr` or `alpha_tavg`;
+- `pytest -q tests/`: 183 passed, 0 failed.
+
+The failing checks:
+
+- `pool_ruin_per_period == 0` in every proportional row: false in 8 of 1360 rows.
+- Rows outside the two rerun blocks identical to the C30 `tidy.csv` (numeric, 1e-12, runtime columns `elapsed_seconds`/`ms_per_step` excluded): 23 of 1300 rows differ.
+
+Cause: the card's premise "under proportional sharing δ > −1 always" does not hold. The pilot uses additive management cost (`proportional=False`), so under proportional sharing δ = (1−α)·r + α·r̄_w − Φ ≥ −1 − Φ. The heavy-tailed t3 family produces member returns near −100%.
+
+- All 23 differing rows are t3: main block with linear (5), quadratic (2) and exponential (13) cost, and the search block power_law (3).
+- 8 of them have post-burn-in pool-ruin events.
+- The other 15 have their events during burn-in, which the post-burn-in mean does not show. Rerunning scenario 468 (main, t3, exponential, α = 0.05) gives 3 events, at steps 2602, 4350 and 4498, all before burn_in = 8000. Scenario 472 (α = 0.1) gives 1 event, at step 1669.
+- The changes are small: K_mean moves by at most 0.83% (median 0 over the differing rows).
+
+Before C31 those members were ejected and reset to log size 0 (size 1, a gain). Since C31 they lose their capital (δ capped at −1 + 1e-12) and are lifted and ejected by the floor. The seeded proportional test configuration (laplace) has no such event, so `tests/test_c31_identity.py` and `tests/test_c31_equal_sharing.py::test_proportional_never_ruins` pass.
+
+Options:
+- (a) Keep limited liability for every sharing rule (the reset-to-size-1 branch is wrong under either rule). Accept that 23 t3 rows change, and restate the two checks:
+  - "pool_ruin events occur only where δ ≤ −1 is reachable; all differing rows outside the two blocks have pool-ruin events (post- or pre-burn-in)";
+  - "proportional rows: pool_ruin_per_period small (max 0.000667)".
+  `tidy.csv` is then built entirely from C31 pickles.
+- (b) Restrict the cap to `sharing_rule == 'equal'` and keep the old exit-and-reset branch under proportional sharing. The 1300 untouched rows would then be bit-identical to C30, but the proportional runs keep the reset-to-size-1 behaviour.
+
+## Resolution (C31)
+
+Option (a): limited liability is kept under both sharing rules. The two Step 5 checks are replaced by:
+
+- (i) Every row outside the two corrected blocks that differs from the C30 `tidy.csv` has pool-ruin events over the whole run (post-burn-in counter > 0, or run-level sum > 0). Result: 23 of 1300 rows differ and all 23 have events (run-level totals 1–10, mostly during burn-in). The run-level totals come from a diagnostic rerun of the 23 scenarios with the C31 code (array 825876; the result pickles store only the post-burn-in mean).
+- (ii) `pool_ruin_per_period ≤ 0.001` in every row with `sharing_rule == 'proportional'`. Result: true in 1360 rows (max 0.000667; 8 rows > 0).
+
+`tests/test_c31_identity.py` is unchanged in substance; its docstring now states that identity is expected only in runs without pool-ruin events. `MODEL_FLAGS.md` states the δ ≥ −1 − Φ(K) bound and the 23 affected t3 runs.

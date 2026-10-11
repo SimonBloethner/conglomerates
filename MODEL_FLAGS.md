@@ -86,10 +86,16 @@ Default: `False`
 
 When `alpha_endogenous=True`:
 1. Each conglomerate carries its own `α_c` initialized to the run's global `share` parameter
-2. Every `lookback` periods, the model evaluates each α on the grid {0, 0.05, ..., 1.0}
-3. For each candidate α, it replays the last `lookback` periods of member growth under that α
+2. Every period (C31; before C31 only every `lookback` periods), the model evaluates each α on the grid {0, 0.05, ..., 1.0}
+3. For each candidate α, it replays the last `h = min(lookback, step)` periods of member growth under that α
 4. The α that maximizes the minimum member gain (relative to current α) is adopted, but only if `min_gain > 0`
 5. Pooling uses `α_c` instead of the global `share` parameter
+6. **Decisions at the unit's α (C31).** Merger and exit tests use the α the unit actually operates at:
+   - Δ̂_current of a member is evaluated at `cong_alpha[its unit]` (standalones: Δ̂_current = 0), in the merger kernel and in the exit test.
+   - Δ̂_proposed is evaluated at α_prop = `share` for solo+solo, `cong_alpha[unit]` for solo+unit, and for unit+unit the α of the unit with the larger `cong_size` (initiator on ties).
+   - When a unit+unit merger executes, the merged unit takes α_prop. A slot newly allocated for solo+solo gets `share` (slots are reused and may hold a stale α).
+   - With `alpha_endogenous=False`, every entry of `cong_alpha` equals `share`, so behaviour is unchanged.
+   - The replay decision rule still evaluates proposals at `share`; replay is not combined with endogenous α in the pilot design.
 
 **Unanimity Constraint:** The rule requires all members to benefit from any α change. With finite samples and K=2 firms, this is rarely satisfied because one firm typically prefers more pooling while the other prefers less.
 
@@ -99,6 +105,31 @@ When `alpha_endogenous=True`:
 
 - `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
 - `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
+
+## Pooling: limited liability under equal sharing (C31)
+
+Under `sharing_rule='equal'` the pool is shared equally per firm, so a small member can be assigned a pool loss larger than its capital (δ ≤ −1).
+- Before C31 such a member was ejected and reset to log size 0. That reset is a gain, not a loss.
+- Since C31 the member's δ is capped at −1 + 1e-12 (it loses all its capital and no more). Non-finite δ is treated the same way.
+- Its log state drops by log1p(−1 + 1e-12) ≈ −27.6. The floor block then lifts it and, by C27, ejects it, so the event counts as a floor hit and a floor exit.
+- `pool_ruin_per_period[step]` counts capped members. It is exported in `hyperparameters`, in `summary['pool_ruin_per_period']` (post-burn-in mean) and as a tidy column.
+- Limited liability applies under both sharing rules.
+- Under proportional sharing with the pilot's additive management cost, δ = (1−α)·r_i + α·Σ_j w_j r_j − Φ(K) ≥ −1 − Φ(K). The cap can therefore bind only when a member's own shock wipes out essentially all of its capital.
+- In the C31 rerun this happened in 23 of the 1,300 runs outside the endogenous-alpha and equal-split blocks, all in the t3 family (main block linear/quadratic/exponential cost, search block power_law). Those 23 runs differ slightly from C30; the other 1,277 are identical.
+
+## Membership timing
+
+- **Lock-in of new members.** A firm is an exit candidate only when `firm_entered < step - lookback`. A new member therefore stays at least `lookback` (l) periods before its first exit test.
+- **`firm_entered` reset on unit+unit mergers.** When two units merge, `firm_entered` is set to the merger step for *all* members of the merged unit, not only the newcomers. Every member is locked in again for l periods. On solo+unit merges only the joining firm's `firm_entered` is set.
+
+## Inert Phase-A code paths
+
+These remain in `collaborative_growth.py` but are not exercised by the Phase C pilot (`pilot_design.py`):
+- `growth_process='normal_net'` (the function default) and `'lognormal'`: the pilot uses `'log_family'`.
+- `renorm_every`: the economy-wide renormalisation is skipped when `market_size_fixed=True` (all pilot scenarios).
+- `comparison`, `break_thresh`: unpacked from `params` and stored in `hyperparameters`, but not used by the dynamics.
+- `market_corr='random'`: the pilot uses `'identity'`, and a nonzero `cross_corr` replaces the matrix.
+- `rho` (common shock): 0 in every pilot scenario.
 
 ## Decision Rule
 

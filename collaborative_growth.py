@@ -685,10 +685,14 @@ def merger_kernel_numba(
     firm_log_states_buffer, firm_log_returns_buffer,
     total_firms, markets, firms_per_market,
     sharing_rule_code, decision_rule_code, g_common,
-    cong_created_step
+    cong_created_step, cong_alpha, cong_born_step
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
+
+    C31: decisions are taken at the unit's own alpha. Delta_current of a member is evaluated at
+    cong_alpha[its unit]; Delta_proposed at alpha_prop = share (solo+solo), cong_alpha[unit] (solo+unit),
+    or the alpha of the unit with the larger cong_size (unit+unit; initiator on ties).
 
     Parameters:
     -----------
@@ -810,6 +814,17 @@ def merger_kernel_numba(
         else:
             proposals_sc += 1
             proposal_type = 1  # sc
+
+        # C31: alpha at which the proposed merged unit would operate
+        if proposal_type == 0:
+            alpha_prop = share
+        elif proposal_type == 1:
+            alpha_prop = cong_alpha[initiator_cong] if initiator_cong != -1 else cong_alpha[target_cong]
+        else:
+            if cong_size[initiator_cong] >= cong_size[target_cong]:
+                alpha_prop = cong_alpha[initiator_cong]
+            else:
+                alpha_prop = cong_alpha[target_cong]
         
         hist_start = step - h
         K_hat = merged_size  # Size of proposed merged set
@@ -846,7 +861,7 @@ def merger_kernel_numba(
                 # Compute gain in proposed merged set using precomputed data (O(h))
                 gain_proposed = member_gain_from_prepared(
                     j, K_hat, eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop,
-                    share, m, sharing_rule_code
+                    alpha_prop, m, sharing_rule_code
                 )
 
                 if gain_proposed == -np.inf:
@@ -886,7 +901,7 @@ def merger_kernel_numba(
                     current_m = management_costs_lookup[current_size]
                     gain_current = member_gain_from_prepared(
                         j_current, current_size, eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr,
-                        share, current_m, sharing_rule_code
+                        cong_alpha[current_cong], current_m, sharing_rule_code
                     )
 
                 # Accept only if proposed beats max(0, current)
@@ -986,6 +1001,7 @@ def merger_kernel_numba(
             cong_firms[target_cong, :merged_size] = merged_firms
             cong_size[target_cong] = merged_size
             cong_created_step[target_cong] = step  # C19: Reset review schedule
+            cong_alpha[target_cong] = alpha_prop  # C31: merged unit operates at alpha_prop
 
             # Update occupancy
             for m in merged_markets:
@@ -1034,6 +1050,8 @@ def merger_kernel_numba(
             cong_firms[new_id, :merged_size] = merged_firms
             cong_size[new_id] = merged_size
             cong_created_step[new_id] = step  # C19: Track creation for exit_review_every
+            cong_alpha[new_id] = share  # C31: reused slots may hold a stale alpha
+            cong_born_step[new_id] = step  # C31: allocation step (unit identity for alpha_tavg)
 
             for m in merged_markets:
                 cong_occupies_market[new_id, m] = True
@@ -1074,10 +1092,11 @@ def compute_exit_candidates_numba(
     management_costs_lookup,
     firm_conglom,
     cong_firms,
-    cong_size
+    cong_size,
+    cong_alpha
 ):
     """
-    Numba-compiled exit evaluation logic.
+    Numba-compiled exit evaluation logic. C31: Delta_current is evaluated at cong_alpha[unit].
 
     Parameters:
     -----------
@@ -1134,7 +1153,7 @@ def compute_exit_candidates_numba(
             m = management_costs_lookup[current_size]
             gain_current = member_gain_from_prepared(
                 j_current, current_size, eps, sz, sum_s, sum_s_eps,
-                share, m, sharing_rule_code
+                cong_alpha[cong_id], m, sharing_rule_code
             )
 
             # Exit if gain in current conglomerate is negative (standalone gives 0)
@@ -1205,8 +1224,9 @@ def process_conglomerate_pooling_numba(
         Updated log states for next timestep
     cong_pools : ndarray, shape (n_active_congs,)
         Pool values (pool_over_S) for each conglomerate
-    firms_to_exit : ndarray
-        IDs of firms that need to exit (d <= -1 or not finite)
+    pool_ruin : int
+        C31: number of members whose delta was capped at -1 + 1e-12 (limited liability: a member loses
+        all its capital and no more; the floor block then lifts and ejects it)
     """
     n_congs = len(active_cong_ids)
     total_firms = log_states_curr.shape[0]
@@ -1215,9 +1235,7 @@ def process_conglomerate_pooling_numba(
     new_log_states = np.copy(log_states_curr)
     cong_pools = np.zeros(n_congs, dtype=np.float64)
 
-    # Track firms to exit (worst case: all firms could exit)
-    exit_list = np.zeros(total_firms, dtype=np.int64)
-    exit_count = 0
+    pool_ruin = 0
 
     # Process each active conglomerate
     for idx in range(n_congs):
@@ -1288,19 +1306,14 @@ def process_conglomerate_pooling_numba(
                 # δ_i = (1-α)·r_i + Ω
                 delta = (1.0 - alpha_c) * r_m1[i] + pool_over_S
 
-            # Check for exit condition
-            if not np.isfinite(delta) or delta <= -1.0:
-                new_log_states[firm] = 0.0  # Reset to log(1)
-                exit_list[exit_count] = firm
-                exit_count += 1
-            else:
-                log_old = log_states_curr[firm]
-                new_log_states[firm] = log_old + np.log1p(delta)
+            # C31: limited liability; no exit here (the floor block lifts and ejects the firm)
+            if not np.isfinite(delta) or delta < -1.0 + 1e-12:
+                delta = -1.0 + 1e-12
+                pool_ruin += 1
+            log_old = log_states_curr[firm]
+            new_log_states[firm] = log_old + np.log1p(delta)
 
-    # Return only the firms that need to exit
-    firms_to_exit = exit_list[:exit_count]
-
-    return new_log_states, cong_pools, firms_to_exit
+    return new_log_states, cong_pools, pool_ruin
 
 
 def compute_hhi(shares):
@@ -1792,6 +1805,7 @@ def model(params, seed=None, market_corr="identity",
     cong_occupies_market = np.zeros((MAX_CONGLOMERATES, markets), dtype=bool)  # Fast market occupancy lookup
     cong_alpha = np.full(MAX_CONGLOMERATES, share, dtype=np.float64)  # Per-conglomerate alpha (endogenous)
     cong_created_step = np.zeros(MAX_CONGLOMERATES, dtype=np.int32)  # C19: Track creation step for exit_review_every
+    cong_born_step = np.zeros(MAX_CONGLOMERATES, dtype=np.int32)  # C31: slot allocation step
 
     # ID management for conglomerate slots
     free_ids = []
@@ -1848,6 +1862,7 @@ def model(params, seed=None, market_corr="identity",
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(steps)
     floor_exits_per_period = np.zeros(steps)
+    pool_ruin_per_period = np.zeros(steps)  # C31: members whose pooled delta was capped at -1 + 1e-12
 
     # Pre-allocate lists for conglomerate metrics (computed on-the-fly)
     avg_shares = []
@@ -1969,9 +1984,9 @@ def model(params, seed=None, market_corr="identity",
         # Store this step's log returns in circular buffer
         firm_log_returns_buffer[curr_idx] = log_realizations_step
 
-        # ENDOGENOUS ALPHA: Update alpha for each active conglomerate every lookback periods
+        # ENDOGENOUS ALPHA: Update alpha for each active conglomerate every period (C31)
         # Must run BEFORE pooling so historical buffer data is still valid
-        if alpha_endogenous and step > 0 and step % lookback == 0:
+        if alpha_endogenous and step > 0:
             h = min(lookback, step)
             hist_start = step - h
 
@@ -2018,7 +2033,7 @@ def model(params, seed=None, market_corr="identity",
                 total_firms, markets, firms_per_market,
                 sharing_rule_code, decision_rule_code,
                 g if g is not None else 0.0,
-                cong_created_step
+                cong_created_step, cong_alpha, cong_born_step
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
@@ -2048,15 +2063,12 @@ def model(params, seed=None, market_corr="identity",
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
         solo = firm_conglom == -1
 
-        # SoA: Track conglomerates to delete after pooling loop
-        conglomerates_to_delete = set()
-
         # NUMBA OPTIMIZATION: Process all conglomerate firms using JIT-compiled function
         active_cong_ids = np.where(cong_active)[0]
 
         if len(active_cong_ids) > 0:
             # Call Numba function for pooling logic
-            new_log_states, cong_pools_step, firms_to_exit = process_conglomerate_pooling_numba(
+            new_log_states, cong_pools_step, pool_ruin = process_conglomerate_pooling_numba(
                 cong_firms,
                 cong_size,
                 active_cong_ids,
@@ -2074,6 +2086,7 @@ def model(params, seed=None, market_corr="identity",
 
             # Update log states in buffer
             firm_log_states_buffer[next_idx] = new_log_states
+            pool_ruin_per_period[step] = pool_ruin
 
             # Store pools for active conglomerates
             for idx, cong_id in enumerate(active_cong_ids):
@@ -2082,17 +2095,6 @@ def model(params, seed=None, market_corr="identity",
             # Store outside log-profits for firms in conglomerates
             in_cong = firm_conglom != -1
             firm_outside_log_profits[step % lookback, in_cong] = log_realizations_step[in_cong]
-
-            # Handle exits (must be done in Python due to exit_ function)
-            for firm_id in firms_to_exit:
-                exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
-                      cong_occupies_market, to_delete=conglomerates_to_delete,
-                      step=step, exits_per_period=exits_per_period,
-                      firm_exit_step=firm_exit_step)
-
-        # SoA: Clean up conglomerates marked for deletion
-        for cong_id in conglomerates_to_delete:
-            deallocate_cong_id(cong_id)
 
         # OPTIMIZATION: Vectorized solo firm updates (eliminates loop over potentially 1000s of firms)
         firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
@@ -2235,7 +2237,8 @@ def model(params, seed=None, market_corr="identity",
                     management_costs_lookup,
                     firm_conglom,
                     cong_firms,
-                    cong_size
+                    cong_size,
+                    cong_alpha
                 )
 
                 # Process exits for firms that should leave
@@ -2507,6 +2510,7 @@ def model(params, seed=None, market_corr="identity",
         summary['proposals_per_period'] = np.mean(proposals_per_period[burn_in:])
         summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
         summary['floor_exits_per_period'] = np.mean(floor_exits_per_period[burn_in:])
+        summary['pool_ruin_per_period'] = np.mean(pool_ruin_per_period[burn_in:])
         # Per-type acceptance rates
         total_props_ss = np.sum(proposals_ss_per_period[burn_in:])
         total_props_sc = np.sum(proposals_sc_per_period[burn_in:])
@@ -2528,6 +2532,7 @@ def model(params, seed=None, market_corr="identity",
         summary['proposals_per_period'] = 0.0
         summary['exits_per_period'] = 0.0
         summary['floor_exits_per_period'] = 0.0
+        summary['pool_ruin_per_period'] = 0.0
         summary['acceptance_rate_ss'] = np.nan
         summary['acceptance_rate_sc'] = np.nan
         summary['acceptance_rate_cc'] = np.nan
@@ -2593,9 +2598,14 @@ def model(params, seed=None, market_corr="identity",
                 member_iqrs = growth_vars[firm_home_market[member_firms], 1]
                 sd_iqr = float(np.std(member_iqrs, ddof=1)) if K > 1 else 0.0
                 mean_iqr = float(np.mean(member_iqrs))
+                # C31: time-averaged alpha of this unit over post-burn-in snapshots since its slot was allocated
+                tavg_vals = [alpha_history[cid, k] for k in range(burn_in // metric_every, n_metric_steps)
+                             if min((k + 1) * metric_every - 1, steps - 1) >= cong_born_step[cid]
+                             and not np.isnan(alpha_history[cid, k])]
                 alpha_scatter_final.append({
                     'cong_id': int(cid),
                     'alpha_final': float(cong_alpha[cid]),
+                    'alpha_tavg': float(np.mean(tavg_vals)) if tavg_vals else float('nan'),
                     'K': int(K),
                     'sd_iqr': sd_iqr,
                     'mean_iqr': mean_iqr,
@@ -2610,6 +2620,7 @@ def model(params, seed=None, market_corr="identity",
                        'log_family': log_family, 'nu': nu,
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
                        'floor_exits_per_period': floor_exits_per_period,
+                       'pool_ruin_per_period': pool_ruin_per_period,
                        'final_log_states': firm_log_states_buffer[steps % (lookback + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,

@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+from scipy.stats import spearmanr
 
 
 def load_tidy_csv(path='pilot_c/tidy.csv'):
@@ -300,6 +301,45 @@ def generate_endogenous_alpha_analysis(df):
     ).reset_index()
 
     return alpha_agg
+
+
+ALPHA_SCATTER_PATH = 'pilot_c/alpha_scatter.csv'
+
+
+def alpha_scatter_spearman(path=ALPHA_SCATTER_PATH):
+    """Spearman rho of alpha_tavg vs sd_iqr and vs mean_iqr per family (one row per active unit at T)."""
+    sc = pd.read_csv(path)
+    rows = []
+    for family in ['normal', 'laplace', 't3']:
+        sub = sc[sc['log_family'] == family].dropna(subset=['alpha_tavg'])
+        row = {'log_family': family, 'n': len(sub)}
+        for x in ('sd_iqr', 'mean_iqr'):
+            rho, p = spearmanr(sub['alpha_tavg'], sub[x]) if len(sub) > 2 else (np.nan, np.nan)
+            row[f'rho_{x}'], row[f'p_{x}'] = float(rho), float(p)
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def create_alpha_scatter_figure(output_path='diagnostics/pilot_c_alpha_scatter.png'):
+    """alpha_tavg vs sd_iqr of member markets, one panel per family."""
+    if not Path(ALPHA_SCATTER_PATH).exists():
+        return None
+    sc = pd.read_csv(ALPHA_SCATTER_PATH)
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
+    for ax, family in zip(axes, ['normal', 'laplace', 't3']):
+        sub = sc[sc['log_family'] == family]
+        ax.scatter(sub['sd_iqr'], sub['alpha_tavg'], s=8, alpha=0.4)
+        ax.set_title(f'{family} (n = {len(sub)})')
+        ax.set_xlabel('sd of member markets\' IQR')
+        ax.grid(True, alpha=0.3)
+    axes[0].set_ylabel('time-averaged α of unit (post burn-in)')
+    fig.suptitle('Endogenous α vs dispersion of member volatility')
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    return output_path
 
 
 def generate_runtime_stats(df):
@@ -1048,6 +1088,23 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("![Endogenous α histogram](pilot_c_endo_alpha_hist.png)")
     lines.append("")
 
+    if Path(ALPHA_SCATTER_PATH).exists():
+        sp = alpha_scatter_spearman()
+        lines.append("### α and member volatility (one row per active unit at T)")
+        lines.append("")
+        lines.append("Spearman rank correlation of the unit's time-averaged post-burn-in α (`alpha_tavg`) with the "
+                     "sd and the mean of its member markets' IQR.")
+        lines.append(f"Source: `{ALPHA_SCATTER_PATH}`. Figure: `diagnostics/pilot_c_alpha_scatter.png`")
+        lines.append("")
+        lines.append("| Family | n | ρ(α, sd_iqr) | p | ρ(α, mean_iqr) | p |")
+        lines.append("|--------|---|--------------|---|----------------|---|")
+        for _, row in sp.iterrows():
+            lines.append(f"| {row['log_family']} | {int(row['n'])} | {row['rho_sd_iqr']:.3f} | {row['p_sd_iqr']:.3g} | "
+                         f"{row['rho_mean_iqr']:.3f} | {row['p_mean_iqr']:.3g} |")
+        lines.append("")
+        lines.append("![α vs sd of member IQR](pilot_c_alpha_scatter.png)")
+        lines.append("")
+
     # ========================================================================
     # Section: Assortativity
     # ========================================================================
@@ -1141,6 +1198,7 @@ def main():
     create_search_figure(df, benchmarks)
     create_lookback_figure(df)
     create_status_panel_figure()
+    create_alpha_scatter_figure()
 
     # Generate report
     print("Generating summary report...")

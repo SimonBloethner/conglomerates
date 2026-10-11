@@ -72,6 +72,7 @@ def extract_post_burnin_metrics(result):
     metrics['exits_per_period'] = summary.get('exits_per_period', np.nan)
     metrics['floor_exits_per_period'] = summary.get('floor_exits_per_period', np.nan)
     metrics['voluntary_exits_per_period'] = metrics['exits_per_period'] - metrics['floor_exits_per_period']
+    metrics['pool_ruin_per_period'] = summary.get('pool_ruin_per_period', np.nan)  # C31
     metrics['growth_gap_median'] = summary.get('growth_gap_median', np.nan)  # C17
 
     # Per-type acceptance rates (C17)
@@ -193,37 +194,24 @@ def extract_post_burnin_metrics(result):
         metrics['K_eff_post_burnin_p25'] = np.nan
         metrics['K_eff_post_burnin_p75'] = np.nan
 
-    # Endogenous alpha: final adopted alpha
-    if scenario.get('alpha_endogenous', False):
-        alpha_hist = result.get('alpha_history')
-        if alpha_hist is not None:
-            # alpha_history is a 2D array: (max_conglomerates, n_metric_steps)
-            # Get final alphas for each conglomerate that was active
-            final_alphas = []
-            if isinstance(alpha_hist, np.ndarray) and alpha_hist.ndim == 2:
-                # Find conglomerates that had non-zero alpha at some point
-                for cid in range(alpha_hist.shape[0]):
-                    # Get last non-zero alpha for this conglomerate
-                    cid_alphas = alpha_hist[cid, :]
-                    valid_alphas = cid_alphas[cid_alphas > 0]
-                    if len(valid_alphas) > 0:
-                        final_alphas.append(valid_alphas[-1])
-            if final_alphas:
-                metrics['alpha_adopted_median'] = np.median(final_alphas)
-                metrics['alpha_adopted_mean'] = np.mean(final_alphas)
-                metrics['alpha_adopted_std'] = np.std(final_alphas)
-            else:
-                metrics['alpha_adopted_median'] = np.nan
-                metrics['alpha_adopted_mean'] = np.nan
-                metrics['alpha_adopted_std'] = np.nan
-        else:
-            metrics['alpha_adopted_median'] = np.nan
-            metrics['alpha_adopted_mean'] = np.nan
-            metrics['alpha_adopted_std'] = np.nan
-    else:
-        metrics['alpha_adopted_median'] = np.nan
-        metrics['alpha_adopted_mean'] = np.nan
-        metrics['alpha_adopted_std'] = np.nan
+    # Endogenous alpha (C31): all non-NaN alpha_history entries in post-burn-in snapshot columns,
+    # i.e. every active unit at every post-burn-in snapshot (entries equal to 0 included)
+    alpha_cols = ['alpha_adopted_median', 'alpha_adopted_mean', 'alpha_adopted_std',
+                  'alpha_adopted_share0', 'alpha_adopted_share1']
+    for c in alpha_cols:
+        metrics[c] = np.nan
+    metrics['alpha_adopted_n'] = 0
+    alpha_hist = result.get('alpha_history') if scenario.get('alpha_endogenous', False) else None
+    if isinstance(alpha_hist, np.ndarray) and alpha_hist.ndim == 2:
+        post = alpha_hist[:, burn_in // metric_every:]
+        vals = post[~np.isnan(post)]
+        metrics['alpha_adopted_n'] = int(vals.size)
+        if vals.size > 0:
+            metrics['alpha_adopted_median'] = np.median(vals)
+            metrics['alpha_adopted_mean'] = np.mean(vals)
+            metrics['alpha_adopted_std'] = np.std(vals)
+            metrics['alpha_adopted_share0'] = float(np.mean(vals == 0.0))
+            metrics['alpha_adopted_share1'] = float(np.mean(vals == 1.0))
 
     # Assortativity: use pre-computed assort_iqr from model (C22c)
     metrics["assort_iqr"] = summary.get("assort_iqr", np.nan)
