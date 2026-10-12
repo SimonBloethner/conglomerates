@@ -43,6 +43,8 @@ def extract_post_burnin_metrics(result):
         'sharing_rule': scenario['sharing_rule'],
         'lookback': scenario['lookback'],
         'merge_thresh': scenario['merge_thresh'],
+        'M': scenario['M'],  # C32: economy size
+        'N': scenario['N'],
         'cross_corr': scenario['cross_corr'],
         'alpha_endogenous': scenario.get('alpha_endogenous', False),
         'decision_rule': scenario.get('decision_rule', 'replay'),  # C17
@@ -336,7 +338,7 @@ def create_medians_df(tidy_df):
     """
     group_cols = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule',
                   'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier',
-                  'decision_rule', 'merge_thresh']  # C17; C28 merge_thresh
+                  'decision_rule', 'merge_thresh', 'M', 'N']  # C17; C28 merge_thresh; C32 M, N
 
     # Numeric columns to aggregate
     value_cols = [

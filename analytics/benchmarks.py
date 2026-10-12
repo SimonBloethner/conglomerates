@@ -398,5 +398,42 @@ def generate_benchmarks_csv(output_path='analytics/benchmarks.csv', M=50):
     return rows
 
 
+def append_size_benchmarks(output_path='analytics/benchmarks.csv', Ms=(25, 100)):
+    """
+    C32: append K* rows for the size block (laplace, power_law, alpha in {0.1, 0.3, 0.5}) at M = 25 and 100
+    to benchmarks.csv, in its column schema (existing rows, M = 50, are kept unchanged).
+    k_star_at_cap is True when K* reaches the search cap min(60, M).
+    """
+    with open(output_path) as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        existing = list(reader)
+    if any(int(r['M']) in Ms for r in existing):
+        raise ValueError(f'rows for M in {Ms} already in {output_path}')
+
+    family, cost_type, mu, iqr = 'laplace', 'power_law', 0.05, 0.2
+    rows = []
+    for M in Ms:
+        for alpha in [0.1, 0.3, 0.5]:
+            print(f"  M={M}, {family}, {cost_type}, alpha={alpha}...")
+            K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_type, M=M)
+            tail_share = body_tail_split(alpha, 5, family, mu, iqr, q=0.01)
+            rows.append({
+                'family': family, 'cost_type': cost_type, 'alpha': alpha, 'mu': mu, 'iqr': iqr, 'M': M,
+                'K_star': K_opt, 'k_star_at_cap': K_opt >= min(60, M),
+                'gain_at_K_star': gain_opt, 'tail_share_K5': tail_share,
+            })
+
+    with open(output_path, 'a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writerows(rows)
+    print(f"Appended {len(rows)} rows to {output_path}")
+    return rows
+
+
 if __name__ == '__main__':
-    generate_benchmarks_csv()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == '--size':
+        append_size_benchmarks()
+    else:
+        generate_benchmarks_csv()

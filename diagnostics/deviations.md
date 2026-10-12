@@ -390,3 +390,76 @@ Option (a): limited liability is kept under both sharing rules. The two Step 5 c
 - (ii) `pool_ruin_per_period ≤ 0.001` in every row with `sharing_rule == 'proportional'`. Result: true in 1360 rows (max 0.000667; 8 rows > 0).
 
 `tests/test_c31_identity.py` is unchanged in substance; its docstring now states that identity is expected only in runs without pool-ruin events. `MODEL_FLAGS.md` states the δ ≥ −1 − Φ(K) bound and the 23 affected t3 runs.
+
+# C32: economy-size robustness, floor-hit clustering
+
+## Step 1 stopped: c*(25) is not bracketed by C_GRID_N25
+
+The 60-task calibration array (826596; N ∈ {25, 100}, c ∈ [0.08, 0.10, 0.127, 0.15, 0.20, 0.30], 5 reps; M = 20, T = 8000, burn-in 3000, Laplace, the same settings as the N = 50 grid) completed without errors. Seeds are SEED_BASE + 2000 + run_idx for N = 25 and SEED_BASE + 3000 + run_idx for N = 100, following the N = 200 offset scheme. Aggregated exactly as the N = 50 grid (median Hill over 5 reps):
+
+| c | Hill N=25 [25,75] | Hill N=100 [25,75] |
+|---|-------------------|--------------------|
+| 0.080 | 1.0952 [1.0889, 1.1038] | 0.9085 [0.9059, 0.9233] |
+| 0.100 | 1.1662 [1.1654, 1.1759] | 0.9502 [0.9435, 0.9512] |
+| 0.127 | 1.1801 [1.1791, 1.2147] | 0.9923 [0.9900, 1.0116] |
+| 0.150 | 1.2691 [1.2393, 1.2753] | 1.0437 [1.0433, 1.0493] |
+| 0.200 | 1.3590 [1.3584, 1.3684] | 1.1407 [1.1246, 1.1614] |
+| 0.300 | 1.5563 [1.5341, 1.5999] | 1.3470 [1.3114, 1.3633] |
+
+- Hill is monotone in c on both grids.
+- N = 100: 1.06 lies between c = 0.15 (1.0437) and c = 0.20 (1.1407). Linear interpolation gives c*(100) = 0.15838.
+- N = 25: the Hill exponent already exceeds 1.06 at the smallest grid point (1.0952 at c = 0.08), so c*(25) < 0.08. Any value would be an extrapolation. The script's interpolation returns no c*, and `test_c_star_bracketed` would fail by design. A linear extrapolation from the two lowest points gives about 0.070; this is not used.
+
+Steps 2–6 depend on c*(25) (the size block's `floor_c` for N = 25), so the card is stopped here. Nothing is committed. In the scratch snapshot `/scratch/bt307958/c32`, `analytics/floor_calibration.csv` has the 12 new rows appended; the local repository's csv and md are unchanged. The per-task results are in `analytics/c32_runs/task_*.json`.
+
+Fix: extend `C_GRID_N25` downward, for example with 0.03, 0.05 and 0.0566 (the low end of the N = 50 grid). That is 15 more tasks of about 1 minute each. Then rerun the aggregation.
+
+## Step 1, second attempt: monotonicity fails at N = 25
+
+As instructed:
+- `C_GRID_N25` was extended downward to [0.03, 0.05, 0.0566, 0.08, 0.10, 0.127, 0.15, 0.20, 0.30].
+- The full N = 50 grid was rerun on the current code, with the C13 seeds.
+- All three grids ran as one array: 826657, 125 tasks, no errors.
+
+Seeds: run_idx runs over (c, rep) in grid order. Prepending three c values therefore shifts the N = 25 seeds, so all 45 N = 25 tasks were rerun. The first attempt's 30 runs are in `/scratch/bt307958/c32/c32_runs_v1` and are not used. The csv was rewritten: 25 C32 rows (N = 25, 50, 100) plus the 3 C13 rows at N = 200, with a new `code` column.
+
+c* values:
+
+| N | c* | bracketing grid points (c, Hill) |
+|---|----|----------------------------------|
+| 25 | 0.07193 | (0.0566, 1.0029), (0.08, 1.0900) |
+| 50 | 0.12717 | (0.10, 1.0057), (0.15, 1.1057) |
+| 100 | 0.15838 | (0.15, 1.0437), (0.20, 1.1407) |
+
+- **c\*(50) = 0.127170.** This is 0.0% from 0.12717, so the 5% check passes. All ten N = 50 grid points reproduce the C13 Hill, HHI, top-10 and floor-fraction medians exactly; the current code at α = 0 is identical to the C13 code for this configuration.
+- **The target is bracketed for every N**, so `test_c_star_bracketed` passes.
+
+What fails is `test_hill_monotone_n25_n100`, the same assertion as the N = 50 test (tolerance 1e-6). At N = 25 the median Hill falls from 1.0196 at c = 0.05 to 1.0029 at c = 0.0566. The per-rep values show this is replication noise between two grid points only 0.0066 apart:
+
+| c | rep Hill values (seeds 2047–2056) | median |
+|---|-----------------------------------|--------|
+| 0.05 | 1.0123, 1.0136, 1.0196, 1.0261, 1.0378 | 1.0196 |
+| 0.0566 | 0.9850, 1.0029, 1.0556, 0.9856, 1.0177 | 1.0029 |
+
+The rep spread at one c (about 0.07) is larger than the expected change in Hill over Δc = 0.0066 (about 0.02, from the 0.03–0.08 slope). The 0.0566 cell is also next to the bracket that sets c*(25). The assertion is not weakened, so the card stops here. Nothing is committed.
+
+The rest of the work is done in the scratch snapshot but not used:
+- `pilot_c/burstiness_summary.csv`: 27 rows, D_median 2.47–4.75 against D_binomial 0.87–0.94.
+- `analytics/benchmarks.py --size`: job 826782.
+
+Options:
+- (a) Drop 0.0566 from `C_GRID_N25`. It is the N = 50 C13 legacy value, and 0.03, 0.05, 0.08 give an even spacing. 1.06 is then bracketed by (0.05, 1.0196) and (0.08, 1.0900), which gives c*(25) ≈ 0.0672. The other N = 25 grid points are still monotone. No reruns needed, but the N = 25 seeds of c ≥ 0.08 would then not follow the run_idx scheme unless those runs are redone (45 → 40 tasks, about 1 minute each).
+- (b) More reps at N = 25 (e.g. 20 instead of 5) so the medians at adjacent points separate. This changes the "5 reps" setting.
+- (c) Keep the grid and accept non-monotonicity within replication noise at N = 25. This would change the test, which the card rules out without your approval.
+
+## Resolution (C32)
+
+- N = 25 uses 20 replications on all nine c values (seeds SEED_BASE + 2000 + run_idx, run_idx over (c, rep); 180 tasks, array 826805). N = 50 and N = 100 keep 5 (their array-826657 results are reused; same seeds). `floor_calibration.csv` has a `reps` column. 0.0566 stays in the grid.
+- With 20 reps the N = 25 medians are monotone at every spacing. c*(25) = 0.06908, bracketed by (0.0566, 1.0258) and (0.08, 1.0899). c*(50) = 0.12717 (0.0% from C13) and c*(100) = 0.15838 are unchanged. The size block stores floor_c = 0.06908 (N = 25) and 0.15838 (N = 100), rounded to five decimals like 0.12717.
+- `test_hill_monotone_n25_n100` and `test_hill_monotone_nondecreasing_n50` share one rule, `assert_hill_monotone`: Hill is non-decreasing (tolerance 1e-6) between every pair of grid points at least 0.02 apart in c. The reason is in the docstring. `test_c_star_bracketed` is unchanged.
+
+Other points:
+- `tests/test_pilot_c_design.py::test_floor_c_matches_c14` asserted floor_c = 0.12717 outside the floor-level block. It now also skips the size block and asserts floor_c = FLOOR_C_BY_N[N] there; otherwise it would fail by design.
+- `analyze_pilot_c.py` has no section named "Distributional". The floor-hit clustering table is a subsection ("### Floor-hit clustering") at the end of "## HHI and Top-10 Share", the last of the distribution sections (Hill, floor-hit rate, HHI/top-10).
+- K* lookups in the existing K-vs-K* table and the search figure are restricted to M = 50 benchmark rows (`benchmarks_at_m`), since benchmarks.csv now has M = 25 and 100 rows.
+- `burstiness.py` ran through `srun --partition=dev`, not on the login node (CLAUDE.md rule, confirmed by the user). It reads the C29 traces in `/scratch/bt307958/traces_c29` (main block, power_law). None of these 27 scenarios is among the 23 runs that C31's limited liability changed.

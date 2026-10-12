@@ -27,10 +27,10 @@ EXPECTED_TIDY_COLUMNS = [
     'cong_capital_share_p75', 'K_post_burnin_median', 'K_post_burnin_p25',
     'K_post_burnin_p75', 'K_eff_post_burnin_median', 'K_eff_post_burnin_p25',
     'K_eff_post_burnin_p75', 'alpha_adopted_median', 'alpha_adopted_mean',
-    'alpha_adopted_std', 'assort_iqr',
+    'alpha_adopted_std', 'assort_iqr', 'M', 'N',
 ]
 
-EXPECTED_TOTAL_ROWS = 1540
+EXPECTED_TOTAL_ROWS = 1620
 
 EXPECTED_BLOCK_COUNTS = {
     'main': 540,
@@ -42,6 +42,7 @@ EXPECTED_BLOCK_COUNTS = {
     'rule-replay': 45,
     'floor-level': 90,
     'search': 120,
+    'size': 80,
 }
 
 EXPECTED_LOOKBACK_BY_FAMILY = {

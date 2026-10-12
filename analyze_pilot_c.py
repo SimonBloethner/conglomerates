@@ -56,8 +56,16 @@ def fmt_band(median, p25, p75):
     return f"{median:.3f} [{p25:.3f}, {p75:.3f}]"
 
 
+def benchmarks_at_m(benchmarks, M=50):
+    """Benchmark rows for economy size M (C32 adds M = 25, 100 rows; files without an M column are M = 50)."""
+    if len(benchmarks) == 0 or 'M' not in benchmarks.columns:
+        return benchmarks
+    return benchmarks[benchmarks['M'] == M]
+
+
 def generate_k_vs_kstar_table(df, benchmarks):
     """Generate table: K and K_eff versus K* by family/cost/alpha, with acceptance rate."""
+    benchmarks = benchmarks_at_m(benchmarks)
     # Filter main block
     main = df[df['block'] == 'main'].copy()
 
@@ -217,6 +225,7 @@ def generate_search_table(df):
 def create_search_figure(df, benchmarks, output_path='diagnostics/pilot_c_search.png'):
     """K_mean vs α, one line per merge_thresh, one panel per family; K* dashed."""
     table = generate_search_table(df)
+    benchmarks = benchmarks_at_m(benchmarks)
     families = ['normal', 'laplace', 't3']
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
     for ax, family in zip(axes, families):
@@ -340,6 +349,69 @@ def create_alpha_scatter_figure(output_path='diagnostics/pilot_c_alpha_scatter.p
     plt.savefig(output_path, dpi=150)
     plt.close()
     return output_path
+
+
+SIZE_COLS = ['K_mean', 'K_star', 'K_over_K_star', 'cong_capital_share_median', 'hill_exponent_median',
+             'floor_hit_rate_standalone', 'floor_exits_per_period', 'mergers_per_period']
+
+
+def generate_size_table(df, benchmarks):
+    """Size block by (M, N) × α plus the main laplace/power_law cell (M = N = 50) at the same α; medians over
+    reps. K_star from benchmarks.csv at the row's M (laplace, power_law; undefined at α = 0)."""
+    size = df[df['block'] == 'size']
+    alphas = sorted(size['alpha'].unique())
+    main = df[(df['block'] == 'main') & (df['log_family'] == 'laplace') & (df['cost_type'] == 'power_law')
+              & (df['alpha'].isin(alphas))].copy()
+    main['M'], main['N'] = 50, 50
+    both = pd.concat([size, main])
+    value_cols = [c for c in SIZE_COLS if c not in ('K_star', 'K_over_K_star')]
+    table = both.groupby(['M', 'N', 'alpha'])[value_cols].median().reset_index()
+    table['K_star'] = np.nan
+    if len(benchmarks) > 0:
+        bm = benchmarks[(benchmarks['family'] == 'laplace') & (benchmarks['cost_type'] == 'power_law')]
+        if 'M' not in bm.columns:
+            bm = bm.assign(M=50)
+        ks = {(int(r['M']), float(r['alpha'])): r['K_star'] for _, r in bm.iterrows()}
+        table['K_star'] = [ks.get((int(m), float(a)), np.nan) for m, a in zip(table['M'], table['alpha'])]
+    table['K_over_K_star'] = table['K_mean'] / table['K_star']
+    table['is_main'] = (table['M'] == 50) & (table['N'] == 50)
+    return table.sort_values(['is_main', 'M', 'N', 'alpha']).reset_index(drop=True)[['M', 'N', 'alpha'] + SIZE_COLS]
+
+
+def create_size_figure(df, benchmarks, output_path='diagnostics/pilot_c_size.png'):
+    """K_mean/K* vs α, one line per (M, N); the main (50, 50) cell dashed."""
+    table = generate_size_table(df, benchmarks)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for (m, n), g in table.groupby(['M', 'N']):
+        g = g[g['alpha'] > 0].sort_values('alpha')
+        style = '--' if (m, n) == (50, 50) else '-'
+        ax.plot(g['alpha'], g['K_over_K_star'], linestyle=style, marker='o', label=f'M={m}, N={n}')
+    ax.axhline(1.0, color='gray', linestyle=':', linewidth=1)
+    ax.set_xlabel('α (pooling fraction)')
+    ax.set_ylabel('K_mean / K* (medians over reps)')
+    ax.set_title('Economy size: K_mean / K* vs α (laplace, power_law)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    return output_path
+
+
+BURSTINESS_PATH = 'pilot_c/burstiness_summary.csv'
+BURSTINESS_COLS = ['D_median', 'D_binomial', 'share_periods_3plus', 'share_periods_3plus_binom',
+                   'max_hits_one_period']
+
+
+def burstiness_table(path=BURSTINESS_PATH):
+    """Floor-hit clustering by family × α, mean over reps (analysis/burstiness.py output)."""
+    b = pd.read_csv(path)
+    order = {'normal': 0, 'laplace': 1, 't3': 2}
+    table = b.groupby(['family', 'alpha'])[BURSTINESS_COLS].mean().reset_index()
+    return table.sort_values(['family', 'alpha'],
+                             key=lambda c: c.map(order) if c.name == 'family' else c).reset_index(drop=True)
 
 
 def generate_runtime_stats(df):
@@ -706,7 +778,7 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append(f"- **Scenarios**: {runtime['n_scenarios']}")
     lines.append(f"- **Total runtime**: {runtime['total_seconds']:.0f}s ({runtime['total_cpu_hours']:.2f} CPU-hours)")
     lines.append(f"- **Mean ms/step**: {runtime['mean_ms_per_step']:.2f} ± {runtime['std_ms_per_step']:.2f}")
-    lines.append(f"- **Grid**: 50 × 50 (M × N)")
+    lines.append(f"- **Grid**: 50 × 50 (M × N); size block M, N ∈ {{25, 100}}")
     lines.append("")
 
     # Block breakdown
@@ -879,6 +951,26 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("")
 
     # ========================================================================
+    # Section: Floor-hit clustering (distributional)
+    # ========================================================================
+    if Path(BURSTINESS_PATH).exists():
+        bt = burstiness_table()
+        lines.append("### Floor-hit clustering")
+        lines.append("")
+        lines.append("Index of dispersion D of floor hits per market-period (Var/Mean over post-burn-in periods, median "
+                     "over markets) in the 27 traced runs, against the independent-firm binomial reference D = 1 − p; "
+                     "share of market-periods with ≥ 3 hits against its binomial reference; mean over reps.")
+        lines.append("Source: `pilot_c/burstiness_summary.csv` (`analysis/burstiness.py`)")
+        lines.append("")
+        lines.append("| Family | α | D_median | D_binomial | Share ≥3 hits | Share ≥3 (binomial) | Max hits/period |")
+        lines.append("|--------|---|----------|------------|---------------|---------------------|-----------------|")
+        for _, row in bt.iterrows():
+            lines.append(f"| {row['family']} | {row['alpha']:g} | {row['D_median']:.3f} | {row['D_binomial']:.3f} | "
+                         f"{row['share_periods_3plus']:.4f} | {row['share_periods_3plus_binom']:.4f} | "
+                         f"{row['max_hits_one_period']:.1f} |")
+        lines.append("")
+
+    # ========================================================================
     # Section: Equal-split check
     # ========================================================================
     lines.append("## Equal-split Check")
@@ -948,6 +1040,30 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
                      f"{row['mergers_per_period']:.2f} | {row['floor_exits_per_period']:.2f} | "
                      f"{row['hill_exponent_median']:.3f} |")
     lines.append("")
+
+    # ========================================================================
+    # Section: Economy size
+    # ========================================================================
+    if (df['block'] == 'size').any():
+        size_table = generate_size_table(df, benchmarks)
+        lines.append("## Economy size")
+        lines.append("")
+        lines.append("Size block (laplace, power_law, merge_thresh 0.05, floor_c = c*(N)) by (M, N) × α, and the main "
+                     "laplace/power_law cell (M = N = 50, floor_c = 0.12717) at the same α; medians over reps. "
+                     "K* from `analytics/benchmarks.csv` at the row's M.")
+        lines.append("Source: `pilot_c/tidy.csv`, blocks `size` and `main`. Figure: `diagnostics/pilot_c_size.png`.")
+        lines.append("")
+        lines.append("| M | N | α | K_mean | K* | K_mean/K* | CCS | Hill | Floor-hit (standalone) | Floor exits/period | Mergers/period |")
+        lines.append("|---|---|---|--------|----|-----------|-----|------|------------------------|--------------------|----------------|")
+        for _, row in size_table.iterrows():
+            ks = '—' if pd.isna(row['K_star']) else f"{int(row['K_star'])}"
+            kr = '—' if pd.isna(row['K_over_K_star']) else f"{row['K_over_K_star']:.3f}"
+            km = '—' if pd.isna(row['K_mean']) else f"{row['K_mean']:.3f}"
+            lines.append(f"| {int(row['M'])} | {int(row['N'])} | {row['alpha']:g} | {km} | {ks} | {kr} | "
+                         f"{row['cong_capital_share_median']:.3f} | {row['hill_exponent_median']:.3f} | "
+                         f"{row['floor_hit_rate_standalone']:.4f} | {row['floor_exits_per_period']:.2f} | "
+                         f"{row['mergers_per_period']:.2f} |")
+        lines.append("")
 
     # ========================================================================
     # Section: Owner-return growth by status (panel)
@@ -1159,6 +1275,7 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
     lines.append("- `pilot_c_ccs_vs_alpha.png`: Conglomerate capital share versus α")
     lines.append("- `pilot_c_assortativity.png`: Assortativity ratio versus α")
     lines.append("- `pilot_c_endo_alpha_hist.png`: Histogram of adopted α (endogenous block)")
+    lines.append("- `pilot_c_size.png`: K_mean / K* versus α by economy size (M, N)")
     lines.append("")
 
     # Write report
@@ -1196,6 +1313,8 @@ def main():
     create_assortativity_figure(df)
     create_endogenous_alpha_histogram(df)
     create_search_figure(df, benchmarks)
+    if (df['block'] == 'size').any():
+        create_size_figure(df, benchmarks)
     create_lookback_figure(df)
     create_status_panel_figure()
     create_alpha_scatter_figure()

@@ -3,7 +3,7 @@
 Tests for Phase C pilot design generator.
 
 Test requirements (updated for C28):
-1. Scenario count = 1540
+1. Scenario count = 1620 (C32: size block, 80 runs)
 2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
@@ -35,6 +35,7 @@ from pilot_design import (
     N_REPS,
     T,
     BURN_IN,
+    FLOOR_C_BY_N,
 )
 
 
@@ -44,11 +45,11 @@ def c_for_exponent(target):
 
 
 def test_scenario_count():
-    """Scenario count = 1540 (updated for C28)."""
+    """Scenario count = 1620 (updated for C32)."""
     scenarios = generate_all_scenarios()
 
     # Check total count
-    assert len(scenarios) == 1540, f"Expected 1540 scenarios, got {len(scenarios)}"
+    assert len(scenarios) == 1620, f"Expected 1620 scenarios, got {len(scenarios)}"
 
     # Check block counts
     blocks = {}
@@ -66,17 +67,19 @@ def test_scenario_count():
         'rule-replay': 45,  # C17: 1 × 1 × 9 × 5
         'floor-level': 90,  # C17: 1 × 1 × 2 × 9 × 5 (2 floor values × 9 α × 5 reps)
         'search': 120,  # C28: 3 families × 2 merge_thresh × 4 α × 5 reps
+        'size': 80,  # C32: 4 (M, N) × 4 α × 5 reps
     }
 
     for block, count in expected.items():
         actual = blocks.get(block, 0)
         assert actual == count, f"Block {block}: expected {count}, got {actual}"
 
-    print("PASS: scenario count = 1540")
+    print("PASS: scenario count = 1620")
 
 
 def test_floor_c_matches_c14():
-    """floor_c = 0.12717 (C14 calibration for Hill ~1.06 at N=50) in all blocks except floor-level."""
+    """floor_c = 0.12717 (C14 calibration for Hill ~1.06 at N=50) in all blocks except floor-level and size;
+    in the size block floor_c = c*(N) (C32 calibration at N = 25, 100)."""
     expected = 0.12717
 
     # Check constant
@@ -88,6 +91,11 @@ def test_floor_c_matches_c14():
     for s in scenarios:
         if s['block'] == 'floor-level':
             # floor-level block uses different floor_c values (C17)
+            continue
+        if s['block'] == 'size':
+            # size block uses the floor calibrated at its own N (C32)
+            assert s['N'] in (25, 100) and s['floor_c'] == FLOOR_C_BY_N[s['N']], \
+                f"Scenario {s['scenario_id']} floor_c {s['floor_c']} != c*({s['N']})"
             continue
         assert abs(s['floor_c'] - expected) < 1e-5, \
             f"Scenario {s['scenario_id']} floor_c mismatch: {s['floor_c']}"

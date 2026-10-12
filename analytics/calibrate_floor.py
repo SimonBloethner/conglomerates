@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 C13: Calibrate floor coefficient c at N=50.
+C32: grids at N=25, 50, 100 on the current code (--task <id> runs one array task, --aggregate-c32 writes the rows).
 
 Runs a grid search over floor_c values to find c_star where the
 within-market Hill exponent equals 1.06 (Axtell 2001 target).
@@ -41,6 +42,17 @@ C_GRID_N50 = [0.03, 0.05, 0.0566, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]
 
 # Subset of c values for N=200
 C_GRID_N200 = [0.0566, 0.15, 0.3]
+
+# C32: grids for N=25 and N=100 (c* is N-dependent), and the N=50 grid rerun on the current code;
+# run as a SLURM array via --task / --aggregate-c32
+C_GRID_N25 = [0.03, 0.05, 0.0566, 0.08, 0.10, 0.127, 0.15, 0.20, 0.30]
+C_GRID_N100 = [0.08, 0.10, 0.127, 0.15, 0.20, 0.30]
+# Seed offsets per N, same scheme as N=50 (SEED_BASE + run_idx) and N=200 (SEED_BASE + 1000 + run_idx)
+C32_GRIDS = [(25, C_GRID_N25, 2000), (50, C_GRID_N50, 0), (100, C_GRID_N100, 3000)]
+C_STAR_N50 = 0.12717
+# Replications per N in the C32 grids: 20 at N=25 (adjacent-point Hill differences there are inside the
+# 5-rep noise), 5 as in C13 elsewhere
+C32_REPS = {25: 20, 50: 5, 100: 5}
 
 # Target Hill exponent (Axtell 2001)
 TARGET_HILL = 1.06
@@ -413,6 +425,105 @@ def update_scenarios_json(c_star, scenarios_path):
     return len(new_scenarios)
 
 
+def c32_tasks():
+    """(N, c, rep, seed) for the C32 grids (N = 25, 50, 100), one per SLURM array task (260 tasks).
+    Seeds: SEED_BASE + offset + run_idx with run_idx over (c, rep) in grid order, as in C13; the N = 50 offset
+    is 0, so the N = 50 seeds are the C13 ones."""
+    tasks = []
+    for N, grid, offset in C32_GRIDS:
+        run_idx = 0
+        for c in grid:
+            for rep in range(C32_REPS[N]):
+                tasks.append((N, c, rep, SEED_BASE + offset + run_idx))
+                run_idx += 1
+    return tasks
+
+
+def run_c32_task(task_id, out_dir):
+    """Run one C32 calibration scenario and write it to <out_dir>/task_<id>.json."""
+    N, c, rep, seed = c32_tasks()[task_id]
+    print(f"task {task_id}: N={N}, c={c:.4f}, rep={rep}, seed={seed}", flush=True)
+    result = run_calibration_scenario(N=N, c=c, rep=rep, seed=seed)
+    print(f"  Hill={result['hill_median']:.4f}, HHI={result['hhi_within_median']:.4f}", flush=True)
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, f'task_{task_id}.json'), 'w') as f:
+        json.dump({k: float(v) if isinstance(v, (np.floating, float)) else int(v) for k, v in result.items()}, f)
+
+
+def bracket_c_star(aggregated, N):
+    """c*(N) by the script's interpolation, and the two adjacent grid points whose Hill values bracket the
+    target (None if the target is not bracketed, i.e. c* would be an extrapolation)."""
+    rows = sorted([r for r in aggregated if r['N'] == N], key=lambda r: r['c'])
+    bracket = [(a, b) for a, b in zip(rows[:-1], rows[1:])
+               if min(a['hill_median'], b['hill_median']) <= TARGET_HILL <= max(a['hill_median'], b['hill_median'])]
+    if not bracket:
+        return None, None
+    c_star, _ = find_c_star(aggregated, N=N)
+    return c_star, bracket[0]
+
+
+def aggregate_c32(out_dir):
+    """Aggregate the C32 task results as the C13 grid is aggregated; rewrite floor_calibration.csv with the
+    C32 rows (N = 25, 50, 100; code = C32) replacing the C13 N = 50 rows, keeping the C13 N = 200 rows
+    (code = C13); interpolate c*(25), c*(50), c*(100) and record them in floor_calibration.md."""
+    analytics_dir = Path(__file__).parent
+    results = []
+    for i, (N, c, rep, seed) in enumerate(c32_tasks()):
+        with open(os.path.join(out_dir, f'task_{i}.json')) as f:
+            r = json.load(f)
+        assert (r['N'], r['c'], r['rep'], r['seed']) == (N, c, rep, seed), (i, r)
+        results.append(r)
+    aggregated = aggregate_results(results)
+    for r in aggregated:
+        r['reps'] = C32_REPS[r['N']]
+        r['code'] = 'C32'
+
+    csv_path = analytics_dir / 'floor_calibration.csv'
+    with open(csv_path) as f:
+        existing = list(csv.DictReader(f))
+    fieldnames = [k for k in existing[0].keys() if k not in ('reps', 'code')] + ['reps', 'code']
+    kept = [dict(r, reps=r.get('reps') or REPS, code=r.get('code') or 'C13') for r in existing if int(r['N']) == 200]
+    with open(csv_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(aggregated)
+        writer.writerows(kept)
+    print(f"Wrote {csv_path}: {len(aggregated)} C32 rows, {len(kept)} C13 rows (N=200)")
+
+    c_stars, lines = {}, ["", "## C32: c* by N (current code)", "",
+                          f"Grids at N = 25 (c ∈ {C_GRID_N25}), N = 50 (c ∈ {C_GRID_N50}) and N = 100 "
+                          f"(c ∈ {C_GRID_N100}); M = {M}, T = {T}, burn_in = {BURN_IN}, Laplace, same "
+                          f"settings as C13. The N = 50 grid is rerun on the current code (C13 seeds) and replaces "
+                          f"the C13 N = 50 rows in floor_calibration.csv (column `code`); the N = 200 rows are C13. "
+                          f"The N = 50 table above is the C13 run. c* by linear interpolation of the median Hill "
+                          f"to {TARGET_HILL} between the two adjacent grid points that bracket it. Replications per N "
+                          f"(column `reps`): " + ", ".join(f"N = {n}: {k}" for n, k in C32_REPS.items())
+                          + f"; N = 200 (C13): {REPS}.", "",
+                          "| N | c* | bracketing grid points (c, Hill) |", "|---|----|----------------------------------|"]
+    for N, _, _ in C32_GRIDS:
+        c_star, bracket = bracket_c_star(aggregated, N)
+        if bracket is None:
+            raise ValueError(f'c*({N}) not bracketed by the grid')
+        a, b = bracket
+        c_stars[N] = c_star
+        lines.append(f"| {N} | {c_star:.5f} | ({a['c']:g}, {a['hill_median']:.4f}), ({b['c']:g}, {b['hill_median']:.4f}) |")
+        print(f"c*({N}) = {c_star:.6f}, bracket c in [{a['c']}, {b['c']}], "
+              f"Hill in [{a['hill_median']:.4f}, {b['hill_median']:.4f}]")
+    lines += ["", f"c*(50) = {c_stars[50]:.5f} vs the C13 value {C_STAR_N50} "
+                  f"({100 * (c_stars[50] / C_STAR_N50 - 1):+.2f}%).", "",
+              "| N | c | reps | Hill [25,75] | HHI [25,75] | Top10 | Floor frac |",
+              "|---|---|------|--------------|-------------|-------|------------|"]
+    for r in sorted(aggregated, key=lambda r: (r['N'], r['c'])):
+        lines.append(f"| {r['N']} | {r['c']:.4f} | {r['reps']} | "
+                     f"{r['hill_median']:.4f} [{r['hill_p25']:.4f}, {r['hill_p75']:.4f}] | "
+                     f"{r['hhi_median']:.4f} [{r['hhi_p25']:.4f}, {r['hhi_p75']:.4f}] | "
+                     f"{r['top10_median']:.4f} | {r['floor_frac_median']:.4f} |")
+    with open(analytics_dir / 'floor_calibration.md', 'a') as f:
+        f.write('\n'.join(lines) + '\n')
+    print(json.dumps({str(k): v for k, v in c_stars.items()}))
+    return c_stars
+
+
 def main():
     """Main calibration routine."""
     print("=" * 60)
@@ -486,4 +597,10 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    if len(sys.argv) >= 3 and sys.argv[1] == '--task':
+        # C32: python analytics/calibrate_floor.py --task <id> [out_dir]
+        run_c32_task(int(sys.argv[2]), sys.argv[3] if len(sys.argv) > 3 else 'analytics/c32_runs')
+    elif len(sys.argv) >= 2 and sys.argv[1] == '--aggregate-c32':
+        aggregate_c32(sys.argv[2] if len(sys.argv) > 2 else 'analytics/c32_runs')
+    else:
+        sys.exit(main())

@@ -25,8 +25,9 @@ Blocks:
 - floor-level: laplace × power_law × 2 floor values × 9 α × 5 reps = 90 runs
 - lookback 500: (laplace + t3) × power_law × 2 α × 5 reps = 20 runs (block 'lookback')
 - search: 3 families × power_law × merge_thresh {0.2, 1.0} × 4 α × 5 reps = 120 runs
+- size: laplace × power_law × (M, N) ∈ {25, 100}² × 4 α × 5 reps = 80 runs (floor_c = c*(N), C32)
 
-Total: 1540 runs
+Total: 1620 runs
 """
 import json
 import os
@@ -50,6 +51,9 @@ N_REPS = 5
 
 # Floor coefficient from C14: calibrated c_star = 0.12717
 FLOOR_C = 0.12717
+
+# C32: floor coefficient c*(N) for the size block (analytics/floor_calibration.md, target Hill 1.06)
+FLOOR_C_BY_N = {25: 0.06908, 100: 0.15838}
 
 # Alpha grid (9 values)
 ALPHA_GRID = [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
@@ -477,6 +481,47 @@ def generate_search_block(scenarios, scenario_id, cell_id):
     return scenario_id, cell_id
 
 
+def generate_size_block(scenarios, scenario_id, cell_id):
+    """
+    Size: laplace × power_law × (M, N) ∈ {(25, 25), (25, 100), (100, 25), (100, 100)} × 4 α × 5 reps = 80 runs
+    α values: [0.0, 0.1, 0.3, 0.5]; lookback 50, cross_corr 0.0, merge_thresh 0.05.
+    floor_c = c*(N) from the C32 calibration. One cell per (M, N); α values share seeds within a cell.
+    """
+    family = 'laplace'
+    cost_type = 'power_law'
+    sizes = [(25, 25), (25, 100), (100, 25), (100, 100)]
+    alpha_values = [0.0, 0.1, 0.3, 0.5]
+
+    for m, n in sizes:
+        for alpha in alpha_values:
+            for rep in range(N_REPS):
+                s = make_base_params()
+                s['M'] = m  # Override economy size
+                s['N'] = n
+                s['floor_c'] = FLOOR_C_BY_N[n]  # Floor calibrated at this N
+                s.update({
+                    'block': 'size',
+                    'scenario_id': scenario_id,
+                    'cell_id': cell_id,
+                    'log_family': family,
+                    'cost_type': cost_type,
+                    'c0': COST_PARAMS[cost_type]['c0'],
+                    'c1': COST_PARAMS[cost_type]['c1'],
+                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'lookback': 50,
+                    'cross_corr': 0.0,
+                    'alpha': alpha,
+                    'sharing_rule': SHARING_RULE,
+                    'rep': rep,
+                    'seed': cell_seed(cell_id, rep),
+                    'alpha_endogenous': False,
+                })
+                scenarios.append(s)
+                scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
 def generate_all_scenarios():
     """Generate all scenarios for Phase C pilot."""
     scenarios = []
@@ -493,6 +538,7 @@ def generate_all_scenarios():
     scenario_id, cell_id = generate_floor_level_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_lookback500_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_search_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_size_block(scenarios, scenario_id, cell_id)
 
     return scenarios
 

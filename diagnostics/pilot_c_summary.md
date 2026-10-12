@@ -2,10 +2,10 @@
 
 ## Overview
 
-- **Scenarios**: 1540
-- **Total runtime**: 346019s (96.12 CPU-hours)
-- **Mean ms/step**: 20.43 ± 16.01
-- **Grid**: 50 × 50 (M × N)
+- **Scenarios**: 1620
+- **Total runtime**: 365773s (101.60 CPU-hours)
+- **Mean ms/step**: 20.53 ± 16.04
+- **Grid**: 50 × 50 (M × N); size block M, N ∈ {25, 100}
 
 ### Block counts
 
@@ -20,6 +20,7 @@
 | main | 540 |
 | rule-replay | 45 |
 | search | 120 |
+| size | 80 |
 
 ## K versus K* by Family and Cost
 
@@ -114,6 +115,23 @@ Source: `pilot_c/tidy.csv` columns `hhi_within_median`, `hhi_aggregate_median`, 
 ![HHI](pilot_c_hhi.png)
 
 ![Cong. Capital Share](pilot_c_ccs_vs_alpha.png)
+
+### Floor-hit clustering
+
+Index of dispersion D of floor hits per market-period (Var/Mean over post-burn-in periods, median over markets) in the 27 traced runs, against the independent-firm binomial reference D = 1 − p; share of market-periods with ≥ 3 hits against its binomial reference; mean over reps.
+Source: `pilot_c/burstiness_summary.csv` (`analysis/burstiness.py`)
+
+| Family | α | D_median | D_binomial | Share ≥3 hits | Share ≥3 (binomial) | Max hits/period |
+|--------|---|----------|------------|---------------|---------------------|-----------------|
+| normal | 0.05 | 3.077 | 0.916 | 0.6185 | 0.7691 | 45.3 |
+| normal | 0.1 | 2.983 | 0.920 | 0.5955 | 0.7419 | 45.3 |
+| normal | 0.3 | 2.604 | 0.938 | 0.4798 | 0.5872 | 42.7 |
+| laplace | 0.05 | 3.522 | 0.890 | 0.7350 | 0.8904 | 47.3 |
+| laplace | 0.1 | 3.446 | 0.894 | 0.7186 | 0.8747 | 47.7 |
+| laplace | 0.3 | 3.043 | 0.913 | 0.6381 | 0.7838 | 45.0 |
+| t3 | 0.05 | 4.573 | 0.876 | 0.7560 | 0.9272 | 49.0 |
+| t3 | 0.1 | 4.540 | 0.880 | 0.7430 | 0.9174 | 49.0 |
+| t3 | 0.3 | 3.976 | 0.898 | 0.6855 | 0.8631 | 46.7 |
 
 ## Equal-split Check
 
@@ -210,6 +228,34 @@ Source: `pilot_c/tidy.csv`, blocks `search` and `main` (power_law). Figure: `dia
 | t3 | 0.5 | 0.05 | 5.063 | 4.0 | 0.884 | 32.60 | 32.28 | 1.182 |
 | t3 | 0.5 | 0.2 | 7.755 | 8.0 | 0.962 | 53.38 | 53.28 | 1.221 |
 | t3 | 0.5 | 1 | 9.775 | 10.0 | 0.984 | 96.94 | 96.86 | 1.229 |
+
+## Economy size
+
+Size block (laplace, power_law, merge_thresh 0.05, floor_c = c*(N)) by (M, N) × α, and the main laplace/power_law cell (M = N = 50, floor_c = 0.12717) at the same α; medians over reps. K* from `analytics/benchmarks.csv` at the row's M.
+Source: `pilot_c/tidy.csv`, blocks `size` and `main`. Figure: `diagnostics/pilot_c_size.png`.
+
+| M | N | α | K_mean | K* | K_mean/K* | CCS | Hill | Floor-hit (standalone) | Floor exits/period | Mergers/period |
+|---|---|---|--------|----|-----------|-----|------|------------------------|--------------------|----------------|
+| 25 | 25 | 0 | — | — | — | 0.000 | 1.103 | 0.0891 | 0.00 | 0.00 |
+| 25 | 25 | 0.1 | 3.039 | 10 | 0.304 | 0.623 | 1.119 | 0.0663 | 8.86 | 9.56 |
+| 25 | 25 | 0.3 | 4.064 | 16 | 0.254 | 0.785 | 1.196 | 0.0512 | 6.55 | 6.91 |
+| 25 | 25 | 0.5 | 6.205 | 20 | 0.310 | 0.940 | 1.403 | 0.0357 | 3.80 | 3.86 |
+| 25 | 100 | 0 | — | — | — | 0.000 | 1.059 | 0.1316 | 0.00 | 0.00 |
+| 25 | 100 | 0.1 | 2.869 | 10 | 0.287 | 0.608 | 1.083 | 0.1019 | 52.74 | 54.27 |
+| 25 | 100 | 0.3 | 3.624 | 16 | 0.227 | 0.744 | 1.154 | 0.0869 | 43.81 | 44.66 |
+| 25 | 100 | 0.5 | 4.830 | 20 | 0.242 | 0.871 | 1.246 | 0.0707 | 32.69 | 32.91 |
+| 100 | 25 | 0 | — | — | — | 0.000 | 1.071 | 0.0850 | 0.00 | 0.00 |
+| 100 | 25 | 0.1 | 3.131 | 10 | 0.313 | 0.611 | 1.102 | 0.0634 | 33.22 | 36.01 |
+| 100 | 25 | 0.3 | 4.530 | 16 | 0.283 | 0.796 | 1.221 | 0.0485 | 23.62 | 24.95 |
+| 100 | 25 | 0.5 | 7.502 | 20 | 0.375 | 0.949 | 1.456 | 0.0338 | 13.24 | 13.42 |
+| 100 | 100 | 0 | — | — | — | 0.000 | 1.061 | 0.1341 | 0.00 | 0.00 |
+| 100 | 100 | 0.1 | 2.971 | 10 | 0.297 | 0.613 | 1.079 | 0.1037 | 214.28 | 219.61 |
+| 100 | 100 | 0.3 | 3.920 | 16 | 0.245 | 0.762 | 1.144 | 0.0881 | 174.19 | 176.84 |
+| 100 | 100 | 0.5 | 5.749 | 20 | 0.287 | 0.885 | 1.266 | 0.0704 | 123.69 | 124.20 |
+| 50 | 50 | 0 | — | — | — | 0.000 | 1.064 | 0.1160 | 0.00 | 0.00 |
+| 50 | 50 | 0.1 | 3.005 | 10 | 0.300 | 0.634 | 1.098 | 0.0885 | 46.77 | 48.57 |
+| 50 | 50 | 0.3 | 3.999 | 16 | 0.250 | 0.782 | 1.165 | 0.0732 | 36.88 | 37.76 |
+| 50 | 50 | 0.5 | 5.948 | 20 | 0.297 | 0.906 | 1.329 | 0.0564 | 25.05 | 25.24 |
 
 ## Owner-return growth by status
 
@@ -353,8 +399,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 346019s (96.12 CPU-hours)
-- **Mean ms/step**: 20.43 ± 16.01
+- **Total runtime**: 365773s (101.60 CPU-hours)
+- **Mean ms/step**: 20.53 ± 16.04
 
 ## Figures
 
@@ -365,3 +411,4 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 - `pilot_c_ccs_vs_alpha.png`: Conglomerate capital share versus α
 - `pilot_c_assortativity.png`: Assortativity ratio versus α
 - `pilot_c_endo_alpha_hist.png`: Histogram of adopted α (endogenous block)
+- `pilot_c_size.png`: K_mean / K* versus α by economy size (M, N)
