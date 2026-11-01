@@ -12,8 +12,6 @@
 \usepackage{xcolor}
 \usepackage{setspace}
 \usepackage{booktabs}
-\usepackage{tabularx}
-\usepackage{placeins}
 \usepackage[natbib=true,style=authoryear,backend=biber]{biblatex}
 \addbibresource{references.bib}
 
@@ -38,7 +36,7 @@
 
 
 % Title information
-\title{Conglomerate Mergers under Multiplicative Growth}
+\title{Conglomerate Mergers: Effects on Growth and Competition}
 \author{Simon Bl\"othner\thanks{\textit{Affiliation}: Austrian Institute of Economics and Social Philosophy, Operngasse 6/1, 1010 Wien; Department of Law, Business Administration \& Economics, University of Bayreuth, Universit\"atsstra\ss e 30, 95447 Bayreuth, Germany, E.mail: \href{s.bloethner@austrian-institute.org}{s.bloethner@austrian-institute.org}.}}
 \date{\today}
 
@@ -165,240 +163,92 @@ Conglomerate formation enables something qualitatively different: internal resou
 
 \section{Model}
 \label{sec:Model}
+\subsection{Growth Process}
+We employ an agent-based model to study conglomerate formation and its competitive effects.\footnote{All code, calibrated parameter values, and instructions for reproducing the simulations and figures are available in the replication package at \href{https://github.com/SimonBloethner/conglomerates}{https://github.com/SimonBloethner/conglomerates}.} This methodological choice reflects three features of the phenomenon under study. First, firm heterogeneity is essential: firms differ in their market positions, growth histories, and conglomerate memberships, and these differences drive merger decisions. A representative-agent approach would obscure the distributional dynamics central to our research questions. Second, the system exhibits strategic interdependence: firm $i$'s decision to merge with firm $j$ depends on $j$'s current conglomerate composition, which itself depends on prior merger decisions throughout the economy. This generates path-dependent dynamics where history matters for market structure. Third, the interaction of endogenous merger decisions with multiplicative growth produces emergent outcomes—market concentration, firm mobility, conglomerate size distributions—that do not reduce to analytical solutions. Hence, each firm's merger decision depends on the current state of all other firms and conglomerates, which depends on the complete history of shocks and decisions. The number of feasible merger configurations grows combinatorially with the number of firms and markets, precluding analytical tractability. In such settings, simulation is not merely a convenience but a necessity for studying how micro-level pooling incentives aggregate into macro-level market structure \parencite{axtell2025agent}. 
 
-The model is an economy of $M$ markets with $N$ firms each, in which firm sizes follow multiplicative growth with a reflecting floor, and firms may pool a fraction of their returns inside conglomerates that they form and leave by unanimous consent. The mechanism that makes pooling attractive is the one set out in Section~\ref{sec:Background}; the model's contribution is to let the organizational structure form endogenously and to ask how far decentralized formation gets towards the planner's optimum. We use an agent-based model because the object of interest is a population outcome of individual decisions: whether firm $i$ can join a conglomerate depends on which markets that conglomerate already occupies, which depends on every earlier merger and exit, and the number of feasible configurations grows combinatorially with $MN$. The size distribution, the scope of conglomerates and their turnover are emergent properties of this process and do not reduce to a closed form \parencite{axtell2025agent}.\footnote{All code, calibrated parameter values and the scenario design are in the replication package at \href{https://github.com/SimonBloethner/conglomerates}{github.com/SimonBloethner/conglomerates}. Every number in this paper comes from commit \texttt{02ce733}.} Where a closed form exists, we use it as a benchmark: the planner's optimal scope $K^\ast$ of Section~\ref{sec:Background} and the Levy--Solomon tail exponent of a floored multiplicative process.
+To investigate how growth-rate optimization influences the incentives in conglomerate formation, we set up an agent-based model with $M$ markets that are uncorrelated between each other, each containing $N$ firms. Note that introducing correlation decreases the effect sizes we obtain, but the directions remain intact. In this framework each firm's periodic state $s_{it}$, which represents its accumulated capital or the cumulative profits retained and reinvested over the firm's history, which can be seen as its size, is multiplicatively linked to its previous one. Firms face random multiplicative growth that is unique to their market. Each increment $\delta_{it}$, the gross return on capital, is drawn from a normal distribution $\mathcal{N}(\mu_m, \sigma_m^2)$ with positive ensemble average $\mu_m$.\footnote{We use $\mu_m$ to denote the drift of the log-process introduced in Section \ref{sec:Background}, with $\mathbb{E}[\delta_{it}] \approx 1 + \mu_m$ for the modest values of $\mu_m$ considered, since $\delta_{it}$ is a gross return. Parameter ranges are chosen such that the probability of negative draws is negligible.} 
+\begin{gather}
+    s_{i t+1} = s_{it} \delta_{it} \quad \text{with} \quad \delta_{it} \sim \mathcal{N}(\mu_m, \sigma_m^2)
+\end{gather}
 
-Throughout, we use the notation of ergodicity economics \parencite{peters2019ergodicity,peters2022ergodicity}: $g$ is the time-average growth rate of a firm's capital, common to all firms and markets, and $\mu_m$ is the ensemble-average rate of market $m$, which exceeds $g$ by a volatility premium that rises with the market's volatility. Section~\ref{sec:notation_code} maps this notation to the variable names in the code.
+We model growth increments as normally distributed in order to isolate the pooling mechanism under conservative assumptions. The Gaussian distribution minimizes tail risk relative to the empirically documented Laplace distribution \textcite{stanley1996scaling,bottazzi2006explaining}, meaning our results represent a lower bound on pooling incentives. The mechanism itself depends on the concavity of the logarithm, not on the distributional form, and would be strengthened under heavier tails where large negative realizations occur more frequently, against which pooling provides the greatest protection. As explained in section \ref{sec:Background}, in multiplicative processes one is not just maximizing for the ensemble average $\mu_m$, but for the growth rate $g$. Hence, a higher scale $\sigma_m$ decreases the growth rate, through the volatility tax. A natural concern is that focusing on variance reduction ignores the risk-return tradeoff: markets with higher risk often offer higher expected returns \parencite{cont2001empirical}. We explicitly incorporate this by modeling a positive correlation between market-level means $\mu_m$ and standard deviations $\sigma_m$. Firms thus face a genuine choice between high-$\mu$, high-$\sigma$ markets and low-$\mu$, low-$\sigma$ markets. The time-average growth rate $g = \mu - \frac{\sigma^2}{2}$ captures this tradeoff, since a market with $\mu = 0.12$ and $\sigma = 0.3$ yields $g = 0.075$, while one with $\mu = 0.08$ and $\sigma = 0.1$ yields $g = 0.075$. Even though these two exhibit identical growth rates they offer different risk profiles. Pooling allows firms to access high-$\mu$ markets while mitigating their variance penalty. This specification reflects well-documented heterogeneity across industries. Cross-sectional analysis of industry returns shows that high-growth sectors exhibit substantially greater volatility: technology and biotechnology sectors display volatility two to five times higher than defensive sectors such as utilities and consumer staples \parencite{fama1992cross,fama1993common}. At the firm level, \textcite{bottazzi2006explaining} confirm that while growth-rate distributions share common properties across sectors, their variance differs systematically by industry characteristics. \textcite{klepper1996entry,klepper1997industry} document that emerging industries experience entry and exit rates several times higher than mature industries, generating greater firm-level turbulence. International evidence reinforces this pattern: emerging equity markets exhibit both higher expected returns and higher volatility than developed markets \parencite{bekaert1997emerging}. By drawing market parameters from correlated distributions, we capture this cross-sectional variation while maintaining tractability. \\
+Each firm thus realizes an absolute period gain of $\Delta_{it} = s_{it} \delta_{it} - s_{it}$. For any firm not part of a conglomerate this will also be their period profit $\Pi_{it} = \Delta_{it}$. Firms in conglomerates $C$ pool an amount $\alpha \Delta_{it}$, which flows into the conglomerate's period pool $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it}$, with $\alpha \in [0, 1]$. The growth process is multiplicative at the shock level but additive at the accounting level. Firms experience multiplicative shocks to size, but pooling operates on realized absolute gains, which are naturally additive. The pooling mechanism models profit-sharing within conglomerates. When members pool a fraction $\alpha$ of their period profits, resources flow from more profitable to less profitable divisions. This reflects the institutional reality that internal capital markets redistribute realized resources rather than growth rates themselves \parencite{gertner1994internal,stein1997internal}. As conglomerates grow, management costs increase.\footnote{We abstract from fixed costs and increasing returns to scale, not because they are unimportant, but because they create merger incentives that are already well understood. By excluding them, we isolate the contribution of resource pooling under multiplicative dynamics as a distinct driver of conglomerate formation.} We model these using four different functional forms:
 
-\subsection{Economy and shocks}
-\label{sec:economy}
+\begin{gather}
+    \label{eq:power_law}
+    \Phi (O_c) = b_{0p} |O_c| ^ {b_{1p}}
+\end{gather}
+\begin{gather}
+    \label{eq:linear}
+    \Phi (O_c) = b_{0l} + b_{1l} |O_c|
+\end{gather}
+\begin{gather}
+    \label{eq:quadratic}
+    \Phi (O_c) = b_{0q} + b_{1q} |O_c| + b_{2q} |O_c|^2 
+\end{gather}
+\begin{gather}
+    \label{eq:exponential}
+    \Phi (O_c) = b_{0e} e^{b_{1e} |O_c|}
+\end{gather}
 
-\paragraph{Firms and markets.} Firm $i$ belongs to one market $m(i)$ and has size $s_{it}$, its accumulated capital. All firms start at $s_{i0} = 1$ and unaffiliated. The $M$ markets are the economy's industries; a conglomerate is a set of firms in distinct markets, so by construction it is neither a horizontal nor a vertical combination.
+The parameters $b$ are management cost scaling hyperparameters for the power law ($p$), linear ($l$), quadratic ($q$), and exponential ($e$) cost functions. $O_c \in \mathcal{M}$ is the set of markets out of all markets $\mathcal{M}$ that a conglomerate operates in. The literature on management diseconomies provides theoretical foundations \parencite{coase19883,williamson1967hierarchical} but limited empirical guidance on the precise functional form of coordination costs. \textcite{williamson1967hierarchical} suggests that diseconomies arise from communication distortion, bureaucratic insularity, and incentive limits, but these mechanisms could plausibly generate linear, convex, or even initially concave cost structures depending on organizational form and industry context. \textcite{canback2006diseconomies} find empirically that diseconomies and scale economies tend to offset each other, making the functional form difficult to identify directly. Given this theoretical and empirical ambiguity, we compare four functional forms representing the main possibilities: power law (initially concave), linear, quadratic (convex), and exponential (strongly convex). Rather than treating this as purely a robustness check, we treat the cost structure as a parameter of interest: while the direction of pooling effects is robust across specifications, the magnitude varies substantially, which has implications for optimal conglomerate size. We calibrate the cost function parameters such that all four specifications yield equivalent costs at a conglomerate size of 40 members, which represents a mid-range conglomerate in our setup with $M \in \{50, 100, 150\}$ markets. We also vary these parameters around these baseline values across simulations to ensure our results are not driven by a particular calibration choice. Once computed, this cost factor scales the cost according to conglomerate's total capital $\sum_{i \in c} s_{it}$ such that the pool size is given by
 
-\paragraph{Shocks.} Each period every firm draws a log growth shock
-\begin{equation}
-    x_{it} = g + \sigma_m \varepsilon_{it}, \qquad \varepsilon_{it} \overset{\text{iid}}{\sim} F,
-    \label{eq:shock}
-\end{equation}
-where $F$ is one of three families with the same interquartile range: normal, Laplace and Student-$t$ with three degrees of freedom ($t_3$). The Laplace family is the empirical regularity for firm growth rates \parencite{stanley1996scaling,bottazzi2006explaining}; the normal and $t_3$ families bracket it with thinner and heavier tails. The scale $\sigma_m$ is set so that the interquartile range of $x_{it}$ equals the market's volatility parameter $q_m$: $\sigma_m = q_m/1.349$ (normal), $q_m/1.386$ (Laplace) and $q_m/1.530$ ($t_3$).\footnote{The divisors are $2\,\Phi^{-1}(0.75)$, $2\ln 2$ and $2\,t_3^{-1}(0.75)$. Holding the interquartile range fixed means that the three families agree on the body of the distribution and differ only in the tails; at $q_m = 0.2$ the standard deviations of $x_{it}$ are 0.148 (normal), 0.204 (Laplace) and 0.226 ($t_3$).} Market volatilities $q_m$ are drawn once per economy and rescaled linearly onto $[0.10, 0.30]$, so markets differ in volatility and in nothing else. Shocks are not truncated. Within the baseline, shocks are independent across firms and markets; a block with cross-market correlation $0.3$, imposed through a Gaussian copula so that the marginals are unchanged, is reported in Section~\ref{sec:Results}.
+\begin{gather}
+    \Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c) \sum_{i \in c} s_{it}
+    \label{eq:comp_pool}
+\end{gather}
+This pool will be shared equally, determining a member's profit by
+$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_{c_i}|}$\,. Consequently, any firm's next state is given by $s_{it+1} = s_{it} + \Pi_{it}$. We can measure market concentration through each firm's share of total capital within its market:
 
-\paragraph{Time average and ensemble average.} By construction $\mathbb{E}[x_{it}] = g$: every firm in every market has the same time-average growth rate $g$, and we set $g = 0.055$. The ensemble-average rate of market $m$ is $\mu_m = \log \mathbb{E}[e^{x_{it}}] = g + \log \mathbb{E}[e^{\sigma_m \varepsilon}]$, which equals $g + \sigma_m^2/2$ for normal shocks and $g - \log(1 - \sigma_m^2)$ for Laplace shocks; for $t_3$ shocks the ensemble average does not exist, while the time average $g$ is unaffected. The gap $\mu_m - g$ is the volatility premium of market $m$: the growth that an ensemble of trajectories realizes and a single trajectory does not. Pooling, introduced below, lets a firm recover part of it.
+$$ \frac{s_{it}}{\sum_{j \in m_i} s_{jt}}. $$
 
-\paragraph{Shares and relative returns.} We measure each firm against its own market. Let $w_{jt} = s_{jt}/\sum_{k \in m} s_{kt}$ denote firm $j$'s share of market capital at the start of period $t$ and
-\begin{equation}
-    G_{mt} = \sum_{j \in m} w_{jt}\, e^{x_{jt}}
-    \label{eq:G}
-\end{equation}
-the market's realized capital-weighted growth factor. A firm's relative log return is
-\begin{equation}
-    \tilde r_{it} = x_{it} - \log G_{m(i)t},
-    \label{eq:relret}
-\end{equation}
-and an unaffiliated firm grows as $s_{i,t+1} = s_{it}\, e^{\tilde r_{it}}$. Since $\sum_{j} w_{jt} e^{\tilde r_{jt}} = 1$ by construction, the total capital of a market of unaffiliated firms is constant and sizes are market shares up to the factor $N$: we normalize every market to mean size one, so $s_{it} = N w_{it}$. The common drift $g$ cancels exactly in \eqref{eq:relret}, which is why the level of $g$ cannot affect shares or any decision based on them; the three families and the volatility range are the only features of the shock process that matter.
+This yields capital share distributions rather than conventional revenue-based market shares. This approach is well-grounded in industrial organization theory. The \textcite{kreps1983quantity} framework demonstrates that when firms first choose production capacity and then compete on price, the equilibrium outcome equals Cournot competition—capacity determined by capital investment is the strategically relevant variable, with sales as the subsequent outcome. \textcite{dixit1980role} reinforces this logic through entry deterrence theory: a firm's capital stock represents a credible commitment that shapes post-entry competition, making accumulated investment the determinant of sustainable competitive position. \textcite{sutton1991sunk} extends this insight, showing that in industries with significant sunk costs, there exists a lower bound on concentration determined by the scale of capital investments required for viable operation.
 
-Two properties of relative returns drive what follows. First, by Jensen's inequality applied to $\sum_j w_{jt} e^{\tilde r_{jt}} = 1$, the capital-weighted mean of $\tilde r_{jt}$ is non-positive in every market and period, and to second order
-\begin{equation}
-    \mathbb{E}[\tilde r_{it}] \approx -\tfrac{1}{2}\sigma_m^2\,\bigl(1 - \mathrm{HHI}_{mt}\bigr),
-    \label{eq:drag}
-\end{equation}
-where $\mathrm{HHI}_{mt} = \sum_j w_{jt}^2$. A single trajectory loses share to the market at a rate that is the market's volatility premium scaled by how far the market is from a monopoly: this is the share version of the volatility drag of Section~\ref{sec:Background}. Second, relative returns within a market are correlated through $G_{mt}$: a large draw for one firm lowers the relative return of every other firm in the market. This is a cross-sectional factor, not a common shock, and it survives into the results as clustering of floor hits within market-periods (Section~\ref{sec:Results}).
+Empirically, asset-based concentration measures are standard practice in several domains. \textcite{scitovsky1955economic} explicitly discusses choosing between ``employment, sales, value added, value of total assets, and 'net capital assets''' as concentration measures, noting that asset-based measures may capture different aspects of market power than sales-based measures. \textcite{dang2018measuring} survey 100 empirical articles and find that total assets ranks alongside sales as among the most common firm size proxies, with the appropriate choice depending on context. \textcite{kwon2024100} use both asset share and sales share as parallel concentration measures in their century-long study of U.S. corporate concentration, finding correlation exceeding $0.99$ between alternative measures. In banking, the Federal Reserve uses deposits—a liability-side capital measure—rather than revenue for merger concentration analysis, as deposits proxy for lending capacity. The European Central Bank similarly reports banking concentration using total assets. In electricity markets, FERC calculates merger HHIs based on generation capacity shares rather than revenue \parencite{roach2002measuring}. In international trade, UNCTAD ranks multinational enterprises by foreign assets, and gravity models routinely use FDI stocks as measures of market presence \parencite{ramondo2013trade}. The theoretical rationale is consistent across these applications: accumulated capital represents credible commitment and determines cost structure, while sales fluctuate with transitory demand conditions. For analyzing market concentration dynamics, capital-based measures capture sustainable competitive position rather than period-specific outcomes.
 
-\paragraph{Floor.} A firm whose size falls below a fraction $c$ of its market's mean size is lifted to that level; the floor is applied iteratively within the period, since lifting a firm raises the mean and hence the floor. We count each such event as a floor hit. The lift is financed by the market's other firms through the fixed total: after pooling and the floor, every market is renormalized to mean size one, so the recapitalization takes share from incumbents pro rata. A firm at the floor is a new entrant at minimum viable scale: it keeps its identity but, if it was a member of a conglomerate, it leaves it (Section~\ref{sec:decisions}). The floor is the reflecting barrier of \textcite{levy1996power}; a multiplicative process reflected at a fraction $c$ of the mean has a stationary Pareto tail with exponent $1/(1-c)$ \parencite{levy1996power,gabaix1999zipf}, and we calibrate $c$ so that the unaffiliated economy reproduces the empirical firm-size tail (Section~\ref{sec:calibration}). Limited liability holds for everyone: no firm can lose more than its capital, and no transfer is ever enforced against a firm that has nothing left.
+\subsection{Merging and Splitting}
 
-\paragraph{Why capital shares.} Sizes are shares of market capital, so concentration is measured on capital rather than on sales. This choice is well grounded in industrial organization. \textcite{kreps1983quantity} show that when firms choose capacity before competing on price, the outcome is Cournot in capacities; capital, not sales, is the strategic variable. \textcite{dixit1980role} and \textcite{sutton1991sunk} make accumulated investment the determinant of sustainable competitive position. Empirically, \textcite{scitovsky1955economic} and \textcite{dang2018measuring} treat total assets as a standard size measure, \textcite{kwon2024100} find correlations above 0.99 between asset- and sales-based concentration over a century of US data, and regulators use capital-side measures in banking (deposits), electricity (generation capacity, \textcite{roach2002measuring}) and the ranking of multinational enterprises by foreign assets \parencite{ramondo2013trade}.
+At the beginning of every time step $t$ each firm $i \in {1, \ldots, MN}$  gets a chance to choose another with probability $p$. If successful, it will select a random other firm $j$, among the remaining $(M \times N) - 1$ firms. 
+Consistent with the convention that conglomerate mergers are neither horizontal nor vertical, we restrict conglomerates to operate at most one firm per market. This prevents within-conglomerate horizontal overlap by construction. Hence, conglomeration is only \textit{feasible} if firm $j$ and $i$: 
 
-\subsection{Conglomerates}
-\label{sec:conglomerates}
+\begin{enumerate}
+    \item don't operate in the same market $(m_i \neq m_j)$
+    \item are not part of a conglomerate that operates in a market in which the other firm, or the conglomerate which it is part of operates in $(O_{c_i} \cap O_{c_j} = \emptyset)$
+\end{enumerate}
 
-A conglomerate $C$ is a set of $K = |C|$ firms, at most one per market, that pool a fraction $\alpha \in [0,1]$ of their gross returns. Let $S_{Ct} = \sum_{j \in C} s_{jt}$ be the unit's capital and $\omega_{jt} = s_{jt}/S_{Ct}$ member $j$'s weight within the unit. Each member contributes $\alpha$ of its gross relative return in capital units, $\alpha\, s_{jt}(e^{\tilde r_{jt}} - 1)$, to a pool; the pool is charged a coordination cost $\Phi(K)\, S_{Ct}$ and the remainder is distributed in proportion to size. The member's realized gross growth factor is therefore
-\begin{equation}
-    \delta_{it} = (1-\alpha)\, e^{\tilde r_{it}} + \alpha \sum_{j \in C} \omega_{jt}\, e^{\tilde r_{jt}} - \Phi(K),
-    \qquad s_{i,t+1} = s_{it}\,\delta_{it}.
-    \label{eq:member_growth}
-\end{equation}
-Pooling operates on gross factors: a member keeps $(1-\alpha)$ of its own factor and receives $\alpha$ of the unit's capital-weighted factor. With $\alpha = 0$, equation \eqref{eq:member_growth} reduces to standalone growth minus the coordination cost, so at $\alpha = 0$ no conglomerate can ever pass the consent test below and the baseline is an economy of unaffiliated firms facing the same opportunity process as every other scenario. With $\alpha = 1$ all members grow at the unit's rate. Within a period pooling is a pure redistribution among members; across periods it changes each member's growth path, which is the sense in which it differs from portfolio diversification by the firms' owners.
+We assume that if both firms are in conglomerates that these will merge as well. After confirming \textit{feasibility}, merging firms determine \textit{desirability}, meaning that they would both benefit from joining forces.
+They do so by comparing the realized pool $\Omega$ size over the last $l$ periods, against a ``synthetic'' pool $\hat{\Omega}$ size if they had merged.
 
-The cost $\Phi(K)$ is a uniform growth drag: every member's capital is charged the same rate, so the cost falls on members in proportion to size. We use four functional forms,
-\begin{equation}
-    \Phi(K) \in \bigl\{\, b_0 K^{b_1},\quad b_0 + b_1 K,\quad b_0 + b_1 K + b_2 K^2,\quad b_0\, e^{b_1 K} \,\bigr\},
-    \label{eq:costs}
-\end{equation}
-power law, linear, quadratic and exponential, whose parameters (Table~\ref{tab:params}) are set so that all four charge $\Phi(40) = 0.0017$ per period. The literature on management diseconomies gives a theoretical case for costs that rise with scope \parencite{coase19883,williamson1967hierarchical} but little guidance on their shape \parencite{canback2006diseconomies}; the four forms span initially concave, linear, convex and strongly convex schedules at a common level. The power-law form is the main case; the other three are reported in Section~\ref{sec:Results} and the appendix, where the finding is that the shape does not matter for scope once the level is held fixed. We abstract from fixed costs and returns to scale, which create merger incentives that are already well understood, so that pooling is the only reason to merge.
+Specifically, firms compute $\hat{\Omega}$ by applying the pooling formula \ref{eq:comp_pool} to their combined historical increments $\{ \Delta_{it}, \Delta_{jt} \}_{t=t_l}$ over the lookback period $l$, using the management cost that would apply to the combined entity. This assumes firms have access to each other's historical performance data, which could be interpreted as the due diligence process preceding merger negotiations. If $\hat{\Omega} > \Omega$ the merger will be implemented, since the combined entity generates a larger resource pool than the separate arrangements. We adopt a backward-looking heuristic in the spirit of \textcite{simon1955behavioral}: firms cannot condition on future shocks and must estimate merger desirability from realized history. Since pool resources are distributed equally among members, an increase in the total pool translates into increased per-member transfers provided the pool grows faster than membership.
 
-Under an alternative \emph{equal} sharing rule, the net pool $\alpha \sum_{j} s_{jt}(e^{\tilde r_{jt}}-1) - \Phi(K) S_{Ct}$ is split into $K$ equal amounts rather than in proportion to size; a small member can then be assigned a loss larger than its capital, and limited liability caps its loss at its capital. The equal rule is a robustness block, not the baseline: Section~\ref{sec:Results} shows that it is the sharing rule, before any parameter of the environment, that decides whether conglomerates exist at all.
+After being in a conglomerate for at least $l$ periods, each firm evaluates its performance within it by comparing its growth rate $g_{i(t-l):t}$ being part of the conglomerate against the potential rate $\hat{g}_{i(t-l):t}$ it had realized, had it remained outside. Upon being worse off, a firm exits the conglomerate and continues to operate alone until it gets the chance to join another conglomerate. Importantly, our merger evaluation and exit decisions are based on historical performance over the lookback window $l$, which are used as a guide for expected future performance. This reflects information constraints: firms observe realized outcomes but do not know future shock realizations or other firms' future decisions. All empirical evaluation of business decisions necessarily relies on realized historical data. Our lookback window $l$ represents the information firms use to assess merger desirability and conglomerate performance, analogous to the historical performance data used in real merger due diligence. The assumption is not that firms are myopic in their objectives, but that they are informationally constrained: they seek to maximize long-run growth but must estimate which arrangements achieve this using only past performance. Thus, our decision rules reflect bounded rationality in the sense of \textcite{simon1955behavioral}: firms use simple heuristics based on observable historical performance rather than computing optimal forward-looking strategies that would require heavy assumptions and knowledge of future shock distributions and other firms' strategies. Given that our focus is on the pooling mechanism rather than strategic merger bargaining, the heuristic provides a tractable and empirically plausible alternative. \\
 
-\subsection{Decisions}
-\label{sec:decisions}
+To summarize the model flow: each period, firms receive random opportunities to initiate mergers. Feasible mergers are those where the parties operate in non-overlapping markets. Desirable mergers are those where historical evidence suggests the combined pool would outperform the separate arrangements. After merger decisions, conglomerates compute their period pools, distribute profits, and update firm states. Finally, members evaluate their conglomerate membership against counterfactual standalone performance and exit if the conglomerate reduces their growth rate. The full formalization of the model can be seen in algorithm \ref{alg:rand_growth}. \par
 
-Firms form, join and leave conglomerates on a single criterion, applied to every proposal and to every membership: a firm agrees to an arrangement only if its own time-average growth over the recent past would have been higher under that arrangement than under its current one. The criterion is backward-looking in the sense of \textcite{simon1955behavioral}: firms cannot condition on future shocks and estimate the value of pooling from realized history, as merger due diligence does.
+\vspace{0.8cm}
 
-\paragraph{Search.} Each period every firm independently initiates a proposal with probability $p$. An initiator draws a target market uniformly among the markets its unit does not yet occupy (all markets but its own, if unaffiliated), and a target firm uniformly within that market. If the target belongs to a conglomerate, the two units merge as wholes; a proposal is feasible only if the merged set still has at most one firm per market. Feasibility is a constraint, not a decision; the search is uniform and $p$ is not calibrated to anything, so Section~\ref{sec:Results} varies it from $0.05$ to $1$.
 
-\paragraph{Consent.} Let $\hat C$ be the prospective merged set with $\hat K = |\hat C|$ members and cost $\Phi(\hat K)$, and let $l$ be the length of the window of past periods that firms consult. For each firm $i \in \hat C$ and each period $\tau$ in the window $\{t-l, \ldots, t-1\}$, define the firm's demeaned relative return
-\begin{equation}
-    \epsilon_{i\tau} = \tilde r_{i\tau} - \bar{\tilde r}_i + g,
-    \qquad \bar{\tilde r}_i = \tfrac{1}{l}\textstyle\sum_{\tau} \tilde r_{i\tau},
-    \label{eq:demean}
-\end{equation}
-and the net growth it would have realized in period $\tau$ inside $\hat C$,
-\begin{equation}
-    \hat p_{i\tau} = (1-\alpha)\,(e^{\epsilon_{i\tau}} - 1) + \alpha \sum_{j \in \hat C} \omega_{j\tau}\, (e^{\epsilon_{j\tau}} - 1) - \Phi(\hat K),
-    \label{eq:synthetic}
-\end{equation}
-with the weights $\omega_{j\tau}$ taken from the members' sizes in period $\tau$. Firm $i$'s estimated gain from the arrangement $\hat C$ at sharing rate $\alpha$ is the mean log difference between pooled and standalone growth over the window,
-\begin{equation}
-    \hat\Delta_i(\hat C, \alpha) = \frac{1}{l} \sum_{\tau = t-l}^{t-1} \Bigl[ \log\bigl(1 + \hat p_{i\tau}\bigr) - \epsilon_{i\tau} \Bigr],
-    \label{eq:gain}
-\end{equation}
-A proposal is accepted if and only if
-\begin{equation}
-    \hat\Delta_i(\hat C, \alpha) > \max\bigl\{0,\ \hat\Delta_i(C_i, \alpha)\bigr\} \quad \text{for every } i \in \hat C,
-    \label{eq:consent}
-\end{equation}
-where $C_i$ is firm $i$'s current unit and $\hat\Delta_i(C_i,\alpha) = 0$ for an unaffiliated firm. Every firm on both sides holds a veto, two-firm mergers are tested like any other, and a merger that raises the unit's total pool while lowering some member's growth fails.
+\begin{algorithm}[H]
+    \label{alg:rand_growth}
+    \For{$t$ in $T$}{
+      \ForEach{$i$ $\in$ $N \times M$}{
+        Merge with $j$ if $(m_i \neq m_j)$ and $(O_{c_i} \cap O_{c_j} = \emptyset)$ and $\hat{\Omega} > \Omega$  
+      }
+      \ForEach{$c \in C$}{
+        $\Omega_{ct} = \sum_{i \in c} \alpha \Delta_{it} -  \Phi (O_c) \sum_{i \in c} s_{it}$ \\
+        \ForEach{$i \in c$}{$\Pi_{it} = (1 - \alpha) \Delta_{it} + \frac{\Omega_{ct}}{|O_c|}$} 
+      }
+      \ForEach{$i \notin \bigcup_{c \in C}$}{$\Pi_{it} = \Delta_{it}$}   
+      
+      \ForEach{$i \in \bigcup_{c \in C}$}{
+        Exit $c$ if $\hat{g}_{i(t-l):t} > g_{i(t-l):t}$
+      }
 
-The demeaning in \eqref{eq:demean} is deliberate. Over a window of $l$ periods, the realized mean return of a prospective partner is a noisy estimate of a drift that, in this economy, is the same for everyone; comparing levels would have firms accept partners that happened to have a good window and reject partners that happened to have a bad one, and the common component of the window would swamp the diversification gain. Firms therefore judge pooling on fluctuations around each firm's own window mean, recentred at the common rate $g$. The alternative rule that compares realized levels is run as a robustness block and is shown in Section~\ref{sec:Results} to produce almost no mergers beyond pairs. The window is the model's information constraint: firms observe $l$ periods of each other's returns and nothing about the shock distribution or the future.
-
-\paragraph{Exit.} A member whose tenure in its unit exceeds $l$ periods applies the same test every period and leaves if $\hat\Delta_i(C_i, \alpha) < 0$. The lock-in of $l$ periods applies to every new member, and when two units merge, to every member of the merged unit. A unit that falls to one member dissolves. The second route out of a unit is the floor: a member lifted to the floor leaves its unit in that period (Section~\ref{sec:economy}). The two exits differ in kind. A voluntary exit is a judgement that pooling did not pay; a floor exit is the loss of a configuration, and whether it was pooling or not that failed is not asked.
-
-\paragraph{Endogenous sharing rate.} In the main design $\alpha$ is a parameter common to all units. In the endogenous-$\alpha$ block each unit $C$ carries its own rate $\alpha_C$, which it renegotiates every period on the grid $\{0, 0.05, \ldots, 1\}$: for each candidate $\alpha'$ the unit replays its members' realized relative returns over the last $l$ periods under $\alpha'$, computes each member's mean log growth, and adopts the $\alpha'$ that maximizes the smallest member's gain relative to the current $\alpha_C$, provided that gain is positive. The rule is maximin under unanimity: a change in the sharing rate must leave no member worse off. New units start at $\alpha_C = 0.1$; when two units merge, the merged unit takes the rate of the larger one; and every consent and exit test evaluates a unit at the rate it actually operates at. This block is the model's answer to the question what sharing rate firms choose when they can choose it.
-
-\paragraph{Timing.} Algorithm~\ref{alg:period} gives the order of events within a period. Merger and exit decisions use the window $\{t-l, \ldots, t-1\}$, so the current period's shock is never part of the information on which a decision is taken; a unit formed in period $t$ pools from period $t$ on.
-
-\begin{algorithm}[t]
-    \caption{One period of the model (every scenario; blocks in brackets)}
-    \label{alg:period}
-    Draw $x_{it} = g + \sigma_m \varepsilon_{it}$ for all firms; compute $G_{mt}$ by \eqref{eq:G} and $\tilde r_{it} = x_{it} - \log G_{m(i)t}$\;
-    [endogenous $\alpha$] every unit renegotiates $\alpha_C$ by maximin over $\{0, 0.05, \ldots, 1\}$ on the last $l$ periods\;
-    \ForEach{firm $i$ drawn as initiator with probability $p$}{
-        draw a target market among those $i$'s unit does not occupy, and a target firm in it\;
-        \If{the merged set $\hat C$ has at most one firm per market \textbf{and} \eqref{eq:consent} holds for every $j \in \hat C$}{
-            merge; set the entry period of every new member (of every member if two units merge) to $t$\;
-        }
     }
-    \ForEach{conglomerate $C$}{
-        $\delta_{jt} = (1-\alpha)e^{\tilde r_{jt}} + \alpha \sum_{k \in C}\omega_{kt} e^{\tilde r_{kt}} - \Phi(K)$ for $j \in C$, capped at limited liability\;
-    }
-    $s_{i,t+1} = s_{it}\,\delta_{it}$ for members, $s_{i,t+1} = s_{it}\,e^{\tilde r_{it}}$ for unaffiliated firms\;
-    \ForEach{market $m$}{
-        lift every firm below $c \times$ mean size to that level, iterating to the fixed point; count floor hits; a lifted member leaves its unit\;
-        renormalize the market to mean size one\;
-    }
-    \ForEach{member $i$ with tenure $> l$}{
-        leave if $\hat\Delta_i(C_i, \alpha) < 0$; dissolve units with one member\;
-    }
-    Every 100 periods: record the size distribution, membership and unit capital\;
+    \caption{Model flow}
 \end{algorithm}
 
-\subsection{Calibration, design and measurement}
-\label{sec:calibration}
 
-\paragraph{Parameters.} Table~\ref{tab:params} lists every parameter of the main block. The economy has $M = N = 50$ and runs for $T = 11{,}000$ periods, of which the first $8{,}000$ are discarded. The burn-in is set from the measured relaxation of the artificial start, in which all firms are equal and unaffiliated: the pooled capital share settles by period $7{,}200$ and the tail exponent of the unaffiliated economy by $5{,}600$ (replication package, \texttt{diagnostics/burn\_in\_c.md}). The remaining $3{,}000$ periods are a long sample of one stationary state, not a history; across the 30 post-burn-in snapshots the statistics we report move within narrow interquartile ranges.
-
-The floor coefficient is calibrated to the empirical firm-size tail. \textcite{axtell2001zipf} reports a Pareto exponent of $1.06$ for US firms. At $\alpha = 0$ the economy is a floored multiplicative process whose tail exponent is $1/(1-c)$ asymptotically \parencite{levy1996power}, but at $N = 50$ the finite-sample Hill estimate \parencite{hill1975simple} on the top decile of shares lies below that value, so we calibrate $c$ by simulation: $c^\ast = 0.127$ is the value at which the median Hill exponent of the unaffiliated Laplace economy equals $1.06$ (\texttt{analytics/floor\_calibration.md}). The calibration depends on $N$ because the floor is a fraction of the mean and hence a share of $c/N$; for the economy-size block we recalibrate, $c^\ast = 0.069$ at $N = 25$ and $0.158$ at $N = 100$. The three families reproduce the target within sampling error at $c^\ast$: Hill exponents of $1.07$ (normal), $1.06$ (Laplace) and $0.99$ ($t_3$). A block with $c \in \{0.10, 0.35\}$ shows that $c$ alone sets the tail (Section~\ref{sec:Results}).
-
-The volatility range $q_m \in [0.10, 0.30]$ spans the dispersion of firm growth rates documented across size classes by \textcite{stanley1996scaling}, from large to small firms. The time-average rate $g = 0.055$ is the midpoint of the range of drifts used in earlier versions of the model; as shown in Section~\ref{sec:economy} it cancels from every share and enters only as the recentring constant in \eqref{eq:demean}. The window is $l = 50$ periods in the main block and is varied from 20 to 500 in a block of its own. The search probability is $p = 0.05$ and is varied to $0.2$ and $1$.
-
-\begin{table}[htbp]
-    \centering
-    \footnotesize
-    \begin{singlespace}
-    \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{4.3cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.6cm}@{}}
-    \toprule
-    Symbol & Meaning & Main block & Varied in block \\
-    \midrule
-    $M$, $N$ & markets, firms per market & 50, 50 & size: $\{25, 100\}^2$ \\
-    $T$, burn-in & periods, discarded periods & 11{,}000, 8{,}000 & --- \\
-    $F$ & shock family, same IQR & normal, Laplace, $t_3$ & --- \\
-    $q_m$ & market IQR of $x_{it}$ & rescaled onto $[0.10, 0.30]$ & --- \\
-    $g$ & time-average growth rate & 0.055 & --- \\
-    & cross-market correlation of $\varepsilon$ & 0 & correlation: 0.3 \\
-    $c$ & floor, fraction of market mean & 0.12717 & floor: 0.10, 0.35; size: $c^\ast(N)$ \\
-    $\alpha$ & sharing rate & 0, .01, .02, .05, .1, .2, .3, .4, .5 & endogenous: chosen by each unit \\
-    & sharing rule & proportional to size & equal split \\
-    $\Phi(K)$ & coordination cost, eq.~\eqref{eq:costs}, $\Phi(40) = 0.0017$ & power law (main), linear, quadratic, exponential & cost level: $b_0 \times 0.5$, $\times 2$ \\
-    $p$ & search probability per firm-period & 0.05 & search: 0.2, 1 \\
-    $l$ & decision window and lock-in & 50 & lookback: 20, 100, 200, 500 \\
-    & decision rule & criterion \eqref{eq:consent} on demeaned returns & replay of realized levels \\
-    & replications per cell & 5 & --- \\
-    \bottomrule
-    \end{tabularx}
-    \end{singlespace}
-    \caption{Parameters. Cost parameters: power law $b_0 = 2.032 \cdot 10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225 \cdot 10^{-5}$; quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7 \cdot 10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. The main block runs every combination of family, cost form and $\alpha$ with five replications; the right-hand column names the block in which a parameter is varied, holding the others at their main-block values (Table~\ref{tab:blocks}).}
-    \label{tab:params}
-\end{table}
-
-\paragraph{Design.} The simulation design is a main block plus ten one-factor blocks, $1{,}620$ runs in all (Table~\ref{tab:blocks}). Each block holds every parameter at its main-block value except the one it varies. Within a cell, the five replications use five seeds, and the same five seeds are used at every value of $\alpha$, so that comparisons across $\alpha$ are made under common random numbers \parencite{glasserman1992some}; all randomness, including the draw of market volatilities, is under the scenario seed. The design is generated by \texttt{pilot\_design.py} and tested against the simulator's output schema.
-
-\begin{table}[htbp]
-    \centering
-    \footnotesize
-    \begin{singlespace}
-    \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}Xlllr@{}}
-    \toprule
-    Block & What varies & Families & Cost forms & $\alpha$ & Runs \\
-    \midrule
-    main & --- & all three & all four & grid & 540 \\
-    equal split & sharing rule: equal & normal & all four & grid & 180 \\
-    cost level & $b_0 \times 0.5$, $\times 2$ & Laplace & all four & grid & 360 \\
-    lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & power law & 0.1, 0.3 & 100 \\
-    correlation & cross-market correlation 0.3 & Laplace & power law & grid & 45 \\
-    endogenous $\alpha$ & $\alpha_C$ chosen by unit, start 0.1 & all three & all four & --- & 60 \\
-    replay rule & decision on realized levels & Laplace & power law & grid & 45 \\
-    floor level & $c \in \{0.10, 0.35\}$ & Laplace & power law & grid & 90 \\
-    search & $p \in \{0.2, 1\}$ & all three & power law & .05, .1, .3, .5 & 120 \\
-    size & $(M, N) \in \{25, 100\}^2$, $c^\ast(N)$ & Laplace & power law & 0, .1, .3, .5 & 80 \\
-    \midrule
-    & & & & & 1{,}620 \\
-    \bottomrule
-    \end{tabularx}
-    \end{singlespace}
-    \caption{Simulation design. Five replications per cell; ``grid'' is $\alpha \in \{0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5\}$. In the cost-level block the multiplier applies to $b_0$, which shifts the whole schedule for the power-law and exponential forms and only the intercept for the linear and quadratic forms.}
-    \label{tab:blocks}
-\end{table}
-
-\paragraph{Planner's benchmark.} The reference point for scope is the planner's optimum $K^\ast$ of Section~\ref{sec:Background}: the number of equal-sized members, each drawing i.i.d.\ shocks from the same family at the median market volatility $q = 0.2$, that maximizes a member's time-average growth gain from pooling net of $\Phi(K)$. We compute $K^\ast$ by Monte Carlo ($2 \cdot 10^6$ draws) for every family, cost form and $\alpha \in \{0.1, 0.3, 0.5\}$, capped at $M$ (\texttt{analytics/benchmarks.py}). $K^\ast$ is a ceiling, not a prediction: it assumes that members can be assembled at will, do not die, and are of equal size. How far decentralized formation falls short of it, and why, is the subject of Propositions~1 and~2.
-
-\paragraph{Measurement.} The state is recorded every 100 periods, giving 30 post-burn-in snapshots per run. Scope $K$ is the number of members of a unit, averaged over all active units and snapshots; the pooled capital share is the fraction of economy capital held by members; the tail exponent is the Hill estimator on the top decile of all $MN$ within-market shares; concentration within markets is the Herfindahl index of shares, and concentration across the economy is the capital share of the largest ten per cent of \emph{units}, where a conglomerate counts as one unit. Mergers, voluntary exits and floor exits are counted every period, floor hits per firm-period by affiliation status. Unless stated otherwise, we report the median across the five replications of each run's post-burn-in statistic, with the interquartile range across replications; sampling error across replications is small relative to the differences we interpret, and the uncertainty that matters is structural, which is why the design varies structure rather than adding replications. For the owner-return panel of Proposition~3, 27 runs of the main block (power-law cost; the three families; $\alpha \in \{0.05, 0.1, 0.3\}$; three replications) are rerun with a full trace of every firm's share, affiliation and floor lift in every period, $7.5$ million post-burn-in firm-periods each.
-
-\subsection{Notation and code}
-\label{sec:notation_code}
-
-The replication package keeps the variable names under which the model was developed, several of which predate the ergodicity-economics notation used here. Table~\ref{tab:notation} gives the mapping once; the text never uses the code's names. Two of them deserve a sentence. The location parameter of the log shock is called \texttt{mu} in the code and \texttt{g} where it is set; both are the time-average rate $g$, and neither is the ensemble rate $\mu_m$, which the code reports separately as \texttt{implied\_ensemble\_growth}. The flag \texttt{proportional=False} refers to the coordination cost and means that the cost is charged as a fraction $\Phi(K)$ of the unit's capital, equation \eqref{eq:member_growth}; it has nothing to do with the proportional sharing rule, which is \texttt{sharing\_rule='proportional'}.
-
-\begin{table}[htbp]
-    \centering
-    \footnotesize
-    \begin{singlespace}
-    \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.4cm}@{}}
-    \toprule
-    Paper & Code (\texttt{collaborative\_growth.py}, \texttt{pilot\_design.py}) & Note \\
-    \midrule
-    $g$ & \texttt{g}; stored as \texttt{mu} for every market & time average, common to all \\
-    $\mu_m$ & \texttt{implied\_ensemble\_growth} & $g$ plus volatility premium \\
-    $q_m$, $\sigma_m$ & \texttt{sigma\_range} (IQR), \texttt{iqr\_to\_scale} & IQR, not standard deviation \\
-    $F$ & \texttt{log\_family} $\in$ \{\texttt{normal}, \texttt{laplace}, \texttt{t3}\}, \texttt{nu}=3 & \texttt{growth\_process} = \texttt{'log\_family'} \\
-    $x_{it}$, $\tilde r_{it}$ & raw shocks; \texttt{firm\_log\_returns\_buffer} & \texttt{market\_size\_fixed} = \texttt{True} \\
-    $s_{it}$ & \texttt{exp(firm\_log\_states\_buffer)} & market mean 1 \\
-    $\alpha$, $\alpha_C$ & \texttt{share} / \texttt{alpha}; \texttt{cong\_alpha} & \texttt{alpha\_endogenous} \\
-    $K$, $C$ & \texttt{cong\_size}, \texttt{cong\_firms} & \\
-    $\Phi(K)$ & \texttt{management\_cost\_function}, \texttt{cost\_type}, \texttt{c0, c1, c2} & $b_0, b_1, b_2$ \\
-    cost as growth drag & \texttt{proportional=False} & not the sharing rule \\
-    sharing rule & \texttt{sharing\_rule} $\in$ \{\texttt{proportional}, \texttt{equal}\} & \\
-    $c$ & \texttt{floor\_c} & \\
-    $p$ & \texttt{merge\_thresh} & \\
-    $l$ & \texttt{lookback} & window and lock-in \\
-    criterion \eqref{eq:consent} & \texttt{decision\_rule='loggain'}; \texttt{'replay'} for levels & exit review every period \\
-    cross-market corr. & \texttt{cross\_corr}; \texttt{market\_corr='identity'} & \texttt{rho}=0 throughout \\
-    $M$, $N$, $T$, burn-in & \texttt{M}, \texttt{N}, \texttt{T}, \texttt{burn\_in} & \\
-    \bottomrule
-    \end{tabularx}
-    \end{singlespace}
-    \caption{Mapping of the paper's notation to the replication package.}
-    \label{tab:notation}
-\end{table}
-
-\FloatBarrier
 \section{Results}
 \label{sec:Results}
 We implemented the model in Python with extensive robustness testing. For each hyperparameter in Table \ref{tab:model_params}, we construct scenarios that vary a particular hyperparameter while holding others at baseline; this yields 54 scenarios in total. We do not run the full Cartesian product, as this would not be computationally feasible. Within each scenario we vary the pooling rate $\alpha$ across $[0,0.5]$ in steps of 0.02 (26 levels), and run 50 Monte Carlo replications per cell. This produces 70,200 simulations.
