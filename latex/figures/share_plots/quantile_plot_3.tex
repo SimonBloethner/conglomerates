@@ -1,0 +1,49 @@
+% ===== Quantile 3, All cost types =====
+
+% Cost type 0 (Linear)
+\addplot[name path=med0, cost0, thick]
+table[col sep=comma, x=alpha, y=median]{figures/plots/q3_cost0.csv};
+
+\addplot[name path=low0, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q25]{figures/plots/q3_cost0.csv};
+
+\addplot[name path=high0, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q75]{figures/plots/q3_cost0.csv};
+
+\addplot[cost0!30, forget plot] fill between[of=low0 and high0];
+
+% Cost type 1 (Quadratic)
+\addplot[name path=med1, cost1, thick]
+table[col sep=comma, x=alpha, y=median]{figures/plots/q3_cost1.csv};
+
+\addplot[name path=low1, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q25]{figures/plots/q3_cost1.csv};
+
+\addplot[name path=high1, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q75]{figures/plots/q3_cost1.csv};
+
+\addplot[cost1!30, forget plot] fill between[of=low1 and high1];
+
+% Cost type 2 (Power law)
+\addplot[name path=med2, cost2, thick]
+table[col sep=comma, x=alpha, y=median]{figures/plots/q3_cost2.csv};
+
+\addplot[name path=low2, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q25]{figures/plots/q3_cost2.csv};
+
+\addplot[name path=high2, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q75]{figures/plots/q3_cost2.csv};
+
+\addplot[cost2!30, forget plot] fill between[of=low2 and high2];
+
+% Cost type 3 (Exponential)
+\addplot[name path=med3, cost3, thick]
+table[col sep=comma, x=alpha, y=median]{figures/plots/q3_cost3.csv};
+
+\addplot[name path=low3, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q25]{figures/plots/q3_cost3.csv};
+
+\addplot[name path=high3, draw=none, forget plot]
+table[col sep=comma, x=alpha, y=q75]{figures/plots/q3_cost3.csv};
+
+\addplot[cost3!30, forget plot] fill between[of=low3 and high3];
