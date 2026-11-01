@@ -30,7 +30,7 @@ EXPECTED_TIDY_COLUMNS = [
     'alpha_adopted_std', 'assort_iqr', 'M', 'N',
 ]
 
-EXPECTED_TOTAL_ROWS = 1620
+EXPECTED_TOTAL_ROWS = 1800
 
 EXPECTED_BLOCK_COUNTS = {
     'main': 540,
@@ -43,6 +43,7 @@ EXPECTED_BLOCK_COUNTS = {
     'floor-level': 90,
     'search': 120,
     'size': 80,
+    'cost-level-full': 180,
 }
 
 EXPECTED_LOOKBACK_BY_FAMILY = {

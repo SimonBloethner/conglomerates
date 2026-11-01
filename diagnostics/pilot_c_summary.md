@@ -2,9 +2,9 @@
 
 ## Overview
 
-- **Scenarios**: 1620
-- **Total runtime**: 365773s (101.60 CPU-hours)
-- **Mean ms/step**: 20.53 ± 16.04
+- **Scenarios**: 1800
+- **Total runtime**: 393082s (109.19 CPU-hours)
+- **Mean ms/step**: 19.85 ± 15.37
 - **Grid**: 50 × 50 (M × N); size block M, N ∈ {25, 100}
 
 ### Block counts
@@ -13,6 +13,7 @@
 |-------|-------|
 | correlation | 45 |
 | cost-level | 360 |
+| cost-level-full | 180 |
 | endogenous-alpha | 60 |
 | equal-split | 180 |
 | floor-level | 90 |
@@ -146,6 +147,143 @@ Source: `pilot_c/tidy.csv` column `K_post_burnin_median`, filtered by `block` an
 | linear | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
 | power_law | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
 | quadratic | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
+
+## Cost Level
+
+Φ(K) scaled at every K, laplace family: multipliers 0.5 and 2 for power_law and exponential from block `cost-level` (c0 scales the schedule), for linear and quadratic from block `cost-level-full` (c0, c1, c2); multiplier 1 from the main block.
+Seeds are shared across the two multipliers within linear and within quadratic. Multiplier 1, and each multiplier of power_law and exponential, has its own seeds.
+The linear and quadratic rows of block `cost-level` move only the intercept of Φ and are not used here.
+Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `K_mean`, `cong_capital_share_median`, `hill_exponent_median`, medians across replications
+
+### Mean K by multiplier
+
+| Cost | α | ×0.5 | ×1 | ×2 | ×0.5 − ×1 | ×2 − ×1 |
+|------|---|------|----|----|-----------|---------|
+| linear | 0.1 | 3.16 | 2.92 | 2.71 | +0.24 | -0.21 |
+| linear | 0.3 | 4.36 | 3.94 | 3.58 | +0.42 | -0.36 |
+| linear | 0.5 | 6.72 | 5.84 | 5.09 | +0.88 | -0.75 |
+| quadratic | 0.1 | 3.38 | 3.28 | 3.10 | +0.10 | -0.18 |
+| quadratic | 0.3 | 4.53 | 4.41 | 4.09 | +0.11 | -0.32 |
+| quadratic | 0.5 | 6.90 | 6.50 | 5.90 | +0.40 | -0.60 |
+| exponential | 0.1 | 3.20 | 2.85 | 2.49 | +0.35 | -0.36 |
+| exponential | 0.3 | 4.59 | 4.32 | 3.69 | +0.27 | -0.63 |
+| exponential | 0.5 | 7.13 | 6.75 | 5.89 | +0.39 | -0.86 |
+| power_law | 0.1 | 3.19 | 3.00 | 2.79 | +0.19 | -0.21 |
+| power_law | 0.3 | 4.33 | 4.00 | 3.67 | +0.34 | -0.33 |
+| power_law | 0.5 | 6.63 | 5.95 | 5.19 | +0.68 | -0.76 |
+
+### By cost type, multiplier and α
+
+| Cost | Multiplier | α | K median | K mean | CCS | Hill |
+|------|------------|---|----------|--------|-----|------|
+| exponential | 0.5 | 0 | nan | nan | 0.000 | 1.064 |
+| exponential | 0.5 | 0.01 | 2.00 | 2.073 | 0.006 | 1.065 |
+| exponential | 0.5 | 0.02 | 2.00 | 2.280 | 0.080 | 1.061 |
+| exponential | 0.5 | 0.05 | 2.00 | 2.778 | 0.292 | 1.065 |
+| exponential | 0.5 | 0.1 | 3.00 | 3.196 | 0.454 | 1.082 |
+| exponential | 0.5 | 0.2 | 3.00 | 3.793 | 0.590 | 1.114 |
+| exponential | 0.5 | 0.3 | 3.00 | 4.588 | 0.706 | 1.167 |
+| exponential | 0.5 | 0.4 | 4.00 | 5.674 | 0.817 | 1.240 |
+| exponential | 0.5 | 0.5 | 5.00 | 7.134 | 0.897 | 1.330 |
+| exponential | 1 | 0 | nan | nan | 0.000 | 1.066 |
+| exponential | 1 | 0.01 | 2.00 | 2.000 | 0.000 | 1.066 |
+| exponential | 1 | 0.02 | 2.00 | 2.067 | 0.004 | 1.068 |
+| exponential | 1 | 0.05 | 2.00 | 2.400 | 0.111 | 1.060 |
+| exponential | 1 | 0.1 | 2.00 | 2.846 | 0.276 | 1.070 |
+| exponential | 1 | 0.2 | 3.00 | 3.499 | 0.461 | 1.098 |
+| exponential | 1 | 0.3 | 3.00 | 4.321 | 0.591 | 1.140 |
+| exponential | 1 | 0.4 | 4.00 | 5.384 | 0.729 | 1.217 |
+| exponential | 1 | 0.5 | 5.00 | 6.747 | 0.855 | 1.331 |
+| exponential | 2 | 0 | nan | nan | 0.000 | 1.057 |
+| exponential | 2 | 0.01 | nan | nan | 0.000 | 1.057 |
+| exponential | 2 | 0.02 | 2.00 | 2.000 | 0.000 | 1.057 |
+| exponential | 2 | 0.05 | 2.00 | 2.143 | 0.021 | 1.053 |
+| exponential | 2 | 0.1 | 2.00 | 2.488 | 0.141 | 1.046 |
+| exponential | 2 | 0.2 | 3.00 | 3.061 | 0.336 | 1.060 |
+| exponential | 2 | 0.3 | 3.00 | 3.689 | 0.463 | 1.099 |
+| exponential | 2 | 0.4 | 3.00 | 4.605 | 0.601 | 1.174 |
+| exponential | 2 | 0.5 | 4.00 | 5.890 | 0.749 | 1.265 |
+| linear | 0.5 | 0 | nan | nan | 0.000 | 1.071 |
+| linear | 0.5 | 0.01 | 2.00 | 2.377 | 0.364 | 1.069 |
+| linear | 0.5 | 0.02 | 2.00 | 2.587 | 0.477 | 1.069 |
+| linear | 0.5 | 0.05 | 2.00 | 2.886 | 0.583 | 1.085 |
+| linear | 0.5 | 0.1 | 3.00 | 3.159 | 0.654 | 1.094 |
+| linear | 0.5 | 0.2 | 3.00 | 3.661 | 0.726 | 1.126 |
+| linear | 0.5 | 0.3 | 3.00 | 4.357 | 0.791 | 1.175 |
+| linear | 0.5 | 0.4 | 4.00 | 5.339 | 0.874 | 1.253 |
+| linear | 0.5 | 0.5 | 5.00 | 6.721 | 0.919 | 1.316 |
+| linear | 1 | 0 | nan | nan | 0.000 | 1.058 |
+| linear | 1 | 0.01 | 2.00 | 2.184 | 0.224 | 1.057 |
+| linear | 1 | 0.02 | 2.00 | 2.358 | 0.343 | 1.059 |
+| linear | 1 | 0.05 | 2.00 | 2.651 | 0.488 | 1.061 |
+| linear | 1 | 0.1 | 3.00 | 2.917 | 0.574 | 1.071 |
+| linear | 1 | 0.2 | 3.00 | 3.390 | 0.670 | 1.095 |
+| linear | 1 | 0.3 | 3.00 | 3.935 | 0.743 | 1.156 |
+| linear | 1 | 0.4 | 4.00 | 4.674 | 0.824 | 1.203 |
+| linear | 1 | 0.5 | 5.00 | 5.837 | 0.895 | 1.300 |
+| linear | 2 | 0 | nan | nan | 0.000 | 1.071 |
+| linear | 2 | 0.01 | 2.00 | 2.058 | 0.110 | 1.068 |
+| linear | 2 | 0.02 | 2.00 | 2.194 | 0.240 | 1.068 |
+| linear | 2 | 0.05 | 2.00 | 2.463 | 0.407 | 1.070 |
+| linear | 2 | 0.1 | 2.00 | 2.708 | 0.509 | 1.086 |
+| linear | 2 | 0.2 | 3.00 | 3.088 | 0.623 | 1.124 |
+| linear | 2 | 0.3 | 3.00 | 3.580 | 0.701 | 1.159 |
+| linear | 2 | 0.4 | 4.00 | 4.211 | 0.789 | 1.205 |
+| linear | 2 | 0.5 | 4.00 | 5.090 | 0.873 | 1.311 |
+| power_law | 0.5 | 0 | nan | nan | 0.000 | 1.056 |
+| power_law | 0.5 | 0.01 | 2.00 | 2.433 | 0.435 | 1.061 |
+| power_law | 0.5 | 0.02 | 2.00 | 2.646 | 0.523 | 1.058 |
+| power_law | 0.5 | 0.05 | 2.00 | 2.917 | 0.611 | 1.072 |
+| power_law | 0.5 | 0.1 | 3.00 | 3.190 | 0.666 | 1.089 |
+| power_law | 0.5 | 0.2 | 3.00 | 3.692 | 0.744 | 1.112 |
+| power_law | 0.5 | 0.3 | 3.00 | 4.335 | 0.809 | 1.172 |
+| power_law | 0.5 | 0.4 | 4.00 | 5.361 | 0.878 | 1.230 |
+| power_law | 0.5 | 0.5 | 5.00 | 6.630 | 0.919 | 1.326 |
+| power_law | 1 | 0 | nan | nan | 0.000 | 1.064 |
+| power_law | 1 | 0.01 | 2.00 | 2.287 | 0.365 | 1.067 |
+| power_law | 1 | 0.02 | 2.00 | 2.469 | 0.459 | 1.069 |
+| power_law | 1 | 0.05 | 2.00 | 2.747 | 0.563 | 1.075 |
+| power_law | 1 | 0.1 | 3.00 | 3.005 | 0.634 | 1.098 |
+| power_law | 1 | 0.2 | 3.00 | 3.458 | 0.703 | 1.113 |
+| power_law | 1 | 0.3 | 3.00 | 3.999 | 0.782 | 1.165 |
+| power_law | 1 | 0.4 | 4.00 | 4.798 | 0.857 | 1.220 |
+| power_law | 1 | 0.5 | 5.00 | 5.948 | 0.906 | 1.329 |
+| power_law | 2 | 0 | nan | nan | 0.000 | 1.056 |
+| power_law | 2 | 0.01 | 2.00 | 2.118 | 0.217 | 1.060 |
+| power_law | 2 | 0.02 | 2.00 | 2.261 | 0.342 | 1.060 |
+| power_law | 2 | 0.05 | 2.00 | 2.547 | 0.470 | 1.061 |
+| power_law | 2 | 0.1 | 2.00 | 2.795 | 0.563 | 1.079 |
+| power_law | 2 | 0.2 | 3.00 | 3.191 | 0.658 | 1.106 |
+| power_law | 2 | 0.3 | 3.00 | 3.667 | 0.741 | 1.171 |
+| power_law | 2 | 0.4 | 4.00 | 4.290 | 0.816 | 1.211 |
+| power_law | 2 | 0.5 | 4.00 | 5.190 | 0.884 | 1.295 |
+| quadratic | 0.5 | 0 | nan | nan | 0.000 | 1.060 |
+| quadratic | 0.5 | 0.01 | 2.00 | 2.733 | 0.413 | 1.059 |
+| quadratic | 0.5 | 0.02 | 2.00 | 2.924 | 0.511 | 1.058 |
+| quadratic | 0.5 | 0.05 | 3.00 | 3.156 | 0.595 | 1.067 |
+| quadratic | 0.5 | 0.1 | 3.00 | 3.382 | 0.664 | 1.081 |
+| quadratic | 0.5 | 0.2 | 3.00 | 3.849 | 0.742 | 1.130 |
+| quadratic | 0.5 | 0.3 | 3.00 | 4.525 | 0.819 | 1.181 |
+| quadratic | 0.5 | 0.4 | 4.00 | 5.541 | 0.881 | 1.225 |
+| quadratic | 0.5 | 0.5 | 5.00 | 6.900 | 0.920 | 1.315 |
+| quadratic | 1 | 0 | nan | nan | 0.000 | 1.056 |
+| quadratic | 1 | 0.01 | 2.00 | 2.489 | 0.240 | 1.054 |
+| quadratic | 1 | 0.02 | 2.00 | 2.755 | 0.395 | 1.054 |
+| quadratic | 1 | 0.05 | 3.00 | 3.036 | 0.531 | 1.062 |
+| quadratic | 1 | 0.1 | 3.00 | 3.281 | 0.606 | 1.085 |
+| quadratic | 1 | 0.2 | 3.00 | 3.768 | 0.697 | 1.117 |
+| quadratic | 1 | 0.3 | 4.00 | 4.412 | 0.779 | 1.174 |
+| quadratic | 1 | 0.4 | 4.00 | 5.313 | 0.861 | 1.226 |
+| quadratic | 1 | 0.5 | 5.00 | 6.498 | 0.912 | 1.313 |
+| quadratic | 2 | 0 | nan | nan | 0.000 | 1.060 |
+| quadratic | 2 | 0.01 | 2.00 | 2.275 | 0.118 | 1.062 |
+| quadratic | 2 | 0.02 | 2.00 | 2.531 | 0.276 | 1.061 |
+| quadratic | 2 | 0.05 | 2.00 | 2.841 | 0.438 | 1.067 |
+| quadratic | 2 | 0.1 | 3.00 | 3.099 | 0.554 | 1.072 |
+| quadratic | 2 | 0.2 | 3.00 | 3.529 | 0.657 | 1.114 |
+| quadratic | 2 | 0.3 | 3.00 | 4.089 | 0.743 | 1.170 |
+| quadratic | 2 | 0.4 | 4.00 | 4.883 | 0.827 | 1.226 |
+| quadratic | 2 | 0.5 | 5.00 | 5.902 | 0.900 | 1.319 |
 
 ## Lookback Sensitivity
 
@@ -399,8 +537,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 365773s (101.60 CPU-hours)
-- **Mean ms/step**: 20.53 ± 16.04
+- **Total runtime**: 393082s (109.19 CPU-hours)
+- **Mean ms/step**: 19.85 ± 15.37
 
 ## Figures
 

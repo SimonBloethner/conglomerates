@@ -1,3 +1,5 @@
+> This is the C18 diagnostic (g = 0.02, lookback = 100, T = 8000, before C21–C31). C33 supersedes it: see `burn_in_c33.md`.
+
 # C18: Burn-in with decision_rule=loggain
 
 ## Setup

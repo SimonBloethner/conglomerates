@@ -106,6 +106,14 @@ When `alpha_endogenous=True`:
 - `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
 - `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
 
+## Coordination Cost
+
+### `proportional`
+Entry of the `params` list. `proportional=False`, as in every pilot scenario, means the coordination cost is charged as a fraction Φ(K) of unit capital (a growth drag) and is unrelated to `sharing_rule='proportional'`.
+
+### `cost-level` block
+The `cost-level` block multiplies `c0` only. That is a level shift of Φ(K) for `power_law` (`c0·K^c1`) and `exponential` (`c0·exp(c1·K)`). For `linear` (`c0 + c1·K`) and `quadratic` (`c0 + c1·K + c2·K²`) it moves only the intercept, so Φ(40) for `linear` goes from 0.00170 to 0.00171 at multiplier 2. The `cost-level-full` block (C33) multiplies `c0`, `c1` and `c2` for these two families, which scales Φ(K) at every K.
+
 ## Pooling: limited liability under equal sharing (C31)
 
 Under `sharing_rule='equal'` the pool is shared equally per firm, so a small member can be assigned a pool loss larger than its capital (δ ≤ −1).
@@ -163,7 +171,7 @@ Periodic exit review interval for loggain decision rule.
 
 Default: `1` (every step)
 
-**C21 convention:** Main results use `exit_review_every = 5` (one-tenth of the default `lookback = 50`). The lookback block uses `exit_review_every = max(1, lookback // 10)` to maintain proportionality.
+**Pilot:** `pilot_design.py` never sets this flag and `run_pilot_c.py` never passes it, so every pilot scenario, the lookback block included, runs at the default and reviews exits every period.
 
 When `exit_review_every > 1`:
 - Conglomerate members run the exit test only at steps where `(step - cong_created_step) % exit_review_every == 0`

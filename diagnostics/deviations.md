@@ -463,3 +463,81 @@ Other points:
 - `analyze_pilot_c.py` has no section named "Distributional". The floor-hit clustering table is a subsection ("### Floor-hit clustering") at the end of "## HHI and Top-10 Share", the last of the distribution sections (Hill, floor-hit rate, HHI/top-10).
 - K* lookups in the existing K-vs-K* table and the search figure are restricted to M = 50 benchmark rows (`benchmarks_at_m`), since benchmarks.csv now has M = 25 and 100 rows.
 - `burstiness.py` ran through `srun --partition=dev`, not on the login node (CLAUDE.md rule, confirmed by the user). It reads the C29 traces in `/scratch/bt307958/traces_c29` (main block, power_law). None of these 27 scenarios is among the 23 runs that C31's limited liability changed.
+
+# C33 Burn-in on the frozen model — stopped at Task 1 (stop rule)
+
+The brief says to stop and report if a headline series (K, capital share, floor-hit rates) has not converged by step 8000. Four have not, under the C18 criterion. Tasks 2 and 3 are not run and nothing is committed.
+
+## Completed (nothing committed)
+
+- Task 1: `run_burnin_c33.py`, arrays 845352 and 845353, 20/20 COMPLETED. All 20 runs reproduce the stored pilot results exactly (Hill, within-market HHI, capital share and floor hits at every snapshot; K_mean, merger and exit rates).
+- Baseline before any change: `pytest -q tests/` 187 passed (job 845351). `tests/test_burnin_c33.py`: 6 passed.
+- Tasks 2 and 3: code, docs and tests are edited in the local working tree; not uploaded, not run, no scenario submitted.
+
+## Why stopped
+
+Headline series outside the 2% band after step 8000:
+
+| Cell | Series | Convergence step | Max dev. at steps ≥ 8000 | Trend after 8000, %/1000 steps (p, 5 reps) | Placebo P(dev ≥ observed) | Stationary surrogates passing |
+|---|---|---|---|---|---|---|
+| laplace, α = 0.3 | capital share | 10500 | 2.1% | +0.06 (0.86) | 0.05 | 0.94 |
+| t3, α = 0.3 | capital share | 9100 | 2.2% | −0.45 (0.03) | 0.06 | 0.88 |
+| t3, α = 0.3 | standalone floor-hit rate | 8200 | 2.6% | +0.27 (0.66) | 0.08 | 0.67 |
+| t3, α = 0.3 | member floor-hit rate | 9200 | 2.2% | +0.00 (1.00) | 0.31 | 0.48 |
+
+Mean K converges at step 500 in every cell (max dev. 1.1–1.7%). Non-headline series that fail are listed in `burn_in_c33.md`.
+
+Drift or noise (`analytics/burnin_c33_noise.py`, output `diagnostics/burn_in_c33_noise.txt`; no new simulation):
+
+- The 2% criterion has no allowance for sampling noise. Stationary surrogates, block-resampled from each rep's post-8000 window, fail it often: 52% for t3 member floor hits, 33% for t3 standalone floor hits, 100% for within-market HHI.
+- Of 12 trend tests on headline series one has p < 0.05 (0.6 expected by chance): t3 capital share, −0.45% per 1000 steps. It does not survive a multiple-test correction, but it cannot be dismissed. It is a fall from a peak near step 9000 (5000–8000 against 8000–11000 is +1.2%, p = 0.14), so it is not a steady approach to a level.
+- The two capital-share deviations are at the top of the surrogate range (p 0.05, 0.06), so they are not clearly noise.
+- Later burn-in barely moves the post-burn-in means: at most 0.55% for capital share and floor-hit rates, 0.79% for K, comparing t > 9000 or t > 10000 with t > 8000.
+- Limits: 5 reps give low power (a trend of about 2% over 3000 steps cannot be excluded), and the surrogates use only 30 observations per rep, so they understate slow variation.
+- Geweke (post-8000, cell mean): 3 of 33 tests fail, against about 2 expected: capital share at laplace α = 0.1 (z = 2.60) and t3 α = 0.3 (z = 2.40), HHI at t3 α = 0.3 (z = −2.72).
+
+## Other points
+
+- The path in the brief, `/groups/m-larch/bt307958/IOxEE/programs`, is stale (git has no commits, 1275-line `tidy.csv`). `/scratch/bt307958/c32/IOxEE` has all 1620 results and is identical to the repo for the 13 files hashed. C33 works in a copy, `/scratch/bt307958/c33/IOxEE`.
+- `compute_convergence_step` returns the series length when a series never converges, so "8000" in `burn_in_c.md` means "never". `run_burnin_c33.py` reports "never".
+- Floor-hit rates are hits by status over all firm-periods, as in `summary` and `tidy.csv`, so they are not per firm of that status.
+- `run_burnin_c33.py` imports the C18 criterion and extractor from `run_burnin_c14.py` instead of copying them, and does not write `scenarios.json`. Growth gap is not tracked (not in the brief's list).
+- `diagnostics/pilot_c_summary.md` has no cost-level section; `analyze_pilot_c.py` needs a new one.
+- "K moves by about ±0.5" is not in the repo. K medians are integers, so the local edit tests it on mean K.
+- The brief's seed clauses conflict. `cost-level-full` uses one cell per cost type, so ×0.5 and ×2 share seeds. ×1 (main block) and the old block's power_law and exponential rows have their own seeds and cannot change.
+- `pilot_c/results` is not tracked, so the 180 new result files would stay on `/scratch`.
+
+## Options
+
+- (a) Keep burn-in 8000, state the deviations (at most 2.6% for headline series), continue with Tasks 2 and 3.
+- (b) Extend the four cells to T = 16000 with the same seeds (20 runs, about 90 CPU-minutes). Steps up to 11000 are unchanged. This shows whether the t3 capital-share decline continues, then decide (a) or (c).
+- (c) Raise burn-in and T and rerun the pilot (1620 runs, at least 80 CPU-hours).
+
+## State
+
+- Burn-in outputs and runs: `/scratch/bt307958/c33/IOxEE/diagnostics`. Copies of `burn_in_c33.md`, `.csv`, figures and the noise output are in the local working tree.
+- The local working tree holds all C33 changes, uncommitted. `collaborative_growth.py`, `pilot_c/scenarios.json` and `pilot_c/tidy.csv` are unchanged.
+
+## Extension chosen, decision rule fixed before the runs
+
+The user chose option (b). `run_burnin_c33_ext.py` reruns the 20 scenarios to T = 16000 with the same seeds. Rule, written before any extended run: burn_in = 8000 stands if the mean of each headline series over (11000, 16000] is within 2% of its mean over the pilot window (8000, 11000] in every cell, and the t3 capital-share trend over (8000, 16000] implies a change of less than 2% over those 8000 steps. Otherwise stop and report.
+
+## Resolution (C33)
+
+Extension: array 845388, 20/20 COMPLETED, all 20 runs identical to the pilot up to step 11000 (`burn_in_c33_ext.md`).
+
+- The rule passes and burn_in = 8000 stands. The 13 headline means over (11000, 16000] are within 0.71% of the pilot window (largest: t3 member floor-hit rate, −0.71%). The t3 capital-share trend over (8000, 16000] is −0.05% per 1000 steps (p = 0.55), an implied −0.40%, so the fall seen after step 9000 did not continue.
+- The rule is on point estimates. With 5 reps the 95% CIs reach ±2% in places (laplace α = 0.1 capital share up to +2.20, t3 member floor hits down to −2.12).
+- The 2% band is not a usable statement for the paper. At T = 16000 most series fail it, some later than at T = 11000 (mean K at laplace α = 0.3 now fails until 12600), because a longer run gives more chances to leave the band. Evidence for the burn-in is the window comparison and the trend, not the band.
+- The dip near step 12500 that fails the band in all laplace floor series is one transient, shared across α = 0, 0.1, 0.3 because those cells use the same seeds, and mostly from reps 3 and 4. The three laplace cells are not independent evidence. It also explains the low placebo probabilities (0.03–0.05) for laplace floor-hit rates.
+- Geweke, post-8000 on T = 16000 (first 8 against last 40 observations): 1 of 33 fails, t3 capital share (z = 2.34), from the same high stretch around 8100–8900.
+
+Tasks 2 and 3 then ran:
+
+- Array 845416, 180/180 COMPLETED, scenarios 1620–1799. `tidy.csv` header and first 1620 rows are byte-identical to C32, so every row of the old `cost-level` block is unchanged. `medians.csv` keeps all 315 old rows and gains 36. The summary changes only in totals, the block count and the new "Cost Level" section.
+- `tests/test_tidy_schema.py` hard-coded 1620 rows and now expects 1800.
+- `pytest -q tests/`: 198 passed, 0 failed, 0 errors.
+
+"K moves by about ±0.5" (mean K, ×0.5 and ×2 against ×1): linear +0.24/−0.21 at α = 0.1, +0.42/−0.36 at 0.3, +0.88/−0.75 at 0.5; quadratic +0.10/−0.18, +0.11/−0.32, +0.40/−0.60. The direction holds everywhere. The size holds as an average for linear (mean |change| 0.48), is too large for quadratic (0.29), and grows with α in every family. ×1 uses different seeds from ×0.5 and ×2, so these differences carry between-seed noise.
+
+Storage: `/scratch` is wiped from time to time, so the C33 tree, including all 1800 result files, is in `/groups/m-larch/bt307958/IOxEE_c33`, verified by content checksum. Buffered writes over 1 MiB to `/groups` fail with an I/O error and leave zeros at the correct file size, so `sync_groups.sh` uses rsync for small files and `dd oflag=sync` for large ones. `/scratch/bt307958/traces_c29` (2.8 GB) and `/scratch/bt307958/c29/IOxEE/pilot_c/events` (2.4 GB) are not covered.

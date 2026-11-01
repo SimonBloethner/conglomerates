@@ -206,6 +206,28 @@ def generate_lookback_comparison(df):
     return ref_merged, lookback_k
 
 
+def generate_cost_level_table(df):
+    """
+    K, capital share and Hill by cost type, multiplier and α at a level shift of Φ(K) (laplace).
+
+    Multiplier 1 is the main block. Multipliers 0.5 and 2 come from the block that scales Φ(K)
+    at every K: cost-level for power_law and exponential, cost-level-full for linear and quadratic.
+    """
+    laplace = df[df['log_family'] == 'laplace']
+    level_shift = pd.concat([
+        laplace[laplace['block'] == 'main'],
+        laplace[(laplace['block'] == 'cost-level') & laplace['cost_type'].isin(['power_law', 'exponential'])],
+        laplace[laplace['block'] == 'cost-level-full'],
+    ])
+    return level_shift.groupby(['cost_type', 'cost_multiplier', 'alpha']).agg(
+        K_median=('K_post_burnin_median', 'median'),
+        K_mean=('K_mean', 'median'),
+        ccs_median=('cong_capital_share_median', 'median'),
+        hill_median=('hill_exponent_median', 'median'),
+        n_reps=('rep', 'size'),
+    ).reset_index()
+
+
 SEARCH_COLS = ['K_mean', 'K_post_burnin_median', 'cong_capital_share_median',
                'mergers_per_period', 'floor_exits_per_period', 'hill_exponent_median']
 
@@ -991,6 +1013,45 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
             k_main = fmt_band(row['K_main_median'], row['K_main_p25'], row['K_main_p75'])
             k_equal = fmt_band(row['K_equal_median'], row['K_equal_p25'], row['K_equal_p75'])
             lines.append(f"| {row['cost_type']} | {k_main} | {k_equal} |")
+        lines.append("")
+
+    # ========================================================================
+    # Section: Cost level
+    # ========================================================================
+    if (df['block'] == 'cost-level-full').any():
+        lines.append("## Cost Level")
+        lines.append("")
+        lines.append("Φ(K) scaled at every K, laplace family: multipliers 0.5 and 2 for power_law and exponential from block "
+                     "`cost-level` (c0 scales the schedule), for linear and quadratic from block `cost-level-full` (c0, c1, c2); "
+                     "multiplier 1 from the main block.")
+        lines.append("Seeds are shared across the two multipliers within linear and within quadratic. "
+                     "Multiplier 1, and each multiplier of power_law and exponential, has its own seeds.")
+        lines.append("The linear and quadratic rows of block `cost-level` move only the intercept of Φ and are not used here.")
+        lines.append("Source: `pilot_c/tidy.csv` columns `K_post_burnin_median`, `K_mean`, `cong_capital_share_median`, `hill_exponent_median`, "
+                     "medians across replications")
+        lines.append("")
+
+        cost_level = generate_cost_level_table(df)
+
+        lines.append("### Mean K by multiplier")
+        lines.append("")
+        lines.append("| Cost | α | ×0.5 | ×1 | ×2 | ×0.5 − ×1 | ×2 − ×1 |")
+        lines.append("|------|---|------|----|----|-----------|---------|")
+        k_means = cost_level.pivot(index=['cost_type', 'alpha'], columns='cost_multiplier', values='K_mean')
+        for cost_type in ['linear', 'quadratic', 'exponential', 'power_law']:
+            for alpha in [0.1, 0.3, 0.5]:
+                row = k_means.loc[(cost_type, alpha)]
+                lines.append(f"| {cost_type} | {alpha:g} | {row[0.5]:.2f} | {row[1.0]:.2f} | {row[2.0]:.2f} | "
+                             f"{row[0.5] - row[1.0]:+.2f} | {row[2.0] - row[1.0]:+.2f} |")
+        lines.append("")
+
+        lines.append("### By cost type, multiplier and α")
+        lines.append("")
+        lines.append("| Cost | Multiplier | α | K median | K mean | CCS | Hill |")
+        lines.append("|------|------------|---|----------|--------|-----|------|")
+        for _, row in cost_level.iterrows():
+            lines.append(f"| {row['cost_type']} | {row['cost_multiplier']:g} | {row['alpha']:g} | {row['K_median']:.2f} | "
+                         f"{row['K_mean']:.3f} | {row['ccs_median']:.3f} | {row['hill_median']:.3f} |")
         lines.append("")
 
     # ========================================================================

@@ -2,8 +2,8 @@
 """
 Tests for Phase C pilot design generator.
 
-Test requirements (updated for C28):
-1. Scenario count = 1620 (C32: size block, 80 runs)
+Test requirements (updated for C33):
+1. Scenario count = 1800 (C33: cost-level-full block, 180 runs)
 2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
@@ -14,6 +14,8 @@ Test requirements (updated for C28):
 9. floor-level block exists with floor_c ∈ {0.10, 0.35} (90 runs)
 10. lookback block: 2 families × 5 values × 2 α × 5 reps = 100 runs
 11. pilot_c/scenarios.json equals the list pilot_design.main() writes
+12. cost-level-full block scales Φ(K) at every K, shares seeds across α and multipliers
+13. exit_review_every is neither set in scenarios.json nor passed by run_pilot_c.py
 """
 import json
 import os
@@ -25,6 +27,7 @@ parent_dir = os.path.dirname(test_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+from collaborative_growth import management_cost_function
 from pilot_design import (
     generate_all_scenarios,
     set_burn_in_params,
@@ -35,6 +38,7 @@ from pilot_design import (
     N_REPS,
     T,
     BURN_IN,
+    COST_PARAMS,
     FLOOR_C_BY_N,
 )
 
@@ -45,11 +49,11 @@ def c_for_exponent(target):
 
 
 def test_scenario_count():
-    """Scenario count = 1620 (updated for C32)."""
+    """Scenario count = 1800 (updated for C33)."""
     scenarios = generate_all_scenarios()
 
     # Check total count
-    assert len(scenarios) == 1620, f"Expected 1620 scenarios, got {len(scenarios)}"
+    assert len(scenarios) == 1800, f"Expected 1800 scenarios, got {len(scenarios)}"
 
     # Check block counts
     blocks = {}
@@ -68,13 +72,14 @@ def test_scenario_count():
         'floor-level': 90,  # C17: 1 × 1 × 2 × 9 × 5 (2 floor values × 9 α × 5 reps)
         'search': 120,  # C28: 3 families × 2 merge_thresh × 4 α × 5 reps
         'size': 80,  # C32: 4 (M, N) × 4 α × 5 reps
+        'cost-level-full': 180,  # C33: 1 × 2 × 2 × 9 × 5
     }
 
     for block, count in expected.items():
         actual = blocks.get(block, 0)
         assert actual == count, f"Block {block}: expected {count}, got {actual}"
 
-    print("PASS: scenario count = 1620")
+    print("PASS: scenario count = 1800")
 
 
 def test_floor_c_matches_c14():
@@ -363,6 +368,75 @@ def test_lookback_block_c28():
     print("PASS: lookback block (100 runs, 2 families × 5 values × 2 α × 5 reps)")
 
 
+def test_cost_level_full_block():
+    """C33: cost-level-full block is a level shift of Φ(K) for linear and quadratic."""
+    scenarios = generate_all_scenarios()
+
+    block = [s for s in scenarios if s['block'] == 'cost-level-full']
+    assert len(block) == 180, f"Expected 180 cost-level-full scenarios, got {len(block)}"
+
+    # Appended after every existing scenario and cell
+    assert [s['scenario_id'] for s in block] == list(range(1620, 1800))
+    last_cell = max(s['cell_id'] for s in scenarios if s['scenario_id'] < 1620)
+    assert sorted(set(s['cell_id'] for s in block)) == [last_cell + 1, last_cell + 2]
+
+    for s in block:
+        assert s['log_family'] == 'laplace', f"Expected laplace, got {s['log_family']}"
+        assert s['cost_type'] in ('linear', 'quadratic'), f"Unexpected cost {s['cost_type']}"
+        assert s['cost_multiplier'] in (0.5, 2.0)
+        base = COST_PARAMS[s['cost_type']]
+        for K in [2, 5, 10, 40]:
+            phi = management_cost_function(K, s['cost_type'], s['c0'], s['c1'], s['c2'])
+            phi_base = management_cost_function(K, s['cost_type'], base['c0'], base['c1'], base['c2'])
+            assert abs(phi - s['cost_multiplier'] * phi_base) < 1e-15, \
+                f"Scenario {s['scenario_id']}: Φ({K}) is not scaled by {s['cost_multiplier']}"
+
+    # Same seed for a (cost_type, rep) across α and multipliers
+    seeds = {}
+    for s in block:
+        seeds.setdefault((s['cost_type'], s['rep']), set()).add(s['seed'])
+    assert len(seeds) == 10 and all(len(v) == 1 for v in seeds.values())
+
+    alphas = sorted(set(s['alpha'] for s in block))
+    assert alphas == ALPHA_GRID, f"cost-level-full alphas: {alphas}"
+
+    print("PASS: cost-level-full block (180 runs, Φ(K) scaled at every K)")
+
+
+def test_earlier_scenarios_unchanged():
+    """C33: the cost-level-full block leaves the first 1620 scenarios as they were."""
+    scenarios = generate_all_scenarios()
+    before = [s for s in scenarios if s['block'] != 'cost-level-full']
+
+    assert [s['scenario_id'] for s in before] == list(range(1620))
+    for s in before:
+        assert s['cell_id'] < 60 and s['seed'] < 6042, f"Scenario {s['scenario_id']} moved"
+
+    cost_level = [s for s in before if s['block'] == 'cost-level']
+    assert len(cost_level) == 360
+    for s in cost_level:
+        base = COST_PARAMS[s['cost_type']]
+        assert s['c0'] == base['c0'] * s['cost_multiplier']
+        assert s['c1'] == base['c1'] and s['c2'] == base['c2']
+
+    print("PASS: first 1620 scenarios unchanged")
+
+
+def test_exit_review_every_not_used_by_pilot():
+    """C33: every pilot run reviews exits every period (model default exit_review_every=1)."""
+    with open('pilot_c/scenarios.json') as f:
+        scenarios = json.load(f)
+
+    for s in scenarios:
+        assert 'exit_review_every' not in s, \
+            f"Scenario {s['scenario_id']} carries exit_review_every"
+
+    with open('run_pilot_c.py') as f:
+        assert 'exit_review_every' not in f.read(), "run_pilot_c.py passes exit_review_every"
+
+    print(f"PASS: exit_review_every unset in all {len(scenarios)} scenarios and in run_pilot_c.py")
+
+
 def test_scenarios_json_matches_design():
     """C28: committed pilot_c/scenarios.json equals what pilot_design.main() writes."""
     expected = generate_all_scenarios()
@@ -396,6 +470,9 @@ if __name__ == '__main__':
     test_rule_replay_block()
     test_floor_level_block()
     test_lookback_block_c28()
+    test_cost_level_full_block()
+    test_earlier_scenarios_unchanged()
+    test_exit_review_every_not_used_by_pilot()
     test_scenarios_json_matches_design()
 
-    print("\nAll Phase C pilot design tests passed (C28)!")
+    print("\nAll Phase C pilot design tests passed (C33)!")
