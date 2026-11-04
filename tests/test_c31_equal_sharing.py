@@ -26,16 +26,19 @@ def _pool_two_member_unit():
 
 def test_small_member_delta_capped():
     """Hand-built unit: the small member's delta is capped at -1 + 1e-12, its new log state is finite, and
-    pool_ruin counts exactly 1 (the large member's delta, about -0.17, is not capped).
+    pool_ruin counts exactly 1. C34: the large member is not capped and pays the small member's shortfall.
     Catches: the old exit-and-reset branch (new log state 0 = log 1, i.e. a gain), an uncapped delta
     (log1p of a value below -1 is NaN), and a counter that misses or double-counts."""
-    log_states, (new_log_states, pools, ruin) = _pool_two_member_unit()
+    log_states, (new_log_states, pools, ruin, shortfall, wipeout) = _pool_two_member_unit()
     assert np.isfinite(new_log_states).all()
     delta_small = np.expm1(new_log_states[1] - log_states[1])
     assert abs(delta_small - CAP) < 1e-15
     assert ruin == 1
-    delta_large = np.expm1(new_log_states[0] - log_states[0])
-    assert -0.25 < delta_large < -0.1
+    assert wipeout == 0
+    # C34: the small member's shortfall (0.5 - 3 below zero, i.e. 2.5) is charged to the large member, whose
+    # capital is then the unit's identity 100*0.8 + 0.5*1 = 80.5 (less the ~0 the small member keeps)
+    assert abs(shortfall - (2.5 + 0.5 * (1 + CAP))) < 1e-12
+    assert abs(np.exp(new_log_states[0]) - (80.5 - 0.5 * (1 + CAP))) < 1e-10
 
 
 def test_ruined_member_at_floor_and_standalone(equal_run):  # noqa: F811

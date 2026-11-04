@@ -1226,16 +1226,33 @@ def process_conglomerate_pooling_numba(
         Pool values (pool_over_S) for each conglomerate
     pool_ruin : int
         C31: number of members whose delta was capped at -1 + 1e-12 (limited liability: a member loses
-        all its capital and no more; the floor block then lifts and ejects it)
+        all its capital and no more; the floor block then lifts and ejects it). C34: includes members
+        capped in a later round of the shortfall cascade.
+    pool_shortfall : float
+        C34: capital (level units) charged to the other members of a unit because a capped member
+        could not cover its assigned loss. Zero in every unit without a capped member.
+    pool_wipeout : int
+        C34: number of units in which every member was capped (the unit's intended capital is not
+        positive); the unit then holds ~0 and all members hit the floor.
+
+    C34 limited liability. For each unit the intended post-pooling capital of member i is
+    c_i = s_i (1 + delta_i), with sum_i c_i = sum_i s_i (1 + r_i) - Phi(K) S (the accounting identity the
+    pool conserves). A member with c_i < s_i (1 + CAP) is set to s_i (1 + CAP) (it keeps nothing); the
+    difference, its shortfall, is charged to the uncapped members in proportion to their c_j. This is
+    repeated until no member is below the cap, so sum_i c_i still equals the identity. Units without a
+    capped member take the unchanged C33 path (log_old + log1p(delta)), so they are bit-identical.
     """
     n_congs = len(active_cong_ids)
     total_firms = log_states_curr.shape[0]
+    CAP = -1.0 + 1e-12
 
     # Output arrays
     new_log_states = np.copy(log_states_curr)
     cong_pools = np.zeros(n_congs, dtype=np.float64)
 
     pool_ruin = 0
+    pool_shortfall = 0.0
+    pool_wipeout = 0
 
     # Process each active conglomerate
     for idx in range(n_congs):
@@ -1293,9 +1310,9 @@ def process_conglomerate_pooling_numba(
 
         # Step 7: Compute delta for each firm (depends on sharing rule)
         K = n_firms
+        deltas = np.empty(n_firms, dtype=np.float64)
+        any_capped = False
         for i in range(n_firms):
-            firm = conglomerate[i]
-
             if sharing_rule_code == 0:
                 # equal: each firm gets equal dollars from the pool
                 # δ_i = (1-α)·r_i + Ω/(K·w_i)
@@ -1305,15 +1322,81 @@ def process_conglomerate_pooling_numba(
                 # proportional: each firm gets proportional to size
                 # δ_i = (1-α)·r_i + Ω
                 delta = (1.0 - alpha_c) * r_m1[i] + pool_over_S
+            deltas[i] = delta
+            if not (delta >= CAP):  # below the cap, -inf or NaN
+                any_capped = True
 
-            # C31: limited liability; no exit here (the floor block lifts and ejects the firm)
-            if not np.isfinite(delta) or delta < -1.0 + 1e-12:
-                delta = -1.0 + 1e-12
-                pool_ruin += 1
+        if not any_capped:
+            # No capped member: unchanged C33 update (bit-identical)
+            for i in range(n_firms):
+                firm = conglomerate[i]
+                new_log_states[firm] = log_states_curr[firm] + np.log1p(deltas[i])
+            continue
+
+        # C34: limited liability with redistribution of the shortfall (capital in units of S).
+        # a[i] = c_i / S = w_i (1 + delta_i), written in dollar form so it stays finite when w_i is tiny;
+        # log_mult[i] accumulates log(1 - SF_r / C_u,r) over the rounds.
+        a = np.empty(n_firms, dtype=np.float64)
+        capped = np.zeros(n_firms, dtype=np.bool_)
+        log_mult = np.zeros(n_firms, dtype=np.float64)
+        for i in range(n_firms):
+            if sharing_rule_code == 0:
+                a[i] = w[i] * (1.0 + (1.0 - alpha_c) * r_m1[i]) + pool_over_S / K
+            else:
+                a[i] = w[i] * (1.0 + deltas[i])
+        shortfall_over_S = 0.0
+        wiped = False
+        for rnd in range(n_firms + 1):
+            # Step 2: cap every uncapped member below the cap; its shortfall is cap level minus intended level
+            sf_round = 0.0
+            n_new = 0
+            for i in range(n_firms):
+                if capped[i]:
+                    continue
+                below = not (deltas[i] >= CAP) if rnd == 0 else a[i] < w[i] * (1.0 + CAP)
+                if below:
+                    sf_round += w[i] * (1.0 + CAP) - a[i]
+                    a[i] = w[i] * (1.0 + CAP)
+                    capped[i] = True
+                    n_new += 1
+            if n_new == 0:
+                break
+            pool_ruin += n_new
+            # Step 3: charge sf_round to the uncapped members in proportion to their capital
+            c_u = 0.0
+            for i in range(n_firms):
+                if not capped[i]:
+                    c_u += a[i]
+            if c_u <= sf_round:
+                # Step 4: every member capped (the unit's intended capital is not positive)
+                wiped = True
+                for i in range(n_firms):
+                    if not capped[i]:
+                        capped[i] = True
+                        pool_ruin += 1
+                break
+            shortfall_over_S += sf_round
+            factor = 1.0 - sf_round / c_u
+            lf = np.log(factor)
+            for i in range(n_firms):
+                if not capped[i]:
+                    a[i] *= factor
+                    log_mult[i] += lf
+
+        if wiped:
+            pool_wipeout += 1
+        pool_shortfall += shortfall_over_S * np.exp(log_S)
+
+        for i in range(n_firms):
+            firm = conglomerate[i]
             log_old = log_states_curr[firm]
-            new_log_states[firm] = log_old + np.log1p(delta)
+            if capped[i]:
+                # C31: limited liability; no exit here (the floor block lifts and ejects the firm)
+                new_log_states[firm] = log_old + np.log1p(CAP)
+            else:
+                new_log_states[firm] = log_old + np.log1p(deltas[i]) + log_mult[i]
 
-    return new_log_states, cong_pools, pool_ruin
+    return new_log_states, cong_pools, pool_ruin, pool_shortfall, pool_wipeout
 
 
 def compute_hhi(shares):
@@ -1863,6 +1946,8 @@ def model(params, seed=None, market_corr="identity",
     exits_per_period = np.zeros(steps)
     floor_exits_per_period = np.zeros(steps)
     pool_ruin_per_period = np.zeros(steps)  # C31: members whose pooled delta was capped at -1 + 1e-12
+    pool_shortfall_per_period = np.zeros(steps)  # C34: capital charged to other members for capped members
+    pool_wipeout_per_period = np.zeros(steps)  # C34: units in which every member was capped
 
     # Pre-allocate lists for conglomerate metrics (computed on-the-fly)
     avg_shares = []
@@ -2068,7 +2153,8 @@ def model(params, seed=None, market_corr="identity",
 
         if len(active_cong_ids) > 0:
             # Call Numba function for pooling logic
-            new_log_states, cong_pools_step, pool_ruin = process_conglomerate_pooling_numba(
+            (new_log_states, cong_pools_step, pool_ruin,
+             pool_shortfall, pool_wipeout) = process_conglomerate_pooling_numba(
                 cong_firms,
                 cong_size,
                 active_cong_ids,
@@ -2087,6 +2173,8 @@ def model(params, seed=None, market_corr="identity",
             # Update log states in buffer
             firm_log_states_buffer[next_idx] = new_log_states
             pool_ruin_per_period[step] = pool_ruin
+            pool_shortfall_per_period[step] = pool_shortfall
+            pool_wipeout_per_period[step] = pool_wipeout
 
             # Store pools for active conglomerates
             for idx, cong_id in enumerate(active_cong_ids):
@@ -2511,6 +2599,7 @@ def model(params, seed=None, market_corr="identity",
         summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
         summary['floor_exits_per_period'] = np.mean(floor_exits_per_period[burn_in:])
         summary['pool_ruin_per_period'] = np.mean(pool_ruin_per_period[burn_in:])
+        summary['pool_shortfall_per_period'] = np.mean(pool_shortfall_per_period[burn_in:])  # C34
         # Per-type acceptance rates
         total_props_ss = np.sum(proposals_ss_per_period[burn_in:])
         total_props_sc = np.sum(proposals_sc_per_period[burn_in:])
@@ -2533,6 +2622,7 @@ def model(params, seed=None, market_corr="identity",
         summary['exits_per_period'] = 0.0
         summary['floor_exits_per_period'] = 0.0
         summary['pool_ruin_per_period'] = 0.0
+        summary['pool_shortfall_per_period'] = 0.0
         summary['acceptance_rate_ss'] = np.nan
         summary['acceptance_rate_sc'] = np.nan
         summary['acceptance_rate_cc'] = np.nan
@@ -2542,6 +2632,11 @@ def model(params, seed=None, market_corr="identity",
         summary['mergers_ss_per_period'] = 0.0
         summary['mergers_sc_per_period'] = 0.0
         summary['mergers_cc_per_period'] = 0.0
+
+    # C34: full-run totals (burn-in included). A run with pool_ruin_total == 0 never takes the
+    # limited-liability branch, so it is bit-identical to C33; pool_wipeout_total must be 0 in the pilot.
+    summary['pool_ruin_total'] = float(np.sum(pool_ruin_per_period))
+    summary['pool_wipeout_total'] = float(np.sum(pool_wipeout_per_period))
 
     # Renormalization correction mean (only meaningful when market_size_fixed)
     if market_size_fixed and steps > burn_in:
@@ -2621,6 +2716,8 @@ def model(params, seed=None, market_corr="identity",
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
                        'floor_exits_per_period': floor_exits_per_period,
                        'pool_ruin_per_period': pool_ruin_per_period,
+                       'pool_shortfall_per_period': pool_shortfall_per_period,
+                       'pool_wipeout_per_period': pool_wipeout_per_period,
                        'final_log_states': firm_log_states_buffer[steps % (lookback + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,

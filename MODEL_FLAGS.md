@@ -114,7 +114,7 @@ Entry of the `params` list. `proportional=False`, as in every pilot scenario, me
 ### `cost-level` block
 The `cost-level` block multiplies `c0` only. That is a level shift of Φ(K) for `power_law` (`c0·K^c1`) and `exponential` (`c0·exp(c1·K)`). For `linear` (`c0 + c1·K`) and `quadratic` (`c0 + c1·K + c2·K²`) it moves only the intercept, so Φ(40) for `linear` goes from 0.00170 to 0.00171 at multiplier 2. The `cost-level-full` block (C33) multiplies `c0`, `c1` and `c2` for these two families, which scales Φ(K) at every K.
 
-## Pooling: limited liability under equal sharing (C31)
+## Pooling: limited liability under equal sharing (C31; superseded in part by C34, next section)
 
 Under `sharing_rule='equal'` the pool is shared equally per firm, so a small member can be assigned a pool loss larger than its capital (δ ≤ −1).
 - Before C31 such a member was ejected and reset to log size 0. That reset is a gain, not a loss.
@@ -124,6 +124,26 @@ Under `sharing_rule='equal'` the pool is shared equally per firm, so a small mem
 - Limited liability applies under both sharing rules.
 - Under proportional sharing with the pilot's additive management cost, δ = (1−α)·r_i + α·Σ_j w_j r_j − Φ(K) ≥ −1 − Φ(K). The cap can therefore bind only when a member's own shock wipes out essentially all of its capital.
 - In the C31 rerun this happened in 23 of the 1,300 runs outside the endogenous-alpha and equal-split blocks, all in the t3 family (main block linear/quadratic/exponential cost, search block power_law). Those 23 runs differ slightly from C30; the other 1,277 are identical.
+
+## Pooling: the shortfall falls on the unit (C34)
+
+C31 capped a ruined member at δ = −1 + 1e-12 and did nothing else. The part of its assigned loss that exceeded its capital was charged to no one; the per-market renormalization then absorbed it, so the member's *market* paid for the unit's shortfall. Since C34 the other members pay it (`process_conglomerate_pooling_numba`, both sharing rules, same code path):
+
+1. Every member's net factor δ_i is computed as before. Its intended post-pooling capital is c_i = s_i(1 + δ_i), and Σ_i c_i = Σ_i s_i(1 + r_i) − Φ(K)·S, the accounting identity the pool conserves (r_i = exp(r̃_i) − 1).
+2. A member with δ_i < −1 + 1e-12 (or non-finite δ_i) is capped: it keeps s_i·(1 + CAP), about 1e-12·s_i (0.99998894e-12·s_i in floating point). Its shortfall is s_i(1 + CAP) − c_i, i.e. s_i(−1 − δ_i) plus the ~1e-12·s_i it keeps.
+3. The shortfall is charged to the uncapped members in proportion to their post-pooling capital: c_j ← c_j·(1 − SF/C_u), with C_u the uncapped members' capital.
+4. Steps 2–3 repeat until no member is below the cap. If the shortfall reaches C_u, every member is capped, the unit holds ~0 and all members hit the floor (a *wipeout*). This should not occur under the pilot's parameters; `run_pilot_c.py` asserts `summary['pool_wipeout_total'] == 0`.
+5. After the loop Σ_j s_j,t+1 equals the identity in step 1 to floating-point precision, with capped members contributing their capped size. `tests/test_c34_limited_liability.py` checks |Σ_j s_j,t+1 − [Σ_j s_j(1 + r_j) − Φ·S]| < 1e-9·S for every active unit in every period of a seeded equal-split and a seeded proportional run, and the 2-member, 3-member, cascade, wipeout and proportional-sharing cases by hand.
+
+A unit with no capped member takes the C33 update (log_old + log1p(δ)), so runs without capped members are bit-identical to C33.
+
+Counters (all exported in `hyperparameters`; summary values over t ≥ burn_in unless stated):
+- `pool_ruin_per_period`: capped members, including those capped in a later round of a cascade. Summary and tidy column as before.
+- `pool_shortfall_per_period` (new): capital charged to other members, in level units (pilot: market mean firm size = 1). Summary `pool_shortfall_per_period` (post-burn-in mean) and tidy column of the same name.
+- `pool_wipeout_per_period` (new): units in which every member was capped. Summary `pool_wipeout_total` (whole run).
+- `summary['pool_ruin_total']` (new): capped members over the whole run, burn-in included. A run with `pool_ruin_total == 0` never takes the limited-liability branch.
+
+**Decision rule.** `member_gain_from_prepared` still returns −∞ when a replayed p_i ≤ −1, so a proposal, membership or sharing rate under which any member would have been ruined somewhere in the window is rejected outright. The replay does not model the redistribution of a shortfall; this is the conservative side (it rejects arrangements the pooling step would survive).
 
 ## Membership timing
 

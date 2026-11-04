@@ -55,13 +55,14 @@ def equal_run(tmp_path_factory):
     orig = cg.process_conglomerate_pooling_numba
 
     def wrapped(*a):
-        new_log_states, pools, ruin = orig(*a)
+        out = orig(*a)
+        new_log_states = out[0]
         cong_firms, cong_size, active_ids, log_states_curr, step = a[0], a[1], a[2], a[4], a[9]
         for cid in active_ids:
             for f in cong_firms[cid, :cong_size[cid]]:
                 if abs((new_log_states[f] - log_states_curr[f]) - RUIN_STEP) < 1e-6:
                     events.append((int(step), int(f)))
-        return new_log_states, pools, ruin
+        return out
 
     trace_path = str(tmp_path_factory.mktemp('c31eq') / 'trace.npz')
     cg.process_conglomerate_pooling_numba = wrapped

@@ -61,6 +61,10 @@ def run_scenario(scenario):
 
     elapsed = time.time() - start_time
 
+    # C34: no unit may have every member capped in the pilot (MODEL_FLAGS.md, limited liability)
+    wipeouts = result[-1]['summary']['pool_wipeout_total']
+    assert wipeouts == 0, f"pool wipeout in scenario {scenario.get('scenario_id')}: {wipeouts}"
+
     # Extract hyperparameters dict (last element)
     hyperparams = result[-1]
 
