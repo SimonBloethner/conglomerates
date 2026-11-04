@@ -84,27 +84,28 @@ Enable per-conglomerate endogenous sharing rate adaptation.
 
 Default: `False`
 
-When `alpha_endogenous=True`:
-1. Each conglomerate carries its own `α_c` initialized to the run's global `share` parameter
-2. Every period (C31; before C31 only every `lookback` periods), the model evaluates each α on the grid {0, 0.05, ..., 1.0}
-3. For each candidate α, it replays the last `h = min(lookback, step)` periods of member growth under that α
-4. The α that maximizes the minimum member gain (relative to current α) is adopted, but only if `min_gain > 0`
-5. Pooling uses `α_c` instead of the global `share` parameter
-6. **Decisions at the unit's α (C31).** Merger and exit tests use the α the unit actually operates at:
+When `alpha_endogenous=True` (requires `g`; `model()` raises otherwise):
+1. Each conglomerate carries its own `α_c`, initialized to the run's global `share` parameter (0.1 in the pilot).
+2. Every period (C31; before C31 only every `lookback` periods), before pooling, each unit renegotiates its rate.
+3. **Demeaned renegotiation (C34).** For the unit's current members over the window {t − l, …, t − 1} (h = min(l, t) before the window is full), the demeaned window is built once with `prepare_window_loggain(members, past_returns, sizes, g)`. For each α′ on the grid {0, 0.05, …, 1} every member's Δ̂_j(α′) is computed with `member_gain_from_prepared(j, K, …, α′, Φ(K), sharing_rule_code)`, the same demeaned log gain the membership and exit tests use.
+4. The gain of a move is Δ̂_j(α′) − Δ̂_j(α_C) per member. A candidate under which any member's Δ̂ is −∞ (a replayed p ≤ −1) is infeasible. The unit moves only if the minimum gain over members is > 0 (unanimity) and, among such candidates, takes the one with the largest minimum gain (maximin). Otherwise it keeps α_C. Exact ties between candidates go to the lower α. If Δ̂_j(α_C) = −∞ for some member, every feasible α′ gives that member a gain of +∞ and the minimum is taken over the others.
+5. Before C34 the rate was renegotiated on realized (not demeaned) log growth, replayed with `replay_member_growth`. That version was dropped, not kept as a variant: a member with a lucky window could veto a rate that the demeaned comparison shows to benefit everyone (`tests/test_alpha_endogenous.py::test_demeaned_and_level_rules_differ`).
+6. Pooling uses `α_c` instead of the global `share` parameter.
+7. **Decisions at the unit's α (C31).** Merger and exit tests use the α the unit actually operates at:
    - Δ̂_current of a member is evaluated at `cong_alpha[its unit]` (standalones: Δ̂_current = 0), in the merger kernel and in the exit test.
    - Δ̂_proposed is evaluated at α_prop = `share` for solo+solo, `cong_alpha[unit]` for solo+unit, and for unit+unit the α of the unit with the larger `cong_size` (initiator on ties).
    - When a unit+unit merger executes, the merged unit takes α_prop. A slot newly allocated for solo+solo gets `share` (slots are reused and may hold a stale α).
    - With `alpha_endogenous=False`, every entry of `cong_alpha` equals `share`, so behaviour is unchanged.
-   - The replay decision rule still evaluates proposals at `share`; replay is not combined with endogenous α in the pilot design.
+   - Under `decision_rule='replay'` the merger and exit tests still use the realized-level replay; the renegotiation is demeaned under either rule. Replay is not combined with endogenous α in the pilot design.
 
-**Unanimity Constraint:** The rule requires all members to benefit from any α change. With finite samples and K=2 firms, this is rarely satisfied because one firm typically prefers more pooling while the other prefers less.
+**Unanimity Constraint:** The rule requires all members to benefit from any α change.
 
 **Returns:** `alpha_history[cong, k]` sampled every `metric_every` steps, included in `hyperparameters`.
 
 ### Helper Functions
 
-- `replay_member_growth(past_states, past_returns, step_states, alpha, management_cost, proportional, sharing_rule_code)`: Compute counterfactual log growth for each member under a given α
-- `find_optimal_alpha(...)`: Grid search over α to find the optimal value satisfying unanimity
+- `find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, sharing_rule_code, g)`: the demeaned renegotiation above. Returns `(alpha, should_change)`.
+- `replay_member_growth(...)`: realized-level counterfactual growth of each member under a given α. No production caller since C34; kept as the reference implementation for the replay-rule tests (`tests/test_decision_rule.py`).
 
 ## Coordination Cost
 

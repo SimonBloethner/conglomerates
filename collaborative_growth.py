@@ -233,7 +233,9 @@ def replay_member_growth(
     """
     Replay member growth under a given alpha and return per-member log growth.
 
-    This is the factored-out counterfactual computation from merger_kernel_numba.
+    This is the factored-out counterfactual computation from merger_kernel_numba (decision_rule='replay').
+    C34: it has no production caller; the endogenous sharing rate is renegotiated on the demeaned log gain
+    (find_optimal_alpha). It is kept as the reference implementation for the replay-rule tests.
 
     Parameters:
     -----------
@@ -601,78 +603,76 @@ ALPHA_GRID = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
 
 
 @nb.njit(cache=True)
-def find_optimal_alpha(
-    past_states, past_returns, step_states,
-    current_alpha, management_cost, proportional, sharing_rule_code
-):
+def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, sharing_rule_code, g):
     """
-    Find the optimal alpha that maximizes the minimum member gain relative to current alpha.
+    C34: renegotiate a unit's sharing rate on the demeaned log gain (the same Delta-hat as the membership
+    and exit tests).
+
+    The demeaned window of the unit's current members is built once (prepare_window_loggain); for every
+    alpha' on the grid {0, 0.05, ..., 1} each member's Delta-hat_j(alpha') is computed with
+    member_gain_from_prepared. The gain of a move is Delta-hat_j(alpha') - Delta-hat_j(alpha_C) per member.
+    A candidate under which any member's replayed p is <= -1 (Delta-hat = -inf) is infeasible. The unit moves
+    only if the minimum gain over members is > 0 (unanimity) and, among such candidates, takes the one with
+    the largest minimum gain (maximin); otherwise it keeps alpha_C. Exact ties between candidates go to the
+    lower alpha. If Delta-hat_j(alpha_C) = -inf, every feasible alpha' gives member j a gain of +inf, so the
+    minimum is taken over the other members.
 
     Parameters:
     -----------
-    past_states, past_returns, step_states : ndarrays
-        Historical data for computing counterfactual growth
+    members : ndarray, shape (K,)
+        Firm ids of the unit (only their number is used: past_returns and sizes are already sliced)
+    past_returns : ndarray, shape (h, K)
+        Log relative returns of the members over the window {t-h, ..., t-1}
+    sizes : ndarray, shape (h, K)
+        Member sizes (levels) over the same window
     current_alpha : float
-        The conglomerate's current alpha
-    management_cost : float
-        Management cost Φ(K)
-    proportional : bool
-        Whether management cost is proportional
+        The unit's current sharing rate alpha_C
+    Phi_K : float
+        Coordination cost Phi(K)
     sharing_rule_code : int
         0 = equal, 1 = proportional
+    g : float
+        Common growth rate added back after demeaning
 
     Returns:
     --------
     optimal_alpha : float
-        The optimal alpha from the grid
+        The adopted rate (alpha_C if the unit does not move)
     should_change : bool
-        True if the optimal alpha improves on current (min gain > 0)
+        True if the unit moves to a new rate
     """
-    # Compute growth under current alpha
-    current_growth, current_valid = replay_member_growth(
-        past_states, past_returns, step_states,
-        current_alpha, management_cost, proportional, sharing_rule_code
-    )
+    K = past_returns.shape[1]
+    eps, sz, sum_s, sum_s_eps = prepare_window_loggain(members, past_returns, sizes, g)
 
-    if not current_valid:
-        # Current alpha is invalid, try to find any valid alpha
-        current_growth = np.full(past_states.shape[1], -np.inf, dtype=np.float64)
+    current_gain = np.empty(K, dtype=np.float64)
+    for j in range(K):
+        current_gain[j] = member_gain_from_prepared(j, K, eps, sz, sum_s, sum_s_eps,
+                                                    current_alpha, Phi_K, sharing_rule_code)
 
     best_alpha = current_alpha
-    best_min_gain = -np.inf
-    should_change = False
+    best_min_gain = 0.0  # a move must make every member strictly better off
 
-    # Grid: {0, 0.05, ..., 1.0}
     for alpha_idx in range(21):
         alpha = alpha_idx * 0.05
-
-        new_growth, valid = replay_member_growth(
-            past_states, past_returns, step_states,
-            alpha, management_cost, proportional, sharing_rule_code
-        )
-
-        if not valid:
-            continue
-
-        # Compute minimum gain relative to current alpha
+        feasible = True
         min_gain = np.inf
-        for j in range(len(new_growth)):
-            gain = new_growth[j] - current_growth[j]
+        for j in range(K):
+            d = member_gain_from_prepared(j, K, eps, sz, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code)
+            if d == -np.inf:
+                feasible = False
+                break
+            gain = d - current_gain[j]
             if gain < min_gain:
                 min_gain = gain
-
-        # Adopt if this alpha has the best min gain and it's positive
+        if not feasible:
+            continue
         if min_gain > best_min_gain:
             best_min_gain = min_gain
             best_alpha = alpha
 
-    # Only change if min gain > 0
-    if best_min_gain > 0 and best_alpha != current_alpha:
-        should_change = True
-    else:
+    should_change = best_min_gain > 0.0 and best_alpha != current_alpha
+    if not should_change:
         best_alpha = current_alpha
-        should_change = False
-
     return best_alpha, should_change
 
 
@@ -1665,8 +1665,8 @@ def model(params, seed=None, market_corr="identity",
         Steps to exclude from summary statistics. Default 0.
     alpha_endogenous : bool
         Enable endogenous alpha adaptation. Default False.
-        When True, each conglomerate carries its own alpha, updated every
-        lookback periods to maximize minimum member gain.
+        When True, each conglomerate carries its own alpha, renegotiated every
+        period on the demeaned log gain (C34; unanimity, then maximin). Requires g.
     g : float, optional
         Common time-average growth rate. Default None (off).
         When g is not None and growth_process == 'log_family':
@@ -1719,6 +1719,8 @@ def model(params, seed=None, market_corr="identity",
     if decision_rule == "loggain" and g is None:
         raise ValueError("decision_rule='loggain' requires g to be specified")
     decision_rule_code = 0 if decision_rule == "replay" else 1
+    if alpha_endogenous and g is None:
+        raise ValueError("alpha_endogenous=True requires g (the sharing rate is renegotiated on the demeaned log gain)")
 
     # Seed both NumPy and Numba RNGs if seed is provided
     if seed is not None:
@@ -2086,16 +2088,14 @@ def model(params, seed=None, market_corr="identity",
                 member_firms = cong_firms[cid, :K]
                 m = management_costs_lookup[K]
 
-                # Get historical data for this conglomerate
-                # past_states and past_returns are from the circular buffer
+                # Window {t-h, ..., t-1} of the unit's current members, from the circular buffers
                 past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, member_firms)
                 past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, member_firms)
-                step_states = get_historical_states_numba(firm_log_states_buffer, step, step + 1, member_firms)
 
-                # Find optimal alpha
+                # C34: renegotiate on the demeaned log gain (unanimity, then maximin)
                 optimal_alpha, should_change = find_optimal_alpha(
-                    past_states, past_returns, step_states,
-                    cong_alpha[cid], m, proportional, sharing_rule_code
+                    member_firms, past_returns, np.exp(past_states),
+                    cong_alpha[cid], m, sharing_rule_code, g
                 )
 
                 if should_change:
