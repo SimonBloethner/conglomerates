@@ -21,13 +21,13 @@ def test_events_from_trace_basic():
     l = 50
 
     logshare = np.random.randn(T + 1, N).astype(np.float32) * 0.01
-    cong = np.full((T + 1, N), -1, dtype=np.int16)
+    unit = np.full((T + 1, N), -1, dtype=np.int16)
     floor = np.zeros((N, T), dtype=np.bool_)
     home = np.repeat(np.arange(markets), firms_per_market).astype(np.int16)
 
-    cong[100:, 0] = 0
+    unit[100:, 0] = 0
 
-    events = events_from_trace(logshare, cong, floor, home, l=l, tol=1.0)
+    events = events_from_trace(logshare, unit, floor, home, l=l, tol=1.0)
 
     assert isinstance(events, pd.DataFrame)
 
@@ -46,13 +46,13 @@ def test_events_from_trace_with_entry():
     for i in range(N):
         logshare[:, i] = -np.log(firms_per_market)
 
-    cong = np.full((T + 1, N), -1, dtype=np.int16)
+    unit = np.full((T + 1, N), -1, dtype=np.int16)
     floor = np.zeros((N, T), dtype=np.bool_)
     home = np.repeat(np.arange(markets), firms_per_market).astype(np.int16)
 
     entry_time = 50
     joiner = 0
-    cong[entry_time:entry_time + l + 10, joiner] = 0
+    unit[entry_time:entry_time + l + 10, joiner] = 0
 
     # C29: firm 1 (first matched candidate: all market-0 firms tie at gap 0) is lifted by 0.5 at a step
     # inside its after-window (entry_time, entry_time + l]; the raw path includes the lift.
@@ -62,7 +62,7 @@ def test_events_from_trace_with_entry():
     jump = np.zeros((T + 1, N), dtype=np.float64)
     jump[lift_step, control] = 0.5
 
-    events = events_from_trace(logshare, cong, floor, home, l=l, tol=1.0, jump=jump)
+    events = events_from_trace(logshare, unit, floor, home, l=l, tol=1.0, jump=jump)
 
     assert len(events) >= 1
     joiner_events = events[(events['firm'] == joiner) & (events['step'] == entry_time)]
@@ -120,13 +120,13 @@ def test_trace_roundtrip():
     markets = 2
 
     logshare = np.random.randn(T + 1, N).astype(np.float32)
-    cong = np.full((T + 1, N), -1, dtype=np.int16)
+    unit = np.full((T + 1, N), -1, dtype=np.int16)
     floor = np.random.choice([True, False], size=(N, T), p=[0.1, 0.9])
     home = np.repeat(np.arange(markets), N // markets).astype(np.int16)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         trace_path = os.path.join(tmpdir, 'test_trace.npz')
-        np.savez(trace_path, logshare=logshare, cong=cong,
+        np.savez(trace_path, logshare=logshare, cong=unit,
                  floor=floor, home=home)
 
         data = np.load(trace_path)

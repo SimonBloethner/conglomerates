@@ -12,7 +12,7 @@ F = M * N
 def trace(tmp_path_factory):
     """The seeded M=N=20, T=600 run of tests/test_floor_exit.py, with a trace."""
     trace_path = str(tmp_path_factory.mktemp('c29') / 'trace.npz')
-    cg.model(PARAMS, trace_path=trace_path, **KW)
+    cg.model(**PARAMS, trace_path=trace_path, **KW)
     z = np.load(trace_path)
     return z['jump'], z['floor']
 

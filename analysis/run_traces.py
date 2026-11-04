@@ -45,11 +45,12 @@ def select(scenarios):
 
 def run_one(s, trace_path, quick):
     M, N, T = (10, 10, 300) if quick else (s['M'], s['N'], s['T'])
-    params = [M, N, T, s['alpha'], M * N, s['merge_thresh'], 4, 0.0, s['proportional'],
-              s['lookback'], s['cost_type'], s['c0'], s['c1'], s['c2']]
-    model(params, seed=s['seed'], growth_process=s['growth_process'], log_family=s['log_family'],
+    assert not s['proportional'], "cost as a fixed amount was removed in C34"
+    params = dict(M=M, N=N, T=T, alpha=s['alpha'], search_prob=s['merge_thresh'], window=s['lookback'],
+                  cost_form=s['cost_type'], b0=s['c0'], b1=s['c1'], b2=s['c2'])
+    model(**params, seed=s['seed'], growth_process=s['growth_process'], family=s['log_family'],
           mu_range=tuple(s['mu_range']) if s.get('mu_range') else (0.01, 0.1),
-          sigma_range=tuple(s['sigma_range']), floor_c=s['floor_c'], cross_corr=s['cross_corr'],
+          iqr_range=tuple(s['sigma_range']), floor_c=s['floor_c'], cross_corr=s['cross_corr'],
           metric_every=s['metric_every'], sharing_rule=s['sharing_rule'], burn_in=s['burn_in'],
           alpha_endogenous=s.get('alpha_endogenous', False), g=s.get('g'),
           market_size_fixed=s.get('market_size_fixed', False),

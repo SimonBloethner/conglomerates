@@ -97,25 +97,25 @@ def test_k_eff_over_k_ratio():
     df = load_tidy_csv()
 
     # Filter rows with K >= 2
-    has_cong = df[df['K_post_burnin_median'] >= 2.0].copy()
+    has_unit = df[df['K_post_burnin_median'] >= 2.0].copy()
 
-    if len(has_cong) == 0:
+    if len(has_unit) == 0:
         print("No rows with K >= 2 found, skipping K_eff/K test")
         return
 
     # Compute ratio
-    has_cong['k_ratio'] = has_cong['K_eff_post_burnin_median'] / has_cong['K_post_burnin_median']
+    has_unit['k_ratio'] = has_unit['K_eff_post_burnin_median'] / has_unit['K_post_burnin_median']
 
-    min_ratio = has_cong['k_ratio'].min()
-    mean_ratio = has_cong['k_ratio'].mean()
+    min_ratio = has_unit['k_ratio'].min()
+    mean_ratio = has_unit['k_ratio'].mean()
 
-    print(f"Rows with K >= 2: {len(has_cong)}")
+    print(f"Rows with K >= 2: {len(has_unit)}")
     print(f"  K_eff/K min: {min_ratio:.4f}")
     print(f"  K_eff/K mean: {mean_ratio:.4f}")
 
     # Find violating rows (threshold 0.3, allows for unequal member sizes)
     threshold = 0.3
-    violating = has_cong[has_cong['k_ratio'] < threshold]
+    violating = has_unit[has_unit['k_ratio'] < threshold]
 
     if len(violating) > 0:
         print(f"  Violating rows (< {threshold}): {len(violating)}")
@@ -185,7 +185,7 @@ def test_hill_within_15pct_of_target():
     print("\nPASS: Hill at α=0 within 15% of 1.06 for all families")
 
 
-def test_cong_capital_share_at_alpha03():
+def test_unit_capital_share_at_alpha03():
     """
     cong_capital_share at α=0.3 ≥ 0.05 for laplace/power_law.
 
@@ -440,7 +440,7 @@ if __name__ == '__main__':
         ("α=0: mergers=0, proposals>0", test_alpha0_mergers_zero_proposals_positive),
         ("K_eff/K >= 0.4 for K >= 2", test_k_eff_over_k_ratio),
         ("Hill at α=0 within 15% of 1.06 (all families)", test_hill_within_15pct_of_target),
-        ("cong_capital_share >= 0.05 at α=0.3", test_cong_capital_share_at_alpha03),
+        ("cong_capital_share >= 0.05 at α=0.3", test_unit_capital_share_at_alpha03),
         ("No NaN in _median columns", test_no_nan_in_median_columns),
         # C18: loggain validation tests
         ("C18: main-block mean K >= 3.0 at α=0.3", test_main_block_mean_k_at_alpha03),

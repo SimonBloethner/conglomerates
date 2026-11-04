@@ -1,5 +1,31 @@
 # Model Flags Documentation
 
+## Notation (C34)
+
+Code names follow the paper. The stored data schema is not renamed: the keys of `pilot_c/scenarios.json`, the columns of `pilot_c/tidy.csv`, `medians.csv` and the summary CSVs, the fields of the pickled results, the keys of `model()`'s `hyperparameters` and `summary` dicts, and the trace keys (`logshare`, `cong`, `floor`, `home`, `jump`). `run_pilot_c.py` maps scenario keys to the new parameter names at the call site. The summary keys are unchanged, so `summarize_pilot_c.py` needs no mapping.
+
+| Paper | New code name | Old code name | Scenario / tidy key |
+|---|---|---|---|
+| M, N, T | `M`, `N`, `T` | `markets`, `firms_per_market`, `steps` | `M`, `N`, `T` |
+| α | `alpha` (global), `unit_alpha[]` | `share`, `cong_alpha[]` | `alpha` |
+| p | `search_prob` | `merge_thresh` | `merge_thresh` |
+| l | `window` | `lookback` | `lookback` |
+| g | `g`; market location `loc_m` | `g`; `growth_vars[:, 0]` / `mu_m` | `g` |
+| qₘ, σₘ | `iqr_range`, `iqr_m`, `scale_m` | `sigma_range`, `growth_vars[:, 1]`, `scale_m` | `sigma_range` |
+| F | `family` | `log_family` | `log_family` |
+| K, C | `unit_size[]`, `unit_members[]`; all `cong_*` → `unit_*`; `firm_conglom` → `firm_unit` | `cong_size[]`, `cong_firms[]`, `cong_*` | — |
+| Φ(K) | `coordination_cost(K, cost_form, b0, b1, b2)`, `Phi_lookup` | `management_cost_function(size, cost_type, c0, c1, c2)`, `management_costs_lookup` | `cost_type`, `c0`, `c1`, `c2` |
+| cost as growth drag | `cost_as_drag` (must be True) | `proportional` (params list, False in the pilot) | `proportional` (False) |
+| sharing rule | `sharing_rule` ∈ {`proportional`, `equal`} | unchanged | `sharing_rule` |
+| c | `floor_c` | unchanged | `floor_c` |
+| r̃ | `rel_log_returns` | `firm_log_returns_buffer` | — |
+| ε, p̂, Δ̂ | `eps`, `p_hat`, `delta_hat` (`delta_hat_proposed`, `delta_hat_current`) | `epsilon`, `p_i`, `delta_hat` / `gain_proposed`, `gain_current` | — |
+| — | removed | `comparison`, `break_thresh` (params list, unused since Phase A) | — |
+
+`model()` takes keyword arguments: `model(M=, N=, T=, alpha=, search_prob=, window=, cost_form=, b0=, b1=, b2=, cost_as_drag=True, ...)`. For one commit (C34c) the old interfaces still work with a `DeprecationWarning`: the positional 10/12/13/14-element `params` list (mapped by `_legacy_params`; `total_firms` must equal M·N) and the keyword names `share=`, `lookback=`, `merge_thresh=`, `sigma_range=`, `log_family=`, `markets=`, `firms_per_market=`, `steps=`, `cost_type=`, `c0=`, `c1=`, `c2=`, `proportional=`. `management_cost_function` is a deprecated alias of `coordination_cost`. The pilot scripts and the tests use the new names. `cost_as_drag=False` (old `proportional=True`, the cost as a fixed amount) raises: that branch was removed from the pooling step, the merger kernel and `replay_member_growth`.
+
+**Market location.** With `g` given under `log_family`, every market's location is `g` and `mu_range` is ignored. The correlated two-column draw that `mu_range` came from is kept, because its second column is the market IQR qₘ: dropping the draw would change every qₘ. When `g` is None (the Phase A processes, and the 45 runs of the `rule-replay` block, which have no `g`) the location still comes from `mu_range`. Under `market_size_fixed=True` a per-market location cancels from the relative returns r̃ (up to rounding), so it does not matter in substance. It is kept so that the rename changes no output bit.
+
 ## Growth Process Flags
 
 ### `growth_process`
@@ -8,9 +34,9 @@ Specifies how firm growth rates are generated.
 Values:
 - `"normal_net"` (default): Phase A baseline. `r ~ N(μ, σ²)`, then `log(1+r)` is stored.
 - `"lognormal"`: `log δ = (μ - σ²/2) + σ·ε`, so `E[δ] = exp(μ)`.
-- `"log_family"`: `log δ = μ + scale·ε` with family-specific innovations.
+- `"log_family"`: `log δ = g + scale·ε` with family-specific innovations (location `g`; from `mu_range` only when `g` is None).
 
-### `log_family`
+### `family` (was `log_family`)
 Distribution family for innovations when `growth_process == "log_family"`.
 
 Values:
@@ -25,12 +51,12 @@ Degrees of freedom for Student-t distribution.
 
 Default: `3.0`
 
-Only active when `log_family == "student_t"`.
+Only active when `family == "student_t"`.
 
-### `sigma_range`
-Tuple `(min_sigma, max_sigma)` specifying bounds for volatility per market.
+### `iqr_range` (was `sigma_range`)
+Tuple `(min, max)` specifying the bounds of the per-market dispersion qₘ (`iqr_m`).
 
-**Important:** Under `log_family`, `sigma_range` is interpreted as the **IQR (interquartile range)** of `log δ`, not the standard deviation. The scale parameter is computed from IQR using the distribution-specific conversion:
+**Important:** Under `log_family`, `iqr_range` is interpreted as the **IQR (interquartile range)** of `log δ`, not the standard deviation. The scale parameter is computed from IQR using the distribution-specific conversion:
 - Normal: `σ = IQR / (2 · Φ⁻¹(0.75)) ≈ IQR / 1.349`
 - Laplace: `b = IQR / (2 · ln(2))`
 - Student-t: `s = IQR / (2 · t⁻¹(0.75, df=ν))`
@@ -51,7 +77,7 @@ Default: `0.0`
 
 When `cross_corr > 0`, all pairs of firms across different markets have correlated shocks.
 
-**Gaussian Copula:** When using a non-normal `log_family` with correlation (`rho > 0` or `cross_corr > 0`), a Gaussian copula is used:
+**Gaussian Copula:** When using a non-normal `family` with correlation (`rho > 0` or `cross_corr > 0`), a Gaussian copula is used:
 1. Draw correlated standard normals using the existing correlation structure
 2. Map through Φ (standard normal CDF) to get uniform marginals
 3. Map through the family's quantile function
@@ -85,17 +111,17 @@ Enable per-conglomerate endogenous sharing rate adaptation.
 Default: `False`
 
 When `alpha_endogenous=True` (requires `g`; `model()` raises otherwise):
-1. Each conglomerate carries its own `α_c`, initialized to the run's global `share` parameter (0.1 in the pilot).
-2. Every period (C31; before C31 only every `lookback` periods), before pooling, each unit renegotiates its rate.
+1. Each unit carries its own `α_c` (`unit_alpha[]`), initialized to the run's global `alpha` (0.1 in the pilot).
+2. Every period (C31; before C31 only every `window` periods), before pooling, each unit renegotiates its rate.
 3. **Demeaned renegotiation (C34).** For the unit's current members over the window {t − l, …, t − 1} (h = min(l, t) before the window is full), the demeaned window is built once with `prepare_window_loggain(members, past_returns, sizes, g)`. For each α′ on the grid {0, 0.05, …, 1} every member's Δ̂_j(α′) is computed with `member_gain_from_prepared(j, K, …, α′, Φ(K), sharing_rule_code)`, the same demeaned log gain the membership and exit tests use.
 4. The gain of a move is Δ̂_j(α′) − Δ̂_j(α_C) per member. A candidate under which any member's Δ̂ is −∞ (a replayed p ≤ −1) is infeasible. The unit moves only if the minimum gain over members is > 0 (unanimity) and, among such candidates, takes the one with the largest minimum gain (maximin). Otherwise it keeps α_C. Exact ties between candidates go to the lower α. If Δ̂_j(α_C) = −∞ for some member, every feasible α′ gives that member a gain of +∞ and the minimum is taken over the others.
 5. Before C34 the rate was renegotiated on realized (not demeaned) log growth, replayed with `replay_member_growth`. That version was dropped, not kept as a variant: a member with a lucky window could veto a rate that the demeaned comparison shows to benefit everyone (`tests/test_alpha_endogenous.py::test_demeaned_and_level_rules_differ`).
-6. Pooling uses `α_c` instead of the global `share` parameter.
+6. Pooling uses `α_c` instead of the global `alpha`.
 7. **Decisions at the unit's α (C31).** Merger and exit tests use the α the unit actually operates at:
-   - Δ̂_current of a member is evaluated at `cong_alpha[its unit]` (standalones: Δ̂_current = 0), in the merger kernel and in the exit test.
-   - Δ̂_proposed is evaluated at α_prop = `share` for solo+solo, `cong_alpha[unit]` for solo+unit, and for unit+unit the α of the unit with the larger `cong_size` (initiator on ties).
-   - When a unit+unit merger executes, the merged unit takes α_prop. A slot newly allocated for solo+solo gets `share` (slots are reused and may hold a stale α).
-   - With `alpha_endogenous=False`, every entry of `cong_alpha` equals `share`, so behaviour is unchanged.
+   - Δ̂_current of a member is evaluated at `unit_alpha[its unit]` (standalones: Δ̂_current = 0), in the merger kernel and in the exit test.
+   - Δ̂_proposed is evaluated at α_prop = `alpha` for solo+solo, `unit_alpha[unit]` for solo+unit, and for unit+unit the α of the unit with the larger `unit_size` (initiator on ties).
+   - When a unit+unit merger executes, the merged unit takes α_prop. A slot newly allocated for solo+solo gets `alpha` (slots are reused and may hold a stale α).
+   - With `alpha_endogenous=False`, every entry of `unit_alpha` equals `alpha`, so behaviour is unchanged.
    - Under `decision_rule='replay'` the merger and exit tests still use the realized-level replay; the renegotiation is demeaned under either rule. Replay is not combined with endogenous α in the pilot design.
 
 **Unanimity Constraint:** The rule requires all members to benefit from any α change.
@@ -109,11 +135,11 @@ When `alpha_endogenous=True` (requires `g`; `model()` raises otherwise):
 
 ## Coordination Cost
 
-### `proportional`
-Entry of the `params` list. `proportional=False`, as in every pilot scenario, means the coordination cost is charged as a fraction Φ(K) of unit capital (a growth drag) and is unrelated to `sharing_rule='proportional'`.
+### `cost_as_drag` (was `proportional`)
+`cost_as_drag=True`, as in every pilot scenario (scenario key `proportional=False`), means the coordination cost is charged as a fraction Φ(K) of unit capital (a growth drag). The old flag's name collided with `sharing_rule='proportional'`, to which it is unrelated. The `False` branch (the cost as a fixed amount, old `proportional=True`) was removed in C34 and raises.
 
 ### `cost-level` block
-The `cost-level` block multiplies `c0` only. That is a level shift of Φ(K) for `power_law` (`c0·K^c1`) and `exponential` (`c0·exp(c1·K)`). For `linear` (`c0 + c1·K`) and `quadratic` (`c0 + c1·K + c2·K²`) it moves only the intercept, so Φ(40) for `linear` goes from 0.00170 to 0.00171 at multiplier 2. The `cost-level-full` block (C33) multiplies `c0`, `c1` and `c2` for these two families, which scales Φ(K) at every K.
+The `cost-level` block multiplies `c0` (b₀) only. That is a level shift of Φ(K) for `power_law` (`c0·K^c1`) and `exponential` (`c0·exp(c1·K)`). For `linear` (`c0 + c1·K`) and `quadratic` (`c0 + c1·K + c2·K²`) it moves only the intercept, so Φ(40) for `linear` goes from 0.00170 to 0.00171 at multiplier 2. The `cost-level-full` block (C33) multiplies `c0`, `c1` and `c2` for these two families, which scales Φ(K) at every K.
 
 ## Pooling: limited liability under equal sharing (C31; superseded in part by C34, next section)
 
@@ -148,7 +174,7 @@ Counters (all exported in `hyperparameters`; summary values over t ≥ burn_in u
 
 ## Membership timing
 
-- **Lock-in of new members.** A firm is an exit candidate only when `firm_entered < step - lookback`. A new member therefore stays at least `lookback` (l) periods before its first exit test.
+- **Lock-in of new members.** A firm is an exit candidate only when `firm_entered < step - window`. A new member therefore stays at least `window` (l) periods before its first exit test.
 - **`firm_entered` reset on unit+unit mergers.** When two units merge, `firm_entered` is set to the merger step for *all* members of the merged unit, not only the newcomers. Every member is locked in again for l periods. On solo+unit merges only the joining firm's `firm_entered` is set.
 
 ## Inert Phase-A code paths
@@ -156,7 +182,7 @@ Counters (all exported in `hyperparameters`; summary values over t ≥ burn_in u
 These remain in `collaborative_growth.py` but are not exercised by the Phase C pilot (`pilot_design.py`):
 - `growth_process='normal_net'` (the function default) and `'lognormal'`: the pilot uses `'log_family'`.
 - `renorm_every`: the economy-wide renormalisation is skipped when `market_size_fixed=True` (all pilot scenarios).
-- `comparison`, `break_thresh`: unpacked from `params` and stored in `hyperparameters`, but not used by the dynamics.
+- `comparison`, `break_thresh`: removed in C34 (they were unpacked from `params` but not used by the dynamics); the deprecated `params` list still has their slots.
 - `market_corr='random'`: the pilot uses `'identity'`, and a nonzero `cross_corr` replaces the matrix.
 - `rho` (common shock): 0 in every pilot scenario.
 
@@ -195,7 +221,7 @@ Default: `1` (every step)
 **Pilot:** `pilot_design.py` never sets this flag and `run_pilot_c.py` never passes it, so every pilot scenario, the lookback block included, runs at the default and reviews exits every period.
 
 When `exit_review_every > 1`:
-- Conglomerate members run the exit test only at steps where `(step - cong_created_step) % exit_review_every == 0`
+- Unit members run the exit test only at steps where `(step - unit_created_step) % exit_review_every == 0`
 - The review schedule resets when a conglomerate's composition changes (merger or new member)
 - Models "boards review the arrangement every n periods"
 

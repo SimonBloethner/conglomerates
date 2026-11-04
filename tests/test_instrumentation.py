@@ -50,31 +50,18 @@ def make_test_scenario():
 
 def run_scenario(scenario):
     """Run a scenario and return results."""
-    total_firms = scenario['M'] * scenario['N']
-    params = [
-        scenario['M'],
-        scenario['N'],
-        scenario['T'],
-        scenario['alpha'],
-        total_firms,
-        scenario['merge_thresh'],
-        4,  # K_max default
-        0.0,  # minimum_benefit default
-        scenario['proportional'],
-        scenario['lookback'],
-        scenario['cost_type'],
-        scenario['c0'],
-        scenario['c1'],
-        scenario['c2'],
-    ]
+    assert not scenario['proportional']
+    params = dict(M=scenario['M'], N=scenario['N'], T=scenario['T'], alpha=scenario['alpha'],
+                  search_prob=scenario['merge_thresh'], window=scenario['lookback'],
+                  cost_form=scenario['cost_type'], b0=scenario['c0'], b1=scenario['c1'], b2=scenario['c2'])
 
     result = model(
-        params,
+        **params,
         seed=scenario['seed'],
         growth_process=scenario['growth_process'],
-        log_family=scenario['log_family'],
+        family=scenario['log_family'],
         mu_range=tuple(scenario['mu_range']),
-        sigma_range=tuple(scenario['sigma_range']),
+        iqr_range=tuple(scenario['sigma_range']),
         floor_c=scenario['floor_c'],
         cross_corr=scenario['cross_corr'],
         metric_every=scenario['metric_every'],

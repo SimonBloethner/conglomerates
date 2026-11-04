@@ -40,7 +40,7 @@ def test_marginal_members_decidable():
     M = 20
     N = 50
     alpha = 0.3
-    lookback = 50
+    window = 50
     n_windows = 500
     g = 0.02  # Common growth rate
 
@@ -67,14 +67,14 @@ def test_marginal_members_decidable():
             # Generate window of returns for K+1 firms with common factor
             # Shape: (lookback, K+1)
             # r_j = sqrt(cross_corr) * z_common + sqrt(1-cross_corr) * z_idio_j + g
-            z_common = np.random.normal(0, scale, (lookback, 1))
-            z_idio = np.random.normal(0, scale, (lookback, K + 1))
+            z_common = np.random.normal(0, scale, (window, 1))
+            z_idio = np.random.normal(0, scale, (window, K + 1))
             returns = np.sqrt(cross_corr) * z_common + np.sqrt(1 - cross_corr) * z_idio + g
 
             # Compute sizes from cumulative returns (start at 1.0)
-            log_states = np.zeros((lookback + 1, K + 1))
+            log_states = np.zeros((window + 1, K + 1))
             log_states[0, :] = 0.0  # log(1) = 0
-            for t in range(lookback):
+            for t in range(window):
                 log_states[t + 1, :] = log_states[t, :] + returns[t, :]
 
             sizes = np.exp(log_states)
@@ -123,16 +123,16 @@ def test_marginal_members_decidable():
                     # Compare proposed vs current
                     growth_proposed, valid_p = cg.replay_member_growth(
                         past_states[:, :K+1], returns[:, :K+1], step_states[:, :K+1],
-                        alpha, Phi_K[K + 1], False, 1
+                        alpha, Phi_K[K + 1], 1
                     )
                     growth_current, valid_c = cg.replay_member_growth(
                         past_states[:, :K], returns[:, :K], step_states[:, :K],
-                        alpha, Phi_K[K], False, 1
+                        alpha, Phi_K[K], 1
                     )
                     if not valid_p or not valid_c:
                         all_accept_replay = False
                         break
-                    realized = (step_states[0, j] - past_states[0, j]) / lookback
+                    realized = (step_states[0, j] - past_states[0, j]) / window
                     # Replay compares synthetic to realized
                     if growth_proposed[j] <= realized:
                         all_accept_replay = False
@@ -141,12 +141,12 @@ def test_marginal_members_decidable():
                     # New member: must beat realized standalone
                     growth_proposed, valid_p = cg.replay_member_growth(
                         past_states[:, :K+1], returns[:, :K+1], step_states[:, :K+1],
-                        alpha, Phi_K[K + 1], False, 1
+                        alpha, Phi_K[K + 1], 1
                     )
                     if not valid_p:
                         all_accept_replay = False
                         break
-                    realized = (step_states[0, K] - past_states[0, K]) / lookback
+                    realized = (step_states[0, K] - past_states[0, K]) / window
                     if growth_proposed[K] <= realized:
                         all_accept_replay = False
                         break
@@ -203,7 +203,7 @@ def test_no_free_lunch():
     cg.seed_numba(123)
 
     alpha = 0.3
-    lookback = 50
+    window = 50
     g = 0.02
     iqr = 0.2
     scale = iqr / 1.3489795003921634
@@ -220,13 +220,13 @@ def test_no_free_lunch():
         np.random.seed(123 + w * 1000)
 
         # Highly correlated returns (cross_corr = 0.999)
-        z_common = np.random.normal(g, scale * np.sqrt(0.999), (lookback, 1))
-        z_idio = np.random.normal(0, scale * np.sqrt(0.001), (lookback, 2))
+        z_common = np.random.normal(g, scale * np.sqrt(0.999), (window, 1))
+        z_idio = np.random.normal(0, scale * np.sqrt(0.001), (window, 2))
         returns = z_common + z_idio
 
         # Sizes
-        log_states = np.zeros((lookback + 1, 2))
-        for t in range(lookback):
+        log_states = np.zeros((window + 1, 2))
+        for t in range(window):
             log_states[t + 1, :] = log_states[t, :] + returns[t, :]
         sizes = np.exp(log_states)
 
@@ -269,13 +269,13 @@ def test_cost_enters():
     """
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'analytics'))
-    from benchmarks import pooling_gain, management_cost_function
+    from benchmarks import pooling_gain, coordination_cost
 
     np.random.seed(456)
     cg.seed_numba(456)
 
     alpha = 0.3
-    lookback = 50
+    window = 50
     g = 0.02
     iqr = 0.2
     mu = g
@@ -287,7 +287,7 @@ def test_cost_enters():
     # We need to find a multiplier m such that pooling_gain(2, alpha, 'normal', mu, iqr, m*Phi(2)) < 0
 
     # Get base cost at K=2
-    base_cost_2 = management_cost_function(2, 'power_law')
+    base_cost_2 = coordination_cost(2, 'power_law')
 
     # Binary search for multiplier
     low, high = 1.0, 1000.0
@@ -304,7 +304,7 @@ def test_cost_enters():
     print(f"\nCost multiplier for K*=1: {cost_multiplier:.2f} (2x boundary)")
 
     # Precompute scaled costs
-    scaled_costs = np.array([cost_multiplier * management_cost_function(k, 'power_law')
+    scaled_costs = np.array([cost_multiplier * coordination_cost(k, 'power_law')
                              for k in range(51)])
 
     # Run simulation and count acceptances
@@ -315,9 +315,9 @@ def test_cost_enters():
         np.random.seed(456 + t * 1000)
 
         # Two firms
-        returns = np.random.normal(g, scale, (lookback, 2))
-        log_states = np.zeros((lookback + 1, 2))
-        for tt in range(lookback):
+        returns = np.random.normal(g, scale, (window, 2))
+        log_states = np.zeros((window + 1, 2))
+        for tt in range(window):
             log_states[tt + 1, :] = log_states[tt, :] + returns[tt, :]
         sizes = np.exp(log_states)
 
@@ -368,15 +368,15 @@ def test_entry_exit_consistency():
     # across entry and exit code paths
 
     # Generate test data
-    lookback = 50
+    window = 50
     g = 0.02
     iqr = 0.2
     scale = iqr / 1.3489795003921634
-    Phi_2 = cg.management_cost_function(2, 'power_law')
+    Phi_2 = cg.coordination_cost(2, 'power_law')
 
-    returns = np.random.normal(g, scale, (lookback, 3))
-    log_states = np.zeros((lookback + 1, 3))
-    for t in range(lookback):
+    returns = np.random.normal(g, scale, (window, 3))
+    log_states = np.zeros((window + 1, 3))
+    for t in range(window):
         log_states[t + 1, :] = log_states[t, :] + returns[t, :]
     sizes = np.exp(log_states)
 
@@ -412,22 +412,22 @@ def test_tail_respected():
     """
     np.random.seed(999)
 
-    lookback = 50
+    window = 50
     alpha = 0.5
     g = 0.02
     Phi_2 = 0.0  # No cost for this test
 
     # Window with -80% tail event at t=25 for firm 1
-    returns_tail = np.full((lookback, 2), 0.02)  # All +2%
+    returns_tail = np.full((window, 2), 0.02)  # All +2%
     returns_tail[25, 1] = np.log(0.2)  # -80% in log terms: log(1 + (-0.8)) = log(0.2)
 
     # Window without tail (all +2% for firm 1)
-    returns_no_tail = np.full((lookback, 2), 0.02)
+    returns_no_tail = np.full((window, 2), 0.02)
 
     # Compute sizes
     def compute_sizes(returns):
-        log_states = np.zeros((lookback + 1, 2))
-        for t in range(lookback):
+        log_states = np.zeros((window + 1, 2))
+        for t in range(window):
             log_states[t + 1, :] = log_states[t, :] + returns[t, :]
         return np.exp(log_states)
 
@@ -461,7 +461,7 @@ def test_phase_b_identity_with_replay():
     Test catches: breaking default behavior.
     """
     # Import the actual Phase B identity test
-    import test_phase_b_identity
+    from tests import test_phase_b_identity
 
     try:
         test_phase_b_identity.test_phase_b_identity()
@@ -490,7 +490,7 @@ def test_marginal_members_decidable_spec():
 
     # Specified parameters from C16
     alpha = 0.3
-    lookback = 50
+    window = 50
     g = 0.02
     iqr = 0.2  # Same IQR for all markets (identical Gaussian)
     cross_corr = 0.0  # Independent
@@ -514,12 +514,12 @@ def test_marginal_members_decidable_spec():
 
             # Generate window of returns for K+1 firms
             # Independent Gaussian (cross_corr = 0)
-            returns = np.random.normal(g, scale, (lookback, K + 1))
+            returns = np.random.normal(g, scale, (window, K + 1))
 
             # Compute sizes from cumulative returns (start at 1.0)
-            log_states = np.zeros((lookback + 1, K + 1))
+            log_states = np.zeros((window + 1, K + 1))
             log_states[0, :] = 0.0  # log(1) = 0
-            for t in range(lookback):
+            for t in range(window):
                 log_states[t + 1, :] = log_states[t, :] + returns[t, :]
 
             sizes = np.exp(log_states)
@@ -566,28 +566,28 @@ def test_marginal_members_decidable_spec():
                 if j < K:
                     growth_proposed, valid_p = cg.replay_member_growth(
                         past_states[:, :K+1], returns[:, :K+1], step_states[:, :K+1],
-                        alpha, Phi_K[K + 1], False, 1
+                        alpha, Phi_K[K + 1], 1
                     )
                     growth_current, valid_c = cg.replay_member_growth(
                         past_states[:, :K], returns[:, :K], step_states[:, :K],
-                        alpha, Phi_K[K], False, 1
+                        alpha, Phi_K[K], 1
                     )
                     if not valid_p or not valid_c:
                         all_accept_replay = False
                         break
-                    realized = (step_states[0, j] - past_states[0, j]) / lookback
+                    realized = (step_states[0, j] - past_states[0, j]) / window
                     if growth_proposed[j] <= realized:
                         all_accept_replay = False
                         break
                 else:
                     growth_proposed, valid_p = cg.replay_member_growth(
                         past_states[:, :K+1], returns[:, :K+1], step_states[:, :K+1],
-                        alpha, Phi_K[K + 1], False, 1
+                        alpha, Phi_K[K + 1], 1
                     )
                     if not valid_p:
                         all_accept_replay = False
                         break
-                    realized = (step_states[0, K] - past_states[0, K]) / lookback
+                    realized = (step_states[0, K] - past_states[0, K]) / window
                     if growth_proposed[K] <= realized:
                         all_accept_replay = False
                         break

@@ -29,10 +29,10 @@ def _hand_trace():
     jump[3, 2] = 0.5                 # recorded at row t + 1 for period t = 2
     logshare[3:, 2] += 0.5
     floor[2, 2] = True
-    cong = np.full((T5 + 1, F), -1, dtype=np.int16)
-    cong[:T5, 0] = 0                 # member at the start of periods 0..4, standalone in the last row
-    cong[:T5, 3] = 0
-    return logshare, cong, floor, home, jump
+    unit = np.full((T5 + 1, F), -1, dtype=np.int16)
+    unit[:T5, 0] = 0                 # member at the start of periods 0..4, standalone in the last row
+    unit[:T5, 3] = 0
+    return logshare, unit, floor, home, jump
 
 
 def test_hand_built_trace():
@@ -57,7 +57,7 @@ def seeded_panel(tmp_path_factory):
     """Panel on the seeded M=N=20, T=600 trace of tests/test_floor_exit.py, burn_in = 100."""
     assert KW['burn_in'] == 100
     trace_path = str(tmp_path_factory.mktemp('c30') / 'trace.npz')
-    cg.model(PARAMS, trace_path=trace_path, **KW)
+    cg.model(**PARAMS, trace_path=trace_path, **KW)
     z = np.load(trace_path)
     return panel_from_trace(z['logshare'], z['cong'], z['floor'], z['home'], z['jump'], burn_in=KW['burn_in'])
 

@@ -60,7 +60,8 @@ def test_phase_b_identity():
 
     # Run current code
     print("Running current code...")
-    result_cur = current.model(params, seed=seed, market_corr='identity')
+    # C34: the current model takes keyword arguments (the vendored reference keeps the list)
+    result_cur = current.model(**current._legacy_params(params), seed=seed, market_corr='identity')
 
     # Phase B structure (13 elements):
     # 0: mean_members

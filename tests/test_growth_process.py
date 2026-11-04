@@ -20,22 +20,21 @@ def test_lognormal_mean_consistent():
     """
     # Use fixed parameters for reproducibility
     mu_range = (0.05, 0.05)  # Fixed μ = 0.05
-    sigma_range = (0.02, 0.02)  # Fixed σ = 0.02
+    iqr_range = (0.02, 0.02)  # Fixed σ = 0.02
 
     # Run a longer simulation to get stable statistics
-    params = [5, 5, 1000, 0.0, 25, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]  # No mergers (α=0)
+    params = dict(M=5, N=5, T=1000, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)  # No mergers (α=0)
 
-    result = model(params, seed=42, market_corr='identity',
+    result = model(**params, seed=42, market_corr='identity',
                    growth_process='lognormal',
                    mu_range=mu_range,
-                   sigma_range=sigma_range)
+                   iqr_range=iqr_range)
 
     # Verify hyperparameters were recorded
     hyperparameters = result[-1]
     assert hyperparameters['growth_process'] == 'lognormal'
     assert hyperparameters['mu_range'] == mu_range
-    assert hyperparameters['sigma_range'] == sigma_range
+    assert hyperparameters['sigma_range'] == iqr_range
 
     print(f"Lognormal test passed: growth_process={hyperparameters['growth_process']}")
 
@@ -44,15 +43,14 @@ def test_normal_net_backward_compatible():
     """
     normal_net (Phase A default) should produce same results as before.
     """
-    params = [10, 10, 200, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=200, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with explicit normal_net
-    result1 = model(params, seed=12345, market_corr='identity',
+    result1 = model(**params, seed=12345, market_corr='identity',
                     growth_process='normal_net')
 
     # Run with default (should be normal_net)
-    result2 = model(params, seed=12345, market_corr='identity')
+    result2 = model(**params, seed=12345, market_corr='identity')
 
     # Should be identical - 13 elements (online rank stats)
     (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,
@@ -71,12 +69,11 @@ def test_growth_processes_differ():
     """
     normal_net and lognormal should produce different results with same seed.
     """
-    params = [10, 10, 200, 0.0, 100, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=200, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result_normal = model(params, seed=42, market_corr='identity',
+    result_normal = model(**params, seed=42, market_corr='identity',
                           growth_process='normal_net')
-    result_lognormal = model(params, seed=42, market_corr='identity',
+    result_lognormal = model(**params, seed=42, market_corr='identity',
                              growth_process='lognormal')
 
     gini_normal = result_normal[5]
@@ -93,14 +90,13 @@ def test_mu_sigma_range_respected():
     """
     Custom mu_range and sigma_range should affect results.
     """
-    params = [10, 10, 200, 0.0, 100, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=200, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with different mu ranges
-    result1 = model(params, seed=42, market_corr='identity',
-                    mu_range=(0.01, 0.02), sigma_range=(0.01, 0.02))
-    result2 = model(params, seed=42, market_corr='identity',
-                    mu_range=(0.1, 0.2), sigma_range=(0.05, 0.1))
+    result1 = model(**params, seed=42, market_corr='identity',
+                    mu_range=(0.01, 0.02), iqr_range=(0.01, 0.02))
+    result2 = model(**params, seed=42, market_corr='identity',
+                    mu_range=(0.1, 0.2), iqr_range=(0.05, 0.1))
 
     gini1 = result1[5]
     gini2 = result2[5]

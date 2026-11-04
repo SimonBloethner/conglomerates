@@ -27,14 +27,14 @@ parent_dir = os.path.dirname(test_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from collaborative_growth import management_cost_function
+from collaborative_growth import coordination_cost
 from pilot_design import (
     generate_all_scenarios,
     set_burn_in_params,
     FLOOR_C,
     ALPHA_GRID,
     FAMILIES,
-    COST_TYPES,
+    COST_FORMS,
     N_REPS,
     T,
     BURN_IN,
@@ -386,8 +386,8 @@ def test_cost_level_full_block():
         assert s['cost_multiplier'] in (0.5, 2.0)
         base = COST_PARAMS[s['cost_type']]
         for K in [2, 5, 10, 40]:
-            phi = management_cost_function(K, s['cost_type'], s['c0'], s['c1'], s['c2'])
-            phi_base = management_cost_function(K, s['cost_type'], base['c0'], base['c1'], base['c2'])
+            phi = coordination_cost(K, s['cost_type'], s['c0'], s['c1'], s['c2'])
+            phi_base = coordination_cost(K, s['cost_type'], base['c0'], base['c1'], base['c2'])
             assert abs(phi - s['cost_multiplier'] * phi_base) < 1e-15, \
                 f"Scenario {s['scenario_id']}: Φ({K}) is not scaled by {s['cost_multiplier']}"
 

@@ -68,12 +68,12 @@ def run_calibration_scenario(N, c, rep, seed):
 
     # Build params: 10 elements (defaults to power_law, but doesn't matter for α=0)
     # [M, N, T, share, total_firms, merge_thresh, min_size, exit_prob, proportional, lookback]
-    params = [M, N, T, 0.0, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.001, window=50)
 
     results = model(
-        params, seed=seed,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=seed,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=c,
         market_size_fixed=True,
         metric_every=METRIC_EVERY,
@@ -396,7 +396,7 @@ def update_scenarios_json(c_star, scenarios_path):
 
     for floor_c in floor_levels:
         for family in families:
-            for cost_type in cost_types:
+            for cost_form in cost_types:
                 for alpha in alphas:
                     for rep in range(reps_per):
                         new_s = template.copy()
@@ -404,7 +404,7 @@ def update_scenarios_json(c_star, scenarios_path):
                         new_s['scenario_id'] = new_id
                         new_s['cell_id'] = cell_id
                         new_s['log_family'] = family
-                        new_s['cost_type'] = cost_type
+                        new_s['cost_type'] = cost_form
                         new_s['alpha'] = alpha
                         new_s['floor_c'] = floor_c
                         new_s['rep'] = rep

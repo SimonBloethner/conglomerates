@@ -15,10 +15,9 @@ def test_zero_rho_is_default():
     """
     rho=0.0 should be the default within-market correlation.
     """
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=100, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     hyperparameters = result[-1]
     assert hyperparameters['rho'] == 0.0, \
@@ -31,10 +30,9 @@ def test_zero_cross_corr_is_default():
     """
     cross_corr=0.0 should be the default cross-market correlation.
     """
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=100, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     hyperparameters = result[-1]
     assert hyperparameters['cross_corr'] == 0.0, \
@@ -47,11 +45,10 @@ def test_rho_values_differ():
     """
     Different rho values should produce different results.
     """
-    params = [15, 15, 200, 0.0, 225, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=15, N=15, T=200, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result_zero = model(params, seed=42, rho=0.0)
-    result_pos = model(params, seed=42, rho=0.3)
+    result_zero = model(**params, seed=42, rho=0.0)
+    result_pos = model(**params, seed=42, rho=0.3)
 
     gini_zero = result_zero[5]
     gini_pos = result_pos[5]
@@ -71,11 +68,10 @@ def test_cross_corr_values_differ():
     """
     Different cross_corr values should produce different results.
     """
-    params = [20, 10, 200, 0.0, 200, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=20, N=10, T=200, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result_zero = model(params, seed=42, cross_corr=0.0)
-    result_pos = model(params, seed=42, cross_corr=0.3)
+    result_zero = model(**params, seed=42, cross_corr=0.0)
+    result_pos = model(**params, seed=42, cross_corr=0.3)
 
     gini_zero = result_zero[5]
     gini_pos = result_pos[5]
@@ -95,14 +91,13 @@ def test_zero_corr_backward_compatible():
     """
     Zero correlation (Phase A default) should produce same results as before.
     """
-    params = [10, 10, 200, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=200, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with explicit zeros
-    result1 = model(params, seed=12345, rho=0.0, cross_corr=0.0)
+    result1 = model(**params, seed=12345, rho=0.0, cross_corr=0.0)
 
     # Run with defaults
-    result2 = model(params, seed=12345)
+    result2 = model(**params, seed=12345)
 
     # Should be identical
     gini1 = result1[5]
@@ -118,11 +113,10 @@ def test_positive_rho_increases_variance():
     Positive within-market correlation should increase cross-sectional variance.
     When firms are positively correlated, they move together, increasing dispersion.
     """
-    params = [15, 15, 300, 0.0, 225, 0.0, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=15, N=15, T=300, alpha=0.0, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result_zero = model(params, seed=42, rho=0.0)
-    result_pos = model(params, seed=42, rho=0.3)
+    result_zero = model(**params, seed=42, rho=0.0)
+    result_pos = model(**params, seed=42, rho=0.3)
 
     gini_zero = result_zero[5]
     gini_pos = result_pos[5]

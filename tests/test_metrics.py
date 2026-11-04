@@ -63,9 +63,9 @@ def test_aggregate_hhi_one_conglomerate():
 
     # 10 firms, all in one conglomerate (cong_id = 0)
     firm_sizes = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
-    firm_conglom = np.zeros(10, dtype=np.int32)  # All in conglomerate 0
+    firm_unit = np.zeros(10, dtype=np.int32)  # All in conglomerate 0
 
-    hhi = compute_aggregate_hhi(firm_sizes, firm_conglom)
+    hhi = compute_aggregate_hhi(firm_sizes, firm_unit)
     assert abs(hhi - 1.0) < 1e-10, f"Aggregate HHI with one cong = {hhi}, expected 1.0"
 
     print("PASS: Aggregate HHI with one conglomerate == 1")
@@ -81,10 +81,10 @@ def test_aggregate_hhi_no_conglomerates():
 
     # 10 firms, all standalone (cong_id = -1)
     firm_sizes = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
-    firm_conglom = np.full(10, -1, dtype=np.int32)  # All standalone
+    firm_unit = np.full(10, -1, dtype=np.int32)  # All standalone
 
     # Aggregate HHI should equal firm-level HHI
-    agg_hhi = compute_aggregate_hhi(firm_sizes, firm_conglom)
+    agg_hhi = compute_aggregate_hhi(firm_sizes, firm_unit)
     firm_shares = firm_sizes / firm_sizes.sum()
     firm_hhi = compute_hhi(firm_shares)
 
@@ -321,7 +321,7 @@ def test_pooled_hill_same_distribution():
     print(f"PASS: Pooled Hill = per-market Hill = {pooled_hill:.4f} (same distribution)")
 
 
-def test_cong_capital_share_zero_alpha():
+def test_unit_capital_share_zero_alpha():
     """
     M=N=20, T=200, α=0 (no conglomerates ever): cong_capital_share is exactly 0.0
     at every recorded step and in the summary.
@@ -331,22 +331,9 @@ def test_cong_capital_share_zero_alpha():
     from collaborative_growth import model
 
     M, N, T = 20, 20, 200
-    params = [
-        M,                # markets
-        N,                # firms_per_market
-        T,                # steps
-        0.0,              # share (alpha=0 - no conglomerates)
-        M * N,            # total_firms
-        0.05,             # merge_thresh
-        4,                # comparison
-        0.85,             # break_thresh
-        False,            # proportional
-        50,               # lookback
-        'power_law',      # cost_type
-        None, None, None, # c0, c1, c2
-    ]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=42, metric_every=10, burn_in=0)
+    result = model(**params, seed=42, metric_every=10, burn_in=0)
     hyperparams = result[12]
     ccs = hyperparams['cong_capital_share']
     summary_ccs = hyperparams['summary']['cong_capital_share_median']
@@ -367,7 +354,7 @@ def test_phase_b_identity_with_metrics():
 
     The identity test must compare only the keys the reference returns.
     """
-    import test_phase_b_identity
+    from tests import test_phase_b_identity
     test_phase_b_identity.test_phase_b_identity()
     print("PASS: Phase B identity preserved with metrics")
 
@@ -410,7 +397,7 @@ if __name__ == '__main__':
     test_pooled_hill_same_distribution()
 
     print("\nTesting cong_capital_share with α=0...")
-    test_cong_capital_share_zero_alpha()
+    test_unit_capital_share_zero_alpha()
 
     print("\nTesting Phase B identity...")
     test_phase_b_identity_with_metrics()

@@ -56,7 +56,7 @@ def renegotiations():
 
     cg.find_optimal_alpha = wrapped
     try:
-        model(PARAMS, **dict(KW, alpha_endogenous=True))
+        model(**PARAMS, **dict(KW, alpha_endogenous=True))
     finally:
         cg.find_optimal_alpha = orig
     return calls
@@ -68,7 +68,7 @@ def test_alpha_endogenous_identity():
 
     Test catches: changes to default behavior.
     """
-    import test_phase_b_identity
+    from tests import test_phase_b_identity
     test_phase_b_identity.test_phase_b_identity()
     print("PASS: alpha_endogenous identity test (flag off)")
 
@@ -87,19 +87,15 @@ def test_replay_refactor_bitidentical():
     SEED = 42
 
     total_firms = M * N
-    params = [
-        M, N, T, ALPHA, total_firms,
-        0.05, 4, 0.85, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=ALPHA, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with alpha_endogenous=False (default)
-    result = model(params, seed=SEED)
+    result = model(**params, seed=SEED)
 
     mergers = result[7]  # mergers_per_period
 
     # Run again with same seed
-    result2 = model(params, seed=SEED)
+    result2 = model(**params, seed=SEED)
     mergers2 = result2[7]
 
     assert np.array_equal(mergers, mergers2), "Merger decisions not bit-identical"
@@ -140,18 +136,14 @@ def test_alpha_history_structure():
     SEED = 456
 
     total_firms = M * N
-    params = [
-        M, N, T, 0.5, total_firms,
-        0.05, 4, 0.0, False, 50,
-        'power_law', 0.0, 1.0, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=0.5, search_prob=0.05, window=50, cost_form='power_law', b0=0.0, b1=1.0, b2=None)
 
     result = model(
-        params, seed=SEED,
+        **params, seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         g=0.05,
-        sigma_range=(0.15, 0.15),
+        iqr_range=(0.15, 0.15),
         alpha_endogenous=True,
         metric_every=100
     )
@@ -174,12 +166,12 @@ def test_alpha_history_structure():
         "alpha_endogenous flag not recorded in hyperparameters"
 
     # Count active conglomerates (those with non-nan alpha values)
-    active_congs = 0
-    for cong_idx in range(alpha_history.shape[0]):
-        if not np.all(np.isnan(alpha_history[cong_idx, :])):
-            active_congs += 1
+    active_units = 0
+    for unit_idx in range(alpha_history.shape[0]):
+        if not np.all(np.isnan(alpha_history[unit_idx, :])):
+            active_units += 1
 
-    print(f"PASS: alpha_history structure correct ({active_congs} active congs, shape={alpha_history.shape})")
+    print(f"PASS: alpha_history structure correct ({active_units} active units, shape={alpha_history.shape})")
 
 
 def test_no_improvement_keeps_alpha(renegotiations):
@@ -201,13 +193,13 @@ def test_no_improvement_keeps_alpha(renegotiations):
 def _level_rule(past_states, past_returns, current, phi, code):
     """The pre-C34 renegotiation on realized levels (find_optimal_alpha at 755f4b7), for comparison."""
     step_states = past_states[-1:].copy()
-    cur, ok = cg.replay_member_growth(past_states, past_returns, step_states, current, phi, False, code)
+    cur, ok = cg.replay_member_growth(past_states, past_returns, step_states, current, phi, code)
     if not ok:
         cur = np.full(past_states.shape[1], -np.inf)
     best_alpha, best = current, -np.inf
     for k in range(21):
         a = k * 0.05
-        new, ok = cg.replay_member_growth(past_states, past_returns, step_states, a, phi, False, code)
+        new, ok = cg.replay_member_growth(past_states, past_returns, step_states, a, phi, code)
         if not ok:
             continue
         if np.min(new - cur) > best:
@@ -231,7 +223,7 @@ def test_demeaned_and_level_rules_differ():
     current, phi, code, g = 0.1, 0.0, 1, 0.0
 
     # the level rule keeps alpha_C; the hand values in the docstring
-    lvl = lambda a: cg.replay_member_growth(past_states, past_returns, past_states[-1:], a, phi, False, code)[0]
+    lvl = lambda a: cg.replay_member_growth(past_states, past_returns, past_states[-1:], a, phi, code)[0]
     assert np.allclose(lvl(0.1), [0.19409, 0.01557], atol=1e-4)
     assert np.allclose(lvl(1.0), [0.12466, 0.12466], atol=1e-4)
     assert np.allclose(lvl(0.0), [0.2, 0.0], atol=1e-12)

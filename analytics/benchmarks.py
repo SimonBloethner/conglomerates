@@ -15,24 +15,24 @@ MC_DRAWS = 2_000_000
 MC_SEED = 42
 
 
-def management_cost_function(size, cost_type, c0=None, c1=None, c2=None):
+def coordination_cost(K, cost_form, b0=None, b1=None, b2=None):
     """
-    Management cost function (reimplemented locally from collaborative_growth.py).
+    Coordination cost Phi(K) (reimplemented locally from collaborative_growth.coordination_cost).
 
     Parameters:
     -----------
-    size : int or array
-        Conglomerate size (number of firms)
-    cost_type : str
+    K : int or array
+        Unit size (number of members)
+    cost_form : str
         One of 'linear', 'quadratic', 'exponential', 'power_law'
-    c0, c1, c2 : float, optional
+    b0, b1, b2 : float, optional
         Cost parameters. If None, uses calibrated defaults.
 
     Returns:
     --------
-    float or array : Management cost
+    float or array : Phi(K)
     """
-    # Cost-function-specific default parameters (calibrated for convergence at size=40)
+    # Form-specific default parameters (calibrated for convergence at K = 40)
     defaults = {
         'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
         'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
@@ -40,26 +40,26 @@ def management_cost_function(size, cost_type, c0=None, c1=None, c2=None):
         'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001},
     }
 
-    if cost_type not in defaults:
+    if cost_form not in defaults:
         raise ValueError(
-            f"Unknown cost_type: {cost_type}. "
+            f"Unknown cost_form: {cost_form}. "
             f"Supported: 'linear', 'quadratic', 'exponential', 'power_law'"
         )
 
     # Use provided parameters or defaults
-    func_defaults = defaults[cost_type]
-    c0 = c0 if c0 is not None else func_defaults['c0']
-    c1 = c1 if c1 is not None else func_defaults['c1']
-    c2 = c2 if c2 is not None else func_defaults['c2']
+    form_defaults = defaults[cost_form]
+    b0 = b0 if b0 is not None else form_defaults['c0']
+    b1 = b1 if b1 is not None else form_defaults['c1']
+    b2 = b2 if b2 is not None else form_defaults['c2']
 
-    if cost_type == 'linear':
-        return c0 + c1 * size
-    elif cost_type == 'quadratic':
-        return c0 + c1 * size + c2 * size ** 2
-    elif cost_type == 'exponential':
-        return c0 * np.exp(c1 * size)
-    elif cost_type == 'power_law':
-        return c0 * size ** c1
+    if cost_form == 'linear':
+        return b0 + b1 * K
+    elif cost_form == 'quadratic':
+        return b0 + b1 * K + b2 * K ** 2
+    elif cost_form == 'exponential':
+        return b0 * np.exp(b1 * K)
+    elif cost_form == 'power_law':
+        return b0 * K ** b1
 
 
 def iqr_to_scale(family, iqr):
@@ -186,7 +186,7 @@ def pooling_gain(K, alpha, family, mu, iqr, cost, n_draws=MC_DRAWS, seed=MC_SEED
     return mean_gain, se
 
 
-def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None, M=None):
+def k_star(alpha, family, mu, iqr, cost_form, b0=None, b1=None, b2=None, M=None):
     """
     Find the optimal pool size K* that maximizes pooling_gain - Φ(K).
 
@@ -206,10 +206,10 @@ def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None, M=None)
         Location parameter
     iqr : float
         Inter-quartile range
-    cost_type : str
-        Cost function type
-    c0, c1, c2 : float, optional
-        Cost function parameters
+    cost_form : str
+        Coordination-cost form
+    b0, b1, b2 : float, optional
+        Coordination-cost parameters
     M : int, optional
         Number of markets. If provided, K* is capped at M.
 
@@ -224,7 +224,7 @@ def k_star(alpha, family, mu, iqr, cost_type, c0=None, c1=None, c2=None, M=None)
     max_search = min(60, M) if M is not None else 60
 
     for K in range(1, max_search + 1):
-        cost = management_cost_function(K, cost_type, c0, c1, c2)
+        cost = coordination_cost(K, cost_form, b0, b1, b2)
         gain, _ = pooling_gain(K, alpha, family, mu, iqr, cost)
 
         if gain > best_gain:
@@ -365,18 +365,18 @@ def generate_benchmarks_csv(output_path='analytics/benchmarks.csv', M=50):
     print(f"Generating benchmarks (K* capped at M={M})...")
 
     for family in families:
-        for cost_type in cost_types:
+        for cost_form in cost_types:
             for alpha in alphas:
-                print(f"  {family}, {cost_type}, alpha={alpha}...")
+                print(f"  {family}, {cost_form}, alpha={alpha}...")
 
-                K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_type, M=M)
+                K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_form, M=M)
 
                 # Body/tail split at K=5
                 tail_share = body_tail_split(alpha, 5, family, mu, iqr, q=0.01)
 
                 rows.append({
                     'family': family,
-                    'cost_type': cost_type,
+                    'cost_type': cost_form,
                     'alpha': alpha,
                     'mu': mu,
                     'iqr': iqr,
@@ -411,15 +411,15 @@ def append_size_benchmarks(output_path='analytics/benchmarks.csv', Ms=(25, 100))
     if any(int(r['M']) in Ms for r in existing):
         raise ValueError(f'rows for M in {Ms} already in {output_path}')
 
-    family, cost_type, mu, iqr = 'laplace', 'power_law', 0.05, 0.2
+    family, cost_form, mu, iqr = 'laplace', 'power_law', 0.05, 0.2
     rows = []
     for M in Ms:
         for alpha in [0.1, 0.3, 0.5]:
-            print(f"  M={M}, {family}, {cost_type}, alpha={alpha}...")
-            K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_type, M=M)
+            print(f"  M={M}, {family}, {cost_form}, alpha={alpha}...")
+            K_opt, gain_opt = k_star(alpha, family, mu, iqr, cost_form, M=M)
             tail_share = body_tail_split(alpha, 5, family, mu, iqr, q=0.01)
             rows.append({
-                'family': family, 'cost_type': cost_type, 'alpha': alpha, 'mu': mu, 'iqr': iqr, 'M': M,
+                'family': family, 'cost_type': cost_form, 'alpha': alpha, 'mu': mu, 'iqr': iqr, 'M': M,
                 'K_star': K_opt, 'k_star_at_cap': K_opt >= min(60, M),
                 'gain_at_K_star': gain_opt, 'tail_share_K5': tail_share,
             })

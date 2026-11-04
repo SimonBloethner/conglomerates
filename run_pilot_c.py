@@ -22,32 +22,25 @@ def run_scenario(scenario):
     """Run a single scenario and return results."""
     start_time = time.time()
 
-    # Build params list for model()
-    total_firms = scenario['M'] * scenario['N']
-    params = [
-        scenario['M'],
-        scenario['N'],
-        scenario['T'],
-        scenario['alpha'],
-        total_firms,
-        scenario['merge_thresh'],
-        4,  # K_max default
-        0.0,  # minimum_benefit default
-        scenario['proportional'],
-        scenario['lookback'],
-        scenario['cost_type'],
-        scenario['c0'],
-        scenario['c1'],
-        scenario['c2'],
-    ]
-
+    # C34: scenario keys (the stored schema, unchanged) -> model() keyword names (paper notation)
+    assert not scenario['proportional'], "cost as a fixed amount was removed in C34"
     result = model(
-        params,
+        M=scenario['M'],
+        N=scenario['N'],
+        T=scenario['T'],
+        alpha=scenario['alpha'],
+        search_prob=scenario['merge_thresh'],
+        window=scenario['lookback'],
+        cost_form=scenario['cost_type'],
+        b0=scenario['c0'],
+        b1=scenario['c1'],
+        b2=scenario['c2'],
+        cost_as_drag=True,
         seed=scenario['seed'],
         growth_process=scenario['growth_process'],
-        log_family=scenario['log_family'],
+        family=scenario['log_family'],
         mu_range=tuple(scenario['mu_range']) if scenario.get('mu_range') else (0.01, 0.1),
-        sigma_range=tuple(scenario['sigma_range']),
+        iqr_range=tuple(scenario['sigma_range']),
         floor_c=scenario['floor_c'],
         cross_corr=scenario['cross_corr'],
         metric_every=scenario['metric_every'],

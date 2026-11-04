@@ -16,10 +16,9 @@ def test_equal_is_default():
     """
     equal (Phase A default) should be the default sharing rule.
     """
-    params = [10, 10, 100, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=100, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     hyperparameters = result[-1]
     assert hyperparameters['sharing_rule'] == 'equal', \
@@ -32,12 +31,11 @@ def test_equal_vs_proportional_differ():
     """
     equal and proportional sharing rules should produce different results.
     """
-    params = [15, 15, 300, 0.15, 225, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=15, N=15, T=300, alpha=0.15, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result_equal = model(params, seed=42, market_corr='identity',
+    result_equal = model(**params, seed=42, market_corr='identity',
                          sharing_rule='equal')
-    result_prop = model(params, seed=42, market_corr='identity',
+    result_prop = model(**params, seed=42, market_corr='identity',
                         sharing_rule='proportional')
 
     gini_equal = result_equal[5]
@@ -63,15 +61,14 @@ def test_equal_backward_compatible():
     """
     equal (Phase A default) should produce same results as before.
     """
-    params = [10, 10, 200, 0.1, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=200, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with explicit equal
-    result1 = model(params, seed=12345, market_corr='identity',
+    result1 = model(**params, seed=12345, market_corr='identity',
                     sharing_rule='equal')
 
     # Run with default (should be equal)
-    result2 = model(params, seed=12345, market_corr='identity')
+    result2 = model(**params, seed=12345, market_corr='identity')
 
     # Should be identical
     gini1 = result1[5]

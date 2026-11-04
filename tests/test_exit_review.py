@@ -29,22 +29,18 @@ def test_exit_review_every_10():
     T = 2000  # Long enough to see exits
     alpha = 0.3
     exit_review_every = 10
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # We need to track when exits happen relative to conglomerate creation
     # Since we can't hook into the model directly, we'll use a modified approach:
     # Run the model and check that exits_per_period shows periodic behavior
 
     result = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain',
         exit_review_every=exit_review_every
@@ -72,9 +68,9 @@ def test_exit_review_every_10():
 
     # Alternative approach: run with exit_review_every=1 and compare exit counts
     result_baseline = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain',
         exit_review_every=1  # Every step
@@ -119,19 +115,15 @@ def test_exit_review_every_1_identical():
     M = N = 20
     T = 600
     alpha = 0.3
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with exit_review_every=1 (default)
     result1 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain',
         exit_review_every=1
@@ -139,9 +131,9 @@ def test_exit_review_every_1_identical():
 
     # Run again with same seed (should be identical)
     result2 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain',
         exit_review_every=1
@@ -178,19 +170,15 @@ def test_replay_ignores_exit_review():
     M = N = 20
     T = 600
     alpha = 0.3
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with replay, exit_review_every=1
     result1 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='replay',  # Default, ignores exit_review_every
         exit_review_every=1
@@ -198,9 +186,9 @@ def test_replay_ignores_exit_review():
 
     # Run with replay, exit_review_every=10 (should be ignored)
     result2 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='replay',
         exit_review_every=10  # Should be ignored

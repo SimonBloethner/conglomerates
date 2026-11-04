@@ -38,14 +38,13 @@ def arrays_equal(a1, a2):
 
 def test_reproducibility_same_seed():
     """Run model twice with same seed; assert all arrays exactly equal."""
-    params = [30, 30, 200, 0.2, 900, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=30, N=30, T=200, alpha=0.2, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # First run
-    result1 = model(params, seed=42, market_corr='identity')
+    result1 = model(**params, seed=42, market_corr='identity')
 
     # Second run with same seed
-    result2 = model(params, seed=42, market_corr='identity')
+    result2 = model(**params, seed=42, market_corr='identity')
 
     # Compare all returned elements
     for i, (arr1, arr2) in enumerate(zip(result1, result2)):
@@ -54,14 +53,13 @@ def test_reproducibility_same_seed():
 
 def test_reproducibility_different_seed():
     """Run model with different seeds; assert results differ."""
-    params = [30, 30, 200, 0.2, 900, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=30, N=30, T=200, alpha=0.2, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
     
     # Run with seed 42
-    result1 = model(params, seed=42, market_corr='identity')
+    result1 = model(**params, seed=42, market_corr='identity')
     
     # Run with seed 123
-    result2 = model(params, seed=123, market_corr='identity')
+    result2 = model(**params, seed=123, market_corr='identity')
     
     # At least one array should differ
     any_different = False

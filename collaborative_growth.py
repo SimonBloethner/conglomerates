@@ -20,53 +20,61 @@ def power_law_cost(size, b0, b1):
     return b0 * size ** b1
 
 
-def get_cost_function_defaults(cost_type):
+def get_cost_function_defaults(cost_form):
     """Get default parameters for a specific cost function type"""
     defaults = {'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
         'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
         'quadratic': {'c0': 0.0001, 'c1': 0.000001, 'c2': 0.00000097},
         'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}}
-    return defaults.get(cost_type, defaults['power_law'])  # Default to power_law if unknown
+    return defaults.get(cost_form, defaults['power_law'])  # Default to power_law if unknown
 
 
-def management_cost_function(size, cost_type, c0=None, c1=None, c2=None):
+def coordination_cost(K, cost_form, b0=None, b1=None, b2=None):
     """
-    Unified management cost function supporting multiple functional forms
+    Coordination cost Phi(K) of a unit with K members (C34: was management_cost_function).
 
     Parameters:
-    size: conglomerate size (number of firms)
-    cost_type: 'linear', 'quadratic', 'exponential', 'power_law'
-    c0: base cost parameter (constant term) - if None, uses cost-function-specific default
-    c1: linear scaling parameter - if None, uses cost-function-specific default
-    c2: quadratic scaling parameter - if None, uses cost-function-specific default
+    K: unit size (number of members)
+    cost_form: 'linear' (b0 + b1 K), 'quadratic' (b0 + b1 K + b2 K^2), 'exponential' (b0 exp(b1 K)),
+        'power_law' (b0 K^b1)
+    b0, b1, b2: cost parameters; None uses the form's default (get_cost_function_defaults, keys c0, c1, c2,
+        which are also the scenario keys)
 
-    Default parameters are calibrated so all functions converge to ~0.0017 at size=40
+    Default parameters are calibrated so all forms converge to ~0.0017 at K = 40
     """
 
-    # Cost-function-specific default parameters (calibrated for convergence at size=40)
+    # Form-specific default parameters (calibrated for convergence at K = 40)
     defaults = {'power_law': {'c0': 0.00002032, 'c1': 1.2, 'c2': 0.001},
         'linear': {'c0': 0.00001, 'c1': 0.00004225, 'c2': 0.001},
         'quadratic': {'c0': 0.0001, 'c1': 0.000001, 'c2': 0.00000097},
         'exponential': {'c0': 0.001, 'c1': 0.01326571, 'c2': 0.001}}
 
-    if cost_type not in defaults:
+    if cost_form not in defaults:
         raise ValueError(
-            f"Unknown cost_type: {cost_type}. Supported: 'linear', 'quadratic', 'exponential', 'power_law'")
+            f"Unknown cost_form: {cost_form}. Supported: 'linear', 'quadratic', 'exponential', 'power_law'")
 
     # Use provided parameters or defaults
-    func_defaults = defaults[cost_type]
-    c0 = c0 if c0 is not None else func_defaults['c0']
-    c1 = c1 if c1 is not None else func_defaults['c1']
-    c2 = c2 if c2 is not None else func_defaults['c2']
+    form_defaults = defaults[cost_form]
+    b0 = b0 if b0 is not None else form_defaults['c0']
+    b1 = b1 if b1 is not None else form_defaults['c1']
+    b2 = b2 if b2 is not None else form_defaults['c2']
 
-    if cost_type == 'linear':
-        return c0 + c1 * size
-    elif cost_type == 'quadratic':
-        return c0 + c1 * size + c2 * size ** 2
-    elif cost_type == 'exponential':
-        return c0 * np.exp(c1 * size)
-    elif cost_type == 'power_law':
-        return c0 * size ** c1
+    if cost_form == 'linear':
+        return b0 + b1 * K
+    elif cost_form == 'quadratic':
+        return b0 + b1 * K + b2 * K ** 2
+    elif cost_form == 'exponential':
+        return b0 * np.exp(b1 * K)
+    elif cost_form == 'power_law':
+        return b0 * K ** b1
+
+
+def management_cost_function(size, cost_type, c0=None, c1=None, c2=None):
+    """Deprecated alias of coordination_cost (C34)."""
+    import warnings
+    warnings.warn("management_cost_function is deprecated; use coordination_cost(K, cost_form, b0, b1, b2)",
+                  DeprecationWarning, stacklevel=2)
+    return coordination_cost(size, cost_type, c0, c1, c2)
 
 
 def cost(size, progression, degree=2):
@@ -113,8 +121,8 @@ def get_states_from_buffer(buffer, start_step, end_step, firms):
     return buffer[buffer_indices[:, None], firms]
 
 
-def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
-          cong_occupies_market, to_delete=None, step=None, exits_per_period=None,
+def exit_(firm_id, firm_unit, firm_entered, firm_home_market, unit_members, unit_size,
+          unit_occupies_market, to_delete=None, step=None, exits_per_period=None,
           firm_exit_step=None):
     """
     SoA: Array-based exit function using Structure-of-Arrays with occupancy flags
@@ -128,8 +136,8 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
     firm_exit_step : ndarray, optional
         Track exit step
     """
-    cong_id = firm_conglom[firm_id]
-    if cong_id != -1:
+    unit_id = firm_unit[firm_id]
+    if unit_id != -1:
         # Track firm exit from conglomerate
         if step is not None and exits_per_period is not None:
             exits_per_period[step] += 1
@@ -139,10 +147,10 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
             firm_exit_step[firm_id] = step
 
         # SoA: Remove firm from array
-        n_firms = cong_size[cong_id]
+        n_firms = unit_size[unit_id]
 
         # Get current firms
-        current_firms = cong_firms[cong_id, :n_firms]
+        current_firms = unit_members[unit_id, :n_firms]
 
         # Remove firm
         new_firms = current_firms[current_firms != firm_id]
@@ -150,22 +158,22 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
 
         # Update SoA arrays
         if new_n_firms > 0:
-            cong_firms[cong_id, :new_n_firms] = new_firms
+            unit_members[unit_id, :new_n_firms] = new_firms
             # Update occupancy: rebuild from remaining firms
-            cong_occupies_market[cong_id, :] = False
-            cong_occupies_market[cong_id, firm_home_market[new_firms]] = True
+            unit_occupies_market[unit_id, :] = False
+            unit_occupies_market[unit_id, firm_home_market[new_firms]] = True
         else:
             # No firms left - occupancy cleared in deallocate_cong_id
             pass
 
-        cong_size[cong_id] = new_n_firms
+        unit_size[unit_id] = new_n_firms
 
         # Mark conglomerate for deletion if empty or only one firm remains
         if new_n_firms <= 1:
             # Clean up the remaining firm's state if there is one
             if new_n_firms == 1:
                 remaining_firm_id = new_firms[0]
-                firm_conglom[remaining_firm_id] = -1
+                firm_unit[remaining_firm_id] = -1
                 firm_entered[remaining_firm_id] = -1
                 # Track exit step for remaining firm too
                 if step is not None and firm_exit_step is not None:
@@ -173,10 +181,10 @@ def exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, con
 
             # Mark for deletion instead of deleting immediately
             if to_delete is not None:
-                to_delete.add(cong_id)
+                to_delete.add(unit_id)
 
     # Reset exiting firm's state
-    firm_conglom[firm_id] = -1
+    firm_unit[firm_id] = -1
     firm_entered[firm_id] = -1
 
 
@@ -212,23 +220,23 @@ def get_historical_states_numba(firm_log_states_buffer, start_step, end_step, fi
 
 
 @nb.njit(cache=True)
-def get_historical_returns_numba(firm_log_returns_buffer, start_step, end_step, firm_ids):
+def get_historical_returns_numba(rel_log_returns, start_step, end_step, firm_ids):
     """Extract historical log returns from circular buffer"""
-    lookback_plus_1 = firm_log_returns_buffer.shape[0]
+    lookback_plus_1 = rel_log_returns.shape[0]
     n_steps = end_step - start_step
     n_firms = len(firm_ids)
     result = np.empty((n_steps, n_firms), np.float64)
     for t in range(n_steps):
         idx = (start_step + t) % lookback_plus_1
         for f in range(n_firms):
-            result[t, f] = firm_log_returns_buffer[idx, firm_ids[f]]
+            result[t, f] = rel_log_returns[idx, firm_ids[f]]
     return result
 
 
 @nb.njit(cache=True)
 def replay_member_growth(
     past_states, past_returns, step_states,
-    alpha, management_cost, proportional, sharing_rule_code
+    alpha, Phi_K, sharing_rule_code
 ):
     """
     Replay member growth under a given alpha and return per-member log growth.
@@ -247,10 +255,8 @@ def replay_member_growth(
         Log states at the final step (for computing last growth)
     alpha : float
         Pooling fraction (share)
-    management_cost : float
-        Management cost Φ(K)
-    proportional : bool
-        Whether management cost is proportional
+    Phi_K : float
+        Coordination cost Φ(K), charged as a growth drag
     sharing_rule_code : int
         0 = equal, 1 = proportional
 
@@ -293,10 +299,7 @@ def replay_member_growth(
             sum_Delta = sum_Delta_tau[tau]
             sum_s = sum_s_tau[tau]
 
-            if proportional:
-                Omega_hat = alpha * sum_Delta * (1.0 - management_cost / sum_s) if sum_s > 0 else 0.0
-            else:
-                Omega_hat = alpha * sum_Delta - management_cost * sum_s
+            Omega_hat = alpha * sum_Delta - Phi_K * sum_s
 
             if sharing_rule_code == 0:
                 # equal: each firm gets equal dollars from pool
@@ -374,7 +377,7 @@ def prepare_window_loggain(members, window_returns, window_sizes, g):
 
     Returns:
     --------
-    epsilon : ndarray, shape (h, K)
+    eps : ndarray, shape (h, K)
         Demeaned returns: ε_jτ = r̃_jτ − mean_τ(r̃_jτ) + g
     sizes : ndarray, shape (h, K)
         Extracted sizes for members
@@ -388,7 +391,7 @@ def prepare_window_loggain(members, window_returns, window_sizes, g):
     full_indexing = window_returns.shape[1] > K
 
     # Step 1: Extract returns and compute demeaned returns
-    epsilon = np.empty((h, K), dtype=np.float64)
+    eps = np.empty((h, K), dtype=np.float64)
     for j in range(K):
         firm_j = members[j] if full_indexing else j
 
@@ -398,7 +401,7 @@ def prepare_window_loggain(members, window_returns, window_sizes, g):
         mean_r_j /= h
 
         for tau in range(h):
-            epsilon[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
+            eps[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
 
     # Step 2: Extract sizes
     sizes = np.empty((h, K), dtype=np.float64)
@@ -417,17 +420,17 @@ def prepare_window_loggain(members, window_returns, window_sizes, g):
         se_sum = 0.0
         for j in range(K):
             s_j = sizes[tau, j]
-            e_j = np.expm1(epsilon[tau, j])
+            e_j = np.expm1(eps[tau, j])
             s_sum += s_j
             se_sum += s_j * e_j
         sum_s[tau] = s_sum
         sum_s_eps[tau] = se_sum
 
-    return epsilon, sizes, sum_s, sum_s_eps
+    return eps, sizes, sum_s, sum_s_eps
 
 
 @nb.njit(cache=True)
-def member_gain_from_prepared(i, K, epsilon, sizes, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code):
+def member_gain_from_prepared(i, K, eps, sizes, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code):
     """
     Compute gain for member i using precomputed window data.
 
@@ -453,30 +456,30 @@ def member_gain_from_prepared(i, K, epsilon, sizes, sum_s, sum_s_eps, alpha, Phi
     delta_hat : float
         Mean log gain from pooling
     """
-    h = epsilon.shape[0]
+    h = eps.shape[0]
     delta_hat = 0.0
 
     for tau in range(h):
         s_i = sizes[tau, i]
-        e_i = np.expm1(epsilon[tau, i])
+        e_i = np.expm1(eps[tau, i])
         s_sum = sum_s[tau]
         se_sum = sum_s_eps[tau]
 
         if sharing_rule_code == 1:
             # Proportional sharing
             avg_weighted_gain = se_sum / s_sum if s_sum > 0 else 0.0
-            p_i = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+            p_hat = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
         else:
             # Equal sharing
             pool_dollars = alpha * se_sum - Phi_K * s_sum
             equal_share = pool_dollars / K
             s_i_safe = max(s_i, 1e-300)
-            p_i = (1.0 - alpha) * e_i + equal_share / s_i_safe
+            p_hat = (1.0 - alpha) * e_i + equal_share / s_i_safe
 
-        if p_i <= -1.0:
+        if p_hat <= -1.0:
             return -np.inf
 
-        delta_hat += np.log1p(p_i) - np.log1p(e_i)
+        delta_hat += np.log1p(p_hat) - np.log1p(e_i)
 
     delta_hat /= h
     return delta_hat
@@ -528,7 +531,7 @@ def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, 
 
     # Step 1: Extract returns for members and compute per-firm demeaned returns
     # ε_jτ = r̃_jτ − mean_τ(r̃_jτ) + g
-    epsilon = np.empty((h, K), dtype=np.float64)
+    eps = np.empty((h, K), dtype=np.float64)
 
     for j in range(K):
         if full_indexing:
@@ -544,7 +547,7 @@ def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, 
 
         # Demean and add common growth
         for tau in range(h):
-            epsilon[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
+            eps[tau, j] = window_returns[tau, firm_j] - mean_r_j + g
 
     # Step 2: Extract sizes for members
     sizes = np.empty((h, K), dtype=np.float64)
@@ -564,32 +567,32 @@ def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, 
         sum_s_eps = 0.0
         for j in range(K):
             s_j = sizes[tau, j]
-            e_j = np.expm1(epsilon[tau, j])  # Convert log return to linear return
+            e_j = np.expm1(eps[tau, j])  # Convert log return to linear return
             sum_s += s_j
             sum_s_eps += s_j * e_j
 
         s_i = sizes[tau, i]
-        e_i = np.expm1(epsilon[tau, i])
+        e_i = np.expm1(eps[tau, i])
 
         if sharing_rule_code == 1:
             # Proportional sharing: p_iτ = (1−α)·ε_iτ + α·Σ_j w_jτ ε_jτ − Φ(K̂)
             # where w_jτ = s_jτ / Σ s_kτ
             avg_weighted_gain = sum_s_eps / sum_s if sum_s > 0 else 0.0
-            p_i = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+            p_hat = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
         else:
             # Equal sharing: p_iτ = (1−α)·ε_iτ + [α·Σ_j s_jτ ε_jτ − Φ(K̂)·Σ_j s_jτ] / (K̂·s_iτ)
             # Pool in dollars: α·Σ_j Δ_jτ − Φ(K̂)·S_τ, distributed equally per firm
             pool_dollars = alpha * sum_s_eps - Phi_K * sum_s
             equal_share = pool_dollars / K
             s_i_safe = max(s_i, 1e-300)
-            p_i = (1.0 - alpha) * e_i + equal_share / s_i_safe
+            p_hat = (1.0 - alpha) * e_i + equal_share / s_i_safe
 
         # Check for invalid (would cause exit)
-        if p_i <= -1.0:
+        if p_hat <= -1.0:
             return -np.inf
 
         # Accumulate: log(1 + p_i) - log(1 + ε_i)
-        delta_hat += np.log1p(p_i) - np.log1p(e_i)
+        delta_hat += np.log1p(p_hat) - np.log1p(e_i)
 
     # Mean over window
     delta_hat /= h
@@ -678,27 +681,27 @@ def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, shari
 
 @nb.njit(cache=True)
 def merger_kernel_numba(
-    step, lookback, share, proportional, merge_thresh,
-    firm_conglom, firm_home_market, firm_entered,
-    cong_firms, cong_size, cong_active, cong_occupies_market,
-    cong_pool, management_costs_lookup,
-    firm_log_states_buffer, firm_log_returns_buffer,
-    total_firms, markets, firms_per_market,
-    sharing_rule_code, decision_rule_code, g_common,
-    cong_created_step, cong_alpha, cong_born_step
+    step, window, alpha, search_prob,
+    firm_unit, firm_home_market, firm_entered,
+    unit_members, unit_size, unit_active, unit_occupies_market,
+    unit_pool, Phi_lookup,
+    firm_log_states_buffer, rel_log_returns,
+    total_firms, M, N,
+    sharing_rule_code, decision_rule_code, g,
+    unit_created_step, unit_alpha, unit_born_step
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
 
     C31: decisions are taken at the unit's own alpha. Delta_current of a member is evaluated at
-    cong_alpha[its unit]; Delta_proposed at alpha_prop = share (solo+solo), cong_alpha[unit] (solo+unit),
-    or the alpha of the unit with the larger cong_size (unit+unit; initiator on ties).
+    unit_alpha[its unit]; Delta_proposed at alpha_prop = alpha (solo+solo), unit_alpha[unit] (solo+unit),
+    or the alpha of the unit with the larger unit_size (unit+unit; initiator on ties).
 
     Parameters:
     -----------
     decision_rule_code : int
         0 = replay (compare synthetic to realized), 1 = loggain (demeaned comparison)
-    g_common : float
+    g : float
         Common growth rate for loggain demeaning. Only used if decision_rule_code == 1.
 
     Returns tuple: (mergers_this_step, proposals_this_step,
@@ -710,7 +713,7 @@ def merger_kernel_numba(
     - _ss: solo+solo, _sc: solo+conglomerate, _cc: conglomerate+conglomerate
     """
     # Generate merger draws
-    draws = np.random.random(total_firms) < merge_thresh
+    draws = np.random.random(total_firms) < search_prob
     candidates = np.where(draws)[0]
 
     if len(candidates) == 0:
@@ -734,22 +737,22 @@ def merger_kernel_numba(
 
     for init_idx in range(len(candidates)):
         initiator = candidates[init_idx]
-        initiator_cong = firm_conglom[initiator]
+        initiator_unit = firm_unit[initiator]
 
         # Skip if initiator's cong is already full
-        if initiator_cong != -1 and cong_size[initiator_cong] == markets:
+        if initiator_unit != -1 and unit_size[initiator_unit] == M:
             continue
 
         # Determine available target markets
-        if initiator_cong != -1:
-            occupied = cong_occupies_market[initiator_cong]
+        if initiator_unit != -1:
+            occupied = unit_occupies_market[initiator_unit]
             available = np.where(~occupied)[0]
         else:
             # Build available markets list (all except home)
             home = firm_home_market[initiator]
-            available = np.empty(markets - 1, dtype=np.int64)
+            available = np.empty(M - 1, dtype=np.int64)
             idx = 0
-            for m in range(markets):
+            for m in range(M):
                 if m != home:
                     available[idx] = m
                     idx += 1
@@ -758,29 +761,29 @@ def merger_kernel_numba(
             continue
 
         target_market = available[np.random.randint(0, len(available))]
-        target_firm = target_market * firms_per_market + np.random.randint(0, firms_per_market)
+        target_firm = target_market * N + np.random.randint(0, N)
 
-        target_cong = firm_conglom[target_firm]
+        target_unit = firm_unit[target_firm]
 
         # Extract firm lists
-        if initiator_cong != -1:
-            init_size = cong_size[initiator_cong]
-            init_firms = cong_firms[initiator_cong, :init_size].copy()
+        if initiator_unit != -1:
+            init_size = unit_size[initiator_unit]
+            init_firms = unit_members[initiator_unit, :init_size].copy()
         else:
             init_firms = np.array([initiator], dtype=np.int32)
 
-        if target_cong != -1:
-            targ_size = cong_size[target_cong]
-            targ_firms = cong_firms[target_cong, :targ_size].copy()
+        if target_unit != -1:
+            targ_size = unit_size[target_unit]
+            targ_firms = unit_members[target_unit, :targ_size].copy()
         else:
             targ_firms = np.array([target_firm], dtype=np.int32)
 
         # OVERLAP CHECK
-        if initiator_cong != -1 and target_cong != -1:
-            if np.any(cong_occupies_market[initiator_cong] & cong_occupies_market[target_cong]):
+        if initiator_unit != -1 and target_unit != -1:
+            if np.any(unit_occupies_market[initiator_unit] & unit_occupies_market[target_unit]):
                 continue
-        elif initiator_cong == -1 and target_cong != -1:
-            if cong_occupies_market[target_cong, firm_home_market[initiator]]:
+        elif initiator_unit == -1 and target_unit != -1:
+            if unit_occupies_market[target_unit, firm_home_market[initiator]]:
                 continue
 
         # Merge firm lists
@@ -796,7 +799,7 @@ def merger_kernel_numba(
         # under their current arrangement.
         
         # Window: [t-h, t) where h = min(lookback, step)
-        h = min(lookback, step)
+        h = min(window, step)
         
         # Reject if no history available
         if h == 0:
@@ -805,10 +808,10 @@ def merger_kernel_numba(
         # This is a feasible proposal reaching the desirability test
         proposals_this_step += 1
         # Track by type: ss=solo+solo, sc=solo+cong, cc=cong+cong
-        if initiator_cong == -1 and target_cong == -1:
+        if initiator_unit == -1 and target_unit == -1:
             proposals_ss += 1
             proposal_type = 0  # ss
-        elif initiator_cong != -1 and target_cong != -1:
+        elif initiator_unit != -1 and target_unit != -1:
             proposals_cc += 1
             proposal_type = 2  # cc
         else:
@@ -817,23 +820,23 @@ def merger_kernel_numba(
 
         # C31: alpha at which the proposed merged unit would operate
         if proposal_type == 0:
-            alpha_prop = share
+            alpha_prop = alpha
         elif proposal_type == 1:
-            alpha_prop = cong_alpha[initiator_cong] if initiator_cong != -1 else cong_alpha[target_cong]
+            alpha_prop = unit_alpha[initiator_unit] if initiator_unit != -1 else unit_alpha[target_unit]
         else:
-            if cong_size[initiator_cong] >= cong_size[target_cong]:
-                alpha_prop = cong_alpha[initiator_cong]
+            if unit_size[initiator_unit] >= unit_size[target_unit]:
+                alpha_prop = unit_alpha[initiator_unit]
             else:
-                alpha_prop = cong_alpha[target_cong]
+                alpha_prop = unit_alpha[target_unit]
         
         hist_start = step - h
         K_hat = merged_size  # Size of proposed merged set
-        m = management_costs_lookup[K_hat]  # Management cost Phi(K_hat)
+        m = Phi_lookup[K_hat]  # Management cost Phi(K_hat)
         
         # Get historical states and returns for merged firms
         # past_states[tau, j] = log_state of firm merged_firms[j] at time hist_start + tau
         past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, merged_firms)
-        past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, merged_firms)
+        past_returns = get_historical_returns_numba(rel_log_returns, hist_start, step, merged_firms)
         
         # Also need states at step (for computing growth from step-1 to step)
         # Actually we need states at hist_start to step (inclusive) for realized growth
@@ -852,38 +855,38 @@ def merger_kernel_numba(
 
             # C19: Precompute window data for proposed set ONCE (O(h·K) instead of O(h·K²))
             eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop = prepare_window_loggain(
-                merged_firms, past_returns, sizes, g_common
+                merged_firms, past_returns, sizes, g
             )
 
             for j in range(K_hat):
                 firm_id = merged_firms[j]
 
                 # Compute gain in proposed merged set using precomputed data (O(h))
-                gain_proposed = member_gain_from_prepared(
+                delta_hat_proposed = member_gain_from_prepared(
                     j, K_hat, eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop,
                     alpha_prop, m, sharing_rule_code
                 )
 
-                if gain_proposed == -np.inf:
+                if delta_hat_proposed == -np.inf:
                     accept = False
                     break
 
                 # Determine current arrangement and compute gain_current
-                current_cong = firm_conglom[firm_id]
-                if current_cong == -1:
+                current_unit = firm_unit[firm_id]
+                if current_unit == -1:
                     # Standalone: Δ̂_current = 0 by definition
-                    gain_current = 0.0
+                    delta_hat_current = 0.0
                 else:
                     # In a conglomerate: compute Δ̂ in current set
-                    current_size = cong_size[current_cong]
-                    current_members = cong_firms[current_cong, :current_size].copy()
+                    current_size = unit_size[current_unit]
+                    current_members = unit_members[current_unit, :current_size].copy()
 
                     # Get historical data for current conglomerate
                     current_past_states = get_historical_states_numba(
                         firm_log_states_buffer, step - h, step, current_members
                     )
                     current_past_returns = get_historical_returns_numba(
-                        firm_log_returns_buffer, step - h, step, current_members
+                        rel_log_returns, step - h, step, current_members
                     )
                     current_sizes = np.exp(current_past_states)
 
@@ -896,16 +899,16 @@ def merger_kernel_numba(
 
                     # For current cong, use hoisted version (prepare once, evaluate once)
                     eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr = prepare_window_loggain(
-                        current_members, current_past_returns, current_sizes, g_common
+                        current_members, current_past_returns, current_sizes, g
                     )
-                    current_m = management_costs_lookup[current_size]
-                    gain_current = member_gain_from_prepared(
+                    current_m = Phi_lookup[current_size]
+                    delta_hat_current = member_gain_from_prepared(
                         j_current, current_size, eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr,
-                        cong_alpha[current_cong], current_m, sharing_rule_code
+                        unit_alpha[current_unit], current_m, sharing_rule_code
                     )
 
                 # Accept only if proposed beats max(0, current)
-                if gain_proposed <= max(0.0, gain_current):
+                if delta_hat_proposed <= max(0.0, delta_hat_current):
                     accept = False
                     break
         else:
@@ -946,21 +949,17 @@ def merger_kernel_numba(
                     sum_Delta = sum_Delta_tau[tau]
                     sum_s = sum_s_tau[tau]
 
-                    if proportional:
-                        # Omega_hat = share * sum_Delta * (1 - m / sum_s)
-                        Omega_hat = share * sum_Delta * (1.0 - m / sum_s) if sum_s > 0 else 0.0
-                    else:
-                        # Omega_hat = share * sum_Delta - m * sum_s
-                        Omega_hat = share * sum_Delta - m * sum_s
+                    # Omega_hat = share * sum_Delta - m * sum_s (coordination cost as a growth drag)
+                    Omega_hat = alpha * sum_Delta - m * sum_s
 
                     # Synthetic per-member profit depends on sharing rule
                     if sharing_rule_code == 0:
                         # equal: each firm gets equal dollars from pool
-                        Pi_hat_i = (1.0 - share) * Delta_i_tau + Omega_hat / K_hat
+                        Pi_hat_i = (1.0 - alpha) * Delta_i_tau + Omega_hat / K_hat
                     else:
                         # proportional: each firm gets share proportional to its size
                         w_i = s_i_tau / sum_s if sum_s > 0 else 0.0
-                        Pi_hat_i = (1.0 - share) * Delta_i_tau + w_i * Omega_hat
+                        Pi_hat_i = (1.0 - alpha) * Delta_i_tau + w_i * Omega_hat
 
                     # Check for invalid growth (would cause exit)
                     growth_ratio = Pi_hat_i / s_i_tau if s_i_tau > 0 else -2.0
@@ -996,70 +995,70 @@ def merger_kernel_numba(
         # PERFORM MERGER
         merged_markets = firm_home_market[merged_firms]
 
-        if initiator_cong != -1 and target_cong != -1:
+        if initiator_unit != -1 and target_unit != -1:
             # Two congs → keep target, deallocate initiator
-            cong_firms[target_cong, :merged_size] = merged_firms
-            cong_size[target_cong] = merged_size
-            cong_created_step[target_cong] = step  # C19: Reset review schedule
-            cong_alpha[target_cong] = alpha_prop  # C31: merged unit operates at alpha_prop
+            unit_members[target_unit, :merged_size] = merged_firms
+            unit_size[target_unit] = merged_size
+            unit_created_step[target_unit] = step  # C19: Reset review schedule
+            unit_alpha[target_unit] = alpha_prop  # C31: merged unit operates at alpha_prop
 
             # Update occupancy
             for m in merged_markets:
-                cong_occupies_market[target_cong, m] = True
+                unit_occupies_market[target_unit, m] = True
 
             for f in merged_firms:
-                firm_conglom[f] = target_cong
+                firm_unit[f] = target_unit
                 firm_entered[f] = step
 
 
             # Deactivate initiator
-            cong_active[initiator_cong] = False
-            cong_size[initiator_cong] = 0
-            cong_occupies_market[initiator_cong, :] = False
+            unit_active[initiator_unit] = False
+            unit_size[initiator_unit] = 0
+            unit_occupies_market[initiator_unit, :] = False
 
-        elif initiator_cong == -1 and target_cong != -1:
+        elif initiator_unit == -1 and target_unit != -1:
             # Solo + cong
-            cong_firms[target_cong, :merged_size] = merged_firms
-            cong_size[target_cong] = merged_size
-            cong_occupies_market[target_cong, firm_home_market[initiator]] = True
-            cong_created_step[target_cong] = step  # C19: Reset review schedule
-            firm_conglom[initiator] = target_cong
+            unit_members[target_unit, :merged_size] = merged_firms
+            unit_size[target_unit] = merged_size
+            unit_occupies_market[target_unit, firm_home_market[initiator]] = True
+            unit_created_step[target_unit] = step  # C19: Reset review schedule
+            firm_unit[initiator] = target_unit
             firm_entered[initiator] = step
 
-        elif initiator_cong != -1 and target_cong == -1:
+        elif initiator_unit != -1 and target_unit == -1:
             # Cong + solo
-            cong_firms[initiator_cong, :merged_size] = merged_firms
-            cong_size[initiator_cong] = merged_size
-            cong_occupies_market[initiator_cong, firm_home_market[target_firm]] = True
-            cong_created_step[initiator_cong] = step  # C19: Reset review schedule
-            firm_conglom[target_firm] = initiator_cong
+            unit_members[initiator_unit, :merged_size] = merged_firms
+            unit_size[initiator_unit] = merged_size
+            unit_occupies_market[initiator_unit, firm_home_market[target_firm]] = True
+            unit_created_step[initiator_unit] = step  # C19: Reset review schedule
+            firm_unit[target_firm] = initiator_unit
             firm_entered[target_firm] = step
 
         else:
             # Two solos → allocate new cong
             new_id = -1
-            for cid in range(cong_firms.shape[0]):
-                if not cong_active[cid]:
+            for cid in range(unit_members.shape[0]):
+                if not unit_active[cid]:
                     new_id = cid
                     break
 
             if new_id == -1:
                 continue  # no free slot
 
-            cong_active[new_id] = True
-            cong_firms[new_id, :merged_size] = merged_firms
-            cong_size[new_id] = merged_size
-            cong_created_step[new_id] = step  # C19: Track creation for exit_review_every
-            cong_alpha[new_id] = share  # C31: reused slots may hold a stale alpha
-            cong_born_step[new_id] = step  # C31: allocation step (unit identity for alpha_tavg)
+            unit_active[new_id] = True
+            unit_members[new_id, :merged_size] = merged_firms
+            unit_size[new_id] = merged_size
+            unit_created_step[new_id] = step  # C19: Track creation for exit_review_every
+            unit_alpha[new_id] = alpha  # C31: reused slots may hold a stale alpha
+            unit_born_step[new_id] = step  # C31: allocation step (unit identity for alpha_tavg)
 
             for m in merged_markets:
-                cong_occupies_market[new_id, m] = True
+                unit_occupies_market[new_id, m] = True
 
-            cong_pool[new_id, :] = np.zeros(lookback, dtype=np.float64)
+            unit_pool[new_id, :] = np.zeros(window, dtype=np.float64)
 
             for f in merged_firms:
-                firm_conglom[f] = new_id
+                firm_unit[f] = new_id
                 firm_entered[f] = step
 
         mergers_this_step += 1
@@ -1081,22 +1080,22 @@ def merger_kernel_numba(
 def compute_exit_candidates_numba(
     firm_outside_log_profits,      # shape (lookback, total_firms)
     firm_log_states_buffer,        # shape (lookback+1, total_firms)
-    firm_log_returns_buffer,       # shape (lookback, total_firms)
+    rel_log_returns,       # shape (lookback, total_firms)
     exit_candidates,               # 1D array of firm IDs
-    lookback,
+    window,
     step,
     decision_rule_code,            # 0 = replay, 1 = loggain
-    g_common,                      # Common growth for loggain
-    share,
+    g,                      # Common growth for loggain
+    alpha,
     sharing_rule_code,
-    management_costs_lookup,
-    firm_conglom,
-    cong_firms,
-    cong_size,
-    cong_alpha
+    Phi_lookup,
+    firm_unit,
+    unit_members,
+    unit_size,
+    unit_alpha
 ):
     """
-    Numba-compiled exit evaluation logic. C31: Delta_current is evaluated at cong_alpha[unit].
+    Numba-compiled exit evaluation logic. C31: Delta_current is evaluated at unit_alpha[unit].
 
     Parameters:
     -----------
@@ -1111,8 +1110,8 @@ def compute_exit_candidates_numba(
         return np.empty(0, dtype=np.int64)
 
     lookback_plus_1 = firm_log_states_buffer.shape[0]
-    start_idx = (step - lookback) % lookback_plus_1
-    h = lookback
+    start_idx = (step - window) % lookback_plus_1
+    h = window
 
     # Track which firms should exit
     exit_list = np.empty(n, dtype=np.int64)
@@ -1121,14 +1120,14 @@ def compute_exit_candidates_numba(
     if decision_rule_code == 1:
         # LOGGAIN: Exit if Δ̂_current < 0 (better off standalone)
         for firm_id in exit_candidates:
-            cong_id = firm_conglom[firm_id]
-            if cong_id == -1:
+            unit_id = firm_unit[firm_id]
+            if unit_id == -1:
                 # Not in a conglomerate (shouldn't happen but be safe)
                 continue
 
             # Get current conglomerate members
-            current_size = cong_size[cong_id]
-            current_members = cong_firms[cong_id, :current_size].copy()
+            current_size = unit_size[unit_id]
+            current_members = unit_members[unit_id, :current_size].copy()
 
             # Find this firm's index within the conglomerate
             j_current = -1
@@ -1142,22 +1141,22 @@ def compute_exit_candidates_numba(
                 firm_log_states_buffer, step - h, step, current_members
             )
             past_returns = get_historical_returns_numba(
-                firm_log_returns_buffer, step - h, step, current_members
+                rel_log_returns, step - h, step, current_members
             )
             sizes = np.exp(past_states)
 
             # C19: Use hoisted functions for consistency
             eps, sz, sum_s, sum_s_eps = prepare_window_loggain(
-                current_members, past_returns, sizes, g_common
+                current_members, past_returns, sizes, g
             )
-            m = management_costs_lookup[current_size]
-            gain_current = member_gain_from_prepared(
+            m = Phi_lookup[current_size]
+            delta_hat_current = member_gain_from_prepared(
                 j_current, current_size, eps, sz, sum_s, sum_s_eps,
-                cong_alpha[cong_id], m, sharing_rule_code
+                unit_alpha[unit_id], m, sharing_rule_code
             )
 
             # Exit if gain in current conglomerate is negative (standalone gives 0)
-            if gain_current < 0:
+            if delta_hat_current < 0:
                 exit_list[exit_count] = firm_id
                 exit_count += 1
     else:
@@ -1165,20 +1164,20 @@ def compute_exit_candidates_numba(
         for firm_id in exit_candidates:
             # Outside profit: arithmetic mean of log profits → log of geometric mean
             log_outside = 0.0
-            for t in range(lookback):
+            for t in range(window):
                 log_outside += firm_outside_log_profits[t, firm_id]
-            log_outside /= lookback
+            log_outside /= window
 
             # Extract lookback+1 states and compute returns using direct modulo arithmetic
             # This eliminates array allocation - just compute indices on the fly
             log_inside = 0.0
-            for i in range(lookback):
+            for i in range(window):
                 curr_idx = (start_idx + i) % lookback_plus_1
                 next_idx = (start_idx + i + 1) % lookback_plus_1
                 curr_state = firm_log_states_buffer[curr_idx, firm_id]
                 next_state = firm_log_states_buffer[next_idx, firm_id]
                 log_inside += (next_state - curr_state)
-            log_inside /= lookback
+            log_inside /= window
 
             if log_outside > log_inside:
                 exit_list[exit_count] = firm_id
@@ -1189,18 +1188,17 @@ def compute_exit_candidates_numba(
 
 @nb.njit(cache=True)
 def process_conglomerate_pooling_numba(
-    cong_firms,
-    cong_size,
-    active_cong_ids,
+    unit_members,
+    unit_size,
+    active_unit_ids,
     log_returns,
     log_states_curr,
-    management_costs_lookup,
-    share,
-    proportional,
-    lookback,
+    Phi_lookup,
+    alpha,
+    window,
     step,
     sharing_rule_code,
-    cong_alpha,
+    unit_alpha,
     alpha_endogenous
 ):
     """
@@ -1213,16 +1211,16 @@ def process_conglomerate_pooling_numba(
     sharing_rule_code : int
         0 = equal: pool distributed equally per dollar (δ_i = (1-α)r_i + Ω/(K·w_i))
         1 = proportional: pool distributed proportionally (δ_i = (1-α)r_i + Ω)
-    cong_alpha : ndarray
+    unit_alpha : ndarray
         Per-conglomerate alpha values (used when alpha_endogenous=True)
     alpha_endogenous : bool
-        If True, use cong_alpha[cong_id] instead of global share
+        If True, use unit_alpha[unit_id] instead of the global alpha
 
     Returns:
     --------
     new_log_states : ndarray, shape (total_firms,)
         Updated log states for next timestep
-    cong_pools : ndarray, shape (n_active_congs,)
+    unit_pools : ndarray, shape (n_active_units,)
         Pool values (pool_over_S) for each conglomerate
     pool_ruin : int
         C31: number of members whose delta was capped at -1 + 1e-12 (limited liability: a member loses
@@ -1242,34 +1240,34 @@ def process_conglomerate_pooling_numba(
     repeated until no member is below the cap, so sum_i c_i still equals the identity. Units without a
     capped member take the unchanged C33 path (log_old + log1p(delta)), so they are bit-identical.
     """
-    n_congs = len(active_cong_ids)
+    n_units = len(active_unit_ids)
     total_firms = log_states_curr.shape[0]
     CAP = -1.0 + 1e-12
 
     # Output arrays
     new_log_states = np.copy(log_states_curr)
-    cong_pools = np.zeros(n_congs, dtype=np.float64)
+    unit_pools = np.zeros(n_units, dtype=np.float64)
 
     pool_ruin = 0
     pool_shortfall = 0.0
     pool_wipeout = 0
 
     # Process each active conglomerate
-    for idx in range(n_congs):
-        cong_id = active_cong_ids[idx]
-        n_firms = cong_size[cong_id]
+    for idx in range(n_units):
+        unit_id = active_unit_ids[idx]
+        n_firms = unit_size[unit_id]
 
         if n_firms == 0:
             continue
 
         # Use per-conglomerate alpha if endogenous, otherwise global share
         if alpha_endogenous:
-            alpha_c = cong_alpha[cong_id]
+            alpha_c = unit_alpha[unit_id]
         else:
-            alpha_c = share
+            alpha_c = alpha
 
         # Extract firms in this conglomerate
-        conglomerate = cong_firms[cong_id, :n_firms]
+        conglomerate = unit_members[unit_id, :n_firms]
 
         # Get log returns and states for this conglomerate
         log_ret = log_returns[conglomerate]
@@ -1295,18 +1293,13 @@ def process_conglomerate_pooling_numba(
             avg_gain_weighted += w[i] * r_m1[i]
 
         # Step 5: Management cost
-        m = management_costs_lookup[n_firms]
+        m = Phi_lookup[n_firms]
 
-        # Step 6: Pool calculation (eq. 9: Ω = α·Σ Δ_i - Φ·S)
-        if proportional:
-            mgmt_over_S = m * np.exp(-log_S)
-            cost_factor = 1.0 - mgmt_over_S
-            pool_over_S = alpha_c * avg_gain_weighted * cost_factor
-        else:
-            pool_over_S = alpha_c * avg_gain_weighted - m
+        # Step 6: Pool calculation (eq. 9: Ω = α·Σ Δ_i - Φ·S; the cost is a growth drag)
+        pool_over_S = alpha_c * avg_gain_weighted - m
 
         # Store pool value
-        cong_pools[idx] = pool_over_S
+        unit_pools[idx] = pool_over_S
 
         # Step 7: Compute delta for each firm (depends on sharing rule)
         K = n_firms
@@ -1396,7 +1389,7 @@ def process_conglomerate_pooling_numba(
             else:
                 new_log_states[firm] = log_old + np.log1p(deltas[i]) + log_mult[i]
 
-    return new_log_states, cong_pools, pool_ruin, pool_shortfall, pool_wipeout
+    return new_log_states, unit_pools, pool_ruin, pool_shortfall, pool_wipeout
 
 
 def compute_hhi(shares):
@@ -1420,18 +1413,18 @@ def compute_hhi(shares):
     return np.sum(normalized ** 2)
 
 
-def compute_aggregate_hhi(firm_sizes, firm_conglom):
+def compute_aggregate_hhi(firm_sizes, firm_unit):
     """
     Compute aggregate HHI over control units.
 
     Each conglomerate is one unit with its members' total capital.
-    Each standalone firm (firm_conglom == -1) is its own unit.
+    Each standalone firm (firm_unit == -1) is its own unit.
 
     Parameters:
     -----------
     firm_sizes : array
         Size (capital) of each firm
-    firm_conglom : array
+    firm_unit : array
         Conglomerate ID for each firm (-1 = standalone)
 
     Returns:
@@ -1439,7 +1432,7 @@ def compute_aggregate_hhi(firm_sizes, firm_conglom):
     float : Aggregate HHI
     """
     firm_sizes = np.asarray(firm_sizes)
-    firm_conglom = np.asarray(firm_conglom)
+    firm_unit = np.asarray(firm_unit)
 
     total_capital = firm_sizes.sum()
     if total_capital <= 0:
@@ -1449,17 +1442,17 @@ def compute_aggregate_hhi(firm_sizes, firm_conglom):
     unit_capitals = []
 
     # Standalone firms
-    standalone = firm_conglom == -1
+    standalone = firm_unit == -1
     for s in firm_sizes[standalone]:
         if s > 0:
             unit_capitals.append(s)
 
     # Conglomerates: sum capital of members
-    cong_ids = np.unique(firm_conglom[firm_conglom >= 0])
-    for cid in cong_ids:
-        cong_capital = firm_sizes[firm_conglom == cid].sum()
-        if cong_capital > 0:
-            unit_capitals.append(cong_capital)
+    unit_ids = np.unique(firm_unit[firm_unit >= 0])
+    for cid in unit_ids:
+        unit_capital = firm_sizes[firm_unit == cid].sum()
+        if unit_capital > 0:
+            unit_capitals.append(unit_capital)
 
     if len(unit_capitals) == 0:
         return 0.0
@@ -1613,20 +1606,69 @@ def compute_volatility_premium(family, scale, nu=3.0):
         raise ValueError(f"Unknown family: {family}")
 
 
-def model(params, seed=None, market_corr="identity",
-          growth_process="normal_net", mu_range=(0.01, 0.1), sigma_range=(0.01, 0.05),
+# C34: deprecated keyword names (accepted for one commit with a DeprecationWarning) -> paper notation
+_DEPRECATED_KWARGS = {
+    'markets': 'M', 'firms_per_market': 'N', 'steps': 'T', 'share': 'alpha', 'merge_thresh': 'search_prob',
+    'lookback': 'window', 'cost_type': 'cost_form', 'c0': 'b0', 'c1': 'b1', 'c2': 'b2',
+    'sigma_range': 'iqr_range', 'log_family': 'family',
+}
+
+
+def _legacy_params(params):
+    """Map the pre-C34 positional params list (10, 12, 13 or 14 elements) to keyword arguments.
+    [markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh,
+     proportional, lookback, (cost_type, c0, c1, c2 | b0, b1)]; comparison and break_thresh were unused."""
+    n = len(params)
+    if n not in (10, 12, 13, 14):
+        raise ValueError(f"params list must have 10, 12, 13 or 14 elements, got {n}")
+    M, N, T, alpha, total_firms, search_prob, _comparison, _break_thresh, proportional, window = params[:10]
+    if total_firms != M * N:
+        raise ValueError(f"total_firms ({total_firms}) must equal M * N ({M * N})")
+    kw = dict(M=M, N=N, T=T, alpha=alpha, search_prob=search_prob, window=window,
+              cost_as_drag=not proportional)
+    if n == 14:
+        kw.update(cost_form=params[10], b0=params[11], b1=params[12], b2=params[13])
+    elif n == 13:
+        kw.update(cost_form=params[10], b0=params[11], b1=params[12])
+    elif n == 12:
+        kw.update(cost_form='power_law', b0=params[10], b1=params[11])
+    return kw
+
+
+def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_prob=None, window=None,
+          cost_form='power_law', b0=None, b1=None, b2=None, cost_as_drag=True,
+          market_corr="identity",
+          growth_process="normal_net", mu_range=(0.01, 0.1), iqr_range=(0.01, 0.05),
           sharing_rule="equal", rho=0.0, cross_corr=0.0,
-          log_family="normal", nu=3.0, floor_c=0.0,
+          family="normal", nu=3.0, floor_c=0.0,
           metric_every=100, burn_in=0, alpha_endogenous=False,
           g=None, renorm_every=500, market_size_fixed=False,
-          decision_rule="replay", exit_review_every=1, trace_path=None):
+          decision_rule="replay", exit_review_every=1, trace_path=None, **deprecated):
     """
     Main simulation model.
 
-    Parameters:
+    Parameters (C34: paper notation; MODEL_FLAGS.md has the table of old and new names):
     -----------
-    params : list
-        Model parameters (10-14 elements depending on version)
+    M, N, T : int
+        Number of markets, firms per market, periods
+    alpha : float
+        Sharing rate (initial rate of every unit when alpha_endogenous=True)
+    search_prob : float
+        Probability p that a firm searches for a partner in a period
+    window : int
+        Decision window l (periods)
+    cost_form : str
+        Coordination cost Phi(K): 'power_law' (b0 K^b1), 'linear' (b0 + b1 K), 'quadratic'
+        (b0 + b1 K + b2 K^2) or 'exponential' (b0 exp(b1 K))
+    b0, b1, b2 : float or None
+        Coordination-cost parameters (None: the form's default)
+    cost_as_drag : bool
+        The coordination cost is charged as a fraction Phi(K) of unit capital (a growth drag). Must be True:
+        the cost-as-a-fixed-amount branch (old `proportional=True`) was removed in C34.
+    params : list, deprecated
+        The pre-C34 positional parameter list; mapped by _legacy_params with a DeprecationWarning.
+        Deprecated keyword names (share=, lookback=, merge_thresh=, sigma_range=, log_family=, markets=,
+        firms_per_market=, steps=, cost_type=, c0=, c1=, c2=, proportional=) are accepted the same way.
     seed : int, optional
         Random seed for reproducibility
     market_corr : str
@@ -1635,12 +1677,13 @@ def model(params, seed=None, market_corr="identity",
         Growth process type: 'normal_net' (Phase A default), 'lognormal', or 'log_family'
         - normal_net: r ~ N(μ, σ²), then log(1+r) is stored
         - lognormal: log δ = (μ - σ²/2) + σ·ε, so E[δ] = exp(μ)
-        - log_family: log δ = μ + scale·ε, where scale from IQR (sigma_range)
+        - log_family: log δ = g + scale·ε, where scale from the IQR (iqr_range)
     mu_range : tuple
-        (min_mu, max_mu) bounds for mean growth rate
-    sigma_range : tuple
-        (min_sigma, max_sigma) bounds for volatility.
-        Under log_family, interpreted as the IQR of log δ.
+        (min_mu, max_mu) bounds for the market location. Used only when g is None (the Phase A processes
+        and the replay-rule pilot block); with g given under log_family every market's location is g.
+    iqr_range : tuple
+        (min, max) bounds of the market dispersion q_m: the IQR of log δ under log_family, the
+        volatility σ_m under normal_net/lognormal.
     sharing_rule : str
         Sharing rule: 'equal' (Phase A default) or 'proportional'
         - equal: pool distributed equally per dollar (δ_i = (1-α)r_i + Ω/(K·w_i))
@@ -1649,8 +1692,8 @@ def model(params, seed=None, market_corr="identity",
         Within-market correlation coefficient (default 0.0)
     cross_corr : float
         Cross-market correlation coefficient (default 0.0)
-    log_family : str
-        Distribution family for log_family process: 'normal', 'laplace', 'student_t'
+    family : str
+        Distribution family F for the log_family process: 'normal', 'laplace', 'student_t' ('t3')
         Only active when growth_process == 'log_family'. Default 'normal'.
     nu : float
         Degrees of freedom for Student-t distribution. Default 3.0.
@@ -1670,8 +1713,8 @@ def model(params, seed=None, market_corr="identity",
     g : float, optional
         Common time-average growth rate. Default None (off).
         When g is not None and growth_process == 'log_family':
-        - Sets μ_m = g for every market (ignores mu_range)
-        - Draws only per-market scale from sigma_range (interpreted as IQR)
+        - Sets the location of every market to g (ignores mu_range)
+        - Draws only the per-market IQR q_m from iqr_range
         - Markets differ only in volatility, not expected growth
     renorm_every : int
         Steps between log-state renormalization. Default 500.
@@ -1701,13 +1744,49 @@ def model(params, seed=None, market_corr="identity",
     exit_review_every : int
         Periodic exit review interval. Default 1 (every step).
         When > 1, members run the exit test only at steps where
-        (step - cong_created_step) % exit_review_every == 0.
+        (step - unit_created_step) % exit_review_every == 0.
         Models "boards review the arrangement every n periods".
         Only affects loggain decision rule; ignored under replay.
     """
     import time
 
     model_start_time = time.time()
+
+    # C34: deprecated positional params list and keyword names
+    if params is not None or deprecated:
+        import warnings
+        given = {}
+        if params is not None:
+            warnings.warn("model(params, ...) is deprecated; pass M=, N=, T=, alpha=, search_prob=, window=, "
+                          "cost_form=, b0=, b1=, b2= as keywords", DeprecationWarning, stacklevel=2)
+            given.update(_legacy_params(params))
+        for old, val in deprecated.items():
+            if old == 'proportional':
+                new, val = 'cost_as_drag', not val
+            elif old in _DEPRECATED_KWARGS:
+                new = _DEPRECATED_KWARGS[old]
+            else:
+                raise TypeError(f"model() got an unexpected keyword argument '{old}'")
+            warnings.warn(f"model({old}=) is deprecated; use {new}=", DeprecationWarning, stacklevel=2)
+            if new in given:
+                raise TypeError(f"model() got '{old}' twice")
+            given[new] = val
+        current = dict(M=M, N=N, T=T, alpha=alpha, search_prob=search_prob, window=window,
+                       cost_form=cost_form, b0=b0, b1=b1, b2=b2, cost_as_drag=cost_as_drag,
+                       iqr_range=iqr_range, family=family)
+        for k, v in given.items():
+            current[k] = v
+        M, N, T, alpha = current['M'], current['N'], current['T'], current['alpha']
+        search_prob, window = current['search_prob'], current['window']
+        cost_form, b0, b1, b2 = current['cost_form'], current['b0'], current['b1'], current['b2']
+        cost_as_drag, iqr_range, family = current['cost_as_drag'], current['iqr_range'], current['family']
+    for name, val in (('M', M), ('N', N), ('T', T), ('alpha', alpha), ('search_prob', search_prob),
+                      ('window', window)):
+        if val is None:
+            raise TypeError(f"model() missing required keyword argument '{name}'")
+    if not cost_as_drag:
+        raise ValueError("cost_as_drag=False (old proportional=True, the cost as a fixed amount) was removed in C34")
+    total_firms = M * N
 
     # Validate market_size_fixed flag
     if market_size_fixed and growth_process != "log_family":
@@ -1727,70 +1806,39 @@ def model(params, seed=None, market_corr="identity",
         np.random.seed(seed)
         seed_numba(seed)
 
-    # Unpack mu and sigma ranges from parameters
-    min_mu, max_mu = mu_range
-    min_sig, max_sig = sigma_range
-
-    min_bound = np.array([min_mu, min_sig])
-    max_bound = np.array([max_mu, max_sig])
-
-    mu_sig_corr = 0.7
+    # Draw the market location (Phase A processes, and log_family when g is None) and dispersion q_m.
+    # The correlated two-column draw is kept because q_m is its second column: dropping it would change
+    # every market's q_m. Each column is rescaled on its own, so q_m does not depend on mu_range.
+    min_bound = np.array([mu_range[0], iqr_range[0]])
+    max_bound = np.array([mu_range[1], iqr_range[1]])
+    mu_iqr_corr = 0.7
     means = [0.1, 0.05]
-
-    # Extract parameters - now including cost function parameters
-    # Removed debug prints for cleaner output
-
-    if len(params) == 14:
-        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, cost_type, c0, c1, c2 = params
-        use_custom_cost = True  # Parameter extraction complete
-    elif len(params) == 13:
-        # Backward compatibility with 13-parameter format (no c2)
-        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, cost_type, c0, c1 = params
-        defaults = get_cost_function_defaults(cost_type)
-        c2 = defaults['c2']  # Use cost-function-specific default for c2
-        use_custom_cost = True
-    elif len(params) == 12:
-        # Backward compatibility with old b0, b1 parameters
-        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback, b0, b1 = params
-        cost_type = 'power_law'
-        c0, c1 = b0, b1
-        defaults = get_cost_function_defaults(cost_type)
-        c2 = defaults['c2']  # Use cost-function-specific default for c2
-        use_custom_cost = True
-    else:
-        markets, firms_per_market, steps, share, total_firms, merge_thresh, comparison, break_thresh, proportional, lookback = params
-        cost_type = 'power_law'
-        defaults = get_cost_function_defaults(cost_type)
-        c0, c1, c2 = defaults['c0'], defaults['c1'], defaults['c2']  # Use all cost-function-specific defaults
-        use_custom_cost = True
-
-    cov_mat = np.ones((2, 2)) * mu_sig_corr + np.diag(np.tile(1 - mu_sig_corr, 2))
-    growth_vars = np.random.multivariate_normal(means, cov_mat, markets)
+    cov_mat = np.ones((2, 2)) * mu_iqr_corr + np.diag(np.tile(1 - mu_iqr_corr, 2))
+    growth_vars = np.random.multivariate_normal(means, cov_mat, M)
     growth_vars = growth_vars + np.abs(np.minimum(growth_vars.min(axis=0), 0))
     growth_vars = min_bound + (growth_vars / growth_vars.max(axis=0)) * (max_bound - min_bound)
+    mu_m = growth_vars[:, 0]   # location (normal_net, lognormal; log_family only when g is None)
+    iqr_m = growth_vars[:, 1]  # q_m: IQR of log δ under log_family, σ_m under normal_net/lognormal
 
-    # Common time-average growth: when g is not None and log_family, set μ_m = g for all markets
+    # Common time-average growth: when g is not None and log_family, every market's location is g
     # This makes markets differ only in volatility, preventing exponential divergence
     implied_ensemble_growth = None  # Will be set below if g is used
     volatility_premium = None       # r_m - g per market
-    if g is not None and growth_process == "log_family":
-        # Override μ_m with common g for all markets
-        growth_vars[:, 0] = g
-        # Compute scale from IQR (sigma_range interpreted as IQR)
-        iqr_m = growth_vars[:, 1]
-        scale_m = iqr_to_scale(log_family, iqr_m, nu)
-        # Compute volatility premium: r_m - g = log E[δ] - E[log δ]
-        volatility_premium = compute_volatility_premium(log_family, scale_m, nu)
-        # Implied ensemble growth rate: r_m = g + premium
-        implied_ensemble_growth = g + volatility_premium
+    if growth_process == "log_family":
+        loc_m = np.full(M, g) if g is not None else mu_m
+        scale_m = iqr_to_scale(family, iqr_m, nu)
+        if g is not None:
+            # Volatility premium r_m - g = log E[δ] - E[log δ]; implied ensemble growth r_m = g + premium
+            volatility_premium = compute_volatility_premium(family, scale_m, nu)
+            implied_ensemble_growth = g + volatility_premium
 
     # Market correlation: identity (uncorrelated, paper baseline) or random
     if market_corr == "identity":
-        market_corr_matrix = np.eye(markets)
+        market_corr_matrix = np.eye(M)
     elif market_corr == "random":
         # Generate random correlation matrix, seeded for reproducibility
-        eigen_vals = np.random.uniform(0.1, 3, markets)
-        eigen_vals = eigen_vals * markets / eigen_vals.sum()
+        eigen_vals = np.random.uniform(0.1, 3, M)
+        eigen_vals = eigen_vals * M / eigen_vals.sum()
         # Use seeded generator if seed was provided, otherwise use a fresh one
         rng = np.random.default_rng(seed) if seed is not None else np.random.default_rng()
         market_corr_matrix = random_correlation.rvs(tuple(eigen_vals), random_state=rng)
@@ -1807,157 +1855,157 @@ def model(params, seed=None, market_corr="identity",
     # Cross-market correlation: apply constant off-diagonal correlation
     if cross_corr != 0.0:
         # Create correlation matrix with cross_corr as off-diagonal elements
-        cross_corr_matrix = np.full((markets, markets), cross_corr)
+        cross_corr_matrix = np.full((M, M), cross_corr)
         np.fill_diagonal(cross_corr_matrix, 1.0)
         market_corr_matrix = cross_corr_matrix
     # else: keep existing market_corr_matrix (identity or random)
 
-    market_cov = np.outer(growth_vars[:, 1], growth_vars[:, 1]) * market_corr_matrix
+    market_cov = np.outer(iqr_m, iqr_m) * market_corr_matrix
 
     # PERFORMANCE OPTIMIZATION: Precompute Cholesky decomposition for random number generation
     # This avoids recomputing the decomposition at every timestep (10,000x speedup for this operation)
     market_cov_cholesky = np.linalg.cholesky(market_cov)
 
     # MEMORY OPTIMIZATION: Store only what's needed for lookback windows (not full history)
-    markets_structure = np.array([[x, y] for x in range(markets) for y in range(firms_per_market)])
-    ids = np.arange(markets * firms_per_market).reshape(markets, firms_per_market)
+    markets_structure = np.array([[x, y] for x in range(M) for y in range(N)])
+    ids = np.arange(M * N).reshape(M, N)
 
     # Circular buffers: only store lookback+1 timesteps instead of full history
-    firm_log_states_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
-    firm_log_returns_buffer = np.zeros((lookback + 1, total_firms), dtype=np.float64)
-    firm_outside_log_profits = np.zeros((lookback, total_firms), dtype=np.float64)
+    firm_log_states_buffer = np.zeros((window + 1, total_firms), dtype=np.float64)
+    rel_log_returns = np.zeros((window + 1, total_firms), dtype=np.float64)
+    firm_outside_log_profits = np.zeros((window, total_firms), dtype=np.float64)
 
     # Floor tracking arrays (only used when floor_c > 0)
     floor_hits = np.zeros(total_firms, dtype=np.int32)  # Per-firm count
-    floor_hits_by_status = np.zeros((steps, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
-    floor_hits_by_firm_step = np.zeros((total_firms, steps), dtype=np.bool_)  # C23: Per-firm per-step floor hits
+    floor_hits_by_status = np.zeros((T, 2), dtype=np.int32)  # Per-step by status (0=standalone, 1=member)
+    floor_hits_by_firm_step = np.zeros((total_firms, T), dtype=np.bool_)  # C23: Per-firm per-step floor hits
 
     # Per-market renormalization correction tracking (only used when market_size_fixed)
-    renorm_corrections = np.zeros(steps, dtype=np.float64)  # Mean |log(Σs/N)| per step
+    renorm_corrections = np.zeros(T, dtype=np.float64)  # Mean |log(Σs/N)| per step
 
     # Outcome metrics arrays (computed every metric_every steps)
-    n_metric_steps = (steps + metric_every - 1) // metric_every  # Ceiling division
+    n_metric_steps = (T + metric_every - 1) // metric_every  # Ceiling division
     hill_exponent = np.full(n_metric_steps, np.nan, dtype=np.float64)  # Pooled Hill on all M×N market shares
-    hill_exponent_by_market = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)  # Per-market (diagnostic)
-    hhi_within = np.zeros((markets, n_metric_steps), dtype=np.float64)
+    hill_exponent_by_market = np.full((M, n_metric_steps), np.nan, dtype=np.float64)  # Per-market (diagnostic)
+    hhi_within = np.zeros((M, n_metric_steps), dtype=np.float64)
     hhi_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
     top10pct_aggregate = np.zeros(n_metric_steps, dtype=np.float64)
-    cong_capital_share = np.zeros(n_metric_steps, dtype=np.float64)
+    unit_capital_share = np.zeros(n_metric_steps, dtype=np.float64)
     # C17: Member-standalone growth gap (per market, per metric step)
-    growth_gap_by_market = np.full((markets, n_metric_steps), np.nan, dtype=np.float64)
+    growth_gap_by_market = np.full((M, n_metric_steps), np.nan, dtype=np.float64)
     growth_gap = np.full(n_metric_steps, np.nan, dtype=np.float64)  # Market-averaged
     # Track log market share at start of each metric block for computing log share changes
     prev_log_market_share_block = None  # Will be set at end of each metric block
-    # effective_members stored as list of (cong_id, K, K_eff) tuples per metric step
+    # effective_members stored as list of (unit_id, K, K_eff) tuples per metric step
     effective_members_list = []
 
     # Alpha history for endogenous alpha tracking (sampled every metric_every steps)
     # Shape: (MAX_CONGLOMERATES, n_metric_steps) - NaN for inactive conglomerates
-    MAX_CONGLOMERATES = total_firms // 2
-    alpha_history = np.full((MAX_CONGLOMERATES, n_metric_steps), np.nan, dtype=np.float64)
+    MAX_UNITS = total_firms // 2
+    alpha_history = np.full((MAX_UNITS, n_metric_steps), np.nan, dtype=np.float64)
 
-    management_costs_lookup = np.array(
-        [management_cost_function(size, cost_type, c0, c1, c2) if size > 0 else 0.0 for size in range(markets + 1)])
+    Phi_lookup = np.array(
+        [coordination_cost(K, cost_form, b0, b1, b2) if K > 0 else 0.0 for K in range(M + 1)])
 
-    firm_home_market = np.repeat(np.arange(markets, dtype=np.int16), firms_per_market)  # Home market for each firm
-    firm_conglom = np.full(total_firms, -1, dtype=np.int32)  # -1 = solo firm, otherwise conglomerate ID
+    firm_home_market = np.repeat(np.arange(M, dtype=np.int16), N)  # Home market for each firm
+    firm_unit = np.full(total_firms, -1, dtype=np.int32)  # -1 = solo firm, otherwise conglomerate ID
     firm_entered = np.full(total_firms, -1, dtype=np.int32)  # -1 = never entered, otherwise entry timestep
     firm_first_entered = np.full(total_firms, -1, dtype=np.int32)  # C20: First-time entry (never reset)
     firm_exit_step = np.full(total_firms, -1, dtype=np.int32)  # C20: Track exit step for event study
 
 
     # C22b: Alpha scatter - track (alpha, K) per conglomerate at key moments
-    # Dict: step -> {cong_id: (alpha, K)}
+    # Dict: step -> {unit_id: (alpha, K)}
     # Records at: first step per conglomerate (after creation) AND every metric_every
     alpha_scatter = {}
-    cong_recorded_first_step = np.zeros(MAX_CONGLOMERATES, dtype=bool)  # Track which congs have been recorded
+    unit_recorded_first_step = np.zeros(MAX_UNITS, dtype=bool)  # Track which congs have been recorded
 
     # C24: Trace recording for external event study
     if trace_path is not None:
-        TRACE_logshare = np.zeros((steps + 1, total_firms), dtype=np.float32)
-        TRACE_cong = np.full((steps + 1, total_firms), -1, dtype=np.int16)
-        TRACE_jump = np.zeros((steps + 1, total_firms), dtype=np.float32)  # C29: log-size jump at the floor
+        TRACE_logshare = np.zeros((T + 1, total_firms), dtype=np.float32)
+        TRACE_unit = np.full((T + 1, total_firms), -1, dtype=np.int16)
+        TRACE_jump = np.zeros((T + 1, total_firms), dtype=np.float32)  # C29: log-size jump at the floor
 
     # OPTIMIZATION: Structure-of-Arrays (SoA) for conglomerates - replaces dictionary
     # Pre-allocate fixed-size arrays for O(1) operations and better cache locality
     # Max conglomerates = total_firms/2 (each conglomerate has ≥2 firms, max 1 firm per market)
-    MAX_CONGLOMERATES = total_firms // 2
+    MAX_UNITS = total_firms // 2
 
-    cong_firms = np.full((MAX_CONGLOMERATES, markets), -1, dtype=np.int32)
-    cong_size = np.zeros(MAX_CONGLOMERATES, dtype=np.int16)
-    cong_pool = np.zeros((MAX_CONGLOMERATES, lookback), dtype=np.float64)
-    cong_active = np.zeros(MAX_CONGLOMERATES, dtype=bool)
-    cong_occupies_market = np.zeros((MAX_CONGLOMERATES, markets), dtype=bool)  # Fast market occupancy lookup
-    cong_alpha = np.full(MAX_CONGLOMERATES, share, dtype=np.float64)  # Per-conglomerate alpha (endogenous)
-    cong_created_step = np.zeros(MAX_CONGLOMERATES, dtype=np.int32)  # C19: Track creation step for exit_review_every
-    cong_born_step = np.zeros(MAX_CONGLOMERATES, dtype=np.int32)  # C31: slot allocation step
+    unit_members = np.full((MAX_UNITS, M), -1, dtype=np.int32)
+    unit_size = np.zeros(MAX_UNITS, dtype=np.int16)
+    unit_pool = np.zeros((MAX_UNITS, window), dtype=np.float64)
+    unit_active = np.zeros(MAX_UNITS, dtype=bool)
+    unit_occupies_market = np.zeros((MAX_UNITS, M), dtype=bool)  # Fast market occupancy lookup
+    unit_alpha = np.full(MAX_UNITS, alpha, dtype=np.float64)  # Per-conglomerate alpha (endogenous)
+    unit_created_step = np.zeros(MAX_UNITS, dtype=np.int32)  # C19: Track creation step for exit_review_every
+    unit_born_step = np.zeros(MAX_UNITS, dtype=np.int32)  # C31: slot allocation step
 
     # ID management for conglomerate slots
     free_ids = []
-    next_cong_id = 0
+    next_unit_id = 0
 
-    def allocate_cong_id():
+    def allocate_unit_id():
         """Get next available conglomerate ID (reuse freed slots first)"""
-        nonlocal next_cong_id
+        nonlocal next_unit_id
         if free_ids:
             return free_ids.pop()  # LIFO reuse (good for cache locality)
         else:
-            if next_cong_id >= MAX_CONGLOMERATES:
-                raise RuntimeError(f"Exceeded max conglomerates ({MAX_CONGLOMERATES})")
-            cid = next_cong_id
-            next_cong_id += 1
+            if next_unit_id >= MAX_UNITS:
+                raise RuntimeError(f"Exceeded max conglomerates ({MAX_UNITS})")
+            cid = next_unit_id
+            next_unit_id += 1
             return cid
 
-    def deallocate_cong_id(cong_id):
+    def deallocate_unit_id(unit_id):
         """Mark conglomerate as inactive and return ID to pool"""
-        cong_active[cong_id] = False
-        cong_size[cong_id] = 0
-        cong_occupies_market[cong_id, :] = False  # Clear occupancy flags
+        unit_active[unit_id] = False
+        unit_size[unit_id] = 0
+        unit_occupies_market[unit_id, :] = False  # Clear occupancy flags
         # Don't zero arrays - just use size=0 as sentinel for performance
-        free_ids.append(cong_id)
+        free_ids.append(unit_id)
 
     # Pre-allocate output arrays (computed during simulation, not post-processing)
     # MEMORY OPTIMIZATION: Only store current timestep snapshot, not full history
-    market_share_current = np.zeros((markets, firms_per_market), dtype=np.float32)
-    gini_coefficient = np.zeros((markets, steps), dtype=np.float32)
+    market_share_current = np.zeros((M, N), dtype=np.float32)
+    gini_coefficient = np.zeros((M, T), dtype=np.float32)
 
     # Online rank statistics (replaces full ranks array to save memory)
     # Track min/max/sum/sum_sq for each firm to compute rank_range and rank_std
-    ranks_current = np.zeros((markets, firms_per_market), dtype=np.uint16)
-    rank_min = np.full((markets, firms_per_market), np.iinfo(np.uint16).max, dtype=np.uint16)
-    rank_max = np.zeros((markets, firms_per_market), dtype=np.uint16)
-    rank_sum = np.zeros((markets, firms_per_market), dtype=np.float64)
-    rank_sum_sq = np.zeros((markets, firms_per_market), dtype=np.float64)
-    rank_count = np.zeros((markets, firms_per_market), dtype=np.uint32)
+    ranks_current = np.zeros((M, N), dtype=np.uint16)
+    rank_min = np.full((M, N), np.iinfo(np.uint16).max, dtype=np.uint16)
+    rank_max = np.zeros((M, N), dtype=np.uint16)
+    rank_sum = np.zeros((M, N), dtype=np.float64)
+    rank_sum_sq = np.zeros((M, N), dtype=np.float64)
+    rank_count = np.zeros((M, N), dtype=np.uint32)
 
     # Pre-allocate quantiles array (computed on-the-fly)
-    quantiles_shares = np.zeros((7, markets, steps), dtype=np.float32)  # 7 quantiles
+    quantiles_shares = np.zeros((7, M, T), dtype=np.float32)  # 7 quantiles
 
     # Track merger frequency per period
-    mergers_per_period = np.zeros(steps)
-    proposals_per_period = np.zeros(steps)
+    mergers_per_period = np.zeros(T)
+    proposals_per_period = np.zeros(T)
     # Per-type tracking: ss=solo+solo, sc=solo+cong, cc=cong+cong
-    mergers_ss_per_period = np.zeros(steps)
-    proposals_ss_per_period = np.zeros(steps)
-    mergers_sc_per_period = np.zeros(steps)
-    proposals_sc_per_period = np.zeros(steps)
-    mergers_cc_per_period = np.zeros(steps)
-    proposals_cc_per_period = np.zeros(steps)
+    mergers_ss_per_period = np.zeros(T)
+    proposals_ss_per_period = np.zeros(T)
+    mergers_sc_per_period = np.zeros(T)
+    proposals_sc_per_period = np.zeros(T)
+    mergers_cc_per_period = np.zeros(T)
+    proposals_cc_per_period = np.zeros(T)
 
     # Track firm exits from conglomerates per period
-    exits_per_period = np.zeros(steps)
-    floor_exits_per_period = np.zeros(steps)
-    pool_ruin_per_period = np.zeros(steps)  # C31: members whose pooled delta was capped at -1 + 1e-12
-    pool_shortfall_per_period = np.zeros(steps)  # C34: capital charged to other members for capped members
-    pool_wipeout_per_period = np.zeros(steps)  # C34: units in which every member was capped
+    exits_per_period = np.zeros(T)
+    floor_exits_per_period = np.zeros(T)
+    pool_ruin_per_period = np.zeros(T)  # C31: members whose pooled delta was capped at -1 + 1e-12
+    pool_shortfall_per_period = np.zeros(T)  # C34: capital charged to other members for capped members
+    pool_wipeout_per_period = np.zeros(T)  # C34: units in which every member was capped
 
     # Pre-allocate lists for conglomerate metrics (computed on-the-fly)
     avg_shares = []
     avg_ranks = []
-    num_cong = []
+    num_unit = []
     members = []
-    mean_members = np.zeros(steps, dtype=np.float32)
-    quantiles_members = np.zeros((steps, 5), dtype=np.float32)  # 5 quantiles
+    mean_members = np.zeros(T, dtype=np.float32)
+    quantiles_members = np.zeros((T, 5), dtype=np.float32)  # 5 quantiles
 
     # Helper arrays for fast conglomerate indexing
     firm_to_market = markets_structure[:, 0]
@@ -1965,89 +2013,85 @@ def model(params, seed=None, market_corr="identity",
 
     # C24: Record initial state for trace (step 0)
     if trace_path is not None:
-        init_log_states = firm_log_states_buffer[0].reshape(markets, firms_per_market)
+        init_log_states = firm_log_states_buffer[0].reshape(M, N)
         init_log_totals = logsumexp(init_log_states, axis=1, keepdims=True)
         init_log_share = init_log_states - init_log_totals
         TRACE_logshare[0] = init_log_share.ravel().astype(np.float32)
-        TRACE_cong[0] = firm_conglom.astype(np.int16)
+        TRACE_unit[0] = firm_unit.astype(np.int16)
 
-    for step in range(steps):
+    for step in range(T):
         # PERFORMANCE OPTIMIZATION: Use precomputed Cholesky decomposition for random generation
         # Generate standard normal random variates and transform using L @ z
         if rho_val == 0.0:
             # uncorr: independent firms within market (Phase A default)
-            z = np.random.standard_normal((markets, firms_per_market))
+            z = np.random.standard_normal((M, N))
         else:
             # Apply within-market correlation using factor model:
             # z_i = sqrt(|rho|) * sign(rho) * z_common + sqrt(1-|rho|) * z_idio
-            z_common = np.random.standard_normal((markets, 1))
-            z_idio = np.random.standard_normal((markets, firms_per_market))
+            z_common = np.random.standard_normal((M, 1))
+            z_idio = np.random.standard_normal((M, N))
             rho_abs = abs(rho_val)
             rho_sign = 1.0 if rho_val > 0 else -1.0
             z = rho_sign * np.sqrt(rho_abs) * z_common + np.sqrt(1 - rho_abs) * z_idio
 
         if growth_process == "normal_net":
             # Phase A default: r ~ N(μ, σ²), then log(1+r)
-            realizations_step = growth_vars[:, 0][:, np.newaxis] + market_cov_cholesky @ z
+            realizations_step = mu_m[:, np.newaxis] + market_cov_cholesky @ z
             log_realizations_step = np.log1p(realizations_step.ravel()).astype(np.float64)
         elif growth_process == "log_family":
-            # Log-family process: log δ = μ + scale·ε
-            # E[log δ] = μ by construction (no -σ²/2 term)
-            # sigma_range interpreted as IQR of log δ
-            mu_m = growth_vars[:, 0]  # Market-specific location
-            iqr_m = growth_vars[:, 1]  # Market-specific IQR
-            scale_m = iqr_to_scale(log_family, iqr_m, nu)
+            # Log-family process: log δ = g + scale·ε (location loc_m, scale_m from the IQR q_m, set above)
+            # E[log δ] = g by construction (no -σ²/2 term)
 
             # Check if we need Gaussian copula (non-normal family with correlation)
-            needs_copula = (log_family != 'normal') and (rho_val != 0.0 or cross_corr != 0.0)
+            needs_copula = (family != 'normal') and (rho_val != 0.0 or cross_corr != 0.0)
 
             if needs_copula:
                 # Gaussian copula: draw correlated normals, map through Φ, then family quantile
                 # Step 1: Generate correlated standard normals
                 # z already has within-market correlation from rho_val
                 # Apply cross-market correlation via Cholesky of market correlation matrix
-                z_corr = market_cov_cholesky @ z / growth_vars[:, 1][:, np.newaxis]  # Undo sigma scaling
+                z_corr = market_cov_cholesky @ z / iqr_m[:, np.newaxis]  # Undo sigma scaling
 
                 # Step 2: Map through Φ to get uniform marginals
                 u = norm.cdf(z_corr)
 
                 # Step 3: Map through family's quantile function (standardized to IQR=1)
-                if log_family == 'laplace':
+                if family == 'laplace':
                     # Laplace quantile: sign(u-0.5) * b * ln(1 - 2|u-0.5|)
                     # For standard Laplace (b=1), IQR = 2*ln(2)
                     eps_raw = laplace.ppf(u)
                     eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
-                elif log_family == 'student_t' or log_family == 't3':
+                elif family == 'student_t' or family == 't3':
                     eps_raw = student_t.ppf(u, df=nu)
                     eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
 
                 # log δ = μ + IQR * ε (where ε has IQR=1)
-                log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
+                log_realizations_step = (loc_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
             else:
                 # No copula needed: either normal family, or no correlation
-                if log_family == 'normal':
+                if family == 'normal':
                     # For normal, z already has the right structure
                     # log δ = μ + scale * z, where scale = IQR / 1.349
-                    log_realizations_step = (mu_m[:, np.newaxis] + scale_m[:, np.newaxis] * z).ravel().astype(np.float64)
-                elif log_family == 'laplace':
+                    log_realizations_step = (loc_m[:, np.newaxis] + scale_m[:, np.newaxis] * z).ravel().astype(np.float64)
+                elif family == 'laplace':
                     # Independent Laplace draws (no correlation)
-                    eps_raw = np.random.laplace(0, 1, (markets, firms_per_market))
+                    eps_raw = np.random.laplace(0, 1, (M, N))
                     eps = eps_raw / (2 * np.log(2))  # Standardize to IQR = 1
-                    log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
-                elif log_family == 'student_t' or log_family == 't3':
+                    log_realizations_step = (loc_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
+                elif family == 'student_t' or family == 't3':
                     # Independent Student-t draws (no correlation)
-                    eps_raw = np.random.standard_t(df=nu, size=(markets, firms_per_market))
+                    eps_raw = np.random.standard_t(df=nu, size=(M, N))
                     eps = eps_raw / (2 * student_t.ppf(0.75, df=nu))  # Standardize to IQR = 1
-                    log_realizations_step = (mu_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
+                    log_realizations_step = (loc_m[:, np.newaxis] + iqr_m[:, np.newaxis] * eps).ravel().astype(np.float64)
         else:
             # Lognormal: log δ = (μ - σ²/2) + σ·ε
             # This gives E[δ] = exp(μ), E[log δ] = μ - σ²/2
-            drift = growth_vars[:, 0] - 0.5 * growth_vars[:, 1] ** 2
+            drift = mu_m - 0.5 * iqr_m ** 2
             log_realizations_step = (drift[:, np.newaxis] + market_cov_cholesky @ z).ravel().astype(np.float64)
 
         # Calculate circular buffer indices for current and next timestep
-        curr_idx = step % (lookback + 1)
-        next_idx = (step + 1) % (lookback + 1)
+        curr_idx = step % (window + 1)
+        next_idx = (step + 1) % (window + 1)
 
         # MARKET_SIZE_FIXED: Transform raw shocks x to relative returns r̃
         # r̃_{m,j} = x_{m,j} - log(G_m) where G_m = Σ_j s_{m,j}·exp(x_{m,j}) / Σ_j s_{m,j}
@@ -2055,12 +2099,12 @@ def model(params, seed=None, market_corr="identity",
         if market_size_fixed:
             current_log_states = firm_log_states_buffer[curr_idx]
             # Reshape for per-market computation
-            x_2d = log_realizations_step.reshape(markets, firms_per_market)
-            s_2d = np.exp(current_log_states.reshape(markets, firms_per_market))
+            x_2d = log_realizations_step.reshape(M, N)
+            s_2d = np.exp(current_log_states.reshape(M, N))
 
             # G_m = Σ(s·exp(x)) / Σ(s) for each market
             # Use logsumexp for numerical stability: log(G_m) = logsumexp(log(s) + x) - logsumexp(log(s))
-            log_s_2d = current_log_states.reshape(markets, firms_per_market)
+            log_s_2d = current_log_states.reshape(M, N)
             log_numerator = logsumexp(log_s_2d + x_2d, axis=1)  # log(Σ s·exp(x))
             log_denominator = logsumexp(log_s_2d, axis=1)       # log(Σ s)
             log_G = log_numerator - log_denominator  # log(G_m) per market
@@ -2069,56 +2113,56 @@ def model(params, seed=None, market_corr="identity",
             log_realizations_step = (x_2d - log_G[:, np.newaxis]).ravel()
 
         # Store this step's log returns in circular buffer
-        firm_log_returns_buffer[curr_idx] = log_realizations_step
+        rel_log_returns[curr_idx] = log_realizations_step
 
         # ENDOGENOUS ALPHA: Update alpha for each active conglomerate every period (C31)
         # Must run BEFORE pooling so historical buffer data is still valid
         if alpha_endogenous and step > 0:
-            h = min(lookback, step)
+            h = min(window, step)
             hist_start = step - h
 
             # Get active conglomerates for alpha update
-            active_cong_ids_for_alpha = np.where(cong_active)[0]
+            active_unit_ids_for_alpha = np.where(unit_active)[0]
 
-            for cid in active_cong_ids_for_alpha:
-                K = cong_size[cid]
+            for cid in active_unit_ids_for_alpha:
+                K = unit_size[cid]
                 if K < 2:
                     continue  # Need at least 2 members
 
-                member_firms = cong_firms[cid, :K]
-                m = management_costs_lookup[K]
+                member_firms = unit_members[cid, :K]
+                m = Phi_lookup[K]
 
                 # Window {t-h, ..., t-1} of the unit's current members, from the circular buffers
                 past_states = get_historical_states_numba(firm_log_states_buffer, hist_start, step, member_firms)
-                past_returns = get_historical_returns_numba(firm_log_returns_buffer, hist_start, step, member_firms)
+                past_returns = get_historical_returns_numba(rel_log_returns, hist_start, step, member_firms)
 
                 # C34: renegotiate on the demeaned log gain (unanimity, then maximin)
                 optimal_alpha, should_change = find_optimal_alpha(
                     member_firms, past_returns, np.exp(past_states),
-                    cong_alpha[cid], m, sharing_rule_code, g
+                    unit_alpha[cid], m, sharing_rule_code, g
                 )
 
                 if should_change:
-                    cong_alpha[cid] = optimal_alpha
+                    unit_alpha[cid] = optimal_alpha
 
         # NUMBA OPTIMIZATION: Full merger pipeline in compiled code
-        if merge_thresh > 0:
+        if search_prob > 0:
             # C20: Save pre-merger conglomerate membership for event study tracking
-            pre_merger_in_cong = firm_conglom.copy()
+            pre_merger_in_unit = firm_unit.copy()
 
             (num_mergers, num_proposals,
              num_mergers_ss, num_proposals_ss,
              num_mergers_sc, num_proposals_sc,
              num_mergers_cc, num_proposals_cc) = merger_kernel_numba(
-                step, lookback, share, proportional, merge_thresh,
-                firm_conglom, firm_home_market, firm_entered,
-                cong_firms, cong_size, cong_active, cong_occupies_market,
-                cong_pool, management_costs_lookup,
-                firm_log_states_buffer, firm_log_returns_buffer,
-                total_firms, markets, firms_per_market,
+                step, window, alpha, search_prob,
+                firm_unit, firm_home_market, firm_entered,
+                unit_members, unit_size, unit_active, unit_occupies_market,
+                unit_pool, Phi_lookup,
+                firm_log_states_buffer, rel_log_returns,
+                total_firms, M, N,
                 sharing_rule_code, decision_rule_code,
                 g if g is not None else 0.0,
-                cong_created_step, cong_alpha, cong_born_step
+                unit_created_step, unit_alpha, unit_born_step
             )
             mergers_per_period[step] = num_mergers
             proposals_per_period[step] = num_proposals
@@ -2131,42 +2175,41 @@ def model(params, seed=None, market_corr="identity",
 
             # C22b: Record alpha scatter for newly created conglomerates
             if alpha_endogenous and num_mergers > 0:
-                for cid in range(next_cong_id):
-                    if cong_active[cid] and cong_created_step[cid] == step and not cong_recorded_first_step[cid]:
-                        K = cong_size[cid]
+                for cid in range(next_unit_id):
+                    if unit_active[cid] and unit_created_step[cid] == step and not unit_recorded_first_step[cid]:
+                        K = unit_size[cid]
                         if K >= 2:
                             if step not in alpha_scatter:
                                 alpha_scatter[step] = {}
                             # Compute IQR stats for conglomerate members
-                            member_firms = cong_firms[cid, :K]
-                            member_iqrs = growth_vars[firm_home_market[member_firms], 1]
+                            member_firms = unit_members[cid, :K]
+                            member_iqrs = iqr_m[firm_home_market[member_firms]]
                             sd_iqr = np.std(member_iqrs, ddof=1) if K > 1 else 0.0
                             mean_iqr = np.mean(member_iqrs)
-                            alpha_scatter[step][cid] = (cong_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
-                            cong_recorded_first_step[cid] = True
+                            alpha_scatter[step][cid] = (unit_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
+                            unit_recorded_first_step[cid] = True
 
         # OPTIMIZATION: Vectorized mask for solo firms (faster than np.where for boolean operations)
-        solo = firm_conglom == -1
+        solo = firm_unit == -1
 
         # NUMBA OPTIMIZATION: Process all conglomerate firms using JIT-compiled function
-        active_cong_ids = np.where(cong_active)[0]
+        active_unit_ids = np.where(unit_active)[0]
 
-        if len(active_cong_ids) > 0:
+        if len(active_unit_ids) > 0:
             # Call Numba function for pooling logic
-            (new_log_states, cong_pools_step, pool_ruin,
+            (new_log_states, unit_pools_step, pool_ruin,
              pool_shortfall, pool_wipeout) = process_conglomerate_pooling_numba(
-                cong_firms,
-                cong_size,
-                active_cong_ids,
+                unit_members,
+                unit_size,
+                active_unit_ids,
                 log_realizations_step,
                 firm_log_states_buffer[curr_idx],
-                management_costs_lookup,
-                share,
-                proportional,
-                lookback,
+                Phi_lookup,
+                alpha,
+                window,
                 step,
                 sharing_rule_code,
-                cong_alpha,
+                unit_alpha,
                 alpha_endogenous
             )
 
@@ -2177,15 +2220,15 @@ def model(params, seed=None, market_corr="identity",
             pool_wipeout_per_period[step] = pool_wipeout
 
             # Store pools for active conglomerates
-            for idx, cong_id in enumerate(active_cong_ids):
-                cong_pool[cong_id, step % lookback] = cong_pools_step[idx]
+            for idx, unit_id in enumerate(active_unit_ids):
+                unit_pool[unit_id, step % window] = unit_pools_step[idx]
 
             # Store outside log-profits for firms in conglomerates
-            in_cong = firm_conglom != -1
-            firm_outside_log_profits[step % lookback, in_cong] = log_realizations_step[in_cong]
+            in_unit = firm_unit != -1
+            firm_outside_log_profits[step % window, in_unit] = log_realizations_step[in_unit]
 
         # OPTIMIZATION: Vectorized solo firm updates (eliminates loop over potentially 1000s of firms)
-        firm_outside_log_profits[step % lookback, solo] = log_realizations_step[solo]
+        firm_outside_log_profits[step % window, solo] = log_realizations_step[solo]
         firm_log_states_buffer[next_idx, solo] = firm_log_states_buffer[curr_idx, solo] + log_realizations_step[solo]
 
         # FLOOR: Apply reflecting floor at c × market mean (after pooling, before exit test)
@@ -2200,9 +2243,9 @@ def model(params, seed=None, market_corr="identity",
             # Per-period mask: track which firms hit floor at any iteration this period
             period_hit_mask = np.zeros(total_firms, dtype=bool)
 
-            for m in range(markets):
-                start_idx = m * firms_per_market
-                end_idx = (m + 1) * firms_per_market
+            for m in range(M):
+                start_idx = m * N
+                end_idx = (m + 1) * N
 
                 # Iterate until no firms are below floor (raising firms raises mean and floor)
                 for _ in range(100):  # Max iterations as safety
@@ -2239,40 +2282,40 @@ def model(params, seed=None, market_corr="identity",
             floor_hits[hit_firms] += 1
             floor_hits_by_firm_step[hit_firms, step] = True  # C23: Track per-firm per-step
             for firm_id in hit_firms:
-                status = 0 if firm_conglom[firm_id] == -1 else 1
+                status = 0 if firm_unit[firm_id] == -1 else 1
                 floor_hits_by_status[step, status] += 1
             # C27: a firm at the floor is a new entrant at minimum scale; it keeps no affiliation.
             floor_cleanup_to_delete = set()
             for firm_id in hit_firms:
-                if firm_conglom[firm_id] != -1:
+                if firm_unit[firm_id] != -1:
                     floor_exits_per_period[step] += 1
-                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
-                          cong_occupies_market, to_delete=floor_cleanup_to_delete,
+                    exit_(firm_id, firm_unit, firm_entered, firm_home_market, unit_members, unit_size,
+                          unit_occupies_market, to_delete=floor_cleanup_to_delete,
                           step=step, exits_per_period=exits_per_period,
                           firm_exit_step=firm_exit_step)
-            for cong_id in floor_cleanup_to_delete:
-                deallocate_cong_id(cong_id)
+            for unit_id in floor_cleanup_to_delete:
+                deallocate_unit_id(unit_id)
 
         # MARKET_SIZE_FIXED RENORMALIZATION: Per-market normalization to mean size = 1
         # After pooling and floor, subtract log(Σ s/N) from every firm in each market
         # (all rows of circular buffer). Records correction for diagnostics.
         if market_size_fixed:
             step_corrections = []
-            for m in range(markets):
-                start_idx = m * firms_per_market
-                end_idx = (m + 1) * firms_per_market
+            for m in range(M):
+                start_idx = m * N
+                end_idx = (m + 1) * N
 
                 # Current log states for this market
                 market_log_states = firm_log_states_buffer[next_idx, start_idx:end_idx]
 
                 # Compute log(Σ s/N) = logsumexp(log_s) - log(N)
                 # This is the log of mean size; subtract to make mean size = 1
-                log_mean_size = logsumexp(market_log_states) - np.log(firms_per_market)
+                log_mean_size = logsumexp(market_log_states) - np.log(N)
                 correction = abs(log_mean_size)
                 step_corrections.append(correction)
 
                 # Subtract from ALL rows of the circular buffer for this market
-                for row in range(lookback + 1):
+                for row in range(window + 1):
                     firm_log_states_buffer[row, start_idx:end_idx] -= log_mean_size
 
             renorm_corrections[step] = np.mean(step_corrections)
@@ -2286,24 +2329,24 @@ def model(params, seed=None, market_corr="identity",
             max_log_state = firm_log_states_buffer[next_idx].max()
             # Subtract from ALL rows of the circular buffer
             firm_log_states_buffer -= max_log_state
-            # Note: firm_log_returns_buffer and firm_outside_log_profits are NOT touched
+            # Note: rel_log_returns and firm_outside_log_profits are NOT touched
             # because they store differences (log returns), not levels
 
         # VECTORIZED: Exit checks using geometric means
-        if step > lookback:
+        if step > window:
             exit_cleanup_to_delete = set()
 
             # Get firms in conglomerates that have been there long enough
-            in_cong = firm_conglom != -1
-            old_enough = firm_entered < step - lookback
-            exit_candidates = np.where(in_cong & old_enough)[0]
+            in_unit = firm_unit != -1
+            old_enough = firm_entered < step - window
+            exit_candidates = np.where(in_unit & old_enough)[0]
 
             # C19: Periodic exit review (only for loggain; replay ignores this flag)
             if decision_rule_code == 1 and exit_review_every > 1 and len(exit_candidates) > 0:
                 # Filter to firms whose conglomerate is due for review
-                # (step - cong_created_step) % exit_review_every == 0
+                # (step - unit_created_step) % exit_review_every == 0
                 review_mask = np.array([
-                    (step - cong_created_step[firm_conglom[fid]]) % exit_review_every == 0
+                    (step - unit_created_step[firm_unit[fid]]) % exit_review_every == 0
                     for fid in exit_candidates
                 ])
                 exit_candidates = exit_candidates[review_mask]
@@ -2314,34 +2357,34 @@ def model(params, seed=None, market_corr="identity",
                 firms_to_exit = compute_exit_candidates_numba(
                     firm_outside_log_profits,
                     firm_log_states_buffer,
-                    firm_log_returns_buffer,
+                    rel_log_returns,
                     exit_candidates,
-                    lookback,
+                    window,
                     step,
                     decision_rule_code,
                     g if g is not None else 0.0,
-                    share,
+                    alpha,
                     sharing_rule_code,
-                    management_costs_lookup,
-                    firm_conglom,
-                    cong_firms,
-                    cong_size,
-                    cong_alpha
+                    Phi_lookup,
+                    firm_unit,
+                    unit_members,
+                    unit_size,
+                    unit_alpha
                 )
 
                 # Process exits for firms that should leave
                 for firm_id in firms_to_exit:
-                    exit_(firm_id, firm_conglom, firm_entered, firm_home_market, cong_firms, cong_size,
-                          cong_occupies_market, to_delete=exit_cleanup_to_delete,
+                    exit_(firm_id, firm_unit, firm_entered, firm_home_market, unit_members, unit_size,
+                          unit_occupies_market, to_delete=exit_cleanup_to_delete,
                           step=step, exits_per_period=exits_per_period,
                           firm_exit_step=firm_exit_step)
 
             # SoA: Clean up conglomerates marked for deletion
-            for cong_id in exit_cleanup_to_delete:
-                deallocate_cong_id(cong_id)
+            for unit_id in exit_cleanup_to_delete:
+                deallocate_unit_id(unit_id)
 
         # Reshape next_idx states for market-wise calculations
-        current_log_states = firm_log_states_buffer[next_idx].reshape(markets, firms_per_market)
+        current_log_states = firm_log_states_buffer[next_idx].reshape(M, N)
 
         # Market share calculation (current timestep only)
         log_market_totals = logsumexp(current_log_states, axis=1, keepdims=True)
@@ -2351,11 +2394,11 @@ def model(params, seed=None, market_corr="identity",
         # C24: Record trace at each step
         if trace_path is not None:
             TRACE_logshare[step + 1] = log_market_share.ravel().astype(np.float32)
-            TRACE_cong[step + 1] = firm_conglom.astype(np.int16)
+            TRACE_unit[step + 1] = firm_unit.astype(np.int16)
 
         # VECTORIZED: Ranks and Gini for ALL markets at this timestep (not per-market loop)
         # Sort indices for all markets at once
-        sorted_idx = np.argsort(market_share_current, axis=1).astype(np.uint8 if firms_per_market <= 256 else np.uint16)
+        sorted_idx = np.argsort(market_share_current, axis=1).astype(np.uint8 if N <= 256 else np.uint16)
 
         # Get sorted shares using fancy indexing
         sorted_shares = np.take_along_axis(market_share_current, sorted_idx, axis=1)
@@ -2369,7 +2412,7 @@ def model(params, seed=None, market_corr="identity",
             lorenz = np.nan_to_num(lorenz)
 
         # Use np.trapezoid (NumPy 2.0+)
-        area = np.trapezoid(lorenz, dx=1 / firms_per_market, axis=1)
+        area = np.trapezoid(lorenz, dx=1 / N, axis=1)
         gini_coefficient[:, step] = (1 - 2 * area).astype(np.float32)
 
         # Ranks (double argsort trick, vectorized) - online statistics
@@ -2386,13 +2429,13 @@ def model(params, seed=None, market_corr="identity",
         quantiles_shares[:, :, step] = np.quantile(market_share_current, q=[0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1], axis=1).astype(np.float32)
 
         # OPTIMIZATION: Leverage SoA structure to avoid expensive unique/where operations
-        # Use cong_active and cong_size directly instead of scanning all firms
-        active_cong_ids = np.where(cong_active)[0]
-        num_cong.append(len(active_cong_ids))
+        # Use unit_active and unit_size directly instead of scanning all firms
+        active_unit_ids = np.where(unit_active)[0]
+        num_unit.append(len(active_unit_ids))
 
-        if len(active_cong_ids) > 0:
+        if len(active_unit_ids) > 0:
             # Direct access to sizes from SoA (no unique operation needed)
-            active_sizes = cong_size[active_cong_ids]
+            active_sizes = unit_size[active_unit_ids]
             members.append(active_sizes.copy())
 
             # Compute mean and quantiles on-the-fly
@@ -2401,13 +2444,13 @@ def model(params, seed=None, market_corr="identity",
 
             # PERFORMANCE: Vectorized avg_share and avg_rank using np.bincount
             # Replaces per-conglomerate loop with O(n) bincount aggregation
-            in_cong_mask = firm_conglom != -1
-            cids = firm_conglom[in_cong_mask]
-            cnt = np.bincount(cids, minlength=MAX_CONGLOMERATES)
-            sh_sum = np.bincount(cids, weights=market_share_current.ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
-            rk_sum = np.bincount(cids, weights=ranks_current.ravel()[in_cong_mask], minlength=MAX_CONGLOMERATES)
-            avg_share = np.column_stack([active_sizes, sh_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
-            avg_rank = np.column_stack([active_sizes, rk_sum[active_cong_ids] / cnt[active_cong_ids]]).astype(np.float32)
+            in_unit_mask = firm_unit != -1
+            cids = firm_unit[in_unit_mask]
+            cnt = np.bincount(cids, minlength=MAX_UNITS)
+            sh_sum = np.bincount(cids, weights=market_share_current.ravel()[in_unit_mask], minlength=MAX_UNITS)
+            rk_sum = np.bincount(cids, weights=ranks_current.ravel()[in_unit_mask], minlength=MAX_UNITS)
+            avg_share = np.column_stack([active_sizes, sh_sum[active_unit_ids] / cnt[active_unit_ids]]).astype(np.float32)
+            avg_rank = np.column_stack([active_sizes, rk_sum[active_unit_ids] / cnt[active_unit_ids]]).astype(np.float32)
 
             avg_shares.append(avg_share)
             avg_ranks.append(avg_rank)
@@ -2420,7 +2463,7 @@ def model(params, seed=None, market_corr="identity",
             quantiles_members[step] = np.zeros(5)
 
         # OUTCOME METRICS: Compute every metric_every steps
-        if (step + 1) % metric_every == 0 or step == steps - 1:
+        if (step + 1) % metric_every == 0 or step == T - 1:
             metric_idx = step // metric_every
             if metric_idx < n_metric_steps:
                 # Get current firm sizes in levels
@@ -2429,7 +2472,7 @@ def model(params, seed=None, market_corr="identity",
                 # Pooled Hill exponent: top 10% of all M×N within-market shares
                 # Each firm's share is computed relative to its own market's total,
                 # not the economy total, so cross-market scale differences don't affect the estimate
-                current_sizes_2d = current_sizes.reshape(markets, firms_per_market)
+                current_sizes_2d = current_sizes.reshape(M, N)
                 market_totals = current_sizes_2d.sum(axis=1, keepdims=True)
                 # Avoid division by zero (shouldn't happen but be safe)
                 market_totals = np.where(market_totals > 0, market_totals, 1.0)
@@ -2437,28 +2480,28 @@ def model(params, seed=None, market_corr="identity",
                 hill_exponent[metric_idx] = hill_estimator(within_market_shares, k_fraction=0.1)
 
                 # Hill exponent per market (diagnostic only)
-                for m in range(markets):
-                    market_sizes = current_sizes[m * firms_per_market:(m + 1) * firms_per_market]
+                for m in range(M):
+                    market_sizes = current_sizes[m * N:(m + 1) * N]
                     hill_exponent_by_market[m, metric_idx] = hill_estimator(market_sizes, k_fraction=0.1)
 
                 # HHI within each market
-                for m in range(markets):
-                    market_sizes = current_sizes[m * firms_per_market:(m + 1) * firms_per_market]
+                for m in range(M):
+                    market_sizes = current_sizes[m * N:(m + 1) * N]
                     market_total = market_sizes.sum()
                     if market_total > 0:
                         market_shares = market_sizes / market_total
                         hhi_within[m, metric_idx] = compute_hhi(market_shares)
 
                 # Aggregate metrics over control units
-                hhi_aggregate[metric_idx] = compute_aggregate_hhi(current_sizes, firm_conglom)
+                hhi_aggregate[metric_idx] = compute_aggregate_hhi(current_sizes, firm_unit)
 
                 # Top 10% aggregate share
                 unit_capitals = []
-                standalone = firm_conglom == -1
+                standalone = firm_unit == -1
                 unit_capitals.extend(current_sizes[standalone].tolist())
-                cong_ids_unique = np.unique(firm_conglom[firm_conglom >= 0])
-                for cid in cong_ids_unique:
-                    unit_capitals.append(current_sizes[firm_conglom == cid].sum())
+                unit_ids_unique = np.unique(firm_unit[firm_unit >= 0])
+                for cid in unit_ids_unique:
+                    unit_capitals.append(current_sizes[firm_unit == cid].sum())
                 if len(unit_capitals) > 0:
                     unit_capitals = np.array(unit_capitals)
                     sorted_units = np.sort(unit_capitals)[::-1]
@@ -2471,15 +2514,15 @@ def model(params, seed=None, market_corr="identity",
                 # Conglomerate capital share
                 total_capital = current_sizes.sum()
                 if total_capital > 0:
-                    cong_capital = current_sizes[firm_conglom >= 0].sum()
-                    cong_capital_share[metric_idx] = cong_capital / total_capital
+                    unit_capital = current_sizes[firm_unit >= 0].sum()
+                    unit_capital_share[metric_idx] = unit_capital / total_capital
 
                 # Effective members for each active conglomerate
                 step_eff_members = []
-                for cid in active_cong_ids:
-                    K = cong_size[cid]
+                for cid in active_unit_ids:
+                    K = unit_size[cid]
                     if K > 0:
-                        member_firms = cong_firms[cid, :K]
+                        member_firms = unit_members[cid, :K]
                         member_sizes = current_sizes[member_firms]
                         K_eff = compute_effective_members(member_sizes)
                         step_eff_members.append((cid, K, K_eff))
@@ -2487,24 +2530,24 @@ def model(params, seed=None, market_corr="identity",
 
                 # Track alpha history for active conglomerates
                 if alpha_endogenous:
-                    for cid in active_cong_ids:
-                        if cong_active[cid]:
-                            alpha_history[cid, metric_idx] = cong_alpha[cid]
+                    for cid in active_unit_ids:
+                        if unit_active[cid]:
+                            alpha_history[cid, metric_idx] = unit_alpha[cid]
 
                     # C22b: Record alpha scatter at metric checkpoints
                     if step not in alpha_scatter:
                         alpha_scatter[step] = {}
-                    for cid in active_cong_ids:
-                        if cong_active[cid]:
-                            K = cong_size[cid]
+                    for cid in active_unit_ids:
+                        if unit_active[cid]:
+                            K = unit_size[cid]
                             if K >= 2:
                                 # Compute IQR stats for conglomerate members
-                                member_firms_scatter = cong_firms[cid, :K]
-                                member_iqrs_scatter = growth_vars[firm_home_market[member_firms_scatter], 1]
+                                member_firms_scatter = unit_members[cid, :K]
+                                member_iqrs_scatter = iqr_m[firm_home_market[member_firms_scatter]]
                                 sd_iqr = np.std(member_iqrs_scatter, ddof=1) if K > 1 else 0.0
                                 mean_iqr = np.mean(member_iqrs_scatter)
-                                alpha_scatter[step][cid] = (cong_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
-                                cong_recorded_first_step[cid] = True  # Mark as recorded
+                                alpha_scatter[step][cid] = (unit_alpha[cid], int(K), float(sd_iqr), float(mean_iqr))
+                                unit_recorded_first_step[cid] = True  # Mark as recorded
 
                 # C17: Member-standalone growth gap
                 # Growth = mean log share change over the metric block
@@ -2514,10 +2557,10 @@ def model(params, seed=None, market_corr="identity",
                     log_growth = log_market_share - prev_log_market_share_block
 
                     # Compute gap per market
-                    for m in range(markets):
-                        start_idx = m * firms_per_market
-                        end_idx = (m + 1) * firms_per_market
-                        market_conglom = firm_conglom[start_idx:end_idx]
+                    for m in range(M):
+                        start_idx = m * N
+                        end_idx = (m + 1) * N
+                        market_conglom = firm_unit[start_idx:end_idx]
                         market_log_growth = log_growth[m, :]
 
                         # Identify members vs standalone
@@ -2564,7 +2607,7 @@ def model(params, seed=None, market_corr="identity",
         'hhi_within_median': np.nanmedian(hhi_within[:, valid_metric_indices], axis=1),
         'hhi_aggregate_median': np.nanmedian(hhi_aggregate[valid_metric_indices]),
         'top10pct_aggregate_median': np.nanmedian(top10pct_aggregate[valid_metric_indices]),
-        'cong_capital_share_median': np.nanmedian(cong_capital_share[valid_metric_indices]),
+        'cong_capital_share_median': np.nanmedian(unit_capital_share[valid_metric_indices]),
     }
 
     # Median K and K_eff/K over valid steps
@@ -2581,8 +2624,8 @@ def model(params, seed=None, market_corr="identity",
     summary['K_eff_over_K_median'] = np.median(all_K_eff_over_K) if len(all_K_eff_over_K) > 0 else np.nan
 
     # Floor-hit rate per firm-period by status (for steps >= burn_in)
-    if floor_c > 0.0 and steps > burn_in:
-        valid_steps = steps - burn_in
+    if floor_c > 0.0 and T > burn_in:
+        valid_steps = T - burn_in
         total_firm_periods = valid_steps * total_firms
         standalone_periods = np.sum(floor_hits_by_status[burn_in:, 0])
         member_periods = np.sum(floor_hits_by_status[burn_in:, 1])
@@ -2593,7 +2636,7 @@ def model(params, seed=None, market_corr="identity",
         summary['floor_hit_rate_member'] = 0.0
 
     # Mergers, proposals, exits per period (for steps >= burn_in)
-    if steps > burn_in:
+    if T > burn_in:
         summary['mergers_per_period'] = np.mean(mergers_per_period[burn_in:])
         summary['proposals_per_period'] = np.mean(proposals_per_period[burn_in:])
         summary['exits_per_period'] = np.mean(exits_per_period[burn_in:])
@@ -2639,7 +2682,7 @@ def model(params, seed=None, market_corr="identity",
     summary['pool_wipeout_total'] = float(np.sum(pool_wipeout_per_period))
 
     # Renormalization correction mean (only meaningful when market_size_fixed)
-    if market_size_fixed and steps > burn_in:
+    if market_size_fixed and T > burn_in:
         summary['renorm_correction_mean'] = np.mean(renorm_corrections[burn_in:])
     else:
         summary['renorm_correction_mean'] = 0.0
@@ -2648,35 +2691,35 @@ def model(params, seed=None, market_corr="identity",
     summary['growth_gap_median'] = np.nanmedian(growth_gap[valid_metric_indices])
 
     # C22b: alpha_scatter is now a dict keyed by step, populated during simulation
-    # Format: alpha_scatter[step] = {cong_id: (alpha, K)}
+    # Format: alpha_scatter[step] = {unit_id: (alpha, K)}
     # Only populated when alpha_endogenous=True
 
     # C22c: Assortativity by IQR - vectorized computation at end of run
     # Pearson correlation of per-firm IQR with mean IQR of same conglomerate
-    market_iqr = growth_vars[:, 1]  # Per-market IQR
+    market_iqr = iqr_m  # Per-market IQR
     firm_iqr = market_iqr[firm_home_market]  # Per-firm IQR (via home market)
 
     # Find firms in conglomerates
-    in_cong_mask = firm_conglom >= 0
-    firms_in_cong = np.where(in_cong_mask)[0]
+    in_unit_mask = firm_unit >= 0
+    firms_in_unit = np.where(in_unit_mask)[0]
 
-    if len(firms_in_cong) >= 2:
+    if len(firms_in_unit) >= 2:
         # For each firm in a conglomerate, compute mean IQR of its conglomerate
-        cong_mean_iqr = np.zeros(total_firms, dtype=np.float64)
+        unit_mean_iqr = np.zeros(total_firms, dtype=np.float64)
 
-        for cid in range(MAX_CONGLOMERATES):
-            if cong_active[cid]:
-                K = cong_size[cid]
+        for cid in range(MAX_UNITS):
+            if unit_active[cid]:
+                K = unit_size[cid]
                 if K >= 2:
-                    member_firms = cong_firms[cid, :K]
+                    member_firms = unit_members[cid, :K]
                     member_iqrs = firm_iqr[member_firms]
                     mean_iqr_val = np.mean(member_iqrs)
                     for fid in member_firms:
-                        cong_mean_iqr[fid] = mean_iqr_val
+                        unit_mean_iqr[fid] = mean_iqr_val
 
         # Pearson correlation: firm IQR vs conglomerate mean IQR
-        x = firm_iqr[firms_in_cong]
-        y = cong_mean_iqr[firms_in_cong]
+        x = firm_iqr[firms_in_unit]
+        y = unit_mean_iqr[firms_in_unit]
         assort_iqr = np.corrcoef(x, y)[0, 1] if len(x) > 1 else np.nan
     else:
         assort_iqr = np.nan
@@ -2685,21 +2728,21 @@ def model(params, seed=None, market_corr="identity",
 
     # C23: Capture final state of each active conglomerate for alpha_scatter.csv
     alpha_scatter_final = []
-    for cid in range(MAX_CONGLOMERATES):
-        if cong_active[cid]:
-            K = cong_size[cid]
+    for cid in range(MAX_UNITS):
+        if unit_active[cid]:
+            K = unit_size[cid]
             if K >= 2:
-                member_firms = cong_firms[cid, :K]
-                member_iqrs = growth_vars[firm_home_market[member_firms], 1]
+                member_firms = unit_members[cid, :K]
+                member_iqrs = iqr_m[firm_home_market[member_firms]]
                 sd_iqr = float(np.std(member_iqrs, ddof=1)) if K > 1 else 0.0
                 mean_iqr = float(np.mean(member_iqrs))
                 # C31: time-averaged alpha of this unit over post-burn-in snapshots since its slot was allocated
                 tavg_vals = [alpha_history[cid, k] for k in range(burn_in // metric_every, n_metric_steps)
-                             if min((k + 1) * metric_every - 1, steps - 1) >= cong_born_step[cid]
+                             if min((k + 1) * metric_every - 1, T - 1) >= unit_born_step[cid]
                              and not np.isnan(alpha_history[cid, k])]
                 alpha_scatter_final.append({
                     'cong_id': int(cid),
-                    'alpha_final': float(cong_alpha[cid]),
+                    'alpha_final': float(unit_alpha[cid]),
                     'alpha_tavg': float(np.mean(tavg_vals)) if tavg_vals else float('nan'),
                     'K': int(K),
                     'sd_iqr': sd_iqr,
@@ -2707,31 +2750,31 @@ def model(params, seed=None, market_corr="identity",
                 })
 
     # Add hyperparameter metadata for result organization
-    hyperparameters = {'markets': markets, 'firms_per_market': firms_per_market, 'steps': steps,
-                       'merge_thresh': merge_thresh, 'comparison': comparison, 'break_thresh': break_thresh,
-                       'proportional': proportional, 'lookback': lookback, 'cost_type': cost_type, 'c0': c0, 'c1': c1, 'c2': c2,
-                       'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': sigma_range,
+    hyperparameters = {'markets': M, 'firms_per_market': N, 'steps': T,
+                       'merge_thresh': search_prob, 'proportional': not cost_as_drag, 'cost_as_drag': cost_as_drag,
+                       'lookback': window, 'cost_type': cost_form, 'c0': b0, 'c1': b1, 'c2': b2,
+                       'growth_process': growth_process, 'mu_range': mu_range, 'sigma_range': iqr_range,
                        'sharing_rule': sharing_rule, 'rho': rho, 'cross_corr': cross_corr,
-                       'log_family': log_family, 'nu': nu,
+                       'log_family': family, 'nu': nu,
                        'floor_c': floor_c, 'floor_hits': floor_hits, 'floor_hits_by_status': floor_hits_by_status,
                        'floor_exits_per_period': floor_exits_per_period,
                        'pool_ruin_per_period': pool_ruin_per_period,
                        'pool_shortfall_per_period': pool_shortfall_per_period,
                        'pool_wipeout_per_period': pool_wipeout_per_period,
-                       'final_log_states': firm_log_states_buffer[steps % (lookback + 1)].copy(),
+                       'final_log_states': firm_log_states_buffer[T % (window + 1)].copy(),
                        'metric_every': metric_every, 'burn_in': burn_in,
                        'hill_exponent': hill_exponent, 'hill_exponent_by_market': hill_exponent_by_market,
                        'hhi_within': hhi_within,
                        'hhi_aggregate': hhi_aggregate, 'top10pct_aggregate': top10pct_aggregate,
-                       'cong_capital_share': cong_capital_share, 'effective_members': effective_members_list,
+                       'cong_capital_share': unit_capital_share, 'effective_members': effective_members_list,
                        'alpha_endogenous': alpha_endogenous, 'alpha_history': alpha_history,
                        'g': g, 'renorm_every': renorm_every,
                        'implied_ensemble_growth': implied_ensemble_growth,
                        'volatility_premium': volatility_premium,
                        'summary': summary,
                        # C11 additions for assortativity analysis
-                       'market_iqr': growth_vars[:, 1].copy(),  # Per-market IQR
-                       'final_firm_conglom': firm_conglom.copy(),  # Final conglomerate membership
+                       'market_iqr': iqr_m.copy(),  # Per-market IQR
+                       'final_firm_conglom': firm_unit.copy(),  # Final conglomerate membership
                        # C12 additions for fixed market size
                        'market_size_fixed': market_size_fixed,
                        'renorm_corrections': renorm_corrections,
@@ -2758,11 +2801,11 @@ def model(params, seed=None, market_corr="identity",
         if trace_path == '__internal__':
             # Return trace arrays in hyperparameters for inline event study
             hyperparameters['TRACE_logshare'] = TRACE_logshare
-            hyperparameters['TRACE_cong'] = TRACE_cong
+            hyperparameters['TRACE_cong'] = TRACE_unit
         else:
             import io, shutil
             buf = io.BytesIO()
-            np.savez_compressed(buf, logshare=TRACE_logshare, cong=TRACE_cong,
+            np.savez_compressed(buf, logshare=TRACE_logshare, cong=TRACE_unit,
                                 floor=floor_hits_by_firm_step, home=firm_home_market,
                                 jump=TRACE_jump)
             buf.seek(0)
@@ -2777,7 +2820,7 @@ def model(params, seed=None, market_corr="identity",
 
     # Model results: 13 elements
     # rank_range and rank_std replace the full ranks array (memory optimization)
-    model_results = [mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
+    model_results = [mean_members, quantiles_members, num_unit, avg_shares, quantiles_shares,
                      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
                      exits_per_period, rank_range, rank_std, hyperparameters]
     total_time = time.time() - model_start_time

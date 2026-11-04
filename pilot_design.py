@@ -41,11 +41,11 @@ from pathlib import Path
 
 M = 50
 N = 50
-MERGE_THRESH = 0.05
-PROPORTIONAL = False  # Management cost NOT proportional to size
+SEARCH_PROB = 0.05  # search probability p (scenario key 'merge_thresh')
+COST_AS_DRAG = True  # coordination cost charged as a growth drag (scenario key 'proportional' = False)
 GROWTH_PROCESS = 'log_family'
 MU_RANGE = (0.01, 0.1)
-SIGMA_RANGE = (0.1, 0.3)  # IQR range
+IQR_RANGE = (0.1, 0.3)  # range of the market IQR q_m (scenario key 'sigma_range')
 SHARING_RULE = 'proportional'
 METRIC_EVERY = 100
 N_REPS = 5
@@ -63,7 +63,7 @@ ALPHA_GRID = [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 FAMILIES = ['normal', 'laplace', 't3']
 
 # Cost types with calibrated defaults (from benchmarks.py)
-COST_TYPES = ['linear', 'quadratic', 'exponential', 'power_law']
+COST_FORMS = ['linear', 'quadratic', 'exponential', 'power_law']
 
 # Cost parameters (calibrated for convergence at size=40)
 COST_PARAMS = {
@@ -92,11 +92,11 @@ def make_base_params():
         'N': N,
         'T': T,
         'burn_in': BURN_IN,
-        'merge_thresh': MERGE_THRESH,
-        'proportional': PROPORTIONAL,
+        'merge_thresh': SEARCH_PROB,
+        'proportional': not COST_AS_DRAG,
         'growth_process': GROWTH_PROCESS,
         'mu_range': list(MU_RANGE),
-        'sigma_range': list(SIGMA_RANGE),
+        'sigma_range': list(IQR_RANGE),
         'floor_c': FLOOR_C,
         'metric_every': METRIC_EVERY,
         'market_size_fixed': True,  # C14: normalize sizes within each market
@@ -122,7 +122,7 @@ def generate_main_block(scenarios, scenario_id):
     """
     cell_id = 0
     for family in FAMILIES:
-        for cost_type in COST_TYPES:
+        for cost_form in COST_FORMS:
             # All α values within this (family, cost_type) share seeds per rep
             for alpha in ALPHA_GRID:
                 for rep in range(N_REPS):
@@ -132,10 +132,10 @@ def generate_main_block(scenarios, scenario_id):
                         'scenario_id': scenario_id,
                         'cell_id': cell_id,
                         'log_family': family,
-                        'cost_type': cost_type,
-                        'c0': COST_PARAMS[cost_type]['c0'],
-                        'c1': COST_PARAMS[cost_type]['c1'],
-                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'],
+                        'c1': COST_PARAMS[cost_form]['c1'],
+                        'c2': COST_PARAMS[cost_form]['c2'],
                         'lookback': 50,
                         'cross_corr': 0.0,
                         'alpha': alpha,
@@ -156,7 +156,7 @@ def generate_equal_split_block(scenarios, scenario_id, cell_id):
     sharing_rule=equal
     """
     family = 'normal'
-    for cost_type in COST_TYPES:
+    for cost_form in COST_FORMS:
         # All α values within this (cost_type) share seeds per rep
         for alpha in ALPHA_GRID:
             for rep in range(N_REPS):
@@ -166,10 +166,10 @@ def generate_equal_split_block(scenarios, scenario_id, cell_id):
                     'scenario_id': scenario_id,
                     'cell_id': cell_id,
                     'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'cost_type': cost_form,
+                    'c0': COST_PARAMS[cost_form]['c0'],
+                    'c1': COST_PARAMS[cost_form]['c1'],
+                    'c2': COST_PARAMS[cost_form]['c2'],
                     'lookback': 50,
                     'cross_corr': 0.0,
                     'alpha': alpha,
@@ -192,7 +192,7 @@ def generate_cost_level_block(scenarios, scenario_id, cell_id):
     family = 'laplace'
     multipliers = [0.5, 2.0]
 
-    for cost_type in COST_TYPES:
+    for cost_form in COST_FORMS:
         for mult in multipliers:
             # All α values within this (cost_type, mult) share seeds per rep
             for alpha in ALPHA_GRID:
@@ -203,10 +203,10 @@ def generate_cost_level_block(scenarios, scenario_id, cell_id):
                         'scenario_id': scenario_id,
                         'cell_id': cell_id,
                         'log_family': family,
-                        'cost_type': cost_type,
-                        'c0': COST_PARAMS[cost_type]['c0'] * mult,
-                        'c1': COST_PARAMS[cost_type]['c1'],
-                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'] * mult,
+                        'c1': COST_PARAMS[cost_form]['c1'],
+                        'c2': COST_PARAMS[cost_form]['c2'],
                         'cost_multiplier': mult,
                         'lookback': 50,
                         'cross_corr': 0.0,
@@ -229,12 +229,12 @@ def generate_lookback_block(scenarios, scenario_id, cell_id):
     α values: [0.1, 0.3]
     """
     families = ['laplace', 't3']
-    cost_type = 'power_law'
+    cost_form = 'power_law'
     lookbacks = [20, 50, 100, 200]
     alpha_values = [0.1, 0.3]
 
     for family in families:
-        for lookback in lookbacks:
+        for window in lookbacks:
             # All α values within this (family, lookback) share seeds per rep
             for alpha in alpha_values:
                 for rep in range(N_REPS):
@@ -244,11 +244,11 @@ def generate_lookback_block(scenarios, scenario_id, cell_id):
                         'scenario_id': scenario_id,
                         'cell_id': cell_id,
                         'log_family': family,
-                        'cost_type': cost_type,
-                        'c0': COST_PARAMS[cost_type]['c0'],
-                        'c1': COST_PARAMS[cost_type]['c1'],
-                        'c2': COST_PARAMS[cost_type]['c2'],
-                        'lookback': lookback,
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'],
+                        'c1': COST_PARAMS[cost_form]['c1'],
+                        'c2': COST_PARAMS[cost_form]['c2'],
+                        'lookback': window,
                         'cross_corr': 0.0,
                         'alpha': alpha,
                         'sharing_rule': SHARING_RULE,
@@ -267,7 +267,7 @@ def generate_correlation_block(scenarios, scenario_id, cell_id):
     Correlation: laplace × power_law × cross_corr=0.3 × 9 α × 5 reps = 45 runs
     """
     family = 'laplace'
-    cost_type = 'power_law'
+    cost_form = 'power_law'
 
     # All α values share seeds per rep (one cell for this block)
     for alpha in ALPHA_GRID:
@@ -278,10 +278,10 @@ def generate_correlation_block(scenarios, scenario_id, cell_id):
                 'scenario_id': scenario_id,
                 'cell_id': cell_id,
                 'log_family': family,
-                'cost_type': cost_type,
-                'c0': COST_PARAMS[cost_type]['c0'],
-                'c1': COST_PARAMS[cost_type]['c1'],
-                'c2': COST_PARAMS[cost_type]['c2'],
+                'cost_type': cost_form,
+                'c0': COST_PARAMS[cost_form]['c0'],
+                'c1': COST_PARAMS[cost_form]['c1'],
+                'c2': COST_PARAMS[cost_form]['c2'],
                 'lookback': 50,
                 'cross_corr': 0.3,
                 'alpha': alpha,
@@ -302,7 +302,7 @@ def generate_endogenous_alpha_block(scenarios, scenario_id, cell_id):
     alpha_endogenous=True, start α=0.1
     """
     for family in FAMILIES:
-        for cost_type in COST_TYPES:
+        for cost_form in COST_FORMS:
             # Each (family, cost_type) is a cell
             for rep in range(N_REPS):
                 s = make_base_params()
@@ -311,10 +311,10 @@ def generate_endogenous_alpha_block(scenarios, scenario_id, cell_id):
                     'scenario_id': scenario_id,
                     'cell_id': cell_id,
                     'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'cost_type': cost_form,
+                    'c0': COST_PARAMS[cost_form]['c0'],
+                    'c1': COST_PARAMS[cost_form]['c1'],
+                    'c2': COST_PARAMS[cost_form]['c2'],
                     'lookback': 50,
                     'cross_corr': 0.0,
                     'alpha': 0.1,  # Start alpha
@@ -335,7 +335,7 @@ def generate_rule_replay_block(scenarios, scenario_id, cell_id):
     Compares replay decision rule (Phase B default) to loggain.
     """
     family = 'laplace'
-    cost_type = 'power_law'
+    cost_form = 'power_law'
 
     # All α values share seeds per rep (one cell for this block)
     for alpha in ALPHA_GRID:
@@ -348,10 +348,10 @@ def generate_rule_replay_block(scenarios, scenario_id, cell_id):
                 'scenario_id': scenario_id,
                 'cell_id': cell_id,
                 'log_family': family,
-                'cost_type': cost_type,
-                'c0': COST_PARAMS[cost_type]['c0'],
-                'c1': COST_PARAMS[cost_type]['c1'],
-                'c2': COST_PARAMS[cost_type]['c2'],
+                'cost_type': cost_form,
+                'c0': COST_PARAMS[cost_form]['c0'],
+                'c1': COST_PARAMS[cost_form]['c1'],
+                'c2': COST_PARAMS[cost_form]['c2'],
                 'lookback': 50,
                 'cross_corr': 0.0,
                 'alpha': alpha,
@@ -374,7 +374,7 @@ def generate_floor_level_block(scenarios, scenario_id, cell_id):
     c=0.35 gives Hill ≈ 1.5 (flatter distribution)
     """
     family = 'laplace'
-    cost_type = 'power_law'
+    cost_form = 'power_law'
     floor_values = [0.10, 0.35]
 
     for floor_c in floor_values:
@@ -388,10 +388,10 @@ def generate_floor_level_block(scenarios, scenario_id, cell_id):
                     'scenario_id': scenario_id,
                     'cell_id': cell_id,
                     'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'cost_type': cost_form,
+                    'c0': COST_PARAMS[cost_form]['c0'],
+                    'c1': COST_PARAMS[cost_form]['c1'],
+                    'c2': COST_PARAMS[cost_form]['c2'],
                     'lookback': 50,
                     'cross_corr': 0.0,
                     'alpha': alpha,
@@ -412,8 +412,8 @@ def generate_lookback500_block(scenarios, scenario_id, cell_id):
     block = 'lookback'; one cell per family; α values share seeds within a cell.
     """
     families = ['laplace', 't3']
-    cost_type = 'power_law'
-    lookback = 500
+    cost_form = 'power_law'
+    window = 500
     alpha_values = [0.1, 0.3]
 
     for family in families:
@@ -425,11 +425,11 @@ def generate_lookback500_block(scenarios, scenario_id, cell_id):
                     'scenario_id': scenario_id,
                     'cell_id': cell_id,
                     'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
-                    'lookback': lookback,
+                    'cost_type': cost_form,
+                    'c0': COST_PARAMS[cost_form]['c0'],
+                    'c1': COST_PARAMS[cost_form]['c1'],
+                    'c2': COST_PARAMS[cost_form]['c2'],
+                    'lookback': window,
                     'cross_corr': 0.0,
                     'alpha': alpha,
                     'sharing_rule': SHARING_RULE,
@@ -449,25 +449,25 @@ def generate_search_block(scenarios, scenario_id, cell_id):
     α values: [0.05, 0.1, 0.3, 0.5]; lookback 50, cross_corr 0.0.
     One cell per (family, merge_thresh); α values share seeds within a cell.
     """
-    cost_type = 'power_law'
+    cost_form = 'power_law'
     merge_threshs = [0.2, 1.0]
     alpha_values = [0.05, 0.1, 0.3, 0.5]
 
     for family in FAMILIES:
-        for merge_thresh in merge_threshs:
+        for search_prob in merge_threshs:
             for alpha in alpha_values:
                 for rep in range(N_REPS):
                     s = make_base_params()
-                    s['merge_thresh'] = merge_thresh  # Override default search intensity
+                    s['merge_thresh'] = search_prob  # Override default search intensity
                     s.update({
                         'block': 'search',
                         'scenario_id': scenario_id,
                         'cell_id': cell_id,
                         'log_family': family,
-                        'cost_type': cost_type,
-                        'c0': COST_PARAMS[cost_type]['c0'],
-                        'c1': COST_PARAMS[cost_type]['c1'],
-                        'c2': COST_PARAMS[cost_type]['c2'],
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'],
+                        'c1': COST_PARAMS[cost_form]['c1'],
+                        'c2': COST_PARAMS[cost_form]['c2'],
                         'lookback': 50,
                         'cross_corr': 0.0,
                         'alpha': alpha,
@@ -489,7 +489,7 @@ def generate_size_block(scenarios, scenario_id, cell_id):
     floor_c = c*(N) from the C32 calibration. One cell per (M, N); α values share seeds within a cell.
     """
     family = 'laplace'
-    cost_type = 'power_law'
+    cost_form = 'power_law'
     sizes = [(25, 25), (25, 100), (100, 25), (100, 100)]
     alpha_values = [0.0, 0.1, 0.3, 0.5]
 
@@ -505,10 +505,10 @@ def generate_size_block(scenarios, scenario_id, cell_id):
                     'scenario_id': scenario_id,
                     'cell_id': cell_id,
                     'log_family': family,
-                    'cost_type': cost_type,
-                    'c0': COST_PARAMS[cost_type]['c0'],
-                    'c1': COST_PARAMS[cost_type]['c1'],
-                    'c2': COST_PARAMS[cost_type]['c2'],
+                    'cost_type': cost_form,
+                    'c0': COST_PARAMS[cost_form]['c0'],
+                    'c1': COST_PARAMS[cost_form]['c1'],
+                    'c2': COST_PARAMS[cost_form]['c2'],
                     'lookback': 50,
                     'cross_corr': 0.0,
                     'alpha': alpha,
@@ -534,7 +534,7 @@ def generate_cost_level_full_block(scenarios, scenario_id, cell_id):
     cost_types = ['linear', 'quadratic']
     multipliers = [0.5, 2.0]
 
-    for cost_type in cost_types:
+    for cost_form in cost_types:
         for mult in multipliers:
             for alpha in ALPHA_GRID:
                 for rep in range(N_REPS):
@@ -544,10 +544,10 @@ def generate_cost_level_full_block(scenarios, scenario_id, cell_id):
                         'scenario_id': scenario_id,
                         'cell_id': cell_id,
                         'log_family': family,
-                        'cost_type': cost_type,
-                        'c0': COST_PARAMS[cost_type]['c0'] * mult,
-                        'c1': COST_PARAMS[cost_type]['c1'] * mult,
-                        'c2': COST_PARAMS[cost_type]['c2'] * mult,
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'] * mult,
+                        'c1': COST_PARAMS[cost_form]['c1'] * mult,
+                        'c2': COST_PARAMS[cost_form]['c2'] * mult,
                         'cost_multiplier': mult,
                         'lookback': 50,
                         'cross_corr': 0.0,
@@ -632,9 +632,9 @@ def main():
     print("=" * 50)
     print(f"Fixed parameters:")
     print(f"  M=N={M}, T={T}, burn_in={BURN_IN}")
-    print(f"  merge_thresh={MERGE_THRESH}")
+    print(f"  merge_thresh={SEARCH_PROB}")
     print(f"  growth_process={GROWTH_PROCESS}")
-    print(f"  mu_range={MU_RANGE}, sigma_range={SIGMA_RANGE}")
+    print(f"  mu_range={MU_RANGE}, sigma_range={IQR_RANGE}")
     print(f"  floor_c={FLOOR_C:.10f} (exponent=1.06)")
     print(f"  metric_every={METRIC_EVERY}")
     print(f"  α grid: {ALPHA_GRID}")

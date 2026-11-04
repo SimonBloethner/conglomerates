@@ -81,7 +81,8 @@ def test_phase_a_identity():
 
     # Run current code with Phase A defaults
     print("Running current code with Phase A defaults...")
-    result_cur = current.model(params, seed=seed, market_corr='identity')
+    # C34: the current model takes keyword arguments (the vendored reference keeps the list)
+    result_cur = current.model(**current._legacy_params(params), seed=seed, market_corr='identity')
 
     # Phase A reference structure (12 elements):
     # 0: mean_members

@@ -43,10 +43,10 @@ import numpy as np
 import pandas as pd
 
 
-def events_from_trace(logshare, cong, floor, home, l=50, tol=0.25, jump=None):
+def events_from_trace(logshare, unit, floor, home, l=50, tol=0.25, jump=None):
     T, F = logshare.shape
     owner = logshare - np.cumsum(jump, axis=0) if jump is not None else None
-    entered = (cong[:-1] == -1) & (cong[1:] >= 0)          # (T-1, F): entry at step t+1
+    entered = (unit[:-1] == -1) & (unit[1:] >= 0)          # (T-1, F): entry at step t+1
     steps, firms = np.nonzero(entered)
     steps = steps + 1
     rows = []
@@ -56,7 +56,7 @@ def events_from_trace(logshare, cong, floor, home, l=50, tol=0.25, jump=None):
         m = home[i]
         in_market = np.nonzero(home == m)[0]
         in_market = in_market[in_market != i]
-        standalone_before = (cong[t - l:t + 1][:, in_market] == -1).all(axis=0)
+        standalone_before = (unit[t - l:t + 1][:, in_market] == -1).all(axis=0)
         cands = in_market[standalone_before]
         before_i = (logshare[t, i] - logshare[t - l, i]) / l
         after_i = (logshare[t + l, i] - logshare[t, i]) / l
@@ -65,9 +65,9 @@ def events_from_trace(logshare, cong, floor, home, l=50, tol=0.25, jump=None):
             after_o = (owner[t + l, i] - owner[t, i]) / l
         else:
             before_o = after_o = np.nan
-        row = dict(step=t, firm=i, market=m, K_at_entry=int((cong[t] == cong[t, i]).sum()),
+        row = dict(step=t, firm=i, market=m, K_at_entry=int((unit[t] == unit[t, i]).sum()),
                    logshare_entry=float(logshare[t, i]), before=before_i, after=after_i,
-                   stayed=bool((cong[t:t + l, i] >= 0).all()),
+                   stayed=bool((unit[t:t + l, i] >= 0).all()),
                    floor_before=bool(floor[i, t - l:t].any()),
                    floor_after=bool(floor[i, t:t + l].any()),
                    control=-1, control_before=np.nan, control_after=np.nan,
@@ -81,7 +81,7 @@ def events_from_trace(logshare, cong, floor, home, l=50, tol=0.25, jump=None):
                 cb = (logshare[t, c] - logshare[t - l, c]) / l
                 ca = (logshare[t + l, c] - logshare[t, c]) / l
                 row.update(control=int(c), control_before=cb, control_after=ca,
-                           control_stayed_standalone=bool((cong[t:t + l + 1, c] == -1).all()),
+                           control_stayed_standalone=bool((unit[t:t + l + 1, c] == -1).all()),
                            control_floor_before=bool(floor[c, t - l:t].any()),
                            did=(after_i - before_i) - (ca - cb))
                 if owner is not None:

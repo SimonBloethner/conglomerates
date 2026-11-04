@@ -17,10 +17,9 @@ def test_rank_stats_output_structure():
     """
     Verify model returns 13 elements with rank_range and rank_std at correct indices.
     """
-    params = [10, 10, 100, 0.0, 100, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=10, N=10, T=100, alpha=0.0, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=123, market_corr='identity')
+    result = model(**params, seed=123, market_corr='identity')
 
     assert len(result) == 13, f"Expected 13 elements, got {len(result)}"
 
@@ -48,10 +47,9 @@ def test_rank_stats_reasonable_values():
     Verify rank statistics have reasonable values.
     """
     M, N, T = 15, 15, 200
-    params = [M, N, T, 0.0, M * N, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     rank_range = result[10]
     rank_std = result[11]
@@ -78,12 +76,11 @@ def test_rank_stats_reproducibility():
     Verify rank statistics are reproducible with the same seed.
     """
     M, N, T = 20, 20, 300
-    params = [M, N, T, 0.1, M * N, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=M, N=N, T=T, alpha=0.1, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run twice with same seed
-    result1 = model(params, seed=12345, market_corr='identity')
-    result2 = model(params, seed=12345, market_corr='identity')
+    result1 = model(**params, seed=12345, market_corr='identity')
+    result2 = model(**params, seed=12345, market_corr='identity')
 
     rank_range1 = result1[10]
     rank_range2 = result2[10]
@@ -102,11 +99,10 @@ def test_rank_stats_vary_with_seed():
     Verify rank statistics differ with different seeds.
     """
     M, N, T = 15, 15, 200
-    params = [M, N, T, 0.0, M * N, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
-    result1 = model(params, seed=111, market_corr='identity')
-    result2 = model(params, seed=222, market_corr='identity')
+    result1 = model(**params, seed=111, market_corr='identity')
+    result2 = model(**params, seed=222, market_corr='identity')
 
     rank_range1 = result1[10]
     rank_range2 = result2[10]

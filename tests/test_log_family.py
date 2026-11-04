@@ -26,7 +26,7 @@ SEED = 42       # fixed seed
 
 
 def generate_shocks_like_model(markets, firms_per_market, steps,
-                                mu_range, sigma_range, log_family, nu,
+                                mu_range, iqr_range, log_family, nu,
                                 rho, cross_corr, seed):
     """
     Replicate the shock generation logic from model() to test it directly.
@@ -38,7 +38,7 @@ def generate_shocks_like_model(markets, firms_per_market, steps,
     cg.seed_numba(seed)
 
     min_mu, max_mu = mu_range
-    min_sig, max_sig = sigma_range
+    min_sig, max_sig = iqr_range
 
     # Replicate growth_vars generation from model()
     mu_sig_corr = 0.7
@@ -120,13 +120,13 @@ def test_log_family_mean():
     Test catches: leftover -σ²/2 term or location bug.
     """
     mu_range = (0.01, 0.1)
-    sigma_range = (0.01, 0.05)
+    iqr_range = (0.01, 0.05)
 
     for family in ['normal', 'laplace', 'student_t']:
         print(f"  Testing {family} mean...")
 
         shocks, mu_m, iqr_m = generate_shocks_like_model(
-            M, N, T, mu_range, sigma_range, family, 3.0,
+            M, N, T, mu_range, iqr_range, family, 3.0,
             rho=0.0, cross_corr=0.0, seed=SEED
         )
 
@@ -153,14 +153,14 @@ def test_log_family_iqr():
     Test catches: scale conversion errors.
     """
     mu_range = (0.05, 0.05)  # Fixed mu
-    sigma_range = (0.05, 0.05)  # Fixed IQR for easier verification
+    iqr_range = (0.05, 0.05)  # Fixed IQR for easier verification
     target_iqr = 0.05
 
     for family in ['normal', 'laplace', 'student_t']:
         print(f"  Testing {family} IQR...")
 
         shocks, mu_m, iqr_m = generate_shocks_like_model(
-            M, N, T, mu_range, sigma_range, family, 3.0,
+            M, N, T, mu_range, iqr_range, family, 3.0,
             rho=0.0, cross_corr=0.0, seed=SEED
         )
 
@@ -193,10 +193,10 @@ def test_laplace_kurtosis():
     Allowing (4, 8) gives buffer for sampling variation.
     """
     mu_range = (0.05, 0.05)
-    sigma_range = (0.05, 0.05)
+    iqr_range = (0.05, 0.05)
 
     shocks, mu_m, iqr_m = generate_shocks_like_model(
-        M, N, T, mu_range, sigma_range, 'laplace', 3.0,
+        M, N, T, mu_range, iqr_range, 'laplace', 3.0,
         rho=0.0, cross_corr=0.0, seed=SEED
     )
 
@@ -224,10 +224,10 @@ def test_student_t_kurtosis():
     Sample kurtosis should be very high.
     """
     mu_range = (0.05, 0.05)
-    sigma_range = (0.05, 0.05)
+    iqr_range = (0.05, 0.05)
 
     shocks, mu_m, iqr_m = generate_shocks_like_model(
-        M, N, T, mu_range, sigma_range, 'student_t', 3.0,
+        M, N, T, mu_range, iqr_range, 'student_t', 3.0,
         rho=0.0, cross_corr=0.0, seed=SEED
     )
 
@@ -253,12 +253,12 @@ def test_copula_preserves_marginals():
     Test catches: copula that distorts marginals or drops correlation.
     """
     mu_range = (0.05, 0.05)
-    sigma_range = (0.05, 0.05)
+    iqr_range = (0.05, 0.05)
     target_iqr = 0.05
 
     # First generate uncorrelated baseline
     shocks_uncorr, mu_m, iqr_m = generate_shocks_like_model(
-        M, N, T, mu_range, sigma_range, 'laplace', 3.0,
+        M, N, T, mu_range, iqr_range, 'laplace', 3.0,
         rho=0.0, cross_corr=0.0, seed=SEED
     )
 
@@ -273,7 +273,7 @@ def test_copula_preserves_marginals():
 
     # Now generate correlated shocks
     shocks_corr, mu_m, iqr_m = generate_shocks_like_model(
-        M, N, T, mu_range, sigma_range, 'laplace', 3.0,
+        M, N, T, mu_range, iqr_range, 'laplace', 3.0,
         rho=0.0, cross_corr=0.3, seed=SEED
     )
     shocks_corr_reshaped = shocks_corr.reshape(T, M, N)
@@ -313,21 +313,17 @@ def test_model_accepts_log_family_params():
     Test catches: parameters not being passed through.
     """
     total_firms = M * N
-    params = [
-        M, N, 10, ALPHA, total_firms,  # Short run for speed
-        0.0, 4, 0.85, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=10, alpha=ALPHA, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Test all families
     for family in ['normal', 'laplace', 'student_t']:
         result = cg.model(
-            params, seed=SEED,
+            **params, seed=SEED,
             growth_process='log_family',
-            log_family=family,
+            family=family,
             nu=3.0,
             mu_range=(0.01, 0.1),
-            sigma_range=(0.01, 0.05),
+            iqr_range=(0.01, 0.05),
             rho=0.0,
             cross_corr=0.0
         )
@@ -346,7 +342,7 @@ def test_phase_b_identity_with_log_family():
 
     Test catches: any change to default behaviour.
     """
-    import test_phase_b_identity
+    from tests import test_phase_b_identity
     test_phase_b_identity.test_phase_b_identity()
     print("PASS: Phase B identity preserved")
 

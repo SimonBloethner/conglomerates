@@ -41,7 +41,7 @@ def test_proportional_unchanged():
     """Proportional sharing, alpha_endogenous=False: bit-identical to c144756.
     Catches any leak of the endogenous-alpha changes (cong_alpha must equal share everywhere) or of the
     limited-liability change into the main configuration."""
-    hp = cg.model(PARAMS, **KW)[-1]
+    hp = cg.model(**PARAMS, **KW)[-1]
     s = hp['summary']
     for k in ('K_mean', 'cong_capital_share_median', 'mergers_per_period', 'floor_exits_per_period'):
         assert abs(s[k] - PROPORTIONAL_C144756[k]) < 1e-12, k
@@ -57,9 +57,9 @@ def equal_run(tmp_path_factory):
     def wrapped(*a):
         out = orig(*a)
         new_log_states = out[0]
-        cong_firms, cong_size, active_ids, log_states_curr, step = a[0], a[1], a[2], a[4], a[9]
+        unit_members, unit_size, active_ids, log_states_curr, step = a[0], a[1], a[2], a[4], a[8]
         for cid in active_ids:
-            for f in cong_firms[cid, :cong_size[cid]]:
+            for f in unit_members[cid, :unit_size[cid]]:
                 if abs((new_log_states[f] - log_states_curr[f]) - RUIN_STEP) < 1e-6:
                     events.append((int(step), int(f)))
         return out
@@ -67,7 +67,7 @@ def equal_run(tmp_path_factory):
     trace_path = str(tmp_path_factory.mktemp('c31eq') / 'trace.npz')
     cg.process_conglomerate_pooling_numba = wrapped
     try:
-        hp = cg.model(PARAMS, trace_path=trace_path, **dict(KW, sharing_rule='equal'))[-1]
+        hp = cg.model(**PARAMS, trace_path=trace_path, **dict(KW, sharing_rule='equal'))[-1]
     finally:
         cg.process_conglomerate_pooling_numba = orig
     return hp, np.load(trace_path), events
@@ -82,7 +82,7 @@ def test_equal_ruin_events_floor_and_standalone(equal_run):
     ruin = hp['pool_ruin_per_period']
     assert ruin.sum() > 0
     assert len(events) == int(ruin.sum())
-    floor, cong = z['floor'], z['cong']
+    floor, unit = z['floor'], z['cong']
     for step, firm in events:
         assert floor[firm, step], (step, firm)
-        assert cong[step + 1, firm] == -1, (step, firm)
+        assert unit[step + 1, firm] == -1, (step, firm)

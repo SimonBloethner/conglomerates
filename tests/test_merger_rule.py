@@ -15,13 +15,12 @@ def test_alpha_zero_no_mergers():
     proposals_per_period.sum() > 0 but mergers_per_period.sum() == 0
     """
     # Small run for speed
-    params = [20, 20, 300, 0.0, 400, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]  # α=0
+    params = dict(M=20, N=20, T=300, alpha=0.0, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)  # α=0
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     # Unpack results - 13 elements (online rank stats)
-    (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
+    (mean_members, quantiles_members, num_unit, avg_shares, quantiles_shares,
      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
      exits_per_period, rank_range, rank_std, hyperparameters) = result
 
@@ -40,11 +39,10 @@ def test_M_not_equals_N_completes():
     """
     M = 10
     N = 25
-    params = [M, N, 200, 0.2, M * N, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=M, N=N, T=200, alpha=0.2, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Should complete without error
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     # Verify we got valid output
     assert result is not None
@@ -56,13 +54,12 @@ def test_positive_alpha_has_mergers():
     """
     At positive α with reasonable cost, some mergers should occur.
     """
-    params = [30, 30, 500, 0.2, 900, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]  # α=0.2
+    params = dict(M=30, N=30, T=500, alpha=0.2, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)  # α=0.2
 
-    result = model(params, seed=42, market_corr='identity')
+    result = model(**params, seed=42, market_corr='identity')
 
     # Unpack results - 13 elements (online rank stats)
-    (mean_members, quantiles_members, num_cong, avg_shares, quantiles_shares,
+    (mean_members, quantiles_members, num_unit, avg_shares, quantiles_shares,
      gini_coefficient, avg_ranks, mergers_per_period, proposals_per_period,
      exits_per_period, rank_range, rank_std, hyperparameters) = result
 
@@ -82,12 +79,11 @@ def test_merger_kernel_optimization_reproducibility():
     This tests that the O(K·h) optimization produces the same results
     as would be expected from the original O(K²·h) implementation.
     """
-    params = [25, 25, 400, 0.15, 625, 0.05, 4, 0.85, False, 50,
-              'power_law', None, None, None]
+    params = dict(M=25, N=25, T=400, alpha=0.15, search_prob=0.05, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run twice with same seed
-    result1 = model(params, seed=12345, market_corr='identity')
-    result2 = model(params, seed=12345, market_corr='identity')
+    result1 = model(**params, seed=12345, market_corr='identity')
+    result2 = model(**params, seed=12345, market_corr='identity')
 
     # Unpack results - 13 elements (online rank stats)
     (mean_members1, quantiles_members1, num_cong1, avg_shares1, quantiles_shares1,

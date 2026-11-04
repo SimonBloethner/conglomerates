@@ -36,13 +36,13 @@ def test_market_mean_size_equals_one():
     """
     M, N, T = 10, 50, 2000
     total_firms = M * N
-    params = [M, N, T, 0.3, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.3, search_prob=0.001, window=50)
 
     # Run with market_size_fixed=True
     results = model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.05,  # Floor on to test interaction
         market_size_fixed=True,
         metric_every=10  # Record more frequently for testing
@@ -72,12 +72,12 @@ def test_renorm_correction_below_threshold():
     """
     M, N, T = 10, 50, 2000
     total_firms = M * N
-    params = [M, N, T, 0.3, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.3, search_prob=0.001, window=50)
 
     results = model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.05,
         market_size_fixed=True,
         burn_in=500
@@ -106,13 +106,13 @@ def test_within_market_share_invariance():
     M, N, T = 5, 20, 500
     total_firms = M * N
     # α=0 (share=0) means no pooling
-    params = [M, N, T, 0.0, total_firms, 0.0, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.0, window=50)
 
     # Run with flag OFF
     results_off = model(
-        params, seed=123,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=123,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.05,
         market_size_fixed=False,
         metric_every=10
@@ -120,9 +120,9 @@ def test_within_market_share_invariance():
 
     # Run with flag ON (same seed)
     results_on = model(
-        params, seed=123,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=123,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.05,
         market_size_fixed=True,
         metric_every=10
@@ -161,12 +161,12 @@ def test_decision_consistency():
     M, N, T = 5, 20, 100
     total_firms = M * N
     # α=0, no mergers, no floor
-    params = [M, N, T, 0.0, total_firms, 0.0, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.0, search_prob=0.0, window=50)
 
     results = model(
-        params, seed=456,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=456,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.0,  # No floor
         market_size_fixed=True,
         metric_every=1  # Record every step
@@ -203,13 +203,13 @@ def test_floor_hit_count():
     """
     M, N, T = 5, 50, 500
     total_firms = M * N
-    params = [M, N, T, 0.1, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.1, search_prob=0.001, window=50)
 
     # Use high floor_c to ensure hits happen
     results = model(
-        params, seed=789,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=789,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         floor_c=0.3,  # High floor to ensure many hits
         market_size_fixed=True,
         metric_every=10
@@ -243,20 +243,20 @@ def test_phase_b_identity_with_flag_off():
     """
     M, N, T = 5, 20, 200
     total_firms = M * N
-    params = [M, N, T, 0.1, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.1, search_prob=0.001, window=50)
 
     # Run twice with same seed, flag off (default)
     results1 = model(
-        params, seed=111,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=111,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         market_size_fixed=False  # Default
     )
 
     results2 = model(
-        params, seed=111,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), g=0.0,
+        **params, seed=111,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), g=0.0,
         market_size_fixed=False  # Default
     )
 
@@ -275,11 +275,11 @@ def test_validation_requires_log_family():
     """
     M, N, T = 5, 20, 100
     total_firms = M * N
-    params = [M, N, T, 0.1, total_firms, 0.001, 1, 0.001, False, 50]
+    params = dict(M=M, N=N, T=T, alpha=0.1, search_prob=0.001, window=50)
 
     try:
         model(
-            params, seed=123,
+            **params, seed=123,
             growth_process='normal_net',  # Not log_family
             market_size_fixed=True
         )

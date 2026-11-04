@@ -13,19 +13,19 @@ import pytest
 import collaborative_growth as cg
 from tests.test_floor_exit import PARAMS, KW
 
-LOOKBACK = PARAMS[9]
-SHARE = PARAMS[3]
+LOOKBACK = PARAMS['window']
+SHARE = PARAMS['alpha']
 
 
 def _gain_current(firm, alpha, a):
     """Delta_current of `firm` in its unit at `alpha`, recomputed from the exit test's own arguments."""
-    (_, states_buf, returns_buf, _, lookback, step, _, g, _, sharing_code, costs, firm_conglom,
-     cong_firms, cong_size, _) = a
-    cid = firm_conglom[firm]
-    members = cong_firms[cid, :cong_size[cid]].copy()
+    (_, states_buf, returns_buf, _, window, step, _, g, _, sharing_code, costs, firm_unit,
+     unit_members, unit_size, _) = a
+    cid = firm_unit[firm]
+    members = unit_members[cid, :unit_size[cid]].copy()
     j = int(np.nonzero(members == firm)[0][0])
-    past_states = cg.get_historical_states_numba(states_buf, step - lookback, step, members)
-    past_returns = cg.get_historical_returns_numba(returns_buf, step - lookback, step, members)
+    past_states = cg.get_historical_states_numba(states_buf, step - window, step, members)
+    past_returns = cg.get_historical_returns_numba(returns_buf, step - window, step, members)
     eps, sz, sum_s, sum_s_eps = cg.prepare_window_loggain(members, past_returns, np.exp(past_states), g)
     return cg.member_gain_from_prepared(j, len(members), eps, sz, sum_s, sum_s_eps, alpha,
                                         costs[len(members)], sharing_code)
@@ -37,26 +37,26 @@ def run():
     orig_kernel, orig_exit = cg.merger_kernel_numba, cg.compute_exit_candidates_numba
 
     def kernel(*a):
-        step, firm_conglom, cong_size, cong_active, cong_alpha = a[0], a[5], a[9], a[10], a[23]
-        before = (cong_alpha.copy(), cong_size.copy(), cong_active.copy(), firm_conglom.copy())
+        step, firm_unit, unit_size, unit_active, unit_alpha = a[0], a[4], a[8], a[9], a[22]
+        before = (unit_alpha.copy(), unit_size.copy(), unit_active.copy(), firm_unit.copy())
         out = orig_kernel(*a)
-        after = (cong_alpha.copy(), cong_size.copy(), cong_active.copy(), firm_conglom.copy())
+        after = (unit_alpha.copy(), unit_size.copy(), unit_active.copy(), firm_unit.copy())
         kernel_calls.append((int(step), before, after))
         return out
 
     def exit_test(*a):
         out = orig_exit(*a)
-        firm_conglom, cong_alpha = a[11], a[14]
+        firm_unit, unit_alpha = a[11], a[14]
         exited = set(int(f) for f in out)
         for f in a[3]:
-            alpha_unit = cong_alpha[firm_conglom[f]]
+            alpha_unit = unit_alpha[firm_unit[f]]
             exit_checks.append((int(a[5]), int(f), float(alpha_unit), _gain_current(f, alpha_unit, a),
                                 _gain_current(f, SHARE, a), int(f) in exited))
         return out
 
     cg.merger_kernel_numba, cg.compute_exit_candidates_numba = kernel, exit_test
     try:
-        cg.model(PARAMS, **dict(KW, alpha_endogenous=True))
+        cg.model(**PARAMS, **dict(KW, alpha_endogenous=True))
     finally:
         cg.merger_kernel_numba, cg.compute_exit_candidates_numba = orig_kernel, orig_exit
     return kernel_calls, exit_checks

@@ -32,16 +32,16 @@ import numpy as np
 import pandas as pd
 
 
-def panel_from_trace(logshare, cong, floor, home, jump, burn_in=0):
+def panel_from_trace(logshare, unit, floor, home, jump, burn_in=0):
     T1, F = logshare.shape
     ls = logshare.astype(np.float64)
     inc = (ls[1:] - ls[:-1]) - jump[1:].astype(np.float64)        # (T, F): period t -> t+1
-    member = cong[:-1] >= 0                                        # status at start of period
+    member = unit[:-1] >= 0                                        # status at start of period
     hit = floor.T                                                  # (T, F): floor hit during period t
     # K at start of period: count members per (t, cong id)
     K = np.zeros_like(inc, dtype=np.int16)
     for t in range(T1 - 1):
-        row = cong[t]
+        row = unit[t]
         m = row >= 0
         if m.any():
             ids, counts = np.unique(row[m], return_counts=True)

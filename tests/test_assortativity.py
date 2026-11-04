@@ -8,7 +8,8 @@ sensible values.
 
 import numpy as np
 import sys
-sys.path.insert(0, '/groups/m-larch/bt307958/IOxEE')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root (was a hard-coded stale /groups path)
 import collaborative_growth as cg
 
 
@@ -24,18 +25,14 @@ def test_assortativity_in_range():
     M = N = 20
     T = 600
     alpha = 0.3
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     result = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain'
     )
@@ -75,18 +72,14 @@ def test_assortativity_random_assignment_near_zero():
     M = N = 20
     T = 100  # Short run
     alpha = 0.0  # No mergers
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     result = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True
     )
 
@@ -103,21 +96,21 @@ def test_assortativity_random_assignment_near_zero():
     # Random conglomerate assignment:
     # Assign each firm to a random conglomerate (0 to 9)
     np.random.seed(123)
-    n_cong = 10
-    firm_cong_random = np.random.randint(0, n_cong, size=total_firms)
+    n_unit = 10
+    firm_unit_random = np.random.randint(0, n_unit, size=total_firms)
 
     # Compute mean IQR per conglomerate
-    cong_mean_iqr = np.zeros(total_firms, dtype=np.float64)
-    for cid in range(n_cong):
-        members = np.where(firm_cong_random == cid)[0]
+    unit_mean_iqr = np.zeros(total_firms, dtype=np.float64)
+    for cid in range(n_unit):
+        members = np.where(firm_unit_random == cid)[0]
         if len(members) >= 2:
             mean_iqr = np.mean(firm_iqr[members])
-            cong_mean_iqr[members] = mean_iqr
+            unit_mean_iqr[members] = mean_iqr
 
     # Compute assortativity for random assignment
     # (all firms are in conglomerates in this test)
     x = firm_iqr
-    y = cong_mean_iqr
+    y = unit_mean_iqr
     random_assort = np.corrcoef(x, y)[0, 1]
 
     print(f"Random assignment assortativity: {random_assort:.4f}")
@@ -140,18 +133,14 @@ def test_assortativity_alpha_zero():
     M = N = 10
     T = 100
     alpha = 0.0  # No mergers
-    lookback = 50
+    window = 50
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, lookback,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=window, cost_form='power_law', b0=None, b1=None, b2=None)
 
     result = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True
     )
 

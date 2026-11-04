@@ -20,15 +20,15 @@ KEEP = 1.0 + CAP  # growth factor of a capped member (~1e-12; 0.99998894e-12 in 
 def _pool(sizes, rel_returns, alpha, phi, sharing_rule_code):
     """One unit holding firms 0..K-1; returns (new sizes, pool_ruin, pool_shortfall, pool_wipeout)."""
     K = len(sizes)
-    cong_firms = np.arange(K, dtype=np.int32).reshape(1, K)
-    cong_size = np.array([K], dtype=np.int16)
+    unit_members = np.arange(K, dtype=np.int32).reshape(1, K)
+    unit_size = np.array([K], dtype=np.int16)
     active = np.array([0], dtype=np.int64)
     log_returns = np.log1p(np.asarray(rel_returns, dtype=np.float64))
     log_states = np.log(np.asarray(sizes, dtype=np.float64))
     costs = np.zeros(K + 1)
     costs[K] = phi
-    out = cg.process_conglomerate_pooling_numba(cong_firms, cong_size, active, log_returns, log_states, costs,
-                                                alpha, False, 50, 0, sharing_rule_code,
+    out = cg.process_conglomerate_pooling_numba(unit_members, unit_size, active, log_returns, log_states, costs,
+                                                alpha, 50, 0, sharing_rule_code,
                                                 np.full(1, alpha), False)
     new_log_states, _, ruin, shortfall, wipeout = out
     return np.exp(new_log_states), ruin, shortfall, wipeout
@@ -138,11 +138,11 @@ def _conservation_run(**overrides):
 
     def wrapped(*a):
         out = orig(*a)
-        cong_firms, cong_size, active_ids, log_returns, log_states, costs = a[:6]
+        unit_members, unit_size, active_ids, log_returns, log_states, costs = a[:6]
         new_log_states, _, ruin, shortfall, wipeout = out
         assert wipeout == 0
         for cid in active_ids:
-            members = cong_firms[cid, :cong_size[cid]]
+            members = unit_members[cid, :unit_size[cid]]
             s = np.exp(log_states[members])
             S = s.sum()
             identity = (s * (1.0 + np.expm1(log_returns[members]))).sum() - costs[len(members)] * S
@@ -156,7 +156,7 @@ def _conservation_run(**overrides):
 
     cg.process_conglomerate_pooling_numba = wrapped
     try:
-        hp = cg.model(PARAMS, **dict(KW, **overrides))[-1]
+        hp = cg.model(**PARAMS, **dict(KW, **overrides))[-1]
     finally:
         cg.process_conglomerate_pooling_numba = orig
     return hp, rec

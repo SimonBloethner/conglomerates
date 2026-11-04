@@ -170,9 +170,9 @@ def extract_post_burnin_metrics(result):
     if eff_members:
         K_values = []
         K_eff_values = []
-        for step_val, congs in eff_members:
-            if step_val >= burn_in and congs:
-                for cid, K, K_eff in congs:
+        for step_val, units in eff_members:
+            if step_val >= burn_in and units:
+                for cid, K, K_eff in units:
                     K_values.append(K)
                     K_eff_values.append(K_eff)
         if K_values:
@@ -222,7 +222,7 @@ def extract_post_burnin_metrics(result):
     return metrics
 
 
-def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
+def compute_assortativity_ratio(market_iqr, firm_unit, n_random_samples=100):
     """
     Compute assortativity ratio: SD of member IQR / SD of random K-subset.
 
@@ -241,7 +241,7 @@ def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
         - n_conglom: number of multi-member conglomerates
     """
     # Build mapping from firm index to market IQR
-    n_firms = len(firm_conglom)
+    n_firms = len(firm_unit)
     n_markets = len(market_iqr)
 
     if n_markets == 0 or n_firms == 0:
@@ -252,11 +252,11 @@ def compute_assortativity_ratio(market_iqr, firm_conglom, n_random_samples=100):
     firm_iqr = np.repeat(market_iqr, firms_per_market)
 
     # Find multi-member conglomerates
-    unique_conglom = np.unique(firm_conglom[firm_conglom >= 0])
+    unique_conglom = np.unique(firm_unit[firm_unit >= 0])
     ratios = []
 
     for cid in unique_conglom:
-        member_mask = firm_conglom == cid
+        member_mask = firm_unit == cid
         K = np.sum(member_mask)
         if K < 2:
             continue

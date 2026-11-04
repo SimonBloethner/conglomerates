@@ -32,18 +32,14 @@ def test_floor_enforced():
     FLOOR_C = 0.05
 
     total_firms = M * N
-    params = [
-        M, N, T, ALPHA, total_firms,
-        0.0, 4, 0.85, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=ALPHA, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     result = cg.model(
-        params, seed=SEED,
+        **params, seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.1, 0.1),
+        iqr_range=(0.1, 0.1),
         floor_c=FLOOR_C
     )
 
@@ -87,14 +83,10 @@ def test_floor_identity():
     SEED = 1
 
     total_firms = M * N
-    params = [
-        M, N, T, ALPHA, total_firms,
-        0.0, 4, 0.85, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=ALPHA, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run with floor_c=0 (off)
-    result = cg.model(params, seed=SEED, floor_c=0.0)
+    result = cg.model(**params, seed=SEED, floor_c=0.0)
 
     hyperparams = result[-1]
     floor_hits = hyperparams.get('floor_hits')
@@ -124,18 +116,14 @@ def test_floor_recount():
     FLOOR_C = 0.05
 
     total_firms = M * N
-    params = [
-        M, N, T, ALPHA, total_firms,
-        0.0, 4, 0.85, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=ALPHA, search_prob=0.0, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     result = cg.model(
-        params, seed=SEED,
+        **params, seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.1, 0.1),
+        iqr_range=(0.1, 0.1),
         floor_c=FLOOR_C
     )
 
@@ -156,11 +144,11 @@ def test_floor_recount():
 
     # Run again with same seed to verify count is deterministic
     result2 = cg.model(
-        params, seed=SEED,
+        **params, seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.1, 0.1),
+        iqr_range=(0.1, 0.1),
         floor_c=FLOOR_C
     )
 
@@ -216,11 +204,8 @@ def test_stationarity():
     total_firms = M * N
 
     def make_params(T):
-        return [
-            M, N, T, ALPHA, total_firms,
-            0.0, 4, 0.85, False, 50,
-            'power_law', None, None, None,
-        ]
+        return dict(M=M, N=N, T=T, alpha=ALPHA, search_prob=0.0, window=50,
+                    cost_form='power_law', b0=None, b1=None, b2=None)
 
     def compute_pooled_hill(log_states):
         """
@@ -238,11 +223,11 @@ def test_stationarity():
     # === WITH FLOOR ===
     # Run to T=3000 with floor
     result_floor_3000 = cg.model(
-        make_params(3000), seed=SEED,
+        **make_params(3000), seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.2, 0.2),
+        iqr_range=(0.2, 0.2),
         floor_c=FLOOR_C
     )
     states_floor_3000 = result_floor_3000[-1]['final_log_states']
@@ -250,11 +235,11 @@ def test_stationarity():
 
     # Run to T=6000 with floor (same seed = same trajectory for first 3000 steps)
     result_floor_6000 = cg.model(
-        make_params(6000), seed=SEED,
+        **make_params(6000), seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.2, 0.2),
+        iqr_range=(0.2, 0.2),
         floor_c=FLOOR_C
     )
     states_floor_6000 = result_floor_6000[-1]['final_log_states']
@@ -264,11 +249,11 @@ def test_stationarity():
     # === WITHOUT FLOOR ===
     # Run to T=3000 without floor
     result_nofloor_3000 = cg.model(
-        make_params(3000), seed=SEED,
+        **make_params(3000), seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.2, 0.2),
+        iqr_range=(0.2, 0.2),
         floor_c=0.0
     )
     states_nofloor_3000 = result_nofloor_3000[-1]['final_log_states']
@@ -276,11 +261,11 @@ def test_stationarity():
 
     # Run to T=6000 without floor
     result_nofloor_6000 = cg.model(
-        make_params(6000), seed=SEED,
+        **make_params(6000), seed=SEED,
         growth_process='log_family',
-        log_family='normal',
+        family='normal',
         mu_range=(0.03, 0.03),
-        sigma_range=(0.2, 0.2),
+        iqr_range=(0.2, 0.2),
         floor_c=0.0
     )
     states_nofloor_6000 = result_nofloor_6000[-1]['final_log_states']

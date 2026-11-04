@@ -12,15 +12,15 @@ def _pool_two_member_unit():
     """Two-member unit, sizes 100 and 0.5, alpha = 0.3, equal sharing, Phi = 0.
     The large member returns -20%, the small one 0%: the pool loss shared equally per firm is about
     12 times the small member's capital, so its delta is far below -1 before the cap."""
-    cong_firms = np.array([[0, 1]], dtype=np.int32)
-    cong_size = np.array([2], dtype=np.int16)
+    unit_members = np.array([[0, 1]], dtype=np.int32)
+    unit_size = np.array([2], dtype=np.int16)
     active = np.array([0], dtype=np.int64)
     log_returns = np.array([np.log(0.8), 0.0])
     log_states = np.log(np.array([100.0, 0.5]))
     costs = np.zeros(3)
-    cong_alpha = np.full(1, 0.3)
-    out = cg.process_conglomerate_pooling_numba(cong_firms, cong_size, active, log_returns, log_states, costs,
-                                                0.3, False, 50, 0, 0, cong_alpha, False)
+    unit_alpha = np.full(1, 0.3)
+    out = cg.process_conglomerate_pooling_numba(unit_members, unit_size, active, log_returns, log_states, costs,
+                                                0.3, 50, 0, 0, unit_alpha, False)
     return log_states, out
 
 
@@ -56,5 +56,5 @@ def test_ruined_member_at_floor_and_standalone(equal_run):  # noqa: F811
 def test_proportional_never_ruins():
     """Seeded M=N=20 proportional-sharing run: no member's delta is capped.
     Catches: the cap firing under proportional sharing (which would change the main configuration)."""
-    hp = cg.model(PARAMS, **KW)[-1]
+    hp = cg.model(**PARAMS, **KW)[-1]
     assert hp['pool_ruin_per_period'].sum() == 0

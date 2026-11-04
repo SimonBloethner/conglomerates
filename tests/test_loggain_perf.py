@@ -53,7 +53,7 @@ def test_bit_identical():
         sizes = np.exp(log_states[:-1, :])
 
         members = np.arange(K)
-        Phi_K = cg.management_cost_function(K, 'power_law')
+        Phi_K = cg.coordination_cost(K, 'power_law')
 
         for sharing_rule in [0, 1]:  # equal, proportional
             for i in range(K):
@@ -102,7 +102,7 @@ def test_speedup():
     sizes = np.exp(log_states[:-1, :])
 
     members = np.arange(K)
-    Phi_K = cg.management_cost_function(K, 'power_law')
+    Phi_K = cg.coordination_cost(K, 'power_law')
     sharing_rule = 1  # proportional
 
     n_calls = 1000
@@ -153,25 +153,21 @@ def test_full_model_identical():
     T = 600
     alpha = 0.3
 
-    params = [
-        M, N, T, alpha, M * N,
-        0.1, 4, 0.0, False, 50,
-        'power_law', None, None, None,
-    ]
+    params = dict(M=M, N=N, T=T, alpha=alpha, search_prob=0.1, window=50, cost_form='power_law', b0=None, b1=None, b2=None)
 
     # Run twice with same seed
     result1 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain'
     )
 
     result2 = cg.model(
-        params, seed=42,
-        growth_process='log_family', log_family='laplace',
-        sigma_range=(0.1, 0.3), floor_c=0.12717,
+        **params, seed=42,
+        growth_process='log_family', family='laplace',
+        iqr_range=(0.1, 0.3), floor_c=0.12717,
         g=0.02, market_size_fixed=True,
         decision_rule='loggain'
     )
