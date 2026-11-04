@@ -541,3 +541,17 @@ Tasks 2 and 3 then ran:
 "K moves by about ±0.5" (mean K, ×0.5 and ×2 against ×1): linear +0.24/−0.21 at α = 0.1, +0.42/−0.36 at 0.3, +0.88/−0.75 at 0.5; quadratic +0.10/−0.18, +0.11/−0.32, +0.40/−0.60. The direction holds everywhere. The size holds as an average for linear (mean |change| 0.48), is too large for quadratic (0.29), and grows with α in every family. ×1 uses different seeds from ×0.5 and ×2, so these differences carry between-seed noise.
 
 Storage: `/scratch` is wiped from time to time, so the C33 tree, including all 1800 result files, is in `/groups/m-larch/bt307958/IOxEE_c33`, verified by content checksum. Buffered writes over 1 MiB to `/groups` fail with an I/O error and leave zeros at the correct file size, so `sync_groups.sh` uses rsync for small files and `dd oflag=sync` for large ones. `/scratch/bt307958/traces_c29` (2.8 GB) and `/scratch/bt307958/c29/IOxEE/pilot_c/events` (2.4 GB) are not covered.
+
+# C34: limited liability charges the unit, demeaned renegotiation, notation rename
+
+Commits: C34a `7d5018f` (limited liability), C34b `cc47254` (demeaned renegotiation), C34c `b020237` (rename), then the reruns and outputs. The note is `diagnostics/c34_note.md`.
+
+## Departures from the brief
+
+- **All 1,800 runs rerun, not ~250.** A run is unchanged only if no member is capped at any step, burn-in included. The C33 tidy counts capped members only after burn-in, so the targeted list would have missed 17 main-block runs (438 among them) and 3 search-block runs whose only capped members are in burn-in. Rerunning everything costs about 102 CPU-hours (about 1.5 hours wall time on ~1,000 cores) and makes the identity a check rather than an assumption: 1,606 of 1,606 runs without capped members outside the endogenous-α block are byte-identical to C33.
+- **One wipeout (the brief expected none).** Scenario 438 (main, t3, quadratic, α = 0.3), step 102, during burn-in. Both members of a two-member unit drew log relative returns of −16.0 and −8.2 in the same period, so the unit's gross return (8.4e-5) is below Φ(2) = 1.06e-4. C33 capped both members of that unit in the same way, and the run is byte-identical to C33. The assertion in `run_pilot_c.py` stopped this run on the first pass. It now writes a warning and the count goes to the new tidy column `pool_wipeout_total`.
+- **`mu_range` is kept when `g` is None.** The 45 `rule-replay` runs have no `g`, so their market location comes from `mu_range`. Setting it to `g` would change their bits, though not their substance: under `market_size_fixed` a per-market location cancels from r̃ up to rounding. The correlated draw is kept in every case because q_m is its second column.
+- **Replay and shortfall.** As the brief proposes, the decision replay still returns −∞ when a replayed p ≤ −1 and does not model the redistribution (documented in MODEL_FLAGS.md). The brief left open whether the replay should cap and redistribute instead. This was not changed.
+- **Stale test import path.** `tests/test_assortativity.py` put `/groups/m-larch/bt307958/IOxEE` (a stale tree) first on `sys.path`, so `test_phase_b_identity`, which four tests import, was loaded from that tree. Fixed in C34c, with `tests/test_import_paths.py` as a guard.
+- **Submit script exit code.** `submit_pilot_c34.sh` now exits non-zero when the run fails. The trailing `echo` had made the failed first pass of scenario 438 show as COMPLETED in sacct.
+- **A fourth commit** holds the reruns and regenerated outputs, after C34c as the brief's order of work requires.

@@ -76,6 +76,7 @@ def extract_post_burnin_metrics(result):
     metrics['voluntary_exits_per_period'] = metrics['exits_per_period'] - metrics['floor_exits_per_period']
     metrics['pool_ruin_per_period'] = summary.get('pool_ruin_per_period', np.nan)  # C31
     metrics['pool_shortfall_per_period'] = summary.get('pool_shortfall_per_period', np.nan)  # C34
+    metrics['pool_wipeout_total'] = summary.get('pool_wipeout_total', np.nan)  # C34: whole run
     metrics['growth_gap_median'] = summary.get('growth_gap_median', np.nan)  # C17
 
     # Per-type acceptance rates (C17)

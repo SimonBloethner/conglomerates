@@ -28,6 +28,7 @@ EXPECTED_TIDY_COLUMNS = [
     'K_post_burnin_p75', 'K_eff_post_burnin_median', 'K_eff_post_burnin_p25',
     'K_eff_post_burnin_p75', 'alpha_adopted_median', 'alpha_adopted_mean',
     'alpha_adopted_std', 'assort_iqr', 'M', 'N',
+    'pool_ruin_per_period', 'pool_shortfall_per_period', 'pool_wipeout_total',  # C31, C34
 ]
 
 EXPECTED_TOTAL_ROWS = 1800

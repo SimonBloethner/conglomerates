@@ -3,8 +3,8 @@
 ## Overview
 
 - **Scenarios**: 1800
-- **Total runtime**: 393082s (109.19 CPU-hours)
-- **Mean ms/step**: 19.85 ± 15.37
+- **Total runtime**: 366135s (101.70 CPU-hours)
+- **Mean ms/step**: 18.49 ± 13.52
 - **Grid**: 50 × 50 (M × N); size block M, N ∈ {25, 100}
 
 ### Block counts
@@ -147,6 +147,23 @@ Source: `pilot_c/tidy.csv` column `K_post_burnin_median`, filtered by `block` an
 | linear | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
 | power_law | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
 | quadratic | 3.000 [3.000, 3.000] | 2.000 [2.000, 2.000] |
+
+### Limited liability by α (C34)
+
+Means over cost forms and replications. Capped members: members whose pooled factor hit the cap. Shortfall: capital charged to the other members of their unit (level units, market mean firm size = 1). Post-burn-in means per period; runs with capped members counted over t ≥ burn_in.
+Source: `pilot_c/tidy.csv` columns `K_mean`, `cong_capital_share_median`, `acceptance_rate`, `pool_ruin_per_period`, `pool_shortfall_per_period`, block `equal-split`
+
+| α | K (mean) | Pooled capital share | Acceptance rate | Capped members / period | Shortfall / period | Runs with capped members |
+|---|----------|----------------------|-----------------|-------------------------|--------------------|--------------------------|
+| 0.0 | n/a | 0.000 | 0.0000 | 0.00000 | 0.00000 | 0 of 20 |
+| 0.01 | 2.112 | 0.082 | 0.1024 | 0.00000 | 0.00000 | 0 of 20 |
+| 0.02 | 2.160 | 0.121 | 0.1481 | 0.00000 | 0.00000 | 0 of 20 |
+| 0.05 | 2.233 | 0.155 | 0.1725 | 0.00003 | 0.00000 | 2 of 20 |
+| 0.1 | 2.303 | 0.176 | 0.1896 | 0.00095 | 0.00003 | 19 of 20 |
+| 0.2 | 2.366 | 0.192 | 0.1977 | 0.00623 | 0.00032 | 20 of 20 |
+| 0.3 | 2.391 | 0.195 | 0.1915 | 0.01573 | 0.00103 | 20 of 20 |
+| 0.4 | 2.416 | 0.192 | 0.1819 | 0.02793 | 0.00198 | 20 of 20 |
+| 0.5 | 2.422 | 0.184 | 0.1709 | 0.04520 | 0.00378 | 20 of 20 |
 
 ## Cost Level
 
@@ -490,18 +507,18 @@ Source: `pilot_c/tidy.csv` columns `alpha_adopted_median`, `alpha_adopted_mean`,
 
 | Family | Cost | α adopted (median) | α adopted (mean) | K |
 |--------|------|--------------------|------------------|---|
-| laplace | exponential | 0.800 | 0.741 | 10.0 |
-| laplace | linear | 0.800 | 0.731 | 7.0 |
-| laplace | power_law | 0.800 | 0.728 | 7.0 |
-| laplace | quadratic | 0.800 | 0.733 | 8.0 |
-| normal | exponential | 0.800 | 0.781 | 20.0 |
-| normal | linear | 0.800 | 0.748 | 9.0 |
-| normal | power_law | 0.800 | 0.748 | 9.0 |
-| normal | quadratic | 0.800 | 0.742 | 11.0 |
-| t3 | exponential | 0.750 | 0.700 | 5.0 |
-| t3 | linear | 0.750 | 0.694 | 5.0 |
-| t3 | power_law | 0.750 | 0.694 | 5.0 |
-| t3 | quadratic | 0.750 | 0.691 | 5.0 |
+| laplace | exponential | 0.850 | 0.813 | 13.0 |
+| laplace | linear | 0.850 | 0.803 | 8.0 |
+| laplace | power_law | 0.800 | 0.803 | 9.0 |
+| laplace | quadratic | 0.800 | 0.802 | 10.0 |
+| normal | exponential | 0.800 | 0.816 | 22.0 |
+| normal | linear | 0.850 | 0.821 | 11.0 |
+| normal | power_law | 0.850 | 0.818 | 11.0 |
+| normal | quadratic | 0.850 | 0.818 | 13.0 |
+| t3 | exponential | 0.800 | 0.786 | 5.0 |
+| t3 | linear | 0.800 | 0.786 | 5.0 |
+| t3 | power_law | 0.800 | 0.782 | 5.0 |
+| t3 | quadratic | 0.800 | 0.790 | 5.0 |
 
 ![Endogenous α histogram](pilot_c_endo_alpha_hist.png)
 
@@ -512,9 +529,9 @@ Source: `pilot_c/alpha_scatter.csv`. Figure: `diagnostics/pilot_c_alpha_scatter.
 
 | Family | n | ρ(α, sd_iqr) | p | ρ(α, mean_iqr) | p |
 |--------|---|--------------|---|----------------|---|
-| normal | 3244 | 0.062 | 0.000441 | 0.363 | 1.49e-101 |
-| laplace | 3323 | 0.047 | 0.00666 | 0.320 | 7.1e-80 |
-| t3 | 4124 | 0.102 | 5.01e-11 | 0.240 | 5.59e-55 |
+| normal | 3210 | 0.040 | 0.0229 | 0.260 | 6.39e-51 |
+| laplace | 3353 | 0.053 | 0.00214 | 0.194 | 8.97e-30 |
+| t3 | 4166 | 0.069 | 9.3e-06 | 0.139 | 2.51e-19 |
 
 ![α vs sd of member IQR](pilot_c_alpha_scatter.png)
 
@@ -537,8 +554,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 393082s (109.19 CPU-hours)
-- **Mean ms/step**: 19.85 ± 15.37
+- **Total runtime**: 366135s (101.70 CPU-hours)
+- **Mean ms/step**: 18.49 ± 13.52
 
 ## Figures
 

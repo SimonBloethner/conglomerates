@@ -1015,6 +1015,27 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
             lines.append(f"| {row['cost_type']} | {k_main} | {k_equal} |")
         lines.append("")
 
+    # C34: limited liability in the equal-split block (capped members and the shortfall charged to the unit)
+    eq = df[df['block'] == 'equal-split']
+    if len(eq) > 0 and 'pool_shortfall_per_period' in eq.columns:
+        lines.append("### Limited liability by α (C34)")
+        lines.append("")
+        lines.append("Means over cost forms and replications. Capped members: members whose pooled factor hit the cap. "
+                     "Shortfall: capital charged to the other members of their unit (level units, market mean firm size = 1). "
+                     "Post-burn-in means per period; runs with capped members counted over t ≥ burn_in.")
+        lines.append("Source: `pilot_c/tidy.csv` columns `K_mean`, `cong_capital_share_median`, `acceptance_rate`, "
+                     "`pool_ruin_per_period`, `pool_shortfall_per_period`, block `equal-split`")
+        lines.append("")
+        lines.append("| α | K (mean) | Pooled capital share | Acceptance rate | Capped members / period | Shortfall / period | Runs with capped members |")
+        lines.append("|---|----------|----------------------|-----------------|-------------------------|--------------------|--------------------------|")
+        for alpha, g in eq.groupby('alpha'):
+            n_capped = int((g['pool_ruin_per_period'] > 0).sum())
+            num = lambda v, d: 'n/a' if pd.isna(v) else f"{v:.{d}f}"
+            lines.append(f"| {alpha} | {num(g['K_mean'].mean(), 3)} | {num(g['cong_capital_share_median'].mean(), 3)} | "
+                         f"{num(g['acceptance_rate'].mean(), 4)} | {g['pool_ruin_per_period'].mean():.5f} | "
+                         f"{g['pool_shortfall_per_period'].mean():.5f} | {n_capped} of {len(g)} |")
+        lines.append("")
+
     # ========================================================================
     # Section: Cost level
     # ========================================================================
