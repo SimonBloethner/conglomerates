@@ -2,9 +2,9 @@
 
 ## Overview
 
-- **Scenarios**: 1800
-- **Total runtime**: 366135s (101.70 CPU-hours)
-- **Mean ms/step**: 18.49 ± 13.52
+- **Scenarios**: 1890
+- **Total runtime**: 379577s (105.44 CPU-hours)
+- **Mean ms/step**: 18.26 ± 13.24
 - **Grid**: 50 × 50 (M × N); size block M, N ∈ {25, 100}
 
 ### Block counts
@@ -14,6 +14,7 @@
 | correlation | 45 |
 | cost-level | 360 |
 | cost-level-full | 180 |
+| cost-level-high | 90 |
 | endogenous-alpha | 60 |
 | equal-split | 180 |
 | floor-level | 90 |
@@ -412,6 +413,57 @@ Source: `pilot_c/tidy.csv`, blocks `size` and `main`. Figure: `diagnostics/pilot
 | 50 | 50 | 0.3 | 3.999 | 16 | 0.250 | 0.782 | 1.165 | 0.0732 | 36.88 | 37.76 |
 | 50 | 50 | 0.5 | 5.948 | 20 | 0.297 | 0.906 | 1.329 | 0.0564 | 25.05 | 25.24 |
 
+## Cost level high
+
+Cost-level-high block (power law Φ(K) = c0·K^1.2 with c0 × 5, 10, 20, a level shift of Φ at every K; merge_thresh 0.05) and the main power_law cell (× 1), laplace and t3, by family × multiplier × α; medians over 5 reps. K* from `analytics/benchmarks.csv` (M = 50, median market IQR 0.2) at the row's multiplier; acceptance = mergers / proposals after burn-in.
+Source: `pilot_c/tidy.csv`, blocks `cost-level-high` and `main`.
+
+| Family | × c0 | α | K_mean | K* | K_mean/K* | CCS | Acceptance | Mergers/period | Floor exits/period |
+|--------|------|---|--------|----|-----------|-----|------------|----------------|--------------------|
+| laplace | 1 | 0.1 | 3.005 | 10 | 0.300 | 0.634 | 0.4131 | 48.57 | 46.77 |
+| laplace | 1 | 0.3 | 3.999 | 16 | 0.250 | 0.782 | 0.3607 | 37.76 | 36.88 |
+| laplace | 1 | 0.5 | 5.948 | 20 | 0.297 | 0.906 | 0.3206 | 25.24 | 25.05 |
+| laplace | 5 | 0.1 | 2.480 | 5 | 0.496 | 0.438 | 0.3628 | 44.07 | 41.09 |
+| laplace | 5 | 0.3 | 3.138 | 8 | 0.392 | 0.636 | 0.3139 | 36.09 | 34.18 |
+| laplace | 5 | 0.5 | 4.129 | 9 | 0.459 | 0.815 | 0.2439 | 24.55 | 23.97 |
+| laplace | 10 | 0.1 | 2.276 | 4 | 0.569 | 0.337 | 0.3343 | 41.06 | 37.99 |
+| laplace | 10 | 0.3 | 2.760 | 6 | 0.460 | 0.536 | 0.3112 | 36.96 | 34.22 |
+| laplace | 10 | 0.5 | 3.441 | 7 | 0.492 | 0.699 | 0.2409 | 26.75 | 25.46 |
+| laplace | 20 | 0.1 | 2.120 | 3 | 0.707 | 0.208 | 0.2566 | 31.87 | 29.64 |
+| laplace | 20 | 0.3 | 2.452 | 4 | 0.613 | 0.410 | 0.3063 | 37.31 | 33.80 |
+| laplace | 20 | 0.5 | 2.847 | 5 | 0.569 | 0.566 | 0.2508 | 29.64 | 27.22 |
+| t3 | 1 | 0.1 | 2.866 | 20 | 0.143 | 0.627 | 0.4520 | 53.69 | 52.13 |
+| t3 | 1 | 0.3 | 3.667 | 47 | 0.078 | 0.773 | 0.4026 | 44.12 | 43.18 |
+| t3 | 1 | 0.5 | 5.063 | 50 | 0.101 | 0.884 | 0.3594 | 32.60 | 32.28 |
+| t3 | 5 | 0.1 | 2.491 | 7 | 0.356 | 0.496 | 0.4254 | 51.84 | 49.71 |
+| t3 | 5 | 0.3 | 3.042 | 10 | 0.304 | 0.662 | 0.3786 | 44.13 | 42.69 |
+| t3 | 5 | 0.5 | 3.881 | 13 | 0.299 | 0.814 | 0.3185 | 33.80 | 33.25 |
+| t3 | 10 | 0.1 | 2.318 | 4 | 0.579 | 0.408 | 0.4001 | 49.12 | 46.72 |
+| t3 | 10 | 0.3 | 2.766 | 7 | 0.395 | 0.585 | 0.3731 | 44.48 | 42.57 |
+| t3 | 10 | 0.5 | 3.343 | 9 | 0.371 | 0.742 | 0.3102 | 34.98 | 34.02 |
+| t3 | 20 | 0.1 | 2.161 | 3 | 0.720 | 0.294 | 0.3408 | 42.12 | 40.00 |
+| t3 | 20 | 0.3 | 2.496 | 5 | 0.499 | 0.477 | 0.3679 | 44.61 | 42.05 |
+| t3 | 20 | 0.5 | 2.884 | 6 | 0.481 | 0.631 | 0.3125 | 36.81 | 35.16 |
+
+**Where scope starts to fall, and whether cost binds at K\* (C35).** There is no threshold: scope falls at every
+cost level tried, by about 0.35 in mean K per doubling of c0.
+
+- For laplace at α = 0.3, mean K (medians over reps) is 4.33, 4.00 and 3.67 at ×0.5, ×1 and ×2 (C33 `cost-level`
+  block and the main cell, which use different seeds), then 3.14, 2.76 and 2.45 at ×5, ×10 and ×20.
+- For t3 at α = 0.3 it is 3.67, 3.04, 2.77 and 2.50 at ×1, 5, 10 and 20.
+
+The fall comes through acceptance at every K ≥ 3. For laplace at α = 0.3 and K = 4, acceptance is 0.41, 0.28,
+0.20 and 0.11 at ×1, 5, 10 and 20 (`pilot_c/acceptance_by_K_pooled.csv`). Mergers per period barely move, because
+more standalones make more proposals.
+
+K\* falls faster than K: K/K\* rises from 0.25 (laplace) and 0.08 (t3) at ×1 to 0.61 and 0.50 at ×20. At ×20, K\*
+(4 for laplace, 5 for t3) has come down to the scope that forms at ×1, and the analytical marginal cost of the
+K-th member is close to its marginal gain at K ≈ 4–5. Yet K is 2.45–2.50. This is still half to two thirds of
+K\*, against 0.7 at α = 0.1, where K\* = 3.
+
+Cost therefore binds at the margin from the lowest level on, but even at ×20 it does not take over: K does not
+settle at K\*, and attrition and consent keep it below. (K_mean counts units only, so it cannot fall below 2.)
+
 ## Owner-return growth by status
 
 Next-period owner return (log share change net of floor recapitalisation) of members minus standalones within (market, size decile) cells, weighted by member firm-periods; all firm-periods after burn-in of the 27 traced main-block power_law scenarios; mean over reps 0-2. Status is taken at the start of the period. Primary result; the event study below is secondary.
@@ -554,8 +606,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 366135s (101.70 CPU-hours)
-- **Mean ms/step**: 18.49 ± 13.52
+- **Total runtime**: 379577s (105.44 CPU-hours)
+- **Mean ms/step**: 18.26 ± 13.24
 
 ## Figures
 

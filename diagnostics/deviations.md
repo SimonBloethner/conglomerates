@@ -555,3 +555,53 @@ Commits: C34a `7d5018f` (limited liability), C34b `cc47254` (demeaned renegotiat
 - **Stale test import path.** `tests/test_assortativity.py` put `/groups/m-larch/bt307958/IOxEE` (a stale tree) first on `sys.path`, so `test_phase_b_identity`, which four tests import, was loaded from that tree. Fixed in C34c, with `tests/test_import_paths.py` as a guard.
 - **Submit script exit code.** `submit_pilot_c34.sh` now exits non-zero when the run fails. The trailing `echo` had made the failed first pass of scenario 438 show as COMPLETED in sacct.
 - **A fourth commit** holds the reruns and regenerated outputs, after C34c as the brief's order of work requires.
+
+# C35: what binds scope besides attrition (decomposition, acceptance by K, cost-level-high)
+
+The note is `diagnostics/c35_note.md`.
+
+## Departures from the brief
+
+- **Traces.** `/scratch/bt307958/traces` holds an older set without the `jump` key. The 27 traces used are
+  `/scratch/bt307958/traces_c29`, the ones `status_panel_summary.csv` was built from. Their per-step floor-hit
+  totals equal those of the C34 result pickles in 27/27 runs, so they are the C34 runs.
+- **Floor timing.** The brief's "floor[i, t+1] = 0" is `floor[i, t] == 0` in the trace's (F, T) array. That is
+  the hit between t and t+1, the one that sets `jump[t+1, i]`; this alignment was checked in all 27 traces.
+- **Decomposition.** The decomposition is total = A + B + C:
+  - A = (1 − p_s)·gap_nofloor (ordinary periods);
+  - B = p_m·m_m,f − p_s·m_s,f (floor periods);
+  - C = (p_s − p_m)·m_m,nf (the composition term).
+
+  It is computed inside each (market, decile) cell and aggregated with the panel weights, so it is exact.
+  share_ruin is (B + C) / total. The no-floor and floor gaps are also reported on their own fixed-effects
+  construction, as the brief asks. These use their own weights, so they do not add up exactly.
+- **Counts by K include solo+solo.** The counters run at the same points as `proposals_ss/sc/cc`, so
+  `proposals_by_K[2]` is the solo+solo count. The brief's test "Σ_K proposals_by_K = proposals_sc + proposals_cc"
+  holds for K ≥ 3, and the tests check both parts.
+- **Histogram bins.** The histogram uses 400 bins of width 1e-4 on [−0.02, 0.02], not 60 bins. A 60-bin width
+  (6.7e-4) is wider than the interquartile range of the binding gain at K = 4–8 (2–14e-4).
+- **Full member loop after burn-in.** To get the minimum over all members, the kernel's member loop runs to the end
+  after burn-in instead of stopping at the first rejecting member. The decision and the random draws are
+  unchanged: 146/146 identical, and a test compares a run with the histogram switched off. The median runtime
+  ratio C35/C34 is 1.04.
+- **Extra stored fields.** The result pickles also store the per-period counts by K and the per-type per-period
+  counts (beyond the brief's post-burn-in sums), so the identity script checks the counters on every rerun.
+- **Identity sample.** The identity sample is one scenario per C34 cell (56), plus the 90 Task 2 reruns, which
+  are themselves compared with C34. Three of the 56 are search-block runs at p = 0.2, α = 0.3, and they also
+  appear in `acceptance_by_K.csv`.
+- **σ in the analytical marginal gain.** σ is the s.d. of the log shock at the run's median market IQR, by family:
+  - normal: IQR/1.349;
+  - laplace: √2·b;
+  - t₃: √3·s.
+
+  The CSV also has "into K" columns (K−1 → K) next to the brief's (K → K+1) columns. Acceptance at merged size K
+  should be read against the former.
+- **Cost-level-high cells.** There is one cell per family; multipliers and α share seeds, as in `cost-level-full`.
+- **benchmarks.csv.** It gains a `cost_multiplier` column. The existing 42 rows keep their values, with 1.0 in the
+  new column. `analyze_pilot_c.py` uses only multiplier-1 rows for the existing K* comparisons.
+- **Regenerated figures.** Ten figures that `analyze_pilot_c.py` regenerates on Festus differ in bytes from the
+  committed ones but contain no C35 data. They are not committed.
+- **Extra output.** `pilot_c/acceptance_by_K_pooled.csv` is an extra output: the per-run CSV pooled over reps.
+  The tables in `c35_acceptance.md` come from it.
+- **A fourth commit** holds the reruns' outputs (`tidy.csv`, `medians.csv`, the summary, the acceptance tables),
+  as in C34.
