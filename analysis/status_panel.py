@@ -26,6 +26,19 @@ Output of summarize(): one row of aggregates
   diff_dec{1..10}_mean, n_dec{1..10}          the cell difference by size decile (market-weighted as above)
   diff_K2_mean, diff_K3_4_mean, diff_K5p_mean the same with members restricted to K = 2, 3-4, >= 5
   floor_rate_member, floor_rate_standalone    share of firm-periods ending with a floor hit, by status
+
+decompose() (C35): the same gap on the firm-periods that do not end at the floor (hit == 0, i.e. no floor
+recapitalisation between t and t+1: floor[i, t] in the trace's (F, T) array, which is the hit that sets
+jump[t+1, i]) and on those that do, plus an exact split of the total. Inside every (market, decile) cell
+with members and standalones in the no-floor sample, with p = floor rate and m = mean owner return by status
+and sample (nf = no floor, f = floor):
+  total = mean_m - mean_s
+        = (1 - p_s)(m_m,nf - m_s,nf)          A  ordinary periods (drag reduction)
+        + [p_m m_m,f - p_s m_s,f]             B  floor periods (their frequency times their return)
+        + (p_s - p_m) m_m,nf                  C  composition: members' extra ordinary periods
+B + C = p_m (m_m,f - m_m,nf) - p_s (m_s,f - m_m,nf) is the part due to members reaching the floor less
+often (ruin protection). Cell values are aggregated with the member-count weights of _fe_diff, so A + B + C
+equals the weighted total gap on these cells exactly; share_ordinary = A / total, share_ruin = (B + C) / total.
 """
 import sys
 import numpy as np
@@ -90,6 +103,50 @@ def summarize(df):
         sub = df[(~df.member) | sel]
         out[f'diff_{name}_mean'], out[f'n_{name}'] = _fe_diff(sub, 'mean')
         out[f'diff_{name}_median'], _ = _fe_diff(sub, 'median')
+    return out
+
+
+def decompose(df):
+    """C35: member - standalone gap on the no-floor and floor samples and the split total = A + B + C
+    (module docstring). Returns one row of aggregates."""
+    df = df.assign(hit=df.hit.astype(bool), member=df.member.astype(bool))
+    nf, fl = df[~df.hit], df[df.hit]
+    out = dict(n_nofloor_member=int(nf.member.sum()), n_nofloor_standalone=int((~nf.member).sum()),
+               n_floor_member=int(fl.member.sum()), n_floor_standalone=int((~fl.member).sum()),
+               inc_member_floor_mean=float(fl.inc[fl.member].mean()),
+               inc_standalone_floor_mean=float(fl.inc[~fl.member].mean()),
+               inc_member_nofloor_mean=float(nf.inc[nf.member].mean()),
+               inc_standalone_nofloor_mean=float(nf.inc[~nf.member].mean()))
+    out['gap_total_mean_fe'], _ = _fe_diff(df, 'mean')
+    out['gap_total_median'], _ = _fe_diff(df, 'median')
+    out['gap_nofloor_mean'], _ = _fe_diff(nf, 'mean')
+    out['gap_nofloor_median'], _ = _fe_diff(nf, 'median')
+    out['gap_floor_mean'], out['n_floor_cells_member'] = _fe_diff(fl, 'mean')
+    out['gap_floor_median'], _ = _fe_diff(fl, 'median')
+
+    cols = pd.MultiIndex.from_product([['sum', 'count'], [False, True], [False, True]],
+                                      names=[None, 'member', 'hit'])
+    a = (df.groupby(['market', 'decile', 'member', 'hit'])['inc'].agg(['sum', 'count'])
+         .unstack(['member', 'hit']).reindex(columns=cols).fillna(0.0))
+    S, C = a['sum'], a['count']
+    n_m, n_s = C[True].sum(axis=1), C[False].sum(axis=1)
+    ok = (C[(True, False)] > 0) & (C[(False, False)] > 0)
+    S, C, n_m, n_s = S[ok], C[ok], n_m[ok], n_s[ok]
+    p_m, p_s = C[(True, True)] / n_m, C[(False, True)] / n_s
+    m_m_nf, m_s_nf = S[(True, False)] / C[(True, False)], S[(False, False)] / C[(False, False)]
+    A = (1 - p_s) * (m_m_nf - m_s_nf)
+    B = S[(True, True)] / n_m - S[(False, True)] / n_s
+    Cc = (p_s - p_m) * m_m_nf
+    total = (S[(True, False)] + S[(True, True)]) / n_m - (S[(False, False)] + S[(False, True)]) / n_s
+    w = n_m.values
+    avg = lambda x: float(np.average(x.values, weights=w))  # noqa: E731
+    out.update(gap_total_mean=avg(total), decomp_ordinary=avg(A), decomp_floor_periods=avg(B),
+               decomp_composition=avg(Cc), p_floor_member_cells=avg(p_m), p_floor_standalone_cells=avg(p_s),
+               n_cells=int(ok.sum()), n_member_in_cells=int(w.sum()))
+    out['decomp_residual'] = out['gap_total_mean'] - (out['decomp_ordinary'] + out['decomp_floor_periods']
+                                                      + out['decomp_composition'])
+    out['share_ordinary'] = out['decomp_ordinary'] / out['gap_total_mean']
+    out['share_ruin'] = (out['decomp_floor_periods'] + out['decomp_composition']) / out['gap_total_mean']
     return out
 
 
