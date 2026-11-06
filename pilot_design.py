@@ -27,8 +27,9 @@ Blocks:
 - search: 3 families × power_law × merge_thresh {0.2, 1.0} × 4 α × 5 reps = 120 runs
 - size: laplace × power_law × (M, N) ∈ {25, 100}² × 4 α × 5 reps = 80 runs (floor_c = c*(N), C32)
 - cost level full: laplace × (linear + quadratic) × 2 multipliers × 9 α × 5 reps = 180 runs (C33)
+- cost level high: (laplace + t3) × power_law × b0 multipliers {5, 10, 20} × 3 α × 5 reps = 90 runs (C35)
 
-Total: 1800 runs
+Total: 1890 runs
 """
 import json
 import os
@@ -563,6 +564,45 @@ def generate_cost_level_full_block(scenarios, scenario_id, cell_id):
     return scenario_id, cell_id
 
 
+def generate_cost_level_high_block(scenarios, scenario_id, cell_id):
+    """
+    C35, cost level high: (laplace + t3) × power_law × multipliers {5, 10, 20} on c0 × α {0.1, 0.3, 0.5} × 5 reps
+    = 90 runs (scenario ids 1800-1889). For the power law Φ(K) = c0 K^c1 the multiplier on c0 scales Φ at every K.
+    One cell per family; α values and multipliers share seeds within a cell.
+    """
+    cost_form = 'power_law'
+    multipliers = [5.0, 10.0, 20.0]
+    alpha_values = [0.1, 0.3, 0.5]
+
+    for family in ['laplace', 't3']:
+        for mult in multipliers:
+            for alpha in alpha_values:
+                for rep in range(N_REPS):
+                    s = make_base_params()
+                    s.update({
+                        'block': 'cost-level-high',
+                        'scenario_id': scenario_id,
+                        'cell_id': cell_id,
+                        'log_family': family,
+                        'cost_type': cost_form,
+                        'c0': COST_PARAMS[cost_form]['c0'] * mult,
+                        'c1': COST_PARAMS[cost_form]['c1'],
+                        'c2': COST_PARAMS[cost_form]['c2'],
+                        'cost_multiplier': mult,
+                        'lookback': 50,
+                        'cross_corr': 0.0,
+                        'alpha': alpha,
+                        'sharing_rule': SHARING_RULE,
+                        'rep': rep,
+                        'seed': cell_seed(cell_id, rep),
+                        'alpha_endogenous': False,
+                    })
+                    scenarios.append(s)
+                    scenario_id += 1
+        cell_id += 1
+    return scenario_id, cell_id
+
+
 def generate_all_scenarios():
     """Generate all scenarios for Phase C pilot."""
     scenarios = []
@@ -581,6 +621,7 @@ def generate_all_scenarios():
     scenario_id, cell_id = generate_search_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_size_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_cost_level_full_block(scenarios, scenario_id, cell_id)
+    scenario_id, cell_id = generate_cost_level_high_block(scenarios, scenario_id, cell_id)
 
     return scenarios
 

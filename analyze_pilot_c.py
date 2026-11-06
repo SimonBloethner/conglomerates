@@ -32,6 +32,13 @@ def load_benchmarks(path='analytics/benchmarks.csv'):
     return pd.read_csv(path)
 
 
+def benchmarks_base(benchmarks):
+    """C35: rows at the calibrated cost level (cost_multiplier 1; files without the column are all at 1)."""
+    if len(benchmarks) == 0 or 'cost_multiplier' not in benchmarks.columns:
+        return benchmarks
+    return benchmarks[benchmarks['cost_multiplier'] == 1.0]
+
+
 def agg_with_bands(df, group_cols, value_col):
     """
     Aggregate with median and 25-75% bands.
@@ -58,6 +65,7 @@ def fmt_band(median, p25, p75):
 
 def benchmarks_at_m(benchmarks, M=50):
     """Benchmark rows for economy size M (C32 adds M = 25, 100 rows; files without an M column are M = 50)."""
+    benchmarks = benchmarks_base(benchmarks)
     if len(benchmarks) == 0 or 'M' not in benchmarks.columns:
         return benchmarks
     return benchmarks[benchmarks['M'] == M]
@@ -390,6 +398,7 @@ def generate_size_table(df, benchmarks):
     table = both.groupby(['M', 'N', 'alpha'])[value_cols].median().reset_index()
     table['K_star'] = np.nan
     if len(benchmarks) > 0:
+        benchmarks = benchmarks_base(benchmarks)
         bm = benchmarks[(benchmarks['family'] == 'laplace') & (benchmarks['cost_type'] == 'power_law')]
         if 'M' not in bm.columns:
             bm = bm.assign(M=50)
@@ -398,6 +407,32 @@ def generate_size_table(df, benchmarks):
     table['K_over_K_star'] = table['K_mean'] / table['K_star']
     table['is_main'] = (table['M'] == 50) & (table['N'] == 50)
     return table.sort_values(['is_main', 'M', 'N', 'alpha']).reset_index(drop=True)[['M', 'N', 'alpha'] + SIZE_COLS]
+
+
+COST_HIGH_COLS = ['K_mean', 'cong_capital_share_median', 'acceptance_rate', 'mergers_per_period',
+                  'floor_exits_per_period']
+
+
+def generate_cost_level_high_table(df, benchmarks):
+    """C35: cost-level-high block (power law, c0 x {5, 10, 20}) and the main power_law cell (x 1) for laplace and t3
+    at alpha 0.1, 0.3, 0.5, by family x multiplier x alpha; medians over reps. K* from benchmarks.csv (M = 50) at
+    the row's cost_multiplier (1 for the main cell)."""
+    sel = (((df['block'] == 'cost-level-high') |
+            ((df['block'] == 'main') & (df['cost_type'] == 'power_law')))
+           & df['log_family'].isin(['laplace', 't3']) & df['alpha'].isin([0.1, 0.3, 0.5]))
+    sub = df[sel].copy()
+    table = sub.groupby(['log_family', 'cost_multiplier', 'alpha'])[COST_HIGH_COLS].median().reset_index()
+    table['n_reps'] = sub.groupby(['log_family', 'cost_multiplier', 'alpha']).size().values
+    table['K_star'] = np.nan
+    if len(benchmarks) > 0:
+        bm = benchmarks[(benchmarks['cost_type'] == 'power_law') & (benchmarks['M'] == 50)].copy()
+        if 'cost_multiplier' not in bm.columns:
+            bm['cost_multiplier'] = 1.0
+        ks = {(r['family'], float(r['cost_multiplier']), float(r['alpha'])): r['K_star'] for _, r in bm.iterrows()}
+        table['K_star'] = [ks.get((f, float(m), float(a)), np.nan)
+                           for f, m, a in zip(table['log_family'], table['cost_multiplier'], table['alpha'])]
+    table['K_over_K_star'] = table['K_mean'] / table['K_star']
+    return table
 
 
 def create_size_figure(df, benchmarks, output_path='diagnostics/pilot_c_size.png'):
@@ -1146,6 +1181,33 @@ def generate_summary_report(df, benchmarks, output_path='diagnostics/pilot_c_sum
                          f"{row['floor_hit_rate_standalone']:.4f} | {row['floor_exits_per_period']:.2f} | "
                          f"{row['mergers_per_period']:.2f} |")
         lines.append("")
+
+    # ========================================================================
+    # Section: Cost level high (C35)
+    # ========================================================================
+    if (df['block'] == 'cost-level-high').any():
+        ch = generate_cost_level_high_table(df, benchmarks)
+        lines.append("## Cost level high")
+        lines.append("")
+        lines.append("Cost-level-high block (power law Φ(K) = c0·K^1.2 with c0 × 5, 10, 20, a level shift of Φ at every K; "
+                     "merge_thresh 0.05) and the main power_law cell (× 1), laplace and t3, by family × multiplier × α; "
+                     "medians over 5 reps. K* from `analytics/benchmarks.csv` (M = 50, median market IQR 0.2) at the "
+                     "row's multiplier; acceptance = mergers / proposals after burn-in.")
+        lines.append("Source: `pilot_c/tidy.csv`, blocks `cost-level-high` and `main`.")
+        lines.append("")
+        lines.append("| Family | × c0 | α | K_mean | K* | K_mean/K* | CCS | Acceptance | Mergers/period | Floor exits/period |")
+        lines.append("|--------|------|---|--------|----|-----------|-----|------------|----------------|--------------------|")
+        for _, row in ch.iterrows():
+            ks = '—' if pd.isna(row['K_star']) else f"{int(row['K_star'])}"
+            kr = '—' if pd.isna(row['K_over_K_star']) else f"{row['K_over_K_star']:.3f}"
+            lines.append(f"| {row['log_family']} | {row['cost_multiplier']:g} | {row['alpha']:g} | {row['K_mean']:.3f} | "
+                         f"{ks} | {kr} | {row['cong_capital_share_median']:.3f} | {row['acceptance_rate']:.4f} | "
+                         f"{row['mergers_per_period']:.2f} | {row['floor_exits_per_period']:.2f} |")
+        lines.append("")
+        text = Path('diagnostics/c35_cost_level_high_text.md')
+        if text.exists():
+            lines.append(text.read_text().strip())
+            lines.append("")
 
     # ========================================================================
     # Section: Owner-return growth by status (panel)

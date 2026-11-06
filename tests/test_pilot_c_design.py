@@ -3,7 +3,7 @@
 Tests for Phase C pilot design generator.
 
 Test requirements (updated for C33):
-1. Scenario count = 1800 (C33: cost-level-full block, 180 runs)
+1. Scenario count = 1890 (C33: cost-level-full block, 180 runs; C35: cost-level-high block, 90 runs)
 2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
@@ -15,6 +15,7 @@ Test requirements (updated for C33):
 10. lookback block: 2 families × 5 values × 2 α × 5 reps = 100 runs
 11. pilot_c/scenarios.json equals the list pilot_design.main() writes
 12. cost-level-full block scales Φ(K) at every K, shares seeds across α and multipliers
+12b. cost-level-high block (C35): power law, b0 × {5, 10, 20}, ids 1800-1889, new cells, earlier scenarios unchanged
 13. exit_review_every is neither set in scenarios.json nor passed by run_pilot_c.py
 """
 import json
@@ -49,11 +50,11 @@ def c_for_exponent(target):
 
 
 def test_scenario_count():
-    """Scenario count = 1800 (updated for C33)."""
+    """Scenario count = 1890 (updated for C35)."""
     scenarios = generate_all_scenarios()
 
     # Check total count
-    assert len(scenarios) == 1800, f"Expected 1800 scenarios, got {len(scenarios)}"
+    assert len(scenarios) == 1890, f"Expected 1890 scenarios, got {len(scenarios)}"
 
     # Check block counts
     blocks = {}
@@ -73,13 +74,14 @@ def test_scenario_count():
         'search': 120,  # C28: 3 families × 2 merge_thresh × 4 α × 5 reps
         'size': 80,  # C32: 4 (M, N) × 4 α × 5 reps
         'cost-level-full': 180,  # C33: 1 × 2 × 2 × 9 × 5
+        'cost-level-high': 90,  # C35: 2 × 1 × 3 × 3 × 5
     }
 
     for block, count in expected.items():
         actual = blocks.get(block, 0)
         assert actual == count, f"Block {block}: expected {count}, got {actual}"
 
-    print("PASS: scenario count = 1800")
+    print("PASS: scenario count = 1890")
 
 
 def test_floor_c_matches_c14():
@@ -406,7 +408,7 @@ def test_cost_level_full_block():
 def test_earlier_scenarios_unchanged():
     """C33: the cost-level-full block leaves the first 1620 scenarios as they were."""
     scenarios = generate_all_scenarios()
-    before = [s for s in scenarios if s['block'] != 'cost-level-full']
+    before = [s for s in scenarios if s['block'] not in ('cost-level-full', 'cost-level-high')]
 
     assert [s['scenario_id'] for s in before] == list(range(1620))
     for s in before:
@@ -420,6 +422,41 @@ def test_earlier_scenarios_unchanged():
         assert s['c1'] == base['c1'] and s['c2'] == base['c2']
 
     print("PASS: first 1620 scenarios unchanged")
+
+
+def test_cost_level_high_block():
+    """C35: cost-level-high block, power law with c0 x {5, 10, 20}, appended after every existing scenario."""
+    scenarios = generate_all_scenarios()
+    block = [s for s in scenarios if s['block'] == 'cost-level-high']
+    assert len(block) == 90
+    assert [s['scenario_id'] for s in block] == list(range(1800, 1890))
+    last_cell = max(s['cell_id'] for s in scenarios if s['scenario_id'] < 1800)
+    assert sorted(set(s['cell_id'] for s in block)) == [last_cell + 1, last_cell + 2]
+    base = COST_PARAMS['power_law']
+    for s in block:
+        assert s['log_family'] in ('laplace', 't3') and s['cost_type'] == 'power_law'
+        assert s['cost_multiplier'] in (5.0, 10.0, 20.0) and s['alpha'] in (0.1, 0.3, 0.5)
+        assert s['c1'] == base['c1'] and s['c2'] == base['c2']
+        for K in [2, 4, 10, 40]:
+            phi = coordination_cost(K, 'power_law', s['c0'], s['c1'], s['c2'])
+            assert abs(phi - s['cost_multiplier'] * coordination_cost(K, 'power_law', base['c0'], base['c1'])) < 1e-15
+    seeds = {}
+    for s in block:
+        seeds.setdefault((s['log_family'], s['rep']), set()).add(s['seed'])
+    assert len(seeds) == 10 and all(len(v) == 1 for v in seeds.values())
+    # the first 1800 scenarios are those of C34 (same generator output before the new block)
+    import pilot_design
+    old = []
+    sid, cid = pilot_design.generate_main_block(old, 0)
+    for gen in (pilot_design.generate_equal_split_block, pilot_design.generate_cost_level_block,
+                pilot_design.generate_lookback_block, pilot_design.generate_correlation_block,
+                pilot_design.generate_endogenous_alpha_block, pilot_design.generate_rule_replay_block,
+                pilot_design.generate_floor_level_block, pilot_design.generate_lookback500_block,
+                pilot_design.generate_search_block, pilot_design.generate_size_block,
+                pilot_design.generate_cost_level_full_block):
+        sid, cid = gen(old, sid, cid)
+    assert old == scenarios[:1800]
+    print("PASS: cost-level-high block (90 runs)")
 
 
 def test_exit_review_every_not_used_by_pilot():
@@ -472,6 +509,7 @@ if __name__ == '__main__':
     test_lookback_block_c28()
     test_cost_level_full_block()
     test_earlier_scenarios_unchanged()
+    test_cost_level_high_block()
     test_exit_review_every_not_used_by_pilot()
     test_scenarios_json_matches_design()
 

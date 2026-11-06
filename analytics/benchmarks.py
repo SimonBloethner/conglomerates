@@ -431,9 +431,64 @@ def append_size_benchmarks(output_path='analytics/benchmarks.csv', Ms=(25, 100))
     return rows
 
 
+# C35: K* for the cost-level-high block (power law, c0 x multiplier), laplace and t3, M = 50
+COST_HIGH_MULTIPLIERS = (5.0, 10.0, 20.0)
+COST_HIGH_FAMILIES = ('laplace', 't3')
+COST_HIGH_ALPHAS = (0.1, 0.3, 0.5)
+COST_HIGH_C0 = 0.00002032  # pilot_design.COST_PARAMS['power_law']['c0']
+
+
+def cost_high_cases():
+    return [(f, m, a) for f in COST_HIGH_FAMILIES for m in COST_HIGH_MULTIPLIERS for a in COST_HIGH_ALPHAS]
+
+
+def cost_high_row(index, M=50, mu=0.05, iqr=0.2):
+    """One benchmarks.csv row (with cost_multiplier) for case `index` of cost_high_cases()."""
+    family, mult, alpha = cost_high_cases()[index]
+    K_opt, gain_opt = k_star(alpha, family, mu, iqr, 'power_law', b0=COST_HIGH_C0 * mult, M=M)
+    tail_share = body_tail_split(alpha, 5, family, mu, iqr, q=0.01)
+    return {'family': family, 'cost_type': 'power_law', 'alpha': alpha, 'mu': mu, 'iqr': iqr, 'M': M,
+            'K_star': K_opt, 'k_star_at_cap': K_opt >= min(60, M), 'gain_at_K_star': gain_opt,
+            'tail_share_K5': tail_share, 'cost_multiplier': mult}
+
+
+def append_cost_high_benchmarks(parts_dir, output_path='analytics/benchmarks.csv'):
+    """C35: add a cost_multiplier column to benchmarks.csv (1.0 for the existing rows, whose other values are
+    kept as text) and append the rows written by `--cost-high-row` to parts_dir."""
+    with open(output_path) as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        existing = list(reader)
+    if 'cost_multiplier' in fieldnames:
+        raise ValueError(f'{output_path} already has cost_multiplier')
+    for r in existing:
+        r['cost_multiplier'] = 1.0
+    new = []
+    for i in range(len(cost_high_cases())):
+        with open(Path(parts_dir) / f'cost_high_{i:02d}.csv') as f:
+            new.extend(csv.DictReader(f))
+    with open(output_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames + ['cost_multiplier'])
+        writer.writeheader()
+        writer.writerows(existing + new)
+    print(f"Appended {len(new)} rows to {output_path}")
+
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == '--size':
         append_size_benchmarks()
+    elif len(sys.argv) > 1 and sys.argv[1] == '--cost-high-row':
+        # python analytics/benchmarks.py --cost-high-row I PARTS_DIR   (I = 0..17, one SLURM array task each)
+        i, parts = int(sys.argv[2]), Path(sys.argv[3])
+        parts.mkdir(parents=True, exist_ok=True)
+        row = cost_high_row(i)
+        with open(parts / f'cost_high_{i:02d}.csv', 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(row))
+            w.writeheader()
+            w.writerow(row)
+        print(row)
+    elif len(sys.argv) > 1 and sys.argv[1] == '--cost-high-merge':
+        append_cost_high_benchmarks(sys.argv[2])
     else:
         generate_benchmarks_csv()
