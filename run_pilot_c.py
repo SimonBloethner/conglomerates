@@ -6,7 +6,8 @@ Runs a single scenario from pilot_c/scenarios.json by index.
 Saves result to pilot_c/results/scenario_{idx:04d}.pkl.gz (gzip compressed)
 
 Usage:
-    python run_pilot_c.py <scenario_index>
+    python run_pilot_c.py <scenario_index> [--out DIR]
+--out (C35): write to DIR instead of pilot_c/results (the C35 reruns go to pilot_c/results_c35).
 """
 import gzip
 import json
@@ -86,17 +87,36 @@ def run_scenario(scenario):
         # C22b: alpha scatter for endogenous alpha
         'alpha_scatter': hyperparams.get('alpha_scatter'),
         'alpha_scatter_final': hyperparams.get('alpha_scatter_final'),
+        # C35: proposals and mergers by K = size of the merged set, binding-gain histogram (diagnostics)
+        'proposals_by_K': hyperparams.get('proposals_by_K'),
+        'mergers_by_K': hyperparams.get('mergers_by_K'),
+        'proposals_by_K_per_period': hyperparams.get('proposals_by_K_per_period'),
+        'mergers_by_K_per_period': hyperparams.get('mergers_by_K_per_period'),
+        'binding_gain_hist_by_K': hyperparams.get('binding_gain_hist_by_K'),
+        'binding_gain_edges': hyperparams.get('binding_gain_edges'),
+        'proposals_ss_per_period': hyperparams.get('proposals_ss_per_period'),
+        'proposals_sc_per_period': hyperparams.get('proposals_sc_per_period'),
+        'proposals_cc_per_period': hyperparams.get('proposals_cc_per_period'),
+        'mergers_ss_per_period': hyperparams.get('mergers_ss_per_period'),
+        'mergers_sc_per_period': hyperparams.get('mergers_sc_per_period'),
+        'mergers_cc_per_period': hyperparams.get('mergers_cc_per_period'),
     }
 
     return output
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python run_pilot_c.py <scenario_index>")
+    args = sys.argv[1:]
+    out_dir = 'pilot_c/results'
+    if '--out' in args:
+        k = args.index('--out')
+        out_dir = args[k + 1]
+        del args[k:k + 2]
+    if len(args) != 1:
+        print("Usage: python run_pilot_c.py <scenario_index> [--out DIR]")
         sys.exit(1)
 
-    idx = int(sys.argv[1])
+    idx = int(args[0])
 
     # Load scenarios
     with open('pilot_c/scenarios.json', 'r') as f:
@@ -115,7 +135,7 @@ def main():
     result = run_scenario(scenario)
 
     # Save with gzip compression (workaround for NFS 1MB write limit)
-    output_dir = Path('pilot_c/results')
+    output_dir = Path(out_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"scenario_{idx:04d}.pkl.gz"
 

@@ -303,6 +303,25 @@ Computed over steps `t >= burn_in` and stored in `hyperparameters['summary']`:
 - `mergers_per_period`: Mean mergers per period
 - `proposals_per_period`: Mean proposals per period
 - `exits_per_period`: Mean exits per period
+- `acceptance_by_K` (C35): array of length M + 1, post-burn-in mergers / proposals by K = size of the merged set; NaN where there were no proposals (always at K = 0, 1)
+
+### Acceptance by K (C35, diagnostics only)
+
+`merger_kernel_numba` also counts proposals and mergers by K = size of the prospective merged set (2..M), at the
+same points as the per-type counters (`proposals_by_K[2]` is the solo+solo count; the sum over K ≥ 3 is solo+unit
+plus unit+unit). The model stores, in `hyperparameters`:
+
+- `proposals_by_K_per_period`, `mergers_by_K_per_period`: (T, M + 1) int32;
+- `proposals_by_K`, `mergers_by_K`: their post-burn-in sums;
+- `binding_gain_hist_by_K` (M + 1, 400) int64 and `binding_gain_edges` (401 edges, 400 bins of width 1e-4 on
+  [−0.02, 0.02]): under `decision_rule='loggain'`, for every feasible proposal after burn-in, the binding member's
+  gain min_i [Δ̂_i(Ĉ) − max(0, Δ̂_i(C_i))] (accepted iff > 0). Values outside the range go to the first or last bin;
+  a member's proposed gain of −∞ goes to the first bin. Under replay the histogram stays zero.
+
+To get the minimum over all members, the kernel's member loop runs to the end after burn-in instead of stopping at
+the first rejecting member. The accept decision is the same and the loop draws no random numbers, so every
+existing output is byte-identical to C34 (`diagnostics/identity_c35.csv`). `run_pilot_c.py` saves these fields
+and the per-type per-period counts in the result pickle; `--out DIR` writes the pickle to DIR.
 
 ## Event Study
 
