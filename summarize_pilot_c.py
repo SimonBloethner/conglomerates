@@ -5,6 +5,8 @@ Phase C pilot result summarization.
 Loads pilot_c/results/scenario_*.pkl.gz files and produces:
 - pilot_c/tidy.csv: one row per scenario with scalar metrics
 - pilot_c/medians.csv: medians and 25-75% bands grouped by cell
+C37: `--pilot d` reads pilot_d/results and writes pilot_d/tidy.csv and pilot_d/medians.csv (pilot D rows carry the
+extra columns of pilot_d_metrics).
 
 Statistics computed over t >= burn_in.
 """
@@ -14,6 +16,8 @@ import pickle
 import numpy as np
 import pandas as pd
 from pathlib import Path
+
+from pilots import pop_pilot, pilot_dir
 
 
 def extract_post_burnin_metrics(result):
@@ -220,7 +224,35 @@ def extract_post_burnin_metrics(result):
     # Assortativity: use pre-computed assort_iqr from model (C22c)
     metrics["assort_iqr"] = summary.get("assort_iqr", np.nan)
 
+    if scenario.get('pilot') == 'd':
+        metrics.update(pilot_d_metrics(result))
+
     return metrics
+
+
+def pilot_d_metrics(result):
+    """C37: columns appended to pilot D's tidy rows only (pilot C's tidy.csv keeps its schema).
+    twin_id / source_id: the pilot C loggain twin and the reused C36 run (pilot_design_d.py); nu; iqr_lo, iqr_hi:
+    the market IQR range (0.2, 0.2 in the homogeneous block); member_firm_share: mean share of firms in a unit of
+    K >= 2 over the post-burn-in snapshots (effective_members, every metric_every steps);
+    floor_hit_rate_*_status: floor hits per firm-period *of that status*, i.e. floor_hit_rate_member (hits of members
+    per firm-period over all firms) divided by member_firm_share, and the standalone rate by 1 - member_firm_share
+    (status occupancy from the snapshots, so an approximation at the 1/metric_every sampling)."""
+    s = result['scenario']
+    burn_in = s['burn_in']
+    n_firms = s['M'] * s['N']
+    shares = [sum(K for _, K, _ in units) / n_firms
+              for step, units in (result.get('effective_members') or []) if step >= burn_in]
+    share = float(np.mean(shares)) if shares else 0.0
+    summ = result.get('summary', {})
+    fm, fs = summ.get('floor_hit_rate_member', np.nan), summ.get('floor_hit_rate_standalone', np.nan)
+    return {
+        'pilot': 'd', 'twin_id': s.get('twin_id'), 'source_id': s.get('source_id'), 'nu': s.get('nu'),
+        'iqr_lo': s['sigma_range'][0], 'iqr_hi': s['sigma_range'][1],
+        'member_firm_share': share,
+        'floor_hit_rate_member_status': fm / share if share > 0 else np.nan,
+        'floor_hit_rate_standalone_status': fs / (1 - share) if share < 1 else np.nan,
+    }
 
 
 def compute_assortativity_ratio(market_iqr, firm_unit, n_random_samples=100):
@@ -341,6 +373,8 @@ def create_medians_df(tidy_df):
     group_cols = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule',
                   'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier',
                   'decision_rule', 'merge_thresh', 'M', 'N']  # C17; C28 merge_thresh; C32 M, N
+    if 'nu' in tidy_df.columns:  # C37, pilot D: the nu block has two values of nu per (block, family, alpha)
+        group_cols = group_cols + ['nu']
 
     # Numeric columns to aggregate
     value_cols = [
@@ -356,6 +390,7 @@ def create_medians_df(tidy_df):
         'growth_gap_median',  # C17
         'elapsed_seconds', 'ms_per_step',
         'alpha_adopted_median', 'alpha_adopted_mean',
+        'member_firm_share', 'floor_hit_rate_member_status', 'floor_hit_rate_standalone_status',  # C37, pilot D
     ]
 
     agg_dict = {}
@@ -383,13 +418,14 @@ def create_medians_df(tidy_df):
 
 
 def main():
-    """Load results and create summary CSVs."""
-    print("Phase C Pilot Summarization")
+    """Load results and create summary CSVs (C37: --pilot c|d, default c)."""
+    pilot = pop_pilot()
+    print(f"Pilot {pilot.upper()} Summarization")
     print("=" * 50)
 
     # Load results
     print("Loading results...")
-    results = load_results()
+    results = load_results(pilot_dir(pilot, 'results'))
     print(f"Loaded {len(results)} results")
 
     if len(results) == 0:
@@ -401,7 +437,7 @@ def main():
     tidy_df = create_tidy_df(results)
 
     # Save tidy.csv
-    tidy_path = 'pilot_c/tidy.csv'
+    tidy_path = pilot_dir(pilot, 'tidy.csv')
     tidy_df.to_csv(tidy_path, index=False)
     print(f"Saved {tidy_path} ({len(tidy_df)} rows)")
 
@@ -410,7 +446,7 @@ def main():
     medians_df = create_medians_df(tidy_df)
 
     # Save medians.csv
-    medians_path = 'pilot_c/medians.csv'
+    medians_path = pilot_dir(pilot, 'medians.csv')
     medians_df.to_csv(medians_path, index=False)
     print(f"Saved {medians_path} ({len(medians_df)} rows)")
 

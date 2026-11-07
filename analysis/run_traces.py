@@ -15,6 +15,8 @@ analysis.event_study on the trace and writes
     pilot_c/events/<family>_a<alpha>_r<rep>_events.csv
     pilot_c/event_study_summary.csv   (one row per scenario, appended as it goes)
 --quick overrides M=N=10, T=300 for a smoke test (outputs go to the same places).
+--pilot d (C37): select from pilot_d/scenarios.json (moment rule) and write to pilot_d/events and
+pilot_d/event_study_summary.csv; run_one passes the scenario's nu.
 """
 import sys, os, json, time
 import numpy as np
@@ -25,7 +27,9 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'analysis'))
 from collaborative_growth import model              # noqa: E402
 from event_study import events_from_trace, summarize  # noqa: E402
+from pilots import pop_pilot                          # noqa: E402
 
+PDIR = 'pilot_c'  # C37: set from --pilot c|d in main(); pilot D reads pilot_d/scenarios.json (moment rule)
 FAMILIES = ['normal', 'laplace', 't3']
 ALPHAS = [0.05, 0.1, 0.3]
 REPS = [0, 1, 2]
@@ -49,6 +53,7 @@ def run_one(s, trace_path, quick):
     params = dict(M=M, N=N, T=T, alpha=s['alpha'], search_prob=s['merge_thresh'], window=s['lookback'],
                   cost_form=s['cost_type'], b0=s['c0'], b1=s['c1'], b2=s['c2'])
     model(**params, seed=s['seed'], growth_process=s['growth_process'], family=s['log_family'],
+          nu=s.get('nu') or 3.0,
           mu_range=tuple(s['mu_range']) if s.get('mu_range') else (0.01, 0.1),
           iqr_range=tuple(s['sigma_range']), floor_c=s['floor_c'], cross_corr=s['cross_corr'],
           metric_every=s['metric_every'], sharing_rule=s['sharing_rule'], burn_in=s['burn_in'],
@@ -60,10 +65,12 @@ def run_one(s, trace_path, quick):
 
 
 def main():
+    global PDIR
+    PDIR = 'pilot_' + pop_pilot()
     trace_dir = sys.argv[1]
     quick = '--quick' in sys.argv
-    events_dir = os.path.join(ROOT, 'pilot_c', 'events')
-    summary_path = os.path.join(ROOT, 'pilot_c', 'event_study_summary.csv')
+    events_dir = os.path.join(ROOT, PDIR, 'events')
+    summary_path = os.path.join(ROOT, PDIR, 'event_study_summary.csv')
     os.makedirs(trace_dir, exist_ok=True)
     os.makedirs(events_dir, exist_ok=True)
     if '--merge' in sys.argv:
@@ -72,7 +79,7 @@ def main():
         pd.concat([pd.read_csv(os.path.join(events_dir, f)) for f in parts]).to_csv(summary_path, index=False)
         print('merged', len(parts))
         return
-    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    scenarios = json.load(open(os.path.join(ROOT, PDIR, 'scenarios.json')))
     chosen = select(scenarios)
     if '--index' in sys.argv:
         k = int(sys.argv[sys.argv.index('--index') + 1])
@@ -91,7 +98,7 @@ def main():
         sd = np.diff(ls, axis=0).std()
         ev = events_from_trace(ls, cg, fl, home, l=s['lookback'],
                                jump=z['jump'].astype(float) if 'jump' in z.files else None)
-        ev.to_csv(os.path.join(ROOT, 'pilot_c', 'events', tag + '_events.csv'), index=False)
+        ev.to_csv(os.path.join(ROOT, PDIR, 'events', tag + '_events.csv'), index=False)
         row = dict(family=s['log_family'], alpha=s['alpha'], rep=s['rep'], scenario_id=s['scenario_id'],
                    T=ls.shape[0] - 1, sigma_lo=s['sigma_range'][0], sigma_hi=s['sigma_range'][1],
                    dlogshare_sd=sd, seconds=round(time.time() - t0, 1))

@@ -26,6 +26,8 @@ from scipy.stats import binom
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'analysis'))
 from run_traces import select  # noqa: E402
+sys.path.insert(0, ROOT)
+from pilots import pop_pilot  # noqa: E402
 
 
 def burstiness(floor, home, burn_in):
@@ -51,8 +53,9 @@ def burstiness(floor, home, burn_in):
 
 
 def main():
+    PDIR = 'pilot_' + pop_pilot()  # C37: --pilot c|d
     trace_dir = sys.argv[1]
-    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    scenarios = json.load(open(os.path.join(ROOT, PDIR, 'scenarios.json')))
     rows = []
     for s in select(scenarios):
         tag = f"{s['log_family']}_a{s['alpha']}_r{s['rep']}"
@@ -62,7 +65,7 @@ def main():
         row.update(burstiness(z['floor'], z['home'], s['burn_in']))
         rows.append(row)
         print(tag, {k: round(v, 4) for k, v in row.items() if k.startswith(('D_', 'share', 'hits'))}, flush=True)
-    out = os.path.join(ROOT, 'pilot_c', 'burstiness_summary.csv')
+    out = os.path.join(ROOT, PDIR, 'burstiness_summary.csv')
     pd.DataFrame(rows).to_csv(out, index=False)
     print('wrote', out, len(rows))
 

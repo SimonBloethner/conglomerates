@@ -35,8 +35,10 @@ from scipy import stats
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from collaborative_growth import coordination_cost  # noqa: E402
+from pilots import pop_pilot, pilot_dir  # noqa: E402
 
 K_MIN_ROWS = 12
+BLOCKS = ('main', 'search', 'cost-level-high')
 
 
 def log_shock_sd(family, iqr):
@@ -96,8 +98,12 @@ def rows_for(res):
 
 
 def main():
+    """C37: `--pilot d` reads pilot_d/results when no directory is given, adds the homogeneous block (both rules)
+    and a decision_rule column, and writes pilot_d/acceptance_by_K*.csv and diagnostics/pilot_d_acceptance_by_K.png."""
+    pilot = pop_pilot()
+    blocks = BLOCKS + (('homogeneous',) if pilot == 'd' else ())
     rows, hists = [], {}
-    for d in sys.argv[1:]:
+    for d in (sys.argv[1:] or [pilot_dir(pilot, 'results', absolute=True)]):
         for f in sorted(os.listdir(d)):
             if not f.startswith('scenario_'):
                 continue
@@ -106,17 +112,23 @@ def main():
             if 'proposals_by_K' not in res:
                 continue
             s = res['scenario']
-            if s['block'] not in ('main', 'search', 'cost-level-high') or s['cost_type'] != 'power_law' \
+            if s['block'] not in blocks or s['cost_type'] != 'power_law' \
                     or s['alpha'] not in (0.1, 0.3, 0.5):
                 continue
             r, H, edges = rows_for(res)
+            if pilot == 'd':
+                for x in r:
+                    x['decision_rule'] = s['decision_rule']
             rows += r
             key = (s['block'], s['log_family'], s['alpha'], s['merge_thresh'], s.get('cost_multiplier', 1.0))
+            if pilot == 'd':
+                key += (s['decision_rule'],)
             hists[key] = hists.get(key, 0) + H
-    df = pd.DataFrame(rows).sort_values(['block', 'family', 'alpha', 'p', 'cost_multiplier', 'rep', 'K'])
-    df.to_csv(os.path.join(ROOT, 'pilot_c', 'acceptance_by_K.csv'), index=False)
+    by = ['block', 'family', 'alpha', 'p', 'cost_multiplier'] + (['decision_rule'] if pilot == 'd' else [])
+    df = pd.DataFrame(rows).sort_values(by + ['rep', 'K'])
+    df.to_csv(pilot_dir(pilot, 'acceptance_by_K.csv', absolute=True), index=False)
 
-    keys = ['block', 'family', 'alpha', 'p', 'cost_multiplier', 'K']
+    keys = by + ['K']
     pooled = df.groupby(keys).agg(proposals=('proposals', 'sum'), mergers=('mergers', 'sum'), n_runs=('rep', 'size'),
                                   sigma_median=('sigma_median', 'mean'),
                                   marginal_gain_next=('marginal_gain_next', 'mean'),
@@ -126,19 +138,19 @@ def main():
     pooled['acceptance'] = pooled.mergers / pooled.proposals.where(pooled.proposals > 0)
     q = []
     for _, r in pooled.iterrows():
-        H = hists[(r.block, r.family, r.alpha, r.p, r.cost_multiplier)][int(r.K)]
+        H = hists[tuple(r[c] for c in by)][int(r.K)]
         q25, q50, q75 = hist_quantiles(H, edges)
         n = H.sum()
         q.append(dict(binding_median=q50, binding_p25=q25, binding_p75=q75,
                       binding_share_positive=H[int(np.argmin(np.abs(edges))):].sum() / n if n else np.nan,
                       binding_share_clipped=(H[0] + H[-1]) / n if n else np.nan))
     pooled = pd.concat([pooled, pd.DataFrame(q)], axis=1)
-    pooled.to_csv(os.path.join(ROOT, 'pilot_c', 'acceptance_by_K_pooled.csv'), index=False)
+    pooled.to_csv(pilot_dir(pilot, 'acceptance_by_K_pooled.csv', absolute=True), index=False)
     print(f'{len(df)} rows ({df.scenario_id.nunique()} runs), pooled {len(pooled)} rows')
-    figure(pooled)
+    figure(pooled, pilot)
 
 
-def figure(pooled):
+def figure(pooled, pilot='c'):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -166,7 +178,7 @@ def figure(pooled):
             ax.legend(h1 + h2, l1 + l2, fontsize=7, loc='upper right')
     axes[0].set_ylabel('per period')
     fig.tight_layout()
-    fig.savefig(os.path.join(ROOT, 'diagnostics', 'pilot_c_acceptance_by_K.png'), dpi=150)
+    fig.savefig(os.path.join(ROOT, 'diagnostics', f'pilot_{pilot}_acceptance_by_K.png'), dpi=150)
 
 
 REPORT_K = list(range(2, 13)) + [15, 20, 25]

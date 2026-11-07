@@ -29,6 +29,9 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'analysis'))
 from run_traces import select                                  # noqa: E402
 from status_panel import panel_from_trace, summarize, decompose  # noqa: E402
+from pilots import pop_pilot                                     # noqa: E402
+
+PDIR = 'pilot_c'  # C37: set from --pilot c|d (pilot D: the traces and result pickles of pilot_d/)
 
 OUT_COLS = ['family', 'alpha', 'rep', 'scenario_id', 'gap_total_mean', 'gap_total_mean_fe', 'gap_total_median',
             'gap_nofloor_mean', 'gap_nofloor_median', 'gap_floor_mean', 'gap_floor_median',
@@ -42,14 +45,14 @@ OUT_COLS = ['family', 'alpha', 'rep', 'scenario_id', 'gap_total_mean', 'gap_tota
 
 
 def one(trace_dir, k):
-    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    scenarios = json.load(open(os.path.join(ROOT, PDIR, 'scenarios.json')))
     s = select(scenarios)[k]
     tag = f"{s['log_family']}_a{s['alpha']}_r{s['rep']}"
     z = np.load(os.path.join(trace_dir, tag + '.npz'))
     t0 = time.time()
     floor, jump = z['floor'], z['jump']
     aligned = bool(np.array_equal(floor, (jump[1:] != 0).T))
-    with gzip.open(os.path.join(ROOT, 'pilot_c', 'results', f"scenario_{s['scenario_id']:04d}.pkl.gz")) as f:
+    with gzip.open(os.path.join(ROOT, PDIR, 'results', f"scenario_{s['scenario_id']:04d}.pkl.gz")) as f:
         res = pickle.load(f)
     matches = bool(np.array_equal(floor.sum(axis=0), res['floor_hits_by_status'].sum(axis=1)))
     df = panel_from_trace(z['logshare'], z['cong'], floor, z['home'], jump, burn_in=s['burn_in'])
@@ -60,7 +63,7 @@ def one(trace_dir, k):
     row.update(decompose(df))
     row.update(check_floor_jump_aligned=aligned, check_floor_matches_pickle=matches,
                seconds=round(time.time() - t0, 1))
-    out = os.path.join(ROOT, 'pilot_c', 'panel', tag + '_decomp.csv')
+    out = os.path.join(ROOT, PDIR, 'panel', tag + '_decomp.csv')
     pd.DataFrame([row]).to_csv(out, index=False)
     print(tag, {c: row[c] for c in ('gap_total_mean', 'gap_total_mean_fe', 'gap_nofloor_mean', 'share_ordinary',
                                     'check_floor_jump_aligned', 'check_floor_matches_pickle', 'seconds')},
@@ -72,12 +75,12 @@ def fmt(x, f='{:.5f}'):
 
 
 def merge():
-    d = os.path.join(ROOT, 'pilot_c', 'panel')
+    d = os.path.join(ROOT, PDIR, 'panel')
     parts = sorted(f for f in os.listdir(d) if f.endswith('_decomp.csv'))
     assert len(parts) == 27, f'expected 27 per-trace decompositions, found {len(parts)}'
     df = pd.concat([pd.read_csv(os.path.join(d, f)) for f in parts]).sort_values(['family', 'alpha', 'rep'])
     df[OUT_COLS + [c for c in df.columns if c not in OUT_COLS]].to_csv(
-        os.path.join(ROOT, 'pilot_c', 'status_panel_decomposition.csv'), index=False)
+        os.path.join(ROOT, PDIR, 'status_panel_decomposition.csv'), index=False)
     g = df.groupby(['family', 'alpha'])
     m = g[['gap_total_mean', 'gap_total_median', 'gap_nofloor_mean', 'gap_nofloor_median', 'gap_floor_mean',
            'decomp_ordinary', 'decomp_floor_periods', 'decomp_composition', 'share_ordinary', 'share_ruin',
@@ -99,12 +102,13 @@ def merge():
               f"max |A + B + C - total| = {df.decomp_residual.abs().max():.2e}; "
               f"max |total (decomposition cells) - total (panel cells)| = "
               f"{(df.gap_total_mean - df.gap_total_mean_fe).abs().max():.2e}.\n")
-    with open(os.path.join(ROOT, 'pilot_c', 'panel', 'decomposition_table.md'), 'w') as f:
+    with open(os.path.join(ROOT, PDIR, 'panel', 'decomposition_table.md'), 'w') as f:
         f.write('\n'.join(lines) + '\n' + checks)
     print('\n'.join(lines) + checks)
 
 
 if __name__ == '__main__':
+    PDIR = 'pilot_' + pop_pilot()  # C37: --pilot c|d
     if '--merge' in sys.argv:
         merge()
     else:

@@ -8,3 +8,8 @@ generate_summary.py
 
 # C29: per-event event-study files are kept on /scratch, not in git (GitHub 100 MB limit)
 pilot_c/events/*_events.csv
+
+# C37: pilot D result pickles, traces and per-event files stay on Festus (/groups copy), not in git
+pilot_d/results*/
+pilot_d/traces/
+pilot_d/events/*_events.csv

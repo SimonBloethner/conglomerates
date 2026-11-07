@@ -6,8 +6,10 @@ Runs a single scenario from pilot_c/scenarios.json by index.
 Saves result to pilot_c/results/scenario_{idx:04d}.pkl.gz (gzip compressed)
 
 Usage:
-    python run_pilot_c.py <scenario_index> [--out DIR]
+    python run_pilot_c.py <scenario_index> [--out DIR] [--pilot c|d]
 --out (C35): write to DIR instead of pilot_c/results (the C35 reruns go to pilot_c/results_c35).
+--pilot (C37): read pilot_<p>/scenarios.json and write to pilot_<p>/results by default (c: pilot C, the default;
+d: pilot D, the moment rule).
 """
 import gzip
 import json
@@ -17,6 +19,7 @@ import time
 from pathlib import Path
 
 from collaborative_growth import model, seed_numba
+from pilots import pop_pilot, pilot_dir
 
 
 def run_scenario(scenario):
@@ -40,6 +43,7 @@ def run_scenario(scenario):
         seed=scenario['seed'],
         growth_process=scenario['growth_process'],
         family=scenario['log_family'],
+        nu=scenario.get('nu') or 3.0,  # C37: Student-t degrees of freedom (pilot D's nu block); 3.0 is the default
         mu_range=tuple(scenario['mu_range']) if scenario.get('mu_range') else (0.01, 0.1),
         iqr_range=tuple(scenario['sigma_range']),
         floor_c=scenario['floor_c'],
@@ -106,20 +110,21 @@ def run_scenario(scenario):
 
 
 def main():
+    pilot = pop_pilot()
     args = sys.argv[1:]
-    out_dir = 'pilot_c/results'
+    out_dir = pilot_dir(pilot, 'results')
     if '--out' in args:
         k = args.index('--out')
         out_dir = args[k + 1]
         del args[k:k + 2]
     if len(args) != 1:
-        print("Usage: python run_pilot_c.py <scenario_index> [--out DIR]")
+        print("Usage: python run_pilot_c.py <scenario_index> [--out DIR] [--pilot c|d]")
         sys.exit(1)
 
     idx = int(args[0])
 
     # Load scenarios
-    with open('pilot_c/scenarios.json', 'r') as f:
+    with open(pilot_dir(pilot, 'scenarios.json'), 'r') as f:
         scenarios = json.load(f)
 
     if idx < 0 or idx >= len(scenarios):

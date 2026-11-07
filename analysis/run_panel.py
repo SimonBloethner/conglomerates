@@ -16,20 +16,22 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'analysis'))
 from run_traces import select                      # noqa: E402
 from status_panel import panel_from_trace, summarize  # noqa: E402
+from pilots import pop_pilot                          # noqa: E402
 
 
 def main():
+    PDIR = 'pilot_' + pop_pilot()  # C37: --pilot c|d
     trace_dir = sys.argv[1]
-    out_dir = os.path.join(ROOT, 'pilot_c', 'panel')
+    out_dir = os.path.join(ROOT, PDIR, 'panel')
     os.makedirs(out_dir, exist_ok=True)
-    summary_path = os.path.join(ROOT, 'pilot_c', 'status_panel_summary.csv')
+    summary_path = os.path.join(ROOT, PDIR, 'status_panel_summary.csv')
     if '--merge' in sys.argv:
         parts = sorted(f for f in os.listdir(out_dir) if f.endswith('_summary.csv'))
         assert len(parts) == 27, f'expected 27 per-scenario summaries, found {len(parts)}'
         pd.concat([pd.read_csv(os.path.join(out_dir, f)) for f in parts]).to_csv(summary_path, index=False)
         print('merged', len(parts))
         return
-    scenarios = json.load(open(os.path.join(ROOT, 'pilot_c', 'scenarios.json')))
+    scenarios = json.load(open(os.path.join(ROOT, PDIR, 'scenarios.json')))
     chosen = select(scenarios)
     k = int(sys.argv[sys.argv.index('--index') + 1])
     assert 0 <= k < 27, k
