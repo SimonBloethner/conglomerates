@@ -21,6 +21,9 @@ from pathlib import Path
 from collaborative_growth import model, seed_numba
 from pilots import pop_pilot, pilot_dir
 
+C38_KEYS = ('proposals_by_K_w', 'mergers_by_K_w', 'binding_sum_by_K_w', 'binding_sq_by_K_w', 'binding_n_by_K_w',
+            'w_sum_by_K_w', 'K_w_edges')
+
 
 def run_scenario(scenario):
     """Run a single scenario and return results."""
@@ -104,6 +107,8 @@ def run_scenario(scenario):
         'mergers_ss_per_period': hyperparams.get('mergers_ss_per_period'),
         'mergers_sc_per_period': hyperparams.get('mergers_sc_per_period'),
         'mergers_cc_per_period': hyperparams.get('mergers_cc_per_period'),
+        # C38: proposals, mergers and binding gain by K x entrant share w (post-burn-in)
+        **{k: hyperparams.get(k) for k in C38_KEYS},
     }
 
     return output

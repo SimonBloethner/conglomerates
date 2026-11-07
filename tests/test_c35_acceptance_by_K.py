@@ -73,7 +73,8 @@ def test_recording_does_not_change_the_run():
     orig = cg.merger_kernel_numba
 
     def never_record(*a):
-        return orig(*a[:-1], False)
+        # record_binding is argument 25 (C38 appended the (K, w) arrays after it)
+        return orig(*a[:25], False, *a[26:])
 
     ref = cg.model(**dict(PARAMS, search_prob=0.3), **KW)
     cg.merger_kernel_numba = never_record
@@ -86,3 +87,4 @@ def test_recording_does_not_change_the_run():
     for k in ('final_log_states', 'floor_hits', 'final_firm_conglom', 'proposals_by_K', 'mergers_by_K'):
         assert np.array_equal(ref[-1][k], alt[-1][k]), k
     assert not alt[-1]['binding_gain_hist_by_K'].any()
+    assert not alt[-1]['proposals_by_K_w'].any() and ref[-1]['proposals_by_K_w'].any()   # C38

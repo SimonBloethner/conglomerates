@@ -392,6 +392,29 @@ the first rejecting member. The accept decision is the same and the loop draws n
 existing output is byte-identical to C34 (`diagnostics/identity_c35.csv`). `run_pilot_c.py` saves these fields
 and the per-type per-period counts in the result pickle; `--out DIR` writes the pickle to DIR.
 
+### Acceptance by K × entrant share (C38, diagnostics only)
+
+After burn-in, `merger_kernel_numba` also classifies every feasible proposal by its **entrant side** and that
+side's capital share w of the prospective unit, from the firms' sizes at the proposal step:
+- solo + unit: the standalone; solo + solo: the smaller firm; unit + unit: the smaller unit;
+- w = S_entrant / (S_entrant + S_other).
+
+Column 0 holds proposals whose entrant is a standalone **at the floor**: its market share is below 2 floor_c / N,
+i.e. within a factor of two of the floor's minimum share. Columns 1..20 hold all other proposals by w in the bins
+`K_w_edges` (width 0.05 on [0, 1]). The model stores, as (M + 1, 21) arrays indexed by K = size of the merged set:
+
+- `proposals_by_K_w`, `mergers_by_K_w` (int64): summed over the columns, `proposals_by_K` and `mergers_by_K`;
+- `binding_sum_by_K_w`, `binding_sq_by_K_w` (float64), `binding_n_by_K_w` (int64): the sum, the sum of squares
+  and the count of the binding gain (loggain / moment only), over the proposals where it is finite (a member's
+  proposed gain of −∞ is left out);
+- `w_sum_by_K_w` (float64): the sum of w, so the mean w of each column is `w_sum / proposals`;
+- `K_w_edges`: the 21 bin edges.
+
+The arrays are filled only when `record_binding` is on (after burn-in). They draw no random numbers and do not
+enter the decision, and every pilot D result is byte-identical without them (`diagnostics/identity_c38.csv`).
+`run_pilot_c.py` saves them (`C38_KEYS`); `analytics/acceptance_c38.py` turns them into
+`pilot_d/acceptance_by_K_w.csv`.
+
 ## Event Study
 
 The event study module implements a matched difference-in-differences (DiD) design to measure the causal effect of conglomerate membership on firm growth.

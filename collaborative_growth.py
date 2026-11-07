@@ -12,6 +12,12 @@ BINDING_GAIN_BINS = 400
 BINDING_GAIN_WIDTH = (BINDING_GAIN_HI - BINDING_GAIN_LO) / BINDING_GAIN_BINS
 BINDING_GAIN_EDGES = np.linspace(BINDING_GAIN_LO, BINDING_GAIN_HI, BINDING_GAIN_BINS + 1)
 
+# C38: bins of the entrant's capital share w in the prospective unit (merger_kernel_numba, hyperparameters
+# ['proposals_by_K_w'] etc.): column 0 = entrant at the floor (a standalone entrant whose market share is below
+# 2 floor_c / N), columns 1..20 = w in [0, 0.05), ..., [0.95, 1] for every other proposal.
+K_W_BINS = 20
+K_W_EDGES = np.linspace(0.0, 1.0, K_W_BINS + 1)
+
 
 @nb.njit(cache=True)
 def seed_numba(s):
@@ -811,7 +817,8 @@ def merger_kernel_numba(
     total_firms, M, N,
     sharing_rule_code, decision_rule_code, g,
     unit_created_step, unit_alpha, unit_born_step,
-    binding_gain_hist, record_binding
+    binding_gain_hist, record_binding,
+    kw_proposals, kw_mergers, kw_binding_sum, kw_binding_sq, kw_binding_n, kw_w_sum, log_floor_share2
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
@@ -837,6 +844,16 @@ def merger_kernel_numba(
         record_binding is True; the accept decision and the RNG draws are the same either way.
     record_binding : bool
         Fill binding_gain_hist in this call (the model passes step >= burn_in).
+    kw_proposals, kw_mergers : int64 arrays (M + 1, K_W_BINS + 1); kw_binding_sum, kw_binding_sq, kw_w_sum : float64,
+    kw_binding_n : int64, same shape (C38, diagnostic only, updated in place when record_binding is True)
+        Every feasible proposal counts in row K (size of the merged set) at the column of its entrant: the entrant
+        side is the standalone in solo+unit, the smaller firm in solo+solo and the smaller unit in unit+unit (by
+        capital at `step`); w = S_entrant / (S_entrant + S_other). Column 0 if the entrant is a standalone firm
+        at the floor (log market share < log_floor_share2 = log(2 floor_c / N)), else 1 + bin of w in K_W_EDGES.
+        kw_mergers counts the accepted ones (where mergers_by_K does); kw_w_sum sums w; under loggain / moment
+        kw_binding_sum / _sq / _n sum the binding gain, its square and the count over the proposals whose binding
+        gain is finite (-inf, a member with a non-positive replayed growth factor, is left out of the sums).
+        Nothing here draws random numbers or enters the accept decision.
 
     Returns tuple: (mergers_this_step, proposals_this_step,
                     mergers_ss, proposals_ss,
@@ -960,6 +977,43 @@ def merger_kernel_numba(
             proposals_sc += 1
             proposal_type = 1  # sc
 
+        # C38: entrant share w of the prospective unit and its (K, w) column (diagnostic only)
+        kw_col = -1
+        if record_binding:
+            cur = step % firm_log_states_buffer.shape[0]
+            s_init = 0.0
+            for f in init_firms:
+                s_init += np.exp(firm_log_states_buffer[cur, f])
+            s_targ = 0.0
+            for f in targ_firms:
+                s_targ += np.exp(firm_log_states_buffer[cur, f])
+            if initiator_unit == -1 and target_unit != -1:
+                ent_init = True
+            elif initiator_unit != -1 and target_unit == -1:
+                ent_init = False
+            else:
+                ent_init = s_init <= s_targ
+            s_ent = s_init if ent_init else s_targ
+            w_ent = s_ent / (s_init + s_targ)
+            at_floor = False
+            if proposal_type != 2:
+                f_ent = initiator if ent_init else target_firm
+                m0 = firm_home_market[f_ent] * N
+                mx = firm_log_states_buffer[cur, m0]
+                for k in range(m0 + 1, m0 + N):
+                    if firm_log_states_buffer[cur, k] > mx:
+                        mx = firm_log_states_buffer[cur, k]
+                tot = 0.0
+                for k in range(m0, m0 + N):
+                    tot += np.exp(firm_log_states_buffer[cur, k] - mx)
+                at_floor = firm_log_states_buffer[cur, f_ent] - (mx + np.log(tot)) < log_floor_share2
+            if at_floor:
+                kw_col = 0
+            else:
+                kw_col = 1 + min(int(w_ent * K_W_BINS), K_W_BINS - 1)
+            kw_proposals[merged_size, kw_col] += 1
+            kw_w_sum[merged_size, kw_col] += w_ent
+
         # C31: alpha at which the proposed merged unit would operate
         if proposal_type == 0:
             alpha_prop = alpha
@@ -1076,6 +1130,10 @@ def merger_kernel_numba(
                     elif b >= n_bins:
                         b = n_bins - 1
                 binding_gain_hist[merged_size, b] += 1
+                if binding != -np.inf:  # C38
+                    kw_binding_sum[merged_size, kw_col] += binding
+                    kw_binding_sq[merged_size, kw_col] += binding * binding
+                    kw_binding_n[merged_size, kw_col] += 1
         else:
             # REPLAY: Compare synthetic pooled growth to realized standalone growth
 
@@ -1228,6 +1286,8 @@ def merger_kernel_numba(
 
         mergers_this_step += 1
         mergers_by_K[merged_size] += 1  # C35
+        if kw_col >= 0:
+            kw_mergers[merged_size, kw_col] += 1  # C38
         # Track by type using proposal_type set earlier
         if proposal_type == 0:
             mergers_ss += 1
@@ -2169,6 +2229,14 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
     proposals_by_K_per_period = np.zeros((T, M + 1), dtype=np.int32)
     mergers_by_K_per_period = np.zeros((T, M + 1), dtype=np.int32)
     binding_gain_hist_by_K = np.zeros((M + 1, BINDING_GAIN_BINS), dtype=np.int64)
+    # C38: post-burn-in proposals by K x entrant share w (column 0: entrant at the floor; see merger_kernel_numba)
+    proposals_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.int64)
+    mergers_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.int64)
+    binding_sum_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.float64)
+    binding_sq_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.float64)
+    binding_n_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.int64)
+    w_sum_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.float64)
+    log_floor_share2 = float(np.log(2.0 * floor_c / N)) if floor_c > 0.0 else -np.inf
 
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(T)
@@ -2348,7 +2416,9 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                 sharing_rule_code, decision_rule_code,
                 g if g is not None else 0.0,
                 unit_created_step, unit_alpha, unit_born_step,
-                binding_gain_hist_by_K, step >= burn_in
+                binding_gain_hist_by_K, step >= burn_in,
+                proposals_by_K_w, mergers_by_K_w, binding_sum_by_K_w, binding_sq_by_K_w, binding_n_by_K_w,
+                w_sum_by_K_w, log_floor_share2
             )
             proposals_by_K_per_period[step] = props_by_K  # C35
             mergers_by_K_per_period[step] = mergs_by_K
@@ -2995,6 +3065,11 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                        'mergers_by_K_per_period': mergers_by_K_per_period,
                        'binding_gain_hist_by_K': binding_gain_hist_by_K,
                        'binding_gain_edges': BINDING_GAIN_EDGES,
+                       # C38: by K x entrant share w, post-burn-in (diagnostics; see merger_kernel_numba)
+                       'proposals_by_K_w': proposals_by_K_w, 'mergers_by_K_w': mergers_by_K_w,
+                       'binding_sum_by_K_w': binding_sum_by_K_w, 'binding_sq_by_K_w': binding_sq_by_K_w,
+                       'binding_n_by_K_w': binding_n_by_K_w, 'w_sum_by_K_w': w_sum_by_K_w,
+                       'K_w_edges': K_W_EDGES,
                        }
 
     # C24: Handle trace data
