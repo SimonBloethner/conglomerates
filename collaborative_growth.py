@@ -494,6 +494,116 @@ def member_gain_from_prepared(i, K, eps, sizes, sum_s, sum_s_eps, alpha, Phi_K, 
 
 
 @nb.njit(cache=True)
+def prepare_window_moment(eps, sizes, g):
+    """
+    C36: per-period sums for the moment rule, from the demeaned window of prepare_window_loggain.
+
+    With u_jt = eps_jt - g (eps_j has window mean g exactly, so u_j has mean 0):
+      sum_su[t]  = sum_j s_jt u_jt
+      sum_su2[t] = sum_j s_jt u_jt^2
+    """
+    h, K = eps.shape
+    sum_su = np.empty(h, dtype=np.float64)
+    sum_su2 = np.empty(h, dtype=np.float64)
+    for tau in range(h):
+        a = 0.0
+        b = 0.0
+        for j in range(K):
+            u = eps[tau, j] - g
+            a += sizes[tau, j] * u
+            b += sizes[tau, j] * u * u
+        sum_su[tau] = a
+        sum_su2[tau] = b
+    return sum_su, sum_su2
+
+
+@nb.njit(cache=True)
+def member_gain_moment(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alpha, Phi_K, sharing_rule_code, g):
+    """
+    C36: moment-rule estimate of member i's time-average growth gain in a set of K members.
+
+    Same objective and window as the loggain rule (member_gain_from_prepared), estimated by the second-order
+    expansion of the replayed log growth in the window's second moments instead of by its sample mean.
+    With u_jt = eps_jt - g and weights c_jt (proportional: s_jt / sum_k s_kt; equal: s_jt / (K s_it)), the
+    replayed growth factor is
+        1 + p_it = e^g [(1 - a) e^{u_it} + a sum_j c_jt e^{u_jt}] + a (1 - c_t) - Phi_K c_t,   c_t = sum_j c_jt
+    (a = alpha; proportional: c_t = 1). Expanding e^u and log to second order around the level
+    A_t = e^g (1 - a + a c_t) + a (1 - c_t) - Phi_K c_t and dropping the first-order terms, which have mean
+    zero (the weights are set before the period's return), gives, with r_t = e^g / A_t,
+        y_it = (1 - a) u_it + a sum_j c_jt u_jt
+        Q_it = (1 - a) u_it^2 + a sum_j c_jt u_jt^2
+        D~_i = (1/h) sum_t [log A_t - g] + 1/(2(h-1)) sum_t [r_t Q_it - r_t^2 (y_it - mean(y_i))^2]
+    For proportional sharing and Phi = 0 this is 1/2 [(1-a) V(u_i) + a sum_j c_j V(u_j) - V(y_i)], which is
+    1/2 [V(u_i) - V(y_i)] for members of equal variance and 1/2 a(2-a) sigma^2 (1 - 1/K) for K symmetric
+    i.i.d. members. The term a/2 (sum_j c_j V(u_j) - V(u_i)) is the arithmetic-mean transfer of the pool
+    between members of different volatility, which the replay contains (MODEL_FLAGS.md, C36).
+    Returns -inf if h < 3, or if in any period the replayed p_it (computed exactly as in loggain) is <= -1.
+    """
+    h = eps.shape[0]
+    if h < 3:
+        return -np.inf
+    eg = np.exp(g)
+    ys = np.empty(h, dtype=np.float64)
+    rs = np.empty(h, dtype=np.float64)
+    level = 0.0
+    quad = 0.0
+    y_sum = 0.0
+    for tau in range(h):
+        s_i = sizes[tau, i]
+        e_i = np.expm1(eps[tau, i])
+        s_sum = sum_s[tau]
+        if sharing_rule_code == 1:
+            avg_weighted_gain = sum_s_eps[tau] / s_sum if s_sum > 0 else 0.0
+            p_hat = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+            denom = s_sum
+            c = 1.0
+        else:
+            s_i_safe = max(s_i, 1e-300)
+            p_hat = (1.0 - alpha) * e_i + (alpha * sum_s_eps[tau] - Phi_K * s_sum) / K / s_i_safe
+            denom = K * s_i_safe
+            c = s_sum / denom
+        if p_hat <= -1.0:
+            return -np.inf
+        A = eg * (1.0 - alpha + alpha * c) + alpha * (1.0 - c) - Phi_K * c
+        if A <= 0.0:
+            return -np.inf
+        u_i = eps[tau, i] - g
+        y = (1.0 - alpha) * u_i + alpha * sum_su[tau] / denom
+        q = (1.0 - alpha) * u_i * u_i + alpha * sum_su2[tau] / denom
+        r = eg / A
+        level += np.log(A) - g
+        quad += r * q
+        ys[tau] = y
+        rs[tau] = r
+        y_sum += y
+    y_bar = y_sum / h
+    var_term = 0.0
+    for tau in range(h):
+        d = ys[tau] - y_bar
+        var_term += rs[tau] * rs[tau] * d * d
+    return level / h + 0.5 * (quad - var_term) / (h - 1)
+
+
+@nb.njit(cache=True)
+def rule_gain_from_prepared(rule_code, i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alpha, Phi_K,
+                            sharing_rule_code, g):
+    """C36: member i's estimated gain under decision rule 1 (loggain, Delta-hat) or 2 (moment, Delta-tilde).
+    sum_su, sum_su2 are only read under rule 2 (prepare_window_moment)."""
+    if rule_code == 2:
+        return member_gain_moment(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alpha, Phi_K,
+                                  sharing_rule_code, g)
+    return member_gain_from_prepared(i, K, eps, sizes, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code)
+
+
+@nb.njit(cache=True)
+def prepare_rule_sums(rule_code, eps, sizes, g):
+    """C36: the moment sums under rule 2, empty arrays otherwise (not read)."""
+    if rule_code == 2:
+        return prepare_window_moment(eps, sizes, g)
+    return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+
+
+@nb.njit(cache=True)
 def member_gain_loggain(i, members, alpha, window_returns, window_sizes, Phi_K, sharing_rule_code, g):
     """
     Compute demeaned log-growth gain for member i in a proposed conglomerate.
@@ -614,7 +724,7 @@ ALPHA_GRID = np.array([0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
 
 
 @nb.njit(cache=True)
-def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, sharing_rule_code, g):
+def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, sharing_rule_code, g, rule_code=1):
     """
     C34: renegotiate a unit's sharing rate on the demeaned log gain (the same Delta-hat as the membership
     and exit tests).
@@ -644,6 +754,8 @@ def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, shari
         0 = equal, 1 = proportional
     g : float
         Common growth rate added back after demeaning
+    rule_code : int
+        1 = loggain (Delta-hat), 2 = moment (C36: Delta-tilde, member_gain_moment); the rule is otherwise the same
 
     Returns:
     --------
@@ -654,11 +766,12 @@ def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, shari
     """
     K = past_returns.shape[1]
     eps, sz, sum_s, sum_s_eps = prepare_window_loggain(members, past_returns, sizes, g)
+    sum_su, sum_su2 = prepare_rule_sums(rule_code, eps, sz, g)
 
     current_gain = np.empty(K, dtype=np.float64)
     for j in range(K):
-        current_gain[j] = member_gain_from_prepared(j, K, eps, sz, sum_s, sum_s_eps,
-                                                    current_alpha, Phi_K, sharing_rule_code)
+        current_gain[j] = rule_gain_from_prepared(rule_code, j, K, eps, sz, sum_s, sum_s_eps, sum_su, sum_su2,
+                                                  current_alpha, Phi_K, sharing_rule_code, g)
 
     best_alpha = current_alpha
     best_min_gain = 0.0  # a move must make every member strictly better off
@@ -668,7 +781,8 @@ def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, shari
         feasible = True
         min_gain = np.inf
         for j in range(K):
-            d = member_gain_from_prepared(j, K, eps, sz, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code)
+            d = rule_gain_from_prepared(rule_code, j, K, eps, sz, sum_s, sum_s_eps, sum_su, sum_su2, alpha,
+                                        Phi_K, sharing_rule_code, g)
             if d == -np.inf:
                 feasible = False
                 break
@@ -709,9 +823,10 @@ def merger_kernel_numba(
     Parameters:
     -----------
     decision_rule_code : int
-        0 = replay (compare synthetic to realized), 1 = loggain (demeaned comparison)
+        0 = replay (compare synthetic to realized), 1 = loggain (demeaned comparison),
+        2 = moment (C36: loggain's test with Delta-tilde, member_gain_moment, in place of Delta-hat)
     g : float
-        Common growth rate for loggain demeaning. Only used if decision_rule_code == 1.
+        Common growth rate for loggain/moment demeaning. Only used if decision_rule_code >= 1.
 
     binding_gain_hist : int64 array (M + 1, n_bins), updated in place (C35, diagnostic only)
         Under loggain, when record_binding is True, every feasible proposal adds one count in row K (the size of
@@ -873,9 +988,10 @@ def merger_kernel_numba(
         
         accept = True
 
-        if decision_rule_code == 1:
+        if decision_rule_code >= 1:
             # LOGGAIN: Demeaned log-growth comparison
             # For each firm, compute Δ̂_proposed and compare to Δ̂_current (or 0 if standalone)
+            # C36: MOMENT (code 2) is the same test with Δ̃ (member_gain_moment) in place of Δ̂
 
             # Compute sizes from states
             sizes = np.exp(past_states)  # shape (h, K_hat)
@@ -884,15 +1000,16 @@ def merger_kernel_numba(
             eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop = prepare_window_loggain(
                 merged_firms, past_returns, sizes, g
             )
+            sum_su_prop, sum_su2_prop = prepare_rule_sums(decision_rule_code, eps_prop, sz_prop, g)
 
             binding = np.inf  # C35: min over members of Delta_hat_proposed - max(0, Delta_hat_current)
             for j in range(K_hat):
                 firm_id = merged_firms[j]
 
                 # Compute gain in proposed merged set using precomputed data (O(h))
-                delta_hat_proposed = member_gain_from_prepared(
-                    j, K_hat, eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop,
-                    alpha_prop, m, sharing_rule_code
+                delta_hat_proposed = rule_gain_from_prepared(
+                    decision_rule_code, j, K_hat, eps_prop, sz_prop, sum_s_prop, sum_s_eps_prop,
+                    sum_su_prop, sum_su2_prop, alpha_prop, m, sharing_rule_code, g
                 )
 
                 if delta_hat_proposed == -np.inf:
@@ -930,10 +1047,12 @@ def merger_kernel_numba(
                     eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr = prepare_window_loggain(
                         current_members, current_past_returns, current_sizes, g
                     )
+                    sum_su_curr, sum_su2_curr = prepare_rule_sums(decision_rule_code, eps_curr, sz_curr, g)
                     current_m = Phi_lookup[current_size]
-                    delta_hat_current = member_gain_from_prepared(
-                        j_current, current_size, eps_curr, sz_curr, sum_s_curr, sum_s_eps_curr,
-                        unit_alpha[current_unit], current_m, sharing_rule_code
+                    delta_hat_current = rule_gain_from_prepared(
+                        decision_rule_code, j_current, current_size, eps_curr, sz_curr, sum_s_curr,
+                        sum_s_eps_curr, sum_su_curr, sum_su2_curr, unit_alpha[current_unit], current_m,
+                        sharing_rule_code, g
                     )
 
                 # C35: binding gain (diagnostic)
@@ -1132,7 +1251,7 @@ def compute_exit_candidates_numba(
     exit_candidates,               # 1D array of firm IDs
     window,
     step,
-    decision_rule_code,            # 0 = replay, 1 = loggain
+    decision_rule_code,            # 0 = replay, 1 = loggain, 2 = moment (C36)
     g,                      # Common growth for loggain
     alpha,
     sharing_rule_code,
@@ -1150,6 +1269,7 @@ def compute_exit_candidates_numba(
     decision_rule_code : int
         0 = replay (compare outside to inside log profits)
         1 = loggain (exit if Δ̂_current < 0)
+        2 = moment (C36: exit if Δ̃_current < 0, member_gain_moment)
 
     Returns array of firm IDs that should exit (not a mask).
     """
@@ -1165,8 +1285,8 @@ def compute_exit_candidates_numba(
     exit_list = np.empty(n, dtype=np.int64)
     exit_count = 0
 
-    if decision_rule_code == 1:
-        # LOGGAIN: Exit if Δ̂_current < 0 (better off standalone)
+    if decision_rule_code >= 1:
+        # LOGGAIN: Exit if Δ̂_current < 0 (better off standalone); C36 MOMENT: the same with Δ̃
         for firm_id in exit_candidates:
             unit_id = firm_unit[firm_id]
             if unit_id == -1:
@@ -1197,10 +1317,11 @@ def compute_exit_candidates_numba(
             eps, sz, sum_s, sum_s_eps = prepare_window_loggain(
                 current_members, past_returns, sizes, g
             )
+            sum_su, sum_su2 = prepare_rule_sums(decision_rule_code, eps, sz, g)
             m = Phi_lookup[current_size]
-            delta_hat_current = member_gain_from_prepared(
-                j_current, current_size, eps, sz, sum_s, sum_s_eps,
-                unit_alpha[unit_id], m, sharing_rule_code
+            delta_hat_current = rule_gain_from_prepared(
+                decision_rule_code, j_current, current_size, eps, sz, sum_s, sum_s_eps, sum_su, sum_su2,
+                unit_alpha[unit_id], m, sharing_rule_code, g
             )
 
             # Exit if gain in current conglomerate is negative (standalone gives 0)
@@ -1781,7 +1902,7 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         - After pooling/floor, renormalizes per market so mean size = 1
         - Skips economy-wide renormalization (redundant when flag is on)
     decision_rule : str
-        Merger/exit decision rule: 'replay' (default) or 'loggain'.
+        Merger/exit decision rule: 'replay' (default), 'loggain' or 'moment'.
         - replay: Compare synthetic pooled growth to realized standalone growth.
           Original Phase A/B behavior; sensitive to common market shocks.
         - loggain: Demean returns to remove first-order noise. Each firm's
@@ -1789,6 +1910,10 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
           from pooling is computed as Δ̂ = E[log(1+p) - log(1+ε)].
           Accepts if Δ̂_proposed > max(0, Δ̂_current) for all members.
           Requires g to be specified (raises ValueError if g is None).
+        - moment (C36): the loggain rule (consent, exit review, alpha renegotiation)
+          with the gain estimated by its second-order expansion in the window's
+          second moments (member_gain_moment) instead of the sample mean of the
+          replayed log differences. Requires g; windows shorter than 3 periods give -inf.
     exit_review_every : int
         Periodic exit review interval. Default 1 (every step).
         When > 1, members run the exit test only at steps where
@@ -1841,11 +1966,11 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         raise ValueError("market_size_fixed=True requires growth_process='log_family'")
 
     # Validate decision_rule
-    if decision_rule not in ("replay", "loggain"):
-        raise ValueError(f"decision_rule must be 'replay' or 'loggain', got '{decision_rule}'")
-    if decision_rule == "loggain" and g is None:
-        raise ValueError("decision_rule='loggain' requires g to be specified")
-    decision_rule_code = 0 if decision_rule == "replay" else 1
+    if decision_rule not in ("replay", "loggain", "moment"):
+        raise ValueError(f"decision_rule must be 'replay', 'loggain' or 'moment', got '{decision_rule}'")
+    if decision_rule in ("loggain", "moment") and g is None:
+        raise ValueError(f"decision_rule='{decision_rule}' requires g to be specified")
+    decision_rule_code = {"replay": 0, "loggain": 1, "moment": 2}[decision_rule]
     if alpha_endogenous and g is None:
         raise ValueError("alpha_endogenous=True requires g (the sharing rate is renegotiated on the demeaned log gain)")
 
@@ -2190,10 +2315,16 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                 past_returns = get_historical_returns_numba(rel_log_returns, hist_start, step, member_firms)
 
                 # C34: renegotiate on the demeaned log gain (unanimity, then maximin)
-                optimal_alpha, should_change = find_optimal_alpha(
-                    member_firms, past_returns, np.exp(past_states),
-                    unit_alpha[cid], m, sharing_rule_code, g
-                )
+                if decision_rule_code == 2:  # C36: renegotiate on the moment rule's Delta-tilde
+                    optimal_alpha, should_change = find_optimal_alpha(
+                        member_firms, past_returns, np.exp(past_states),
+                        unit_alpha[cid], m, sharing_rule_code, g, 2
+                    )
+                else:
+                    optimal_alpha, should_change = find_optimal_alpha(
+                        member_firms, past_returns, np.exp(past_states),
+                        unit_alpha[cid], m, sharing_rule_code, g
+                    )
 
                 if should_change:
                     unit_alpha[cid] = optimal_alpha
@@ -2399,7 +2530,7 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
             exit_candidates = np.where(in_unit & old_enough)[0]
 
             # C19: Periodic exit review (only for loggain; replay ignores this flag)
-            if decision_rule_code == 1 and exit_review_every > 1 and len(exit_candidates) > 0:
+            if decision_rule_code >= 1 and exit_review_every > 1 and len(exit_candidates) > 0:
                 # Filter to firms whose conglomerate is due for review
                 # (step - unit_created_step) % exit_review_every == 0
                 review_mask = np.array([

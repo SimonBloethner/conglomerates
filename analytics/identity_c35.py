@@ -3,7 +3,10 @@
 C35 identity check: the C35 kernel diagnostics are additive outputs. Compare C34 and C35 result pickles
 field by field, byte for byte, leaving out only the C35 keys.
 
-    python analytics/identity_c35.py <c34_dir> <c35_dir> <out_csv> [--ids FILE]
+    python analytics/identity_c35.py <c34_dir> <c35_dir> <out_csv> [--ids FILE] [--same-schema]
+
+--same-schema (C36): both directories hold results of the same schema (e.g. C35 and C36 reruns); every field
+and every summary key is compared, with no exception for the C35 keys, and no extra field is allowed.
 
 For every scenario in <c35_dir> (or in FILE):
 - every pickled field of the C34 result except the runtime is compared as pickle.dumps bytes; the `summary`
@@ -53,8 +56,13 @@ def tidy_text(result):
     return buf.getvalue()
 
 
-def compare(ref, new):
+def compare(ref, new, same_schema=False):
     diffs = []
+    if same_schema:
+        for k in sorted(set(ref) | set(new)):
+            if k not in RUNTIME and (k not in ref or k not in new or b(ref[k]) != b(new[k])):
+                diffs.append(k)
+        return diffs
     for k in ref:
         if k in RUNTIME:
             continue
@@ -82,7 +90,7 @@ def counter_checks(new):
           and np.array_equal(new['proposals_by_K'], P[s['burn_in']:].sum(0))
           and np.array_equal(new['mergers_by_K'], Mg[s['burn_in']:].sum(0)))
     H = new['binding_gain_hist_by_K']
-    if s.get('decision_rule', 'loggain') == 'loggain':
+    if s.get('decision_rule', 'loggain') in ('loggain', 'moment'):
         hist_ok = np.array_equal(H.sum(1), new['proposals_by_K'])
     else:
         hist_ok = not H.any()
@@ -95,6 +103,7 @@ def main():
     ap.add_argument('new_dir')
     ap.add_argument('out_csv')
     ap.add_argument('--ids')
+    ap.add_argument('--same-schema', action='store_true')
     args = ap.parse_args()
     if args.ids:
         ids = [int(x) for x in open(args.ids) if x.strip()]
@@ -103,7 +112,7 @@ def main():
     rows = []
     for i in ids:
         ref, new = load(args.ref_dir, i), load(args.new_dir, i)
-        diffs = compare(ref, new)
+        diffs = compare(ref, new, args.same_schema)
         ck, hk = counter_checks(new)
         s = ref['scenario']
         rows.append(dict(scenario_id=i, block=s['block'], cell_id=s['cell_id'], log_family=s['log_family'],

@@ -213,6 +213,49 @@ The `loggain` rule addresses a fundamental challenge: when firms share correlate
 
 **Phase B identity:** With `decision_rule == "replay"` (default), behavior is byte-for-byte identical to Phase B.
 
+**Moment rule (C36):** `decision_rule == "moment"` is the loggain rule with the same objective, the same
+information (the demeaned window of `prepare_window_loggain`, h = min(window, t) periods), unanimity, exit review
+and α renegotiation. Only the statistic differs: Δ̂ (the sample mean of the replayed log differences) is replaced by
+its second-order expansion in the window's second moments, Δ̃ (`member_gain_moment`).
+
+*Definition.* Let u_jτ = ε_jτ − g. These have window mean 0, because ε_j has window mean g exactly. The pool
+weights c_jτ are:
+- proportional sharing: c_jτ = s_jτ / Σ_k s_kτ, so c_τ = Σ_j c_jτ = 1;
+- equal sharing: c_jτ = s_jτ / (K s_iτ).
+
+The replayed growth factor is
+
+    1 + p_iτ = e^g [(1 − α) e^{u_iτ} + α Σ_j c_jτ e^{u_jτ}] + α(1 − c_τ) − Φ(K) c_τ.
+
+Expanding e^u and the logarithm to second order around the level A_τ = e^g(1 − α + α c_τ) + α(1 − c_τ) − Φ c_τ,
+and dropping the first-order terms, gives
+
+    y_iτ = (1 − α) u_iτ + α Σ_j c_jτ u_jτ,   Q_iτ = (1 − α) u_iτ² + α Σ_j c_jτ u_jτ²,   r_τ = e^g / A_τ
+    Δ̃_i = (1/h) Σ_τ [log A_τ − g] + 1/(2(h − 1)) Σ_τ [ r_τ Q_iτ − r_τ² (y_iτ − ȳ_i)² ].
+
+The first-order terms are dropped because the weights are set before the period's return, so those terms have
+mean zero. They carry no information about the gain, only sampling noise.
+
+*Special cases.*
+- Proportional sharing with Φ = 0: Δ̃_i = ½[(1 − α) V̂(u_i) + α Σ_j c̄_j V̂(u_j) − V̂(y_i)], with time-varying weights
+  inside the sum.
+- Members of equal variance: this is ½[V̂(ε_i) − V̂(y_i)].
+- K symmetric i.i.d. members: ½α(2 − α)σ²(1 − 1/K).
+- Proportional sharing with Φ > 0: the level term is log(1 − Φe^{−g}) ≈ −Φ.
+
+*The transfer term.* The term ½α(Σ_j c_j V̂(u_j) − V̂(u_i)) is the pool's arithmetic-mean transfer between members
+of different volatility (a low-volatility member gains part of the others' volatility premium). The replay
+contains it, so it is kept. Without it Δ̃ would not estimate loggain's objective for members of unequal variance
+(`tests/test_moment_rule.py::test_heterogeneous_members_match_loggain_on_long_window`).
+
+*−∞ cases.* Δ̃ is −∞ if h < 3, if A_τ ≤ 0, or if in any period the replayed p_iτ (computed exactly as under
+loggain, for both sharing rules) is ≤ −1.
+
+*Where it is used.* The kernel, the exit test and `find_optimal_alpha` (argument `rule_code=2`) call it through
+`rule_gain_from_prepared`. Under loggain these call `member_gain_from_prepared` as before, so loggain runs are
+byte-identical to C35 (`diagnostics/identity_c36.csv`). The C35 acceptance-by-K counters and the binding-gain
+histogram are filled under the moment rule as under loggain. **Requires:** `g`.
+
 ### `exit_review_every`
 Periodic exit review interval for loggain decision rule.
 
@@ -225,7 +268,7 @@ When `exit_review_every > 1`:
 - The review schedule resets when a conglomerate's composition changes (merger or new member)
 - Models "boards review the arrangement every n periods"
 
-**Only affects loggain:** Under `decision_rule == "replay"` (default), this flag is ignored and exits are evaluated every step.
+**Only affects loggain (and moment, C36):** Under `decision_rule == "replay"` (default), this flag is ignored and exits are evaluated every step.
 
 ## Fixed Market Size
 
