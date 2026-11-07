@@ -373,8 +373,8 @@ def create_medians_df(tidy_df):
     group_cols = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule',
                   'lookback', 'cross_corr', 'alpha_endogenous', 'cost_multiplier',
                   'decision_rule', 'merge_thresh', 'M', 'N']  # C17; C28 merge_thresh; C32 M, N
-    if 'nu' in tidy_df.columns:  # C37, pilot D: the nu block has two values of nu per (block, family, alpha)
-        group_cols = group_cols + ['nu']
+    if 'nu' in tidy_df.columns:  # C37, pilot D: the nu block has two values of nu per (block, family, alpha), and
+        group_cols = group_cols + ['nu', 'floor_c']  # the floor-level block two floors (pooled in pilot C's medians)
 
     # Numeric columns to aggregate
     value_cols = [

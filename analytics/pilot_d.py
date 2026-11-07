@@ -184,15 +184,33 @@ CELL = ['block', 'log_family', 'cost_type', 'alpha', 'sharing_rule', 'lookback',
         'cost_multiplier', 'merge_thresh', 'M', 'N', 'floor_c']
 METRICS = ['K_mean', 'cong_capital_share_median', 'hill_exponent_median', 'hhi_within_median',
            'top10pct_aggregate_median', 'acceptance_rate', 'mergers_per_period', 'floor_exits_per_period',
-           'voluntary_exits_per_period', 'floor_hit_rate_member', 'floor_hit_rate_standalone']
+           'voluntary_exits_per_period', 'floor_hit_rate_member', 'floor_hit_rate_standalone',
+           'member_firm_share', 'floor_hit_rate_member_status', 'floor_hit_rate_standalone_status',
+           'alpha_adopted_median']
+STATUS_COLS = ['member_firm_share', 'floor_hit_rate_member_status', 'floor_hit_rate_standalone_status']
+
+
+def pilot_c_status_rates(ids):
+    """Pilot C's tidy.csv has no status occupancy; compute it from the pilot C pickles (summarize_pilot_c's
+    pilot_d_metrics, which reads only the result) for the given scenario ids."""
+    from summarize_pilot_c import pilot_d_metrics
+    out = {}
+    for i in ids:
+        m = pilot_d_metrics(load_pkl(P('pilot_c', 'results', f'scenario_{i:04d}.pkl.gz')))
+        out[i] = [m[k] for k in STATUS_COLS]
+    return pd.DataFrame.from_dict(out, orient='index', columns=STATUS_COLS)
 
 
 def comparison():
+    """Paired differences moment - loggain. The pilot C status rates (STATUS_COLS) are computed from the pilot C
+    pickles. Metrics: METRICS; cells: CELL; per cell the medians of each rule and the median, p25, p75 of the
+    paired differences over the reps."""
     d = pd.read_csv(pilot_dir('d', 'tidy.csv', absolute=True))
     c = pd.read_csv(pilot_dir('c', 'tidy.csv', absolute=True)).set_index('scenario_id')
     d = d[d.twin_id.notna()].copy()
     d['twin_id'] = d.twin_id.astype(int)
-    tw = c.loc[d.twin_id]
+    tw = c.loc[d.twin_id].copy()
+    tw[STATUS_COLS] = pilot_c_status_rates(d.twin_id).loc[d.twin_id].values
     assert (tw.decision_rule.values == 'loggain').all() and (tw.seed.values == d.seed.values).all()
     for col in CELL + ['rep']:
         if col != 'block':

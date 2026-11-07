@@ -98,7 +98,7 @@ def merge():
                      f"{fmt(r.share_ruin, '{:.2f}')} | "
                      f"{fmt(r.floor_rate_member, '{:.3f}')} / {fmt(r.floor_rate_standalone, '{:.3f}')} |")
     checks = (f"\nChecks: floor hits aligned with the jump in {int(df.check_floor_jump_aligned.sum())}/27 traces; "
-              f"trace floor hits equal the C34 pickle in {int(df.check_floor_matches_pickle.sum())}/27; "
+              f"trace floor hits equal the result pickle in {int(df.check_floor_matches_pickle.sum())}/27; "
               f"max |A + B + C - total| = {df.decomp_residual.abs().max():.2e}; "
               f"max |total (decomposition cells) - total (panel cells)| = "
               f"{(df.gap_total_mean - df.gap_total_mean_fe).abs().max():.2e}.\n")
