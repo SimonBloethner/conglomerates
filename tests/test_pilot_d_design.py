@@ -1,7 +1,8 @@
 """C37: pilot D design (pilot_design_d.py, pilot_d/scenarios.json), the moment rule as the base case.
 
 1,995 scenarios: the 1,845 moment twins of pilot C's loggain runs outside rule-replay and the C36 moment block
-(255 of them reuse a C36 run), the homogeneous block (120, both rules) and the nu block (30)."""
+(255 of them reuse a C36 run), the homogeneous block (120, both rules) and the nu block (30).
+C38 appends the alpha-0.9 block (15, ids 1995-2009): 2,010 scenarios, the first 1,995 unchanged."""
 import gzip
 import json
 import os
@@ -21,10 +22,13 @@ import pilot_design_d as pdd  # noqa: E402
 from pilot_d import model_keys_match  # noqa: E402
 from pilots import pop_pilot, pilot_dir  # noqa: E402
 
-TOTAL = 1995
-BLOCK_COUNTS = {'main': 540, 'equal-split': 180, 'cost-level': 360, 'lookback': 100, 'correlation': 45,
-                'endogenous-alpha': 60, 'floor-level': 90, 'search': 120, 'size': 80, 'cost-level-full': 180,
-                'cost-level-high': 90, 'homogeneous': 120, 'nu': 30}
+TOTAL_C37 = 1995
+BLOCK_COUNTS_C37 = {'main': 540, 'equal-split': 180, 'cost-level': 360, 'lookback': 100, 'correlation': 45,
+                    'endogenous-alpha': 60, 'floor-level': 90, 'search': 120, 'size': 80, 'cost-level-full': 180,
+                    'cost-level-high': 90, 'homogeneous': 120, 'nu': 30}
+BLOCK_COUNTS = dict(BLOCK_COUNTS_C37, **{'alpha-0.9': 15})       # C38
+TOTAL = TOTAL_C37 + 15
+NEW_BLOCKS = ('homogeneous', 'nu', 'alpha-0.9')                   # no loggain twin
 D_KEYS = {'pilot', 'twin_id', 'source_id', 'nu'}
 
 
@@ -46,7 +50,7 @@ def test_counts(d):
     assert counts == BLOCK_COUNTS
     assert [s['scenario_id'] for s in d] == list(range(TOTAL))
     assert sum(s['source_id'] is not None for s in d) == 255
-    assert TOTAL - 255 == 1740                                    # new runs
+    assert TOTAL_C37 - 255 == 1740                                # new runs in C37 (C38 adds 15)
     assert all(s['pilot'] == 'd' for s in d)
 
 
@@ -55,10 +59,26 @@ def test_json_matches_generator(d):
         assert json.load(f) == d
 
 
+def test_c38_alpha_09_block(d):
+    """C38: 15 copies of the main power-law alpha = 0.5 scenarios (same seed, cell, parameters) at alpha = 0.9,
+    appended after the C37 scenarios, which are unchanged."""
+    f = d[TOTAL_C37:]
+    assert [s['block'] for s in f] == ['alpha-0.9'] * 15 and [s['scenario_id'] for s in f] == list(range(1995, 2010))
+    for s in f:
+        src = [t for t in d[:TOTAL_C37] if t['block'] == 'main' and t['cost_type'] == 'power_law'
+               and t['log_family'] == s['log_family'] and t['alpha'] == 0.5 and t['rep'] == s['rep']]
+        assert len(src) == 1
+        t = src[0]
+        assert s['alpha'] == 0.9 and s['decision_rule'] == 'moment' and s['twin_id'] is None and s['source_id'] is None
+        assert s['seed'] == pc.cell_seed(t['cell_id'], s['rep']) == t['seed']
+        assert set(s) == set(t)
+        assert all(s[k] == t[k] for k in t if k not in ('scenario_id', 'block', 'alpha', 'twin_id', 'source_id'))
+
+
 def test_inherited_runs_are_moment_twins_of_pilot_c(d, c):
     """Every inherited scenario equals its pilot C loggain twin except decision_rule, the id and the pilot D keys:
     same cell id, seed, rep and parameters, so both rules run on the same random numbers."""
-    inherited = [s for s in d if s['block'] not in ('homogeneous', 'nu')]
+    inherited = [s for s in d if s['block'] not in NEW_BLOCKS]
     assert len(inherited) == 1845
     twins = [s['twin_id'] for s in inherited]
     assert len(set(twins)) == len(twins)

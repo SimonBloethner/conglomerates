@@ -7,7 +7,7 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
 
 | pilot | directory | decision rule | role |
 |---|---|---|---|
-| **D** | `pilot_d/` | `moment` | **the paper**: base case, 1,995 scenarios (`pilot_design_d.py`) |
+| **D** | `pilot_d/` | `moment` | **the paper**: base case, 2,010 scenarios (`pilot_design_d.py`; 1,995 in C37, plus the C38 α = 0.9 cell) |
 | C | `pilot_c/` | `loggain` | loggain reference (bounded-rationality variant), frozen at C36, 2,145 scenarios (`pilot_design.py`) |
 
 - Every pilot D run of the blocks inherited from pilot C has a loggain twin in pilot C on the same seeds (scenario
@@ -15,7 +15,9 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
 - Pilot D adds the `homogeneous` block (every market at IQR 0.2, both rules) and the `nu` block (Student-t, ν ∈
   {2.5, 4}).
 - The replay rule is historical: its runs are pilot C's rule-replay block.
-- The current handover is `diagnostics/c37_note.md`, the pilot D results against the loggain twins. Earlier notes:
+- The current handovers are `diagnostics/c37_note.md` (the pilot D results against the loggain twins) and
+  `diagnostics/c38_note.md` (C38 diagnostics: event-study matchings, consent by recruit size, the moment rule's
+  approximation error, fixed α = 0.9; with `c38_event_study.md`). Earlier notes:
   `diagnostics/c34_note.md`–`c36_note.md`.
 
 ## Running
@@ -28,6 +30,10 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
   - `create_alpha_scatter.py --pilot d`;
   - `analytics/acceptance_c35.py --pilot d`;
   - `analysis/run_traces.py | run_panel.py | run_decomposition.py | burstiness.py <trace_dir> --pilot d`;
-  - `analytics/pilot_d.py --variance | --comparison | --tables`.
+  - `analytics/pilot_d.py --variance | --comparison | --tables`;
+  - C38: `analysis/run_traces.py <trace_dir> --matching | --merge-matching --pilot d`,
+    `analysis/approximation_error.py <trace_dir>`, `analytics/acceptance_c38.py`, `analytics/fixed_alpha_c38.py`,
+    `analytics/identity_c38.py`.
 - Without `--pilot`, every script reads and writes pilot C as before.
-- Result pickles and traces are not in git. They are kept on Festus under `/groups/m-larch/bt307958/IOxEE_c37`.
+- Result pickles and traces are not in git. They are kept on Festus under `/groups/m-larch/bt307958/IOxEE_c37`
+  (C38: `IOxEE_c38`, which adds `pilot_d/results_c38/` and the identity reruns `pilot_d/results_c38_identity/`).

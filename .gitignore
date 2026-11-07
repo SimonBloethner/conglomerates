@@ -13,3 +13,6 @@ pilot_c/events/*_events.csv
 pilot_d/results*/
 pilot_d/traces/
 pilot_d/events/*_events.csv
+
+# C38: per-draw samples of the approximation-error check stay on Festus
+pilot_d/approximation_error_samples.csv.gz

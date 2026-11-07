@@ -26,6 +26,11 @@ Blocks (scenario ids in this order):
   seeds: the t3 main power-law cell (same market IQRs as ν = 3).
 
 Total: 1,995 scenarios, 1,740 new runs. The rule-replay block is dropped; its runs stay in pilot C.
+
+C38 appends one block (ids 1995-2009; the 1,995 above are unchanged):
+- alpha-0.9: the main power-law cell of each family at a fixed α = 0.9, 5 reps, moment rule = 15, each a copy of
+  the main α = 0.5 power-law scenario of its family and rep (same cell id, seed, parameters) with α = 0.9: the
+  fixed-rate comparison for the endogenous-α block, whose units adopt α ≈ 0.9. No loggain twin.
 The 27 traced runs (main, power law, 3 families, α ∈ {0.05, 0.1, 0.3}, reps 0-2) are reruns of pilot D main
 scenarios with trace_path set (analysis/run_traces.py --pilot d), not separate scenarios.
 """
@@ -39,7 +44,9 @@ HOMOGENEOUS_IQR = 0.2
 HOMOGENEOUS_ALPHAS = [0.05, 0.1, 0.3, 0.5]
 NU_VALUES = [2.5, 4.0]
 NU_ALPHAS = [0.1, 0.3, 0.5]
-TOTAL = 1995
+TOTAL_C37 = 1995
+FIXED_ALPHA = 0.9          # C38
+TOTAL = TOTAL_C37 + 3 * pc.N_REPS
 
 
 def main_power_law_cell(family):
@@ -107,12 +114,30 @@ def generate_nu(scenario_id):
     return out, scenario_id
 
 
+def generate_fixed_alpha(inherited, scenario_id):
+    """C38: the main power-law α = 0.5 scenario of each family and rep, at α = FIXED_ALPHA."""
+    out = []
+    for family in pc.FAMILIES:
+        for rep in range(pc.N_REPS):
+            src = [s for s in inherited if s['block'] == 'main' and s['cost_type'] == 'power_law'
+                   and s['log_family'] == family and s['alpha'] == 0.5 and s['rep'] == rep]
+            assert len(src) == 1
+            s = dict(src[0])
+            s.update({'block': 'alpha-0.9', 'scenario_id': scenario_id, 'alpha': FIXED_ALPHA,
+                      'twin_id': None, 'source_id': None})
+            out.append(s)
+            scenario_id += 1
+    return out, scenario_id
+
+
 def generate_all_scenarios():
     c = pc.generate_all_scenarios()
     inherited, sid = generate_inherited(c)
     homog, sid = generate_homogeneous(sid)
     nus, sid = generate_nu(sid)
-    scenarios = inherited + homog + nus
+    assert sid == TOTAL_C37, sid
+    fixed, sid = generate_fixed_alpha(inherited, sid)
+    scenarios = inherited + homog + nus + fixed
     assert len(scenarios) == TOTAL, len(scenarios)
     return scenarios
 

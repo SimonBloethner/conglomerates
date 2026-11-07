@@ -9,7 +9,7 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = os.path.join(ROOT, 'pilot_d')
 
-from tests.test_pilot_d_design import BLOCK_COUNTS, TOTAL  # noqa: E402
+from tests.test_pilot_d_design import BLOCK_COUNTS, NEW_BLOCKS, TOTAL, TOTAL_C37  # noqa: E402
 from tests.test_tidy_schema import EXPECTED_TIDY_COLUMNS  # noqa: E402
 
 EXTRA = ['pilot', 'twin_id', 'source_id', 'nu', 'iqr_lo', 'iqr_hi', 'member_firm_share',
@@ -55,15 +55,15 @@ def test_homogeneous_and_nu_rows(tidy):
 
 def test_medians_cover_every_cell(tidy):
     m = pd.read_csv(os.path.join(D, 'medians.csv'))
-    assert m.n_reps.sum() == TOTAL
+    assert m.n_reps.sum() == TOTAL_C37          # C37 output, not regenerated in C38
     # every cell has 5 reps: pilot D groups by nu and floor_c too (pilot C's medians pool the two floor levels)
     assert (m.n_reps == 5).all()
-    assert len(m) == TOTAL // 5
+    assert len(m) == TOTAL_C37 // 5
 
 
 def test_provenance_and_copies():
     p = pd.read_csv(os.path.join(D, 'provenance.csv'))
-    assert len(p) == TOTAL
+    assert len(p) == TOTAL_C37
     assert (p.origin.str.startswith('copied')).sum() == 255 and p[p.source_id.notna()].source_md5.str.len().eq(32).all()
     chk = pd.read_csv(os.path.join(ROOT, 'diagnostics', 'identity_c37_copies.csv'))
     assert len(chk) == 14 and chk.identical.all() and chk.same_scenario.all()
@@ -71,7 +71,7 @@ def test_provenance_and_copies():
 
 def test_comparison_pairs_every_twin():
     c = pd.read_csv(os.path.join(D, 'comparison_c_vs_d.csv'))
-    assert c.n_pairs.sum() == 1845 and set(c.block) == set(BLOCK_COUNTS) - {'homogeneous', 'nu'}
+    assert c.n_pairs.sum() == 1845 and set(c.block) == set(BLOCK_COUNTS) - set(NEW_BLOCKS)
     for col in ('K_mean_diff_median', 'K_mean_diff_p25', 'K_mean_diff_p75', 'acceptance_rate_diff_median',
                 'floor_hit_rate_member_status_loggain_median'):
         assert col in c.columns

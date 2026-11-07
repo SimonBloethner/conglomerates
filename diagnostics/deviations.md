@@ -695,3 +695,52 @@ The note is `diagnostics/c37_note.md`.
 - **Propositions.** Their text is not in the repository (`latex/collaboration.tex` has no proposition environments;
   `RESULTS_PAGE.md` is not in this tree). The note's Section 6 is organised by the claim each piece of evidence
   tests, and uses a proposition number only for Proposition 3, as the brief does.
+
+# C38: three diagnostics on the frozen model, one optional cell
+
+The notes are `diagnostics/c38_event_study.md` (Task 1) and `diagnostics/c38_note.md` (Tasks 2–4).
+
+## Departures from the brief and choices it left open
+
+- **Event study, the script.** `analysis/event_study.py` gets `match='raw'|'owner'|'recap'` and `hitfree_k`; the
+  default reproduces C29–C37 exactly (checked: the current matching reproduces `pilot_d/event_study_summary.csv`
+  on all 27 traces). The driver is a `--matching` mode of `analysis/run_traces.py`, which reads the existing
+  traces and runs no model.
+- **Event study, "means over the 3 reps".** `pilot_d/event_study_matching.csv` averages each trace's statistics
+  (medians and means) over the three reps; the per-trace rows are in `event_study_matching_by_rep.csv`. The pre/post
+  decomposition uses means over matched events, because only means are additive (did = post gap − pre gap).
+- **Matching B drops events.** With the hit-free window, a joiner with a hit in [t − k, t) is dropped (so n_events
+  is the number that survive), and candidates with a hit in that window are excluded.
+- **"At the floor" (Task 2).** The brief defines the floor bin as w < 2c/N. With c = 0.127 and N = 50 that is
+  w < 0.005, a unit share that a floor entrant reaches only against incumbents holding about a whole market's
+  capital, so it would not separate floor entrants. The floor column is instead defined by the entrant's **market
+  share**: a standalone entrant whose market share is below 2c/N (twice the floor's minimum share). The column is
+  exclusive: the 20 w columns hold every other proposal, so the 21 columns sum to `proposals_by_K`. The mean w of
+  floor entrants is kept (`w_sum_by_K_w`), so the w-adjusted formula can be evaluated for them.
+- **Entrant side.** In solo + unit it is the standalone; in solo + solo the smaller firm; in unit + unit the smaller
+  unit (the brief's rule). Sizes are those at the proposal step. A unit is never "at the floor".
+- **Binding gain moments.** Proposals whose binding gain is −∞ are counted but left out of the sum and sum of
+  squares; `binding_n_by_K_w` (a fifth key) counts the rest, and `w_sum_by_K_w` (a sixth) sums w.
+- **Analytical columns.** Besides the brief's w-adjusted formula, `acceptance_by_K_w.csv` has the incumbent's exact
+  second-order gain under proportional sharing (which also depends on the incumbent's own weight) and the entrant's.
+  The brief's formula and the incumbent's agree to first order in w.
+- **Identity.** All 1,995 pilot D scenarios were rerun on the C38 code (into `pilot_d/results_c38_identity/` on
+  Festus, not in git) and compared with the C37 pickles. The 15 Task 2 runs are in `pilot_d/results_c38/`.
+- **Task 3, inputs.** The traces do not hold the rule's inputs. Returns are rebuilt from the trace as the change in
+  log share net of the floor jump, for firms standalone throughout the window, and sizes as exp(log share). For a
+  standalone firm this equals the model's relative return up to the market's renormalisation term of that step,
+  common to the market. Both estimates are computed on the same inputs, so their difference is exactly the omitted
+  higher-order terms for those inputs. The draws are random standalone firms with a prospective unit of K − 1
+  standalone partners from other markets (the brief's simpler option), nested over K ∈ {2, 3, 5, 8}.
+- **Task 4.** The cell is a new block `alpha-0.9` (ids 1995–2009), each scenario a copy of the main power-law
+  α = 0.5 scenario of its family and rep with α = 0.9, so the seeds are the main cell's (`cell_seed`).
+  `pilot_d/scenarios.json` gains the 15 entries (the first 1,995 are byte-identical); `tidy.csv` gains 15 rows
+  (the 1,995 C37 rows byte-identical). `medians.csv` and the other C37 outputs are not regenerated.
+- **Task 3, decomposition (beyond the brief).** Δ̃ − Δ̂ turned out to be mostly not higher-order terms. Both
+  estimates are therefore also computed with the size weights frozen at the window's first period, which splits
+  the difference into the omitted terms proper (Δ̃_fixed − Δ̂_fixed) and the replay's in-window weight–return term.
+  The note reports both; the brief's quantities (Δ̃ − Δ̂ and its ratio to Δ̂) are in the CSV as asked.
+- **Task 2, figure and extra column.** `incumbent_margin` (the incumbent's exact gain minus the marginal cost) is
+  added to the CSV and the figure, because it, not the brief's w-adjusted formula, is the analytical counterpart of
+  the binding gain. The brief's formula is the capital-weighted average member's gain, and turns negative for
+  w above about 2/K.
