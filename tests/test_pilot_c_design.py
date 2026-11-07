@@ -3,7 +3,8 @@
 Tests for Phase C pilot design generator.
 
 Test requirements (updated for C33):
-1. Scenario count = 1890 (C33: cost-level-full block, 180 runs; C35: cost-level-high block, 90 runs)
+1. Scenario count = 2145 (C33: cost-level-full block, 180 runs; C35: cost-level-high block, 90 runs;
+   C36: moment block, 255 runs)
 2. floor_c = 0.12717 (C14 calibration)
 3. α grid is 9-point
 4. Seeds identical across α within (cell_id, rep)
@@ -16,6 +17,7 @@ Test requirements (updated for C33):
 11. pilot_c/scenarios.json equals the list pilot_design.main() writes
 12. cost-level-full block scales Φ(K) at every K, shares seeds across α and multipliers
 12b. cost-level-high block (C35): power law, b0 × {5, 10, 20}, ids 1800-1889, new cells, earlier scenarios unchanged
+12c. moment block (C36): copies of 255 loggain runs with decision_rule='moment', same cell ids and seeds
 13. exit_review_every is neither set in scenarios.json nor passed by run_pilot_c.py
 """
 import json
@@ -50,11 +52,11 @@ def c_for_exponent(target):
 
 
 def test_scenario_count():
-    """Scenario count = 1890 (updated for C35)."""
+    """Scenario count = 2145 (updated for C36)."""
     scenarios = generate_all_scenarios()
 
     # Check total count
-    assert len(scenarios) == 1890, f"Expected 1890 scenarios, got {len(scenarios)}"
+    assert len(scenarios) == 2145, f"Expected 2145 scenarios, got {len(scenarios)}"
 
     # Check block counts
     blocks = {}
@@ -75,13 +77,14 @@ def test_scenario_count():
         'size': 80,  # C32: 4 (M, N) × 4 α × 5 reps
         'cost-level-full': 180,  # C33: 1 × 2 × 2 × 9 × 5
         'cost-level-high': 90,  # C35: 2 × 1 × 3 × 3 × 5
+        'moment': 255,  # C36: 135 + 60 + 45 + 15
     }
 
     for block, count in expected.items():
         actual = blocks.get(block, 0)
         assert actual == count, f"Block {block}: expected {count}, got {actual}"
 
-    print("PASS: scenario count = 1890")
+    print("PASS: scenario count = 2145")
 
 
 def test_floor_c_matches_c14():
@@ -274,7 +277,7 @@ def test_t_and_burn_in():
 
 
 def test_decision_rule_loggain_default():
-    """C17: decision_rule='loggain' is default for all blocks except rule-replay."""
+    """C17: decision_rule='loggain' is default for all blocks except rule-replay (and moment, C36)."""
     scenarios = generate_all_scenarios()
 
     for s in scenarios:
@@ -282,6 +285,8 @@ def test_decision_rule_loggain_default():
             # rule-replay block should use 'replay'
             assert s['decision_rule'] == 'replay', \
                 f"Scenario {s['scenario_id']} in rule-replay block should have decision_rule='replay'"
+        elif s['block'] == 'moment':
+            assert s['decision_rule'] == 'moment'  # C36
         else:
             # All other blocks should use 'loggain'
             assert s['decision_rule'] == 'loggain', \
@@ -408,7 +413,7 @@ def test_cost_level_full_block():
 def test_earlier_scenarios_unchanged():
     """C33: the cost-level-full block leaves the first 1620 scenarios as they were."""
     scenarios = generate_all_scenarios()
-    before = [s for s in scenarios if s['block'] not in ('cost-level-full', 'cost-level-high')]
+    before = [s for s in scenarios if s['block'] not in ('cost-level-full', 'cost-level-high', 'moment')]
 
     assert [s['scenario_id'] for s in before] == list(range(1620))
     for s in before:
@@ -431,6 +436,7 @@ def test_cost_level_high_block():
     assert len(block) == 90
     assert [s['scenario_id'] for s in block] == list(range(1800, 1890))
     last_cell = max(s['cell_id'] for s in scenarios if s['scenario_id'] < 1800)
+    assert max(s['cell_id'] for s in scenarios) == last_cell + 2  # C36: the moment block adds no cells
     assert sorted(set(s['cell_id'] for s in block)) == [last_cell + 1, last_cell + 2]
     base = COST_PARAMS['power_law']
     for s in block:
@@ -457,6 +463,31 @@ def test_cost_level_high_block():
         sid, cid = gen(old, sid, cid)
     assert old == scenarios[:1800]
     print("PASS: cost-level-high block (90 runs)")
+
+
+def test_moment_block():
+    """C36: moment block = loggain counterparts with decision_rule='moment', ids 1890-2144, same cell id and seed."""
+    scenarios = generate_all_scenarios()
+    block = [s for s in scenarios if s['block'] == 'moment']
+    assert [s['scenario_id'] for s in block] == list(range(1890, 2145))
+    by_id = {s['scenario_id']: s for s in scenarios}
+    subs = {'main': 0, 'cost-level-high': 0, 'search': 0, 'endogenous-alpha': 0}
+    for s in block:
+        c = by_id[s['counterpart_id']]
+        assert c['decision_rule'] == 'loggain' and s['decision_rule'] == 'moment'
+        assert {k: v for k, v in s.items() if k not in ('block', 'scenario_id', 'decision_rule', 'counterpart_id')} \
+            == {k: v for k, v in c.items() if k not in ('block', 'scenario_id', 'decision_rule')}
+        assert s['seed'] == c['seed'] and s['cell_id'] == c['cell_id']
+        assert c['cost_type'] == 'power_law'
+        subs[c['block']] += 1
+    assert subs == {'main': 135, 'cost-level-high': 60, 'search': 45, 'endogenous-alpha': 15}
+    assert len({s['counterpart_id'] for s in block}) == 255
+    cl = [by_id[s['counterpart_id']] for s in block if by_id[s['counterpart_id']]['block'] == 'cost-level-high']
+    assert {c['cost_multiplier'] for c in cl} == {5.0, 20.0} and {c['log_family'] for c in cl} == {'laplace', 't3'}
+    sr = [by_id[s['counterpart_id']] for s in block if by_id[s['counterpart_id']]['block'] == 'search']
+    assert {c['merge_thresh'] for c in sr} == {1.0} and {c['alpha'] for c in sr} == {0.1, 0.3, 0.5}
+    assert scenarios[:1890] == [s for s in scenarios if s['block'] != 'moment']
+    print("PASS: moment block (255 runs)")
 
 
 def test_exit_review_every_not_used_by_pilot():
@@ -510,6 +541,7 @@ if __name__ == '__main__':
     test_cost_level_full_block()
     test_earlier_scenarios_unchanged()
     test_cost_level_high_block()
+    test_moment_block()
     test_exit_review_every_not_used_by_pilot()
     test_scenarios_json_matches_design()
 

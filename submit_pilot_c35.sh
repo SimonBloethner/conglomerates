@@ -3,7 +3,7 @@
 #SBATCH --output=logs/pilot_c35_%A_%a.out
 #SBATCH --error=logs/pilot_c35_%A_%a.err
 #SBATCH --partition=normal
-#SBATCH --time=02:00:00
+#SBATCH --time=04:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G

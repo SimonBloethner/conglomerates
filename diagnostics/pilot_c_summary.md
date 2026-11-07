@@ -2,9 +2,9 @@
 
 ## Overview
 
-- **Scenarios**: 1890
-- **Total runtime**: 379577s (105.44 CPU-hours)
-- **Mean ms/step**: 18.26 ± 13.24
+- **Scenarios**: 2145
+- **Total runtime**: 455330s (126.48 CPU-hours)
+- **Mean ms/step**: 19.30 ± 14.88
 - **Grid**: 50 × 50 (M × N); size block M, N ∈ {25, 100}
 
 ### Block counts
@@ -20,6 +20,7 @@
 | floor-level | 90 |
 | lookback | 100 |
 | main | 540 |
+| moment | 255 |
 | rule-replay | 45 |
 | search | 120 |
 | size | 80 |
@@ -606,8 +607,8 @@ Source: `pilot_c/tidy.csv` column `assort_iqr`
 
 ## Runtime Statistics
 
-- **Total runtime**: 379577s (105.44 CPU-hours)
-- **Mean ms/step**: 18.26 ± 13.24
+- **Total runtime**: 455330s (126.48 CPU-hours)
+- **Mean ms/step**: 19.30 ± 14.88
 
 ## Figures
 

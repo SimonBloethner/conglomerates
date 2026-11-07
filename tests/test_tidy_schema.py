@@ -31,7 +31,7 @@ EXPECTED_TIDY_COLUMNS = [
     'pool_ruin_per_period', 'pool_shortfall_per_period', 'pool_wipeout_total',  # C31, C34
 ]
 
-EXPECTED_TOTAL_ROWS = 1890  # C35: cost-level-high block
+EXPECTED_TOTAL_ROWS = 2145  # C35: cost-level-high block; C36: moment block
 
 EXPECTED_BLOCK_COUNTS = {
     'main': 540,
@@ -46,6 +46,7 @@ EXPECTED_BLOCK_COUNTS = {
     'size': 80,
     'cost-level-full': 180,
     'cost-level-high': 90,  # C35
+    'moment': 255,  # C36
 }
 
 EXPECTED_LOOKBACK_BY_FAMILY = {

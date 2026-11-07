@@ -28,8 +28,10 @@ Blocks:
 - size: laplace × power_law × (M, N) ∈ {25, 100}² × 4 α × 5 reps = 80 runs (floor_c = c*(N), C32)
 - cost level full: laplace × (linear + quadratic) × 2 multipliers × 9 α × 5 reps = 180 runs (C33)
 - cost level high: (laplace + t3) × power_law × b0 multipliers {5, 10, 20} × 3 α × 5 reps = 90 runs (C35)
+- moment: decision_rule='moment' copies of 255 loggain runs (main power_law 135, cost-level-high ×5/×20 60,
+  search p = 1 45, endogenous α power_law 15), same cell ids and seeds as their counterparts (C36)
 
-Total: 1890 runs
+Total: 2145 runs
 """
 import json
 import os
@@ -603,6 +605,36 @@ def generate_cost_level_high_block(scenarios, scenario_id, cell_id):
     return scenario_id, cell_id
 
 
+def generate_moment_block(scenarios, scenario_id):
+    """
+    C36, moment: the decision_rule='moment' counterpart of 255 loggain scenarios (scenario ids 1890-2144).
+    Each moment scenario is a copy of its loggain counterpart with block 'moment', decision_rule 'moment' and
+    'counterpart_id' = the counterpart's scenario_id; it keeps the counterpart's cell_id, so cell_seed gives the
+    same seed (same five reps). Sub-blocks, in this order:
+      main:              main block, power_law, 3 families × 9 α × 5 reps          (135)
+      cost level:        cost-level-high, laplace and t3, c0 × {5, 20}, α {0.1, 0.3, 0.5} × 5 reps  (60)
+      search p = 1:      search block, merge_thresh 1.0, 3 families, α {0.1, 0.3, 0.5} × 5 reps    (45)
+      endogenous α:      endogenous-alpha block, power_law, 3 families × 5 reps (start α 0.1)     (15)
+    """
+    selectors = [
+        lambda s: s['block'] == 'main' and s['cost_type'] == 'power_law',
+        lambda s: s['block'] == 'cost-level-high' and s['cost_multiplier'] in (5.0, 20.0),
+        lambda s: s['block'] == 'search' and s['merge_thresh'] == 1.0 and s['alpha'] in (0.1, 0.3, 0.5),
+        lambda s: s['block'] == 'endogenous-alpha' and s['cost_type'] == 'power_law',
+    ]
+    base = list(scenarios)
+    for sel in selectors:
+        for c in base:
+            if not sel(c):
+                continue
+            s = dict(c)
+            s.update({'block': 'moment', 'scenario_id': scenario_id, 'decision_rule': 'moment',
+                      'counterpart_id': c['scenario_id']})
+            scenarios.append(s)
+            scenario_id += 1
+    return scenario_id
+
+
 def generate_all_scenarios():
     """Generate all scenarios for Phase C pilot."""
     scenarios = []
@@ -622,6 +654,7 @@ def generate_all_scenarios():
     scenario_id, cell_id = generate_size_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_cost_level_full_block(scenarios, scenario_id, cell_id)
     scenario_id, cell_id = generate_cost_level_high_block(scenarios, scenario_id, cell_id)
+    scenario_id = generate_moment_block(scenarios, scenario_id)
 
     return scenarios
 

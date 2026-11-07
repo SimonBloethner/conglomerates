@@ -605,3 +605,47 @@ The note is `diagnostics/c35_note.md`.
   The tables in `c35_acceptance.md` come from it.
 - **A fourth commit** holds the reruns' outputs (`tidy.csv`, `medians.csv`, the summary, the acceptance tables),
   as in C34.
+
+# C36: the moment rule
+
+The note is `diagnostics/c36_note.md`.
+
+## Departures from the brief
+
+- **The transfer term (main departure).** Δ̃ includes the transfer term. The brief's
+  Δ̃_i = ½[V̂(ε_i) − V̂(y_i)] − Φ is the second-order expansion of the replayed log gain only when members have equal
+  variance. Expanding log[(1 − α)e^{u_i} + α Σ_j ω_j e^{u_j}] to second order gives
+  ½[(1 − α)V̂(u_i) + α Σ_j ω_j V̂(u_j) − V̂(y_i)].
+  - The term the brief leaves out, ½α(Σ_j ω_j σ_j² − σ_i²), is the pool's arithmetic-mean transfer between members
+    of different volatility, and loggain's replay contains it.
+  - Markets' IQRs range over 0.1–0.3 (variances over a factor of 9). Without the term, the moment rule would change
+    the objective, not only its precision, and the moment − loggain gap would mix the two.
+  - Example: two equal-sized members fully pooled share one growth path, yet ½[V̂(ε_i) − V̂(y_i)] can be negative
+    for the low-volatility one.
+  - The two forms coincide for symmetric members, so the brief's tests (b) and (c) do not separate them. A long-window
+    test with heterogeneous members shows that Δ̃ with the term matches loggain's Δ̂ within 10%, and that the brief's
+    form misses the low-volatility member's gain by more than half.
+- **Equal sharing.** The dollar-equal split also moves *mean* growth between members of unequal size, at first order
+  in g. The brief's equal-sharing y, recentred and taken through variances only, drops that transfer. Δ̃ keeps it
+  through the level term (1/h) Σ_τ [log A_τ − g]. No pilot run uses equal sharing under the moment rule.
+- **−∞ rule.** It applies under both sharing rules, as under loggain: any period with a replayed p ≤ −1 (computed
+  exactly as loggain does), and A_τ ≤ 0. The brief names equal sharing only.
+- **Cost term.** For proportional sharing the cost enters as log(1 − Φ e^{−g}) ≈ −Φ(1 − g), not −Φ. This is the
+  exact level of the replayed factor; the difference is below 6e-6 at Φ(4) × 1.
+- **Signature.** `member_gain_moment` also takes g, the per-period sums of `prepare_window_loggain` (for the −∞
+  rule) and two moment sums (`prepare_window_moment`), so each member costs O(h). `find_optimal_alpha` gains a
+  `rule_code` argument (default 1). The model passes it only under the moment rule, so the loggain call is
+  unchanged.
+- **Exit review.** `exit_review_every` now also applies under the moment rule. It was loggain-only, and the pilot
+  does not set it.
+- **Cell ids.** Moment scenarios keep their loggain counterpart's `cell_id`, so `cell_seed` gives the same seed and
+  the design's seed tests still hold. Each also carries `counterpart_id`.
+- **Identity sample.** It is the C35 identity sample (146 runs, one per C34 cell plus the 90 main/search reruns),
+  plus one run of each cost-level-high cell (1822, 1868). Each is compared with its C35 pickle with no exception
+  for any key (`identity_c35.py --same-schema`).
+- **σ̂²/σ² check.** Computed for all three families, not t₃ only, both from i.i.d. draws (exact σ²) and from one
+  α = 0.3 trace per family (standalone windows without a floor hit). The trace rows of normal and laplace have a
+  lower tail from that selection (note, Section 6).
+- **Attrition limit.** The pilot has no consent-free run, so question 1's attrition limit is not measured. The note
+  answers it from the acceptance profile: consent still rejects where the expected gain exceeds the cost.
+- **Submit script.** `submit_pilot_c35.sh` time limit raised to 4 h, a margin for the moment runs.
