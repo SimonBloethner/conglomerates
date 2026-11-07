@@ -51,7 +51,11 @@ Degrees of freedom for Student-t distribution.
 
 Default: `3.0`
 
-Only active when `family == "student_t"`.
+Only active when `family == "student_t"` (or its alias `"t3"`, the pilots' label for ν = 3). C37: `nu` is a
+scenario key of pilot D (3.0 for t₃, 2.5 or 4 in the `nu` block, null otherwise); `run_pilot_c.py` and
+`analysis/run_traces.py` pass it to `model()` (3.0 when absent). ν = 2.5 has finite variance and infinite kurtosis.
+The moment rule's Δ̃ uses only the demeaned window returns and their squares, and the market's relative returns are
+formed in log space (logsumexp), so the extreme draws stay finite (`tests/test_nu.py`).
 
 ### `iqr_range` (was `sigma_range`)
 Tuple `(min, max)` specifying the bounds of the per-market dispersion qₘ (`iqr_m`).
@@ -255,6 +259,28 @@ loggain, for both sharing rules) is ≤ −1.
 `rule_gain_from_prepared`. Under loggain these call `member_gain_from_prepared` as before, so loggain runs are
 byte-identical to C35 (`diagnostics/identity_c36.csv`). The C35 acceptance-by-K counters and the binding-gain
 histogram are filled under the moment rule as under loggain. **Requires:** `g`.
+
+### Which rule the paper uses (C37)
+
+- **`"moment"` is the base case.** Pilot D (`pilot_d/`, `pilot_design_d.py`) runs every block under it; its
+  numbers are the paper's.
+- **`"loggain"` is the bounded-rationality variant.** It has the same objective, but the gain is the window mean of
+  replayed log differences, whose sampling noise dominates gains of order 1e-4 (C35, C36). Its runs are pilot C
+  (`pilot_c/`, 2,145 scenarios), frozen at C36 as the loggain reference. Every inherited pilot D run has a loggain
+  twin in pilot C on the same seeds (`twin_id`); `pilot_d/comparison_c_vs_d.csv` holds the paired differences.
+- **`"replay"` is historical.** It is the Phase B rule (undemeaned replay). It is dropped from the paper and from
+  pilot D; its 45 runs stay in pilot C's rule-replay block.
+- **Model default.** `model()`'s default is unchanged (`"replay"`, for Phase B identity). Pilot designs set the rule
+  in every scenario.
+
+Pilot D blocks beyond pilot C's:
+- **`homogeneous`** (120 runs): every market at IQR 0.2 (`iqr_range=(0.2, 0.2)`), three families, power law,
+  α ∈ {0.05, 0.1, 0.3, 0.5}, 5 reps, under both rules. With equal variances the transfer term is zero in
+  expectation, so the consent gap under the moment rule is attrition, feasibility and estimation noise. The
+  difference to the heterogeneous main cells is the transfer conflict.
+- **`nu`** (30 runs): `family="student_t"` with `nu` ∈ {2.5, 4}, the main IQR range, power law, α ∈ {0.1, 0.3, 0.5},
+  5 reps, moment rule. ν = 3 is the main t₃ cell.
+- Seeds: both blocks reuse the seeds of the main power-law cell (homogeneous: of the same family; ν: of t₃).
 
 ### `exit_review_every`
 Periodic exit review interval for loggain decision rule.

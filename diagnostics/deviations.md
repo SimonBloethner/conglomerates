@@ -649,3 +649,49 @@ The note is `diagnostics/c36_note.md`.
 - **Attrition limit.** The pilot has no consent-free run, so question 1's attrition limit is not measured. The note
   answers it from the acceptance profile: consent still rejects where the expected gain exceeds the cost.
 - **Submit script.** `submit_pilot_c35.sh` time limit raised to 4 h, a margin for the moment runs.
+
+# C37: pilot D, the moment rule as the base case
+
+The note is `diagnostics/c37_note.md`.
+
+## Departures from the brief and choices it left open
+
+- **ν block IQRs ("at equal IQR").** The ν runs use the main IQR range (0.1, 0.3) with the seeds of the t₃ main
+  power-law cell, so every market has the same IQR as in the ν = 3 cell. ν = 3 is that main cell; it is not rerun.
+  The block is labelled `log_family = 'student_t'` with a `nu` key, so it never mixes with the t₃ rows.
+- **Seeds of the new blocks.** The homogeneous block reuses the main power-law cell id of its family, and the ν
+  block that of t₃. So both differ from their reference cells only in the IQRs, respectively the tail.
+- **"The transfer term is identically zero" in the homogeneous economy.** Only the population term is zero. The
+  window estimate ½α(Σ_j c_j V̂(u_j) − V̂(u_i)) is not zero in any finite window. So the homogeneous consent gap still
+  contains the noise of that estimate, and the decomposition's (b) measures the true transfer conflict.
+- **Decomposition, term (a).** The brief calls K\* − K_moment,hom "attrition (plus feasibility)". It is a residual:
+  in the homogeneous economy the moment rule's binding gain still turns negative at K ≈ 5, where the expected
+  marginal gain is about eight times the cost. So (a) also holds unanimity over noisy estimates. The note says so.
+  K\* is the benchmark of `analytics/benchmarks.csv`, computed at IQR 0.2, i.e. for the homogeneous economy.
+- **The 255 reused runs.** They are copied as pickles with the `scenario` field replaced by the pilot D scenario;
+  all other fields are unchanged. The copy's gzip bytes differ from the source (the gzip header holds a
+  timestamp, and the scenario differs). `provenance.csv` has the source file's md5. As a check, 14 of them were
+  rerun and compared field by field.
+- **Traces.** The 27 traced runs are reruns of pilot D main scenarios with `trace_path`, written to
+  `pilot_d/traces/` (2.8 GB, not in git). Each array task also runs the status panel and the decomposition on its
+  trace.
+- **What is not regenerated.** `analyze_pilot_c.py` (`pilot_c_summary.md` and its figures) is not run for pilot D.
+  The brief lists the outputs to regenerate, and the note's tables replace the summary. The only pilot D figure is
+  `diagnostics/pilot_d_acceptance_by_K.png`.
+- **Tidy columns.** Pilot D rows have nine extra columns, so pilot C's `tidy.csv` keeps its schema:
+  `pilot`, `twin_id`, `source_id`, `nu`, `iqr_lo`, `iqr_hi`, `member_firm_share` and the two per-status floor rates.
+  - The per-status rates divide the model's all-firm rates by the share of firms in units. That share comes from the
+    post-burn-in snapshots (every 100 periods), so the rates are an approximation.
+  - The traces' status panel gives the exact rates for the 27 traced cells.
+- **Medians.** Pilot D's `medians.csv` also groups by `nu` and `floor_c`. Pilot C's pools the two floor levels of
+  the floor-level block into one cell of 10 reps. Pilot C's file is not changed.
+- **Comparison file.** Cells include `floor_c`. The loggain twins' per-status rates are computed from the pilot C
+  pickles. The metrics also include the top-10% unit share, the share of firms in units and the adopted α.
+- **Variance ratios.** `pilot_d/variance_ratio.csv` also has normal and laplace i.i.d. rows, and the standalone
+  no-floor windows of the pilot D t₃ trace (α = 0.3, rep 0).
+- **Submission.** The 1,740 new runs went in two arrays (900 + 840), because of the cluster's limit of 1,000
+  submitted jobs per user.
+- **Pool wipeouts.** Three runs have one: 494, 1817 and 1967 (all t-family). They are reported, as in C34.
+- **Propositions.** Their text is not in the repository (`latex/collaboration.tex` has no proposition environments;
+  `RESULTS_PAGE.md` is not in this tree). The note's Section 6 is organised by the claim each piece of evidence
+  tests, and uses a proposition number only for Proposition 3, as the brief does.
