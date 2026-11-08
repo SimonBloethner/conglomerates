@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\centering
+\caption{Table A7c — Scope under the cv rule against moment and loggain}
+\label{tab:a7c_cv_behaviour}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Family & $\alpha$ & K: cv / moment / loggain & cv − moment, median [IQR] & moment − loggain & Pooled: cv / moment & Hill: cv / moment \\
+\midrule
+normal & 0.1 & 3.67 / 3.68 / 3.04 & -0.02 [-0.02, -0.01] & +0.65 & 0.847 / 0.850 & 1.102 / 1.113 \\
+normal & 0.3 & 5.43 / 5.48 / 4.29 & -0.07 [-0.07, -0.03] & +1.21 & 0.939 / 0.939 & 1.199 / 1.209 \\
+normal & 0.5 & 7.71 / 7.70 / 6.34 & +0.00 [-0.01, +0.01] & +1.35 & 0.957 / 0.956 & 1.315 / 1.342 \\
+Laplace & 0.1 & 3.65 / 3.71 / 3.00 & -0.05 [-0.07, -0.04] & +0.71 & 0.851 / 0.853 & 1.097 / 1.105 \\
+Laplace & 0.3 & 5.34 / 5.40 / 4.00 & -0.04 [-0.06, -0.04] & +1.38 & 0.913 / 0.914 & 1.195 / 1.195 \\
+Laplace & 0.5 & 7.78 / 7.76 / 5.95 & -0.01 [-0.02, +0.07] & +1.78 & 0.936 / 0.934 & 1.337 / 1.344 \\
+$t_3$ & 0.1 & 3.43 / 3.47 / 2.87 & -0.04 [-0.05, -0.04] & +0.61 & 0.824 / 0.827 & 1.028 / 1.035 \\
+$t_3$ & 0.3 & 4.82 / 4.84 / 3.67 & -0.02 [-0.03, -0.00] & +1.16 & 0.899 / 0.896 & 1.116 / 1.116 \\
+$t_3$ & 0.5 & 6.88 / 6.78 / 5.06 & +0.11 [+0.03, +0.13] & +1.71 & 0.922 / 0.920 & 1.230 / 1.221 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize The cv rule reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in Hill; its difference to loggain is the first-order term alone.\end{minipage}
+\end{table}

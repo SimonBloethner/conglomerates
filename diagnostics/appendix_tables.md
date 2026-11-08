@@ -222,6 +222,79 @@ Main block, power law, α = 0.3, moment rule, five replications pooled. Floor: s
 | t₃ | 8 | 0.32 [-0.16, 1.45] | 0.017 [-0.191, 0.351] | 0.27 | 0.8% |
 
 
+## A6b. Unit–unit proposals by relative volatility (C39)
+
+Same 15 runs as A6 with the proposal type recorded. Among proposals whose entrant side holds w ≥ 0.2, unit–unit mergers are 42–46% at K = 4 and 88–100% at K ≥ 8. Entrant calmer: the smaller unit has the lower mean member IQR. Calm binds: share of proposals in which the binding member (smallest margin) sits in the calmer unit.
+
+**Table A6b — Unit–unit proposals: who refuses**
+
+| Family | K | Unit–unit proposals | Acceptance, entrant calmer | entrant more volatile | Calm unit binds, entrant calmer | entrant more volatile | Binding mean, entrant calmer | entrant more volatile |
+|---|---|---|---|---|---|---|---|---|
+| normal | 4 | 4,031 | 0.79 | 0.80 | 0.21 | 0.33 | 3.8e-04 | 3.9e-04 |
+|  | 5 | 6,508 | 0.47 | 0.66 | 0.14 | 0.51 | -3.3e-05 | 4.0e-05 |
+|  | 6 | 11,716 | 0.25 | 0.51 | 0.13 | 0.53 | -1.7e-04 | -2.0e-04 |
+|  | 7 | 20,937 | 0.14 | 0.36 | 0.14 | 0.52 | -2.3e-04 | -3.9e-04 |
+|  | 8 | 32,425 | 0.08 | 0.26 | 0.17 | 0.48 | -2.8e-04 | -5.2e-04 |
+|  | 10 | 53,695 | 0.03 | 0.10 | 0.25 | 0.36 | -4.2e-04 | -7.6e-04 |
+|  | 12 | 60,006 | 0.01 | 0.03 | 0.33 | 0.25 | -5.5e-04 | -9.4e-04 |
+| Laplace | 4 | 6,194 | 0.75 | 0.76 | 0.22 | 0.34 | 6.1e-04 | 6.0e-04 |
+|  | 5 | 8,776 | 0.47 | 0.64 | 0.16 | 0.49 | -1.1e-04 | 4.9e-05 |
+|  | 6 | 13,093 | 0.31 | 0.52 | 0.14 | 0.53 | -3.6e-04 | -3.7e-04 |
+|  | 7 | 19,157 | 0.20 | 0.40 | 0.16 | 0.52 | -4.5e-04 | -6.7e-04 |
+|  | 8 | 26,681 | 0.15 | 0.32 | 0.17 | 0.50 | -5.3e-04 | -8.6e-04 |
+|  | 10 | 39,550 | 0.06 | 0.18 | 0.22 | 0.43 | -6.8e-04 | -1.2e-03 |
+|  | 12 | 42,116 | 0.03 | 0.08 | 0.29 | 0.35 | -8.8e-04 | -1.5e-03 |
+| t₃ | 4 | 10,632 | 0.55 | 0.56 | 0.25 | 0.40 | -4.8e-03 | -5.4e-03 |
+|  | 5 | 14,870 | 0.36 | 0.46 | 0.22 | 0.47 | -3.4e-03 | -5.2e-03 |
+|  | 6 | 19,885 | 0.24 | 0.35 | 0.21 | 0.49 | -4.3e-03 | -5.9e-03 |
+|  | 7 | 26,000 | 0.17 | 0.28 | 0.23 | 0.50 | -4.6e-03 | -5.3e-03 |
+|  | 8 | 33,393 | 0.12 | 0.21 | 0.25 | 0.48 | -4.3e-03 | -5.4e-03 |
+|  | 10 | 41,206 | 0.06 | 0.12 | 0.29 | 0.45 | -4.1e-03 | -5.3e-03 |
+|  | 12 | 38,359 | 0.03 | 0.06 | 0.33 | 0.40 | -4.8e-03 | -5.2e-03 |
+
+The volatile side refuses: when the entrant unit is calmer, the incumbent (volatile) unit holds the binding member in 67–87% of proposals and acceptance is about half that of the other bin.
+
+
+
+## A7b. The exact replay without its first-order term: the cv rule (C39)
+
+decision_rule = cv averages the exact replayed log gain minus its first-order term rτ α(Σⱼ cⱼτ uⱼτ − uᵢτ), which has expectation zero under every arrangement; it is exact in expectation and expands nothing. Left: the statistic on the A7 draws. Right: behaviour on the main power-law cells, 45 runs on the main cells' seeds, medians over five replications; paired differences on the seed.
+
+**Table A7b — The cv statistic against moment and loggain on the same windows**
+
+| Family | K | (Δ̂ᶜᵛ − Δ̃)/Δ̃ median [5%, 95%] | (Δ̂ − Δ̃)/Δ̃ median | sign differs, cv vs moment | loggain vs moment |
+|---|---|---|---|---|---|
+| normal | 2 | -0.018 [-0.051, 0.022] | -0.227 | 0.02% | 2.27% |
+| normal | 3 | -0.018 [-0.046, 0.015] | -0.237 | 0.05% | 1.53% |
+| normal | 5 | -0.019 [-0.044, 0.011] | -0.254 | 0.06% | 1.49% |
+| normal | 8 | -0.020 [-0.049, 0.010] | -0.282 | 0.07% | 1.68% |
+| Laplace | 2 | -0.014 [-0.081, 0.070] | -0.191 | 0.03% | 1.52% |
+| Laplace | 3 | -0.015 [-0.071, 0.060] | -0.205 | 0.02% | 1.03% |
+| Laplace | 5 | -0.014 [-0.064, 0.054] | -0.226 | 0.04% | 0.85% |
+| Laplace | 8 | -0.015 [-0.061, 0.049] | -0.253 | 0.01% | 0.77% |
+| t₃ | 2 | -0.013 [-0.176, 0.212] | -0.175 | 0.04% | 1.36% |
+| t₃ | 3 | -0.016 [-0.211, 0.203] | -0.191 | 0.02% | 0.90% |
+| t₃ | 5 | -0.019 [-0.249, 0.211] | -0.219 | 0.05% | 0.68% |
+| t₃ | 8 | -0.023 [-0.286, 0.213] | -0.246 | 0.11% | 0.83% |
+
+**Table A7c — Scope under the cv rule against moment and loggain**
+
+| Family | α | K: cv / moment / loggain | cv − moment, median [IQR] | moment − loggain | Pooled: cv / moment | Hill: cv / moment |
+|---|---|---|---|---|---|---|
+| normal | 0.1 | 3.67 / 3.68 / 3.04 | -0.02 [-0.02, -0.01] | +0.65 | 0.847 / 0.850 | 1.102 / 1.113 |
+| normal | 0.3 | 5.43 / 5.48 / 4.29 | -0.07 [-0.07, -0.03] | +1.21 | 0.939 / 0.939 | 1.199 / 1.209 |
+| normal | 0.5 | 7.71 / 7.70 / 6.34 | +0.00 [-0.01, +0.01] | +1.35 | 0.957 / 0.956 | 1.315 / 1.342 |
+| Laplace | 0.1 | 3.65 / 3.71 / 3.00 | -0.05 [-0.07, -0.04] | +0.71 | 0.851 / 0.853 | 1.097 / 1.105 |
+| Laplace | 0.3 | 5.34 / 5.40 / 4.00 | -0.04 [-0.06, -0.04] | +1.38 | 0.913 / 0.914 | 1.195 / 1.195 |
+| Laplace | 0.5 | 7.78 / 7.76 / 5.95 | -0.01 [-0.02, +0.07] | +1.78 | 0.936 / 0.934 | 1.337 / 1.344 |
+| t₃ | 0.1 | 3.43 / 3.47 / 2.87 | -0.04 [-0.05, -0.04] | +0.61 | 0.824 / 0.827 | 1.028 / 1.035 |
+| t₃ | 0.3 | 4.82 / 4.84 / 3.67 | -0.02 [-0.03, -0.00] | +1.16 | 0.899 / 0.896 | 1.116 / 1.116 |
+| t₃ | 0.5 | 6.88 / 6.78 / 5.06 | +0.11 [+0.03, +0.13] | +1.71 | 0.922 / 0.920 | 1.230 / 1.221 |
+
+The cv rule reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in Hill; its difference to loggain is the first-order term alone.
+
+
+
 ## A8. Homogeneous markets
 
 Every market at q = 0.20, power law; both rules; medians over five replications. Compare Table 3c.

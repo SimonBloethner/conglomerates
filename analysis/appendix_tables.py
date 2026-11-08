@@ -145,6 +145,29 @@ def main():
     rows = [[FAMTX[r.family], str(int(r.K)), f"{r.ratio_median:.2f} [{r.ratio_p5:.2f}, {r.ratio_p95:.2f}]", f"{r.higher_order_ratio_fixed_median:.3f} [{r.higher_order_ratio_fixed_p5:.3f}, {r.higher_order_ratio_fixed_p95:.3f}]", f"{r.weight_term_hat_ratio_median:.2f}", f"{100*r.sign_disagree:.1f}%"] for _, r in ae.iterrows()]
     o.table("a7_approximation", ["Family", "K", "(Δ̃ − Δ̂)/Δ̂ median [5%, 95%]", "higher-order share, median [5%, 95%]", "replay weight term", "sign differs"], rows, "Table A7 — Size of the omitted terms and of the replay's first-order term")
 
+
+    # A6b unit+unit by volatility bin (C39)
+    uu = pd.read_csv(P("unit_unit_by_volbin_pooled.csv"))
+    o.section("A6b. Unit\u2013unit proposals by relative volatility (C39)", "Same 15 runs as A6 with the proposal type recorded. Among proposals whose entrant side holds w \u2265 0.2, unit\u2013unit mergers are 42\u201346% at K = 4 and 88\u2013100% at K \u2265 8. Entrant calmer: the smaller unit has the lower mean member IQR. Calm binds: share of proposals in which the binding member (smallest margin) sits in the calmer unit.")
+    rows = []
+    for fm in FAM:
+        for K in [4, 5, 6, 7, 8, 10, 12]:
+            a_ = uu[(uu.family == fm) & (uu.alpha == 0.3) & (uu.K == K)]
+            if len(a_) < 2:
+                continue
+            c_ = a_[a_.volbin == "entrant calmer"].iloc[0]; v_ = a_[a_.volbin == "entrant more volatile"].iloc[0]
+            rows.append([FAMTX[fm] if K == 4 else "", str(K), f"{int(c_.proposals + v_.proposals):,}", f(c_.acceptance), f(v_.acceptance), f(c_.share_calm_binds), f(v_.share_calm_binds), f"{c_.binding_mean:.1e}", f"{v_.binding_mean:.1e}"])
+    o.table("a6b_unit_unit", ["Family", "K", "Unit\u2013unit proposals", "Acceptance, entrant calmer", "entrant more volatile", "Calm unit binds, entrant calmer", "entrant more volatile", "Binding mean, entrant calmer", "entrant more volatile"], rows, "Table A6b \u2014 Unit\u2013unit proposals: who refuses", note="The volatile side refuses: when the entrant unit is calmer, the incumbent (volatile) unit holds the binding member in 67\u201387% of proposals and acceptance is about half that of the other bin.")
+
+    # A7b cv rule (C39)
+    cvr = pd.read_csv(P("approximation_error_cv.csv")); cvr = cvr[cvr.alpha == "all"]
+    cvc = pd.read_csv(P("cv_comparison.csv"))
+    o.section("A7b. The exact replay without its first-order term: the cv rule (C39)", "decision_rule = cv averages the exact replayed log gain minus its first-order term r\u03c4 \u03b1(\u03a3\u2c7c c\u2c7c\u03c4 u\u2c7c\u03c4 \u2212 u\u1d62\u03c4), which has expectation zero under every arrangement; it is exact in expectation and expands nothing. Left: the statistic on the A7 draws. Right: behaviour on the main power-law cells, 45 runs on the main cells' seeds, medians over five replications; paired differences on the seed.")
+    rows = [[FAMTX[r.family], str(int(r.K)), f"{r.rel_cv_moment_median:.3f} [{r.rel_cv_moment_p5:.3f}, {r.rel_cv_moment_p95:.3f}]", f"{r.rel_hat_moment_median:.3f}", f"{100*r.sign_disagree_cv_moment:.2f}%", f"{100*r.sign_disagree_hat_moment:.2f}%"] for _, r in cvr.iterrows()]
+    o.table("a7b_cv_statistic", ["Family", "K", "(\u0394\u0302\u1d9c\u1d5b \u2212 \u0394\u0303)/\u0394\u0303 median [5%, 95%]", "(\u0394\u0302 \u2212 \u0394\u0303)/\u0394\u0303 median", "sign differs, cv vs moment", "loggain vs moment"], rows, "Table A7b \u2014 The cv statistic against moment and loggain on the same windows")
+    rows = [[FAMTX[r.family], f"{r.alpha:g}", f"{r.K_mean_cv:.2f} / {r.K_mean_moment:.2f} / {r.K_mean_loggain:.2f}", f"{r.K_mean_cv_minus_moment_median:+.2f} [{r.K_mean_cv_minus_moment_p25:+.2f}, {r.K_mean_cv_minus_moment_p75:+.2f}]", f"{r.K_mean_moment_minus_loggain_median:+.2f}", f"{r.cong_capital_share_median_cv:.3f} / {r.cong_capital_share_median_moment:.3f}", f"{r.hill_exponent_median_cv:.3f} / {r.hill_exponent_median_moment:.3f}"] for _, r in cvc.iterrows()]
+    o.table("a7c_cv_behaviour", ["Family", "\u03b1", "K: cv / moment / loggain", "cv \u2212 moment, median [IQR]", "moment \u2212 loggain", "Pooled: cv / moment", "Hill: cv / moment"], rows, "Table A7c \u2014 Scope under the cv rule against moment and loggain", note="The cv rule reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in Hill; its difference to loggain is the first-order term alone.")
+
     # A8 homogeneous
     o.section("A8. Homogeneous markets", "Every market at q = 0.20, power law; both rules; medians over five replications. Compare Table 3c.")
     h = d[d.block == "homogeneous"]
