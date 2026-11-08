@@ -1,0 +1,29 @@
+\begin{table}[htbp]
+\centering
+\caption{Simulation design}
+\label{tab:design}
+\small
+\begin{tabular}{llllll}
+\toprule
+Block & What varies & Families & Cost forms & $\alpha$ & Runs \\
+\midrule
+main & -- & all three & all four & grid & 540 \\
+equal split & sharing rule: equal & normal & all four & grid & 180 \\
+cost level & $b_0 \times 0.5, \times 2$ (power law, exponential: whole schedule) & Laplace & all four & grid & 360 \\
+cost level full & $b_0, b_1, b_2 \times 0.5, \times 2$ & Laplace & linear, quadratic & grid & 180 \\
+cost level high & $b_0 \times 5, \times 10, \times 20$ & Laplace, $t_3$ & power law & 0.1, 0.3, 0.5 & 90 \\
+lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & power law & 0.1, 0.3 & 100 \\
+correlation & cross-market correlation 0.3 & Laplace & power law & grid & 45 \\
+endogenous $\alpha$ & $\alpha_C$ chosen by unit, start 0.1 & all three & all four & -- & 60 \\
+floor level & $c \in \{0.10, 0.35\}$ & Laplace & power law & grid & 90 \\
+search & $p \in \{0.2, 1\}$ & all three & power law & 0.05, 0.1, 0.3, 0.5 & 120 \\
+size & $(M, N) \in \{25, 100\}^2$, $c^*(N)$ & Laplace & power law & 0, 0.1, 0.3, 0.5 & 80 \\
+homogeneous & every market at $q = 0.20$; both decision rules & all three & power law & 0.05, 0.1, 0.3, 0.5 & 120 \\
+$\nu$ & Student-$t$, $\nu \in \{2.5, 4\}$ & $t$ & power law & 0.1, 0.3, 0.5 & 30 \\
+fixed $\alpha = 0.9$ & fixed $\alpha = 0.9$ (C38) & all three & power law & 0.9 & 15 \\
+\midrule
+total &  &  &  &  & 2,010 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Five replications per cell; ``grid'' is the nine-value $\alpha$ grid. Every cell except the $\nu$ block is also run under the loggain rule with the same seeds (pilot C, 2,100 runs).\end{minipage}
+\end{table}

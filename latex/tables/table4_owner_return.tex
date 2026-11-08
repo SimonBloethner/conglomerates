@@ -1,0 +1,24 @@
+\begin{table}[htbp]
+\centering
+\caption{Owners' time-average growth and ruin hazard by affiliation status}
+\label{tab:owner}
+\small
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+Family & $\alpha$ & Gap, mean & Gap, median & $K = 2$ & $K = 3$--4 & $K \geq 5$ & Share ordinary & Floor, member & Floor, standalone & Hazard ratio \\
+\midrule
+normal & 0.05 & 0.07 & 0.02 & 0.06 & 0.07 & 0.07 & -0.20 & 0.018 & 0.187 & 0.095 \\
+ & 0.1 & 0.16 & 0.06 & 0.12 & 0.16 & 0.17 & 0.22 & 0.016 & 0.194 & 0.083 \\
+ & 0.3 & 0.51 & 0.32 & 0.28 & 0.42 & 0.54 & 0.50 & 0.011 & 0.195 & 0.055 \\
+\midrule
+Laplace & 0.05 & 0.10 & 0.01 & 0.08 & 0.10 & 0.13 & -0.50 & 0.025 & 0.215 & 0.118 \\
+ & 0.1 & 0.26 & 0.11 & 0.19 & 0.25 & 0.30 & 0.03 & 0.023 & 0.220 & 0.105 \\
+ & 0.3 & 0.85 & 0.41 & 0.52 & 0.73 & 0.90 & 0.38 & 0.016 & 0.223 & 0.072 \\
+\midrule
+$t_3$ & 0.05 & 0.27 & 0.01 & 0.22 & 0.29 & 0.31 & -0.24 & 0.030 & 0.222 & 0.134 \\
+ & 0.1 & 0.48 & 0.10 & 0.37 & 0.49 & 0.52 & -0.03 & 0.028 & 0.228 & 0.121 \\
+ & 0.3 & 1.19 & 0.40 & 0.79 & 1.07 & 1.29 & 0.22 & 0.020 & 0.232 & 0.086 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Owner return: next-period log change of the firm's market share net of floor recapitalization; gap = member $-$ standalone within market $\times$ size decile, in percentage points per period; 27 traced runs, means over three replications. Share ordinary: part of the gap accruing in periods without a floor hit. Floor rates per firm-period of that status; hazard ratio = member / standalone.\end{minipage}
+\end{table}

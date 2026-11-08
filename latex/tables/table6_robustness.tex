@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Robustness summary}
+\label{tab:robustness}
+\small
+\begin{tabular}{llrrrrl}
+\toprule
+Block & What varies & $K$ & Pooled & Hill & Floor exits & Finding \\
+\midrule
+cost form & linear / quadratic / exponential & 5.2 / 5.9 / 6.1 & 0.91 / 0.92 / 0.88 & 1.18 / 1.19 / 1.21 & 35 / 36 / 36 & shape moves scope by under one member \\
+cost level & $\times 0.5$ / 2 / 5 / 10 / 20 & 6.0 / 4.7 / 3.9 / 3.3 / 2.8 & 0.92 / 0.91 / 0.87 / 0.79 / 0.67 & 1.20 / 1.19 / 1.17 / 1.15 / 1.13 & 35 / 35 / 33 / 33 / 33 & about 0.6 members per doubling; $K^*$ never reached \\
+window $l$ & 20 / 100 / 200 / 500 & 4.8 / 5.8 / 6.1 / 6.6 & 0.91 / 0.92 / 0.93 / 0.92 & 1.19 / 1.20 / 1.21 / 1.20 & 35 / 37 / 34 / 38 & 0.3--0.5 members per grid step, no saturation \\
+search $p$ & 0.2 / 1 & 6.8 / 8.0 & 0.97 / 0.98 & 1.18 / 1.18 & 62 / 116 & 50\% of $K^*$ at $p = 1$ \\
+correlation & cross-market 0.3 & 5.3 & 0.91 & 1.21 & 36 & within 0.2 of baseline \\
+floor $c$ & 0.10 / 0.35 & 5.6 / 4.4 & 0.93 / 0.74 & 1.13 / 1.66 & 32 / 60 & $c$ sets the tail; scope $+3\%$ / $-19\%$ \\
+economy size & $(M,N)$ = (25,25) / (100,25) / (25,100) / (100,100) & 5.6 / 6.2 / 4.7 / 5.2 & 0.96 / 0.96 / 0.88 / 0.89 & 1.22 / 1.24 / 1.16 / 1.17 & 7 / 23 / 44 / 170 & firms per market matter, markets barely \\
+sharing rule & equal split (normal, four cost forms) & 2.9 / 3.0 / 2.8 / 3.0 & 0.29 / 0.33 / 0.24 / 0.33 & 1.12 / 1.14 / 1.09 / 1.13 & 21 / 24 / 21 / 24 & the contract decides existence \\
+sharing rate & endogenous $\alpha$ (three families) & 16.9 / 18.0 / 14.3 & 0.98 / 0.97 / 0.95 & 2.05 / 2.07 / 1.83 & 2 / 4 / 11 & adopted $\alpha \approx 0.9$ \\
+ & fixed $\alpha = 0.9$ (three families) & 16.0 / 17.2 / 13.9 & 0.98 / 0.97 / 0.95 & 1.98 / 1.94 / 1.78 & 2 / 5 / 11 & reproduces the endogenous block \\
+tail weight $\nu$ & Student-$t$, $\nu$ = 2.5 / 3 / 4 & 4.1 / 4.8 / 5.3 & 0.85 / 0.90 / 0.92 & 1.02 / 1.12 / 1.17 & 54 / 42 / 33 & attrition, not consent, takes the scope \\
+market heterogeneity & every market at $q = 0.20$ (three families) & 5.6 / 5.5 / 4.9 & 0.94 / 0.91 / 0.89 & 1.20 / 1.19 / 1.10 & 22 / 34 / 42 & transfer conflict 0--4\% of the gap \\
+decision rule & loggain (three families) & 4.3 / 4.0 / 3.7 & 0.73 / 0.78 / 0.77 & 1.17 / 1.16 / 1.10 & 26 / 37 / 43 & verifiability 3--20\% of the gap \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize At $\alpha = 0.3$, Laplace unless stated, power-law cost unless stated, moment rule; medians over five replications. Baseline: $K = 5.4$, pooled 0.91, Hill 1.19, 36 floor exits per period. Three-family rows are normal / Laplace / $t_3$; equal-split cells are linear / quadratic / exponential / power law.\end{minipage}
+\end{table}

@@ -1,0 +1,27 @@
+\begin{table}[htbp]
+\centering
+\caption{Parameters (main block, and the block in which each is varied)}
+\label{tab:parameters}
+\small
+\begin{tabular}{llll}
+\toprule
+Symbol & Meaning & Main block & Varied in block \\
+\midrule
+$M$, $N$ & markets, firms per market & 50, 50 & size: $\{25, 100\}^2$ \\
+$T$, burn-in & periods, discarded periods & 11,000, 8,000 & -- \\
+$F$ & shock family, equal IQR & normal, Laplace, $t_3$ & $\nu$: Student-$t$, $\nu \in \{2.5, 4.0\}$ \\
+$q_m$ & market IQR of $x_{it}$ & rescaled onto $[0.1, 0.3]$ & homogeneous: every market at 0.20 \\
+$g$ & time-average growth rate & 0.055 & -- \\
+-- & cross-market correlation & 0.0 & correlation: 0.3 \\
+$c$ & floor, fraction of market mean & 0.12717 & floor: 0.1, 0.35; size: $c^*(N)$ \\
+$\alpha$ & sharing rate & 0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5 & endogenous: chosen by each unit; fixed 0.9 \\
+-- & sharing rule & proportional to size & equal split \\
+$\Phi(K)$ & coordination cost, $\Phi(40) = 0.0017$ & power law (main); linear, quadratic, exponential & cost level: $\times$0.5, $\times$2.0, $\times$5.0, $\times$10.0, $\times$20.0 \\
+$p$ & search probability per firm-period & 0.05 & search: 0.2, 1.0 \\
+$l$ & decision window and lock-in & 50 & lookback: 20, 100, 200, 500 \\
+-- & decision rule & second moments of the demeaned window (moment) & sample mean of the replayed log gain (loggain), every cell \\
+-- & replications per cell & 5 & -- \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Cost parameters: power law $b_0 = 2.032\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\cdot10^{-5}$; quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$.\end{minipage}
+\end{table}
