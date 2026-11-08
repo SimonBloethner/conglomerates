@@ -260,6 +260,26 @@ loggain, for both sharing rules) is ≤ −1.
 byte-identical to C35 (`diagnostics/identity_c36.csv`). The C35 acceptance-by-K counters and the binding-gain
 histogram are filled under the moment rule as under loggain. **Requires:** `g`.
 
+**Control-variate rule (C39, a variant):** `decision_rule == "cv"` is the loggain rule (consent, exit review, α
+renegotiation) with the gain estimated by the exact replay minus its first-order term (`member_gain_cv`):
+
+    Δ̂ᶜᵛ_i = (1/h) Σ_τ [ log(1 + p̂_iτ) − ε_iτ − r_τ α (Σ_j c_jτ u_jτ − u_iτ) ]
+
+with u, c, A, r as for the moment rule (proportional: c_jτ = s_jτ / Σ_k s_kτ; equal: c_jτ = s_jτ / (K s_iτ)).
+- **Why.** The subtracted term has expectation zero, because the weights are set before the period's return.
+  But in a window where each firm's returns are demeaned its sample mean is negative: a weight is high after
+  above-mean returns, and the window then needs below-mean ones. That lowers Δ̂ by 17–35% of the gain (C38
+  Task 3).
+- **What it keeps.** Δ̂ᶜᵛ has no expansion of the log, so it keeps every higher-order term. It is exact in
+  expectation, and its noise is that of the second- and higher-order terms.
+- **Fixed weights.** With the weights fixed over the window the term sums to zero, and Δ̂ᶜᵛ = Δ̂.
+- **−∞ cases** as for the moment rule.
+- **Code.** `decision_rule_code = 3`, dispatched in `rule_gain_from_prepared`; `find_optimal_alpha` gets
+  `rule_code=3`.
+- **Status.** It is a variant for the C39 comparison (pilot D block `cv`), not the base case.
+
+**Requires:** `g`.
+
 ### Which rule the paper uses (C37)
 
 - **`"moment"` is the base case.** Pilot D (`pilot_d/`, `pilot_design_d.py`) runs every block under it; its
@@ -282,6 +302,8 @@ Pilot D blocks beyond pilot C's:
   5 reps, moment rule. ν = 3 is the main t₃ cell.
 - Seeds: both blocks reuse the seeds of the main power-law cell (homogeneous: of the same family; ν: of t₃).
 - **`alpha-0.9`** (C38, 15 runs): the main power-law cells at a fixed α = 0.9, moment rule.
+- **`cv`** (C39, 45 runs): the main power-law cells at α ∈ {0.1, 0.3, 0.5} under `decision_rule="cv"`, on the main
+  cells' seeds. They are paired with the moment main runs and their pilot C loggain twins (`twin_id`).
 
 ### `exit_review_every`
 Periodic exit review interval for loggain decision rule.

@@ -591,20 +591,68 @@ def member_gain_moment(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alph
 
 
 @nb.njit(cache=True)
+def member_gain_cv(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, alpha, Phi_K, sharing_rule_code, g):
+    """
+    C39: control-variate estimate of member i's time-average growth gain (decision_rule='cv').
+
+    The loggain replay (member_gain_from_prepared) averages D_t = log(1 + p_it) - log(1 + e_it) over the window.
+    Its first-order term, in the notation of member_gain_moment (u_jt = eps_jt - g, weights c_jt, level A_t,
+    r_t = e^g / A_t), is r_t a (sum_j c_jt u_jt - u_it). It has expectation zero (the weights are set before the
+    period's return, E[u] = 0) but a negative sample mean in most demeaned windows (C38 Task 3). The cv rule
+    averages the exact replay with that term subtracted:
+        D^cv_i = (1/h) sum_t [ D_t - r_t a (sum_j c_jt u_jt - u_it) ]
+    No expansion of the log; same weights as member_gain_moment (proportional: c_jt = s_jt / sum_k s_kt; equal:
+    c_jt = s_jt / (K s_it)); sum_su[t] = sum_j s_jt u_jt (prepare_window_moment). Returns -inf if h < 3, if in
+    any period the replayed p_it is <= -1, or if A_t <= 0 (as member_gain_moment).
+    With the weights fixed over the window the subtracted term sums to zero exactly, so D^cv = D-hat.
+    """
+    h = eps.shape[0]
+    if h < 3:
+        return -np.inf
+    eg = np.exp(g)
+    total = 0.0
+    for tau in range(h):
+        s_i = sizes[tau, i]
+        e_i = np.expm1(eps[tau, i])
+        s_sum = sum_s[tau]
+        if sharing_rule_code == 1:
+            avg_weighted_gain = sum_s_eps[tau] / s_sum if s_sum > 0 else 0.0
+            p_hat = (1.0 - alpha) * e_i + alpha * avg_weighted_gain - Phi_K
+            denom = s_sum
+            c = 1.0
+        else:
+            s_i_safe = max(s_i, 1e-300)
+            p_hat = (1.0 - alpha) * e_i + (alpha * sum_s_eps[tau] - Phi_K * s_sum) / K / s_i_safe
+            denom = K * s_i_safe
+            c = s_sum / denom
+        if p_hat <= -1.0:
+            return -np.inf
+        A = eg * (1.0 - alpha + alpha * c) + alpha * (1.0 - c) - Phi_K * c
+        if A <= 0.0:
+            return -np.inf
+        r = eg / A
+        u_i = eps[tau, i] - g
+        total += np.log1p(p_hat) - np.log1p(e_i) - r * alpha * (sum_su[tau] / denom - u_i)
+    return total / h
+
+
+@nb.njit(cache=True)
 def rule_gain_from_prepared(rule_code, i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alpha, Phi_K,
                             sharing_rule_code, g):
-    """C36: member i's estimated gain under decision rule 1 (loggain, Delta-hat) or 2 (moment, Delta-tilde).
-    sum_su, sum_su2 are only read under rule 2 (prepare_window_moment)."""
+    """C36: member i's estimated gain under decision rule 1 (loggain, Delta-hat) or 2 (moment, Delta-tilde);
+    C39: 3 (cv, member_gain_cv). sum_su, sum_su2 are only read under rules 2 and 3 (prepare_window_moment)."""
     if rule_code == 2:
         return member_gain_moment(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, sum_su2, alpha, Phi_K,
                                   sharing_rule_code, g)
+    if rule_code == 3:
+        return member_gain_cv(i, K, eps, sizes, sum_s, sum_s_eps, sum_su, alpha, Phi_K, sharing_rule_code, g)
     return member_gain_from_prepared(i, K, eps, sizes, sum_s, sum_s_eps, alpha, Phi_K, sharing_rule_code)
 
 
 @nb.njit(cache=True)
 def prepare_rule_sums(rule_code, eps, sizes, g):
-    """C36: the moment sums under rule 2, empty arrays otherwise (not read)."""
-    if rule_code == 2:
+    """C36: the moment sums under rules 2 and 3 (C39), empty arrays otherwise (not read)."""
+    if rule_code >= 2:
         return prepare_window_moment(eps, sizes, g)
     return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
 
@@ -761,7 +809,8 @@ def find_optimal_alpha(members, past_returns, sizes, current_alpha, Phi_K, shari
     g : float
         Common growth rate added back after demeaning
     rule_code : int
-        1 = loggain (Delta-hat), 2 = moment (C36: Delta-tilde, member_gain_moment); the rule is otherwise the same
+        1 = loggain (Delta-hat), 2 = moment (C36: Delta-tilde, member_gain_moment), 3 = cv (C39, member_gain_cv);
+        the rule is otherwise the same
 
     Returns:
     --------
@@ -865,7 +914,7 @@ def merger_kernel_numba(
         unit+unit proposals only, by K and volatility bin: 0 if the entrant unit (the smaller by capital) has a lower
         mean member IQR (market_iqr of the members' home markets) than the incumbent unit, 1 otherwise (ties in 1).
         vb_binding_entrant counts the proposals whose binding member (the argmin of the binding gain, or the first
-        member with a proposed gain of -inf) is in the entrant unit; under loggain / moment only.
+        member with a proposed gain of -inf) is in the entrant unit; under loggain / moment / cv only.
     market_iqr : float64 (M,)
         The markets' IQRs (iqr_m), read only for the volatility bin.
 
@@ -1360,7 +1409,7 @@ def compute_exit_candidates_numba(
     exit_candidates,               # 1D array of firm IDs
     window,
     step,
-    decision_rule_code,            # 0 = replay, 1 = loggain, 2 = moment (C36)
+    decision_rule_code,            # 0 = replay, 1 = loggain, 2 = moment (C36), 3 = cv (C39)
     g,                      # Common growth for loggain
     alpha,
     sharing_rule_code,
@@ -2011,7 +2060,7 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         - After pooling/floor, renormalizes per market so mean size = 1
         - Skips economy-wide renormalization (redundant when flag is on)
     decision_rule : str
-        Merger/exit decision rule: 'replay' (default), 'loggain' or 'moment'.
+        Merger/exit decision rule: 'replay' (default), 'loggain', 'moment' or 'cv'.
         - replay: Compare synthetic pooled growth to realized standalone growth.
           Original Phase A/B behavior; sensitive to common market shocks.
         - loggain: Demean returns to remove first-order noise. Each firm's
@@ -2023,6 +2072,9 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
           with the gain estimated by its second-order expansion in the window's
           second moments (member_gain_moment) instead of the sample mean of the
           replayed log differences. Requires g; windows shorter than 3 periods give -inf.
+        - cv (C39): the loggain rule with the replay's first-order term r_t a (sum_j c_jt u_jt - u_it)
+          subtracted period by period (member_gain_cv): exact in expectation, without the demeaned window's
+          negative first-order bias. Requires g; windows shorter than 3 periods give -inf.
     exit_review_every : int
         Periodic exit review interval. Default 1 (every step).
         When > 1, members run the exit test only at steps where
@@ -2075,11 +2127,11 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         raise ValueError("market_size_fixed=True requires growth_process='log_family'")
 
     # Validate decision_rule
-    if decision_rule not in ("replay", "loggain", "moment"):
-        raise ValueError(f"decision_rule must be 'replay', 'loggain' or 'moment', got '{decision_rule}'")
-    if decision_rule in ("loggain", "moment") and g is None:
+    if decision_rule not in ("replay", "loggain", "moment", "cv"):
+        raise ValueError(f"decision_rule must be 'replay', 'loggain', 'moment' or 'cv', got '{decision_rule}'")
+    if decision_rule in ("loggain", "moment", "cv") and g is None:
         raise ValueError(f"decision_rule='{decision_rule}' requires g to be specified")
-    decision_rule_code = {"replay": 0, "loggain": 1, "moment": 2}[decision_rule]
+    decision_rule_code = {"replay": 0, "loggain": 1, "moment": 2, "cv": 3}[decision_rule]
     if alpha_endogenous and g is None:
         raise ValueError("alpha_endogenous=True requires g (the sharing rate is renegotiated on the demeaned log gain)")
 
@@ -2449,6 +2501,11 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                     optimal_alpha, should_change = find_optimal_alpha(
                         member_firms, past_returns, np.exp(past_states),
                         unit_alpha[cid], m, sharing_rule_code, g, 2
+                    )
+                elif decision_rule_code == 3:  # C39: on the cv rule's estimate
+                    optimal_alpha, should_change = find_optimal_alpha(
+                        member_firms, past_returns, np.exp(past_states),
+                        unit_alpha[cid], m, sharing_rule_code, g, 3
                     )
                 else:
                     optimal_alpha, should_change = find_optimal_alpha(

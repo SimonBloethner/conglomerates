@@ -744,3 +744,38 @@ The notes are `diagnostics/c38_event_study.md` (Task 1) and `diagnostics/c38_not
   added to the CSV and the figure, because it, not the brief's w-adjusted formula, is the analytical counterpart of
   the binding gain. The brief's formula is the capital-weighted average member's gain, and turns negative for
   w above about 2/K.
+
+# C39: proposal-type counter and the control-variate decision rule
+
+The note is `diagnostics/c39_note.md`.
+
+## Departures from the brief and choices it left open
+
+- **Volatility-bin arrays.** They have shape (M + 1, 2) and cover unit+unit proposals only, the only type they
+  apply to.
+  - Bin 0 is "entrant unit calmer": a strictly lower mean member IQR than the incumbent unit's. Ties go to bin 1.
+  - Two arrays beyond the brief: `binding_sq_by_K_type_volbin` (for the s.d.) and
+    `binding_entrant_by_K_type_volbin`. The second counts the proposals whose binding member is in the entrant
+    unit, so "is it the calm side that vetoes?" is read off directly rather than inferred from acceptance.
+- **Entrant unit.** As in C38, it is the smaller unit by capital at the proposal step.
+- **One identity rerun for both tasks.** The 2,010 existing pilot D scenarios were rerun once, on the final C39
+  code. That code contains both the Task 1 counters and the cv rule, which no existing scenario reaches.
+  - The 15 Task 1 reruns and the 45 cv runs were also made on that code. So C39a's outputs come from the C39b code,
+    with the cv branch not taken.
+- **Test (b).** The brief asks that Δ̂ᶜᵛ − Δ̂ equal minus C38's replay weight term to 1e-12, and that Δ̃ − Δ̂ᶜᵛ equal
+  C38's higher-order term. Neither holds exactly.
+  - Freezing the weights at the window's first period (C38's device) removes the first-order term. It also moves
+    the second-order gain, which depends on the weights' level.
+  - On the C38 draws, the median gaps are 5–18% of median |Δ̂| for the first relation and 0.4–2% for the second
+    (`gap_*` columns in `pilot_d/approximation_error_cv.csv`).
+  - The exact statements are tested instead (`tests/test_cv_rule.py`):
+    - Δ̂ᶜᵛ − Δ̂ is exactly minus the sample mean of the subtracted term;
+    - with the weights frozen, Δ̂ᶜᵛ = Δ̂ (< 1e-12; on the draws, max 2.5e-16).
+- **Test (c).** The three rules are compared on a 200,000-period window with sizes that follow the returns and
+  revert (AR(1) in logs). The analytical value is the second-order gain averaged over the window's actual weights,
+  which differ from 1/K.
+- **cv block.** Its runs are written to `pilot_d/results_c39/` with the 15 Task 1 reruns, as the brief directs.
+  `tidy.csv` gains their 45 rows (ids 2010–2054; the 2,010 existing rows are byte-identical). `twin_id` is the
+  pilot C loggain twin; the moment twin is the pilot D main scenario with the same family, α and rep.
+- **`analysis/approximation_error.py --rule cv`.** It writes `pilot_d/approximation_error_cv.csv` and leaves
+  C38's `approximation_error.csv` as it is (the draws are the same).

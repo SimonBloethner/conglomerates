@@ -26,7 +26,7 @@ from analytics.identity_c35 import load  # noqa: E402
 from summarize_pilot_c import create_tidy_df  # noqa: E402
 
 TIDY = os.path.join(ROOT, 'pilot_d', 'tidy.csv')
-IDS = range(pdd.TOTAL_C37, pdd.TOTAL)
+IDS = range(pdd.TOTAL_C37, pdd.TOTAL_C38)
 COLS = ['K_mean', 'cong_capital_share_median', 'hill_exponent_median', 'floor_exits_per_period',
         'alpha_adopted_median', 'acceptance_rate']
 

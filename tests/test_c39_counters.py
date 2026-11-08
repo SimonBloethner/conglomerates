@@ -34,7 +34,7 @@ def test_volatility_bin(iqr, calm):
     assert 0 <= a['ve'][4, b] <= props[4]
 
 
-@pytest.fixture(scope='module', params=['moment', 'loggain'])
+@pytest.fixture(scope='module', params=['moment', 'loggain', 'cv'])
 def run(request):
     return cg.model(**dict(PARAMS, search_prob=0.3), **dict(KW, decision_rule=request.param))[-1]
 

@@ -1,7 +1,10 @@
 """
 C38 Task 3: size of the moment rule's second-order approximation, on the 27 pilot D traces.
 
-    python analysis/approximation_error.py <trace_dir> [--n 2000] [--pilot d]
+    python analysis/approximation_error.py <trace_dir> [--n 2000] [--pilot d] [--rule cv]
+
+--rule cv (C39): the same draws, with the cv rule's estimate (member_gain_cv) beside the other two; writes only
+<pilot>/approximation_error_cv.csv (stats_cv) and approximation_error_cv_samples.csv.gz.
 
 For each traced run (main, power law, 3 families x alpha {0.05, 0.1, 0.3} x reps 0-2) it draws n decision points
 (t, i): t uniform on the post-burn-in steps [burn_in + l, T], i a firm standalone throughout [t - l, t], and a
@@ -59,13 +62,14 @@ QS = {'p5': 0.05, 'p25': 0.25, 'median': 0.5, 'p75': 0.75, 'p95': 0.95}
 
 
 def gains(R, S, alpha, phi, g):
-    """Delta-hat and Delta-tilde of member 0 of the set whose window returns / sizes are R, S (h, K)."""
+    """Delta-hat, Delta-tilde and (C39) Delta-hat-cv of member 0 of the set whose window returns / sizes are R, S."""
     K = R.shape[1]
     eps, sz, sum_s, sum_s_eps = cg.prepare_window_loggain(np.arange(K), R, S, g)
     sum_su, sum_su2 = cg.prepare_window_moment(eps, sz, g)
     d_hat = cg.member_gain_from_prepared(0, K, eps, sz, sum_s, sum_s_eps, alpha, phi, 1)
     d_til = cg.member_gain_moment(0, K, eps, sz, sum_s, sum_s_eps, sum_su, sum_su2, alpha, phi, 1, g)
-    return d_hat, d_til
+    d_cv = cg.member_gain_cv(0, K, eps, sz, sum_s, sum_s_eps, sum_su, alpha, phi, 1, g)
+    return d_hat, d_til, d_cv
 
 
 def draws_for(s, tp, n):
@@ -99,11 +103,11 @@ def draws_for(s, tp, n):
         hits = int((jump[t - l + 1:t + 1, firms] != 0).any(axis=0)[0])
         for K in KS:
             Rk = np.ascontiguousarray(R[:, :K])
-            d_hat, d_til = gains(Rk, np.ascontiguousarray(S[:, :K]), s['alpha'], phi[K], s['g'])
-            c_hat, c_til = gains(Rk, np.ascontiguousarray(S0[:, :K]), s['alpha'], phi[K], s['g'])
+            d_hat, d_til, d_cv = gains(Rk, np.ascontiguousarray(S[:, :K]), s['alpha'], phi[K], s['g'])
+            c_hat, c_til, c_cv = gains(Rk, np.ascontiguousarray(S0[:, :K]), s['alpha'], phi[K], s['g'])
             rows.append(dict(family=s['log_family'], alpha=s['alpha'], rep=s['rep'], t=t, firm=int(i), K=K,
                              focal_hit=hits, delta_hat=d_hat, delta_tilde=d_til,
-                             delta_hat_fixed=c_hat, delta_tilde_fixed=c_til))
+                             delta_hat_fixed=c_hat, delta_tilde_fixed=c_til, delta_cv=d_cv, delta_cv_fixed=c_cv))
     return rows
 
 
@@ -142,8 +146,39 @@ def stats(g):
     return out
 
 
+def stats_cv(g):
+    """C39 (--rule cv): the cv estimate against the moment rule and the replay on the same draws.
+    rel = (Delta-hat-cv - Delta-tilde) / Delta-tilde (median, p5, p95); fo = Delta-hat - Delta-hat-cv (the removed
+    first-order term's sample mean); checks: max |Delta-hat-cv_fixed - Delta-hat_fixed| (zero up to rounding: with
+    frozen weights the term sums to zero), and how close the first-order algebra is on these windows:
+    (Delta-hat-cv - Delta-hat) against minus the C38 replay weight term (Delta-hat_fixed - Delta-hat), and
+    (Delta-tilde - Delta-hat-cv) against the C38 higher-order term (Delta-tilde_fixed - Delta-hat_fixed), as median
+    absolute gaps relative to median |Delta-hat|."""
+    cols = ['delta_hat', 'delta_tilde', 'delta_cv', 'delta_hat_fixed', 'delta_tilde_fixed', 'delta_cv_fixed']
+    fin = g[np.isfinite(g[cols]).all(axis=1)]
+    rel = (fin.delta_cv - fin.delta_tilde) / fin.delta_tilde
+    out = dict(n=len(fin), n_dropped=len(g) - len(fin))
+    for k, q in QS.items():
+        out[f'rel_cv_moment_{k}'] = rel.quantile(q)
+    rel_hat = (fin.delta_hat - fin.delta_tilde) / fin.delta_tilde
+    out.update(rel_hat_moment_median=rel_hat.median(),
+               delta_cv_median=fin.delta_cv.median(), delta_tilde_median=fin.delta_tilde.median(),
+               delta_hat_median=fin.delta_hat.median(),
+               sign_disagree_cv_moment=((fin.delta_cv > 0) != (fin.delta_tilde > 0)).mean(),
+               sign_disagree_hat_moment=((fin.delta_hat > 0) != (fin.delta_tilde > 0)).mean(),
+               fo_median=(fin.delta_hat - fin.delta_cv).median(),
+               max_abs_cv_fixed_minus_hat_fixed=(fin.delta_cv_fixed - fin.delta_hat_fixed).abs().max())
+    scale = fin.delta_hat.abs().median()
+    w_hat = fin.delta_hat_fixed - fin.delta_hat
+    ho = fin.delta_tilde_fixed - fin.delta_hat_fixed
+    out['gap_cvhat_vs_minus_weight_term'] = ((fin.delta_cv - fin.delta_hat) - w_hat).abs().median() / scale
+    out['gap_tilde_cv_vs_higher_order'] = ((fin.delta_tilde - fin.delta_cv) - ho).abs().median() / scale
+    return out
+
+
 def main():
     pdir = 'pilot_' + pop_pilot(default='d')
+    cv = '--rule' in sys.argv and sys.argv[sys.argv.index('--rule') + 1] == 'cv'
     trace_dir = sys.argv[1]
     n = int(sys.argv[sys.argv.index('--n') + 1]) if '--n' in sys.argv else 2000
     scenarios = json.load(open(os.path.join(ROOT, pdir, 'scenarios.json')))
@@ -154,6 +189,14 @@ def main():
         rows += draws_for(s, os.path.join(trace_dir, tag + '.npz'), n)
         print(tag, f'{time.time() - t0:.0f}s', flush=True)
     df = pd.DataFrame(rows)
+    if cv:   # C39: only the cv comparison; the C38 outputs are not rewritten
+        df.to_csv(os.path.join(ROOT, pdir, 'approximation_error_cv_samples.csv.gz'), index=False)
+        out = [dict(family=f, alpha='all', K=K, **stats_cv(x)) for (f, K), x in df.groupby(['family', 'K'], sort=False)]
+        out += [dict(family=f, alpha=a, K=K, **stats_cv(x))
+                for (f, a, K), x in df.groupby(['family', 'alpha', 'K'], sort=False)]
+        pd.DataFrame(out).to_csv(os.path.join(ROOT, pdir, 'approximation_error_cv.csv'), index=False)
+        print(pd.DataFrame(out).head(12).to_string())
+        return
     df.to_csv(os.path.join(ROOT, pdir, 'approximation_error_samples.csv.gz'), index=False)
     out = []
     for (fam, K), g in df.groupby(['family', 'K'], sort=False):

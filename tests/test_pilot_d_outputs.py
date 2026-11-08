@@ -26,7 +26,8 @@ def test_tidy_rows_blocks_columns(tidy):
     assert tidy.block.value_counts().to_dict() == BLOCK_COUNTS
     assert sorted(tidy.scenario_id) == list(range(TOTAL))
     assert list(tidy.columns) == EXPECTED_TIDY_COLUMNS_ORDERED(tidy) and set(EXTRA) <= set(tidy.columns)
-    assert (tidy.decision_rule == 'moment').sum() == TOTAL - 60
+    assert (tidy.decision_rule == 'moment').sum() == TOTAL - 60 - 45     # homogeneous loggain, cv (C39)
+    assert (tidy.decision_rule == 'cv').sum() == 45
 
 
 def EXPECTED_TIDY_COLUMNS_ORDERED(tidy):
