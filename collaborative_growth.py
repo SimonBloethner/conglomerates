@@ -818,7 +818,9 @@ def merger_kernel_numba(
     sharing_rule_code, decision_rule_code, g,
     unit_created_step, unit_alpha, unit_born_step,
     binding_gain_hist, record_binding,
-    kw_proposals, kw_mergers, kw_binding_sum, kw_binding_sq, kw_binding_n, kw_w_sum, log_floor_share2
+    kw_proposals, kw_mergers, kw_binding_sum, kw_binding_sq, kw_binding_n, kw_w_sum, log_floor_share2,
+    kwt_proposals, kwt_mergers, kwt_binding_sum, kwt_binding_sq, kwt_binding_n,
+    vb_proposals, vb_mergers, vb_binding_sum, vb_binding_sq, vb_binding_n, vb_binding_entrant, market_iqr
 ):
     """
     FULLY NUMBA-ACCELERATED merger step.
@@ -854,6 +856,18 @@ def merger_kernel_numba(
         kw_binding_sum / _sq / _n sum the binding gain, its square and the count over the proposals whose binding
         gain is finite (-inf, a member with a non-positive replayed growth factor, is left out of the sums).
         Nothing here draws random numbers or enters the accept decision.
+    kwt_proposals, kwt_mergers, kwt_binding_n : int64 (M + 1, K_W_BINS + 1, 3); kwt_binding_sum, kwt_binding_sq :
+    float64, same shape (C39, diagnostic only)
+        The C38 counts split by proposal type on the last axis (0 = solo+solo, 1 = solo+unit, 2 = unit+unit); summed
+        over that axis they are the kw_ arrays.
+    vb_proposals, vb_mergers, vb_binding_n, vb_binding_entrant : int64 (M + 1, 2); vb_binding_sum, vb_binding_sq :
+    float64 (M + 1, 2) (C39, diagnostic only)
+        unit+unit proposals only, by K and volatility bin: 0 if the entrant unit (the smaller by capital) has a lower
+        mean member IQR (market_iqr of the members' home markets) than the incumbent unit, 1 otherwise (ties in 1).
+        vb_binding_entrant counts the proposals whose binding member (the argmin of the binding gain, or the first
+        member with a proposed gain of -inf) is in the entrant unit; under loggain / moment only.
+    market_iqr : float64 (M,)
+        The markets' IQRs (iqr_m), read only for the volatility bin.
 
     Returns tuple: (mergers_this_step, proposals_this_step,
                     mergers_ss, proposals_ss,
@@ -979,6 +993,8 @@ def merger_kernel_numba(
 
         # C38: entrant share w of the prospective unit and its (K, w) column (diagnostic only)
         kw_col = -1
+        vb_col = -1     # C39: volatility bin of a unit+unit proposal
+        ent_unit = -1   # C39: the entrant unit of a unit+unit proposal
         if record_binding:
             cur = step % firm_log_states_buffer.shape[0]
             s_init = 0.0
@@ -1013,6 +1029,23 @@ def merger_kernel_numba(
                 kw_col = 1 + min(int(w_ent * K_W_BINS), K_W_BINS - 1)
             kw_proposals[merged_size, kw_col] += 1
             kw_w_sum[merged_size, kw_col] += w_ent
+            kwt_proposals[merged_size, kw_col, proposal_type] += 1  # C39
+            if proposal_type == 2:  # C39: entrant unit calmer (0) or not (1) than the incumbent unit
+                iq_init = 0.0
+                for f in init_firms:
+                    iq_init += market_iqr[firm_home_market[f]]
+                iq_init /= len(init_firms)
+                iq_targ = 0.0
+                for f in targ_firms:
+                    iq_targ += market_iqr[firm_home_market[f]]
+                iq_targ /= len(targ_firms)
+                if ent_init:
+                    vb_col = 0 if iq_init < iq_targ else 1
+                    ent_unit = initiator_unit
+                else:
+                    vb_col = 0 if iq_targ < iq_init else 1
+                    ent_unit = target_unit
+                vb_proposals[merged_size, vb_col] += 1
 
         # C31: alpha at which the proposed merged unit would operate
         if proposal_type == 0:
@@ -1057,6 +1090,7 @@ def merger_kernel_numba(
             sum_su_prop, sum_su2_prop = prepare_rule_sums(decision_rule_code, eps_prop, sz_prop, g)
 
             binding = np.inf  # C35: min over members of Delta_hat_proposed - max(0, Delta_hat_current)
+            j_bind = 0        # C39: index (in merged_firms) of the binding member
             for j in range(K_hat):
                 firm_id = merged_firms[j]
 
@@ -1069,6 +1103,7 @@ def merger_kernel_numba(
                 if delta_hat_proposed == -np.inf:
                     accept = False
                     binding = -np.inf
+                    j_bind = j
                     break
 
                 # Determine current arrangement and compute gain_current
@@ -1113,6 +1148,7 @@ def merger_kernel_numba(
                 margin = delta_hat_proposed - max(0.0, delta_hat_current)
                 if margin < binding:
                     binding = margin
+                    j_bind = j
 
                 # Accept only if proposed beats max(0, current)
                 if delta_hat_proposed <= max(0.0, delta_hat_current):
@@ -1134,6 +1170,16 @@ def merger_kernel_numba(
                     kw_binding_sum[merged_size, kw_col] += binding
                     kw_binding_sq[merged_size, kw_col] += binding * binding
                     kw_binding_n[merged_size, kw_col] += 1
+                    kwt_binding_sum[merged_size, kw_col, proposal_type] += binding  # C39
+                    kwt_binding_sq[merged_size, kw_col, proposal_type] += binding * binding
+                    kwt_binding_n[merged_size, kw_col, proposal_type] += 1
+                if proposal_type == 2:  # C39
+                    if binding != -np.inf:
+                        vb_binding_sum[merged_size, vb_col] += binding
+                        vb_binding_sq[merged_size, vb_col] += binding * binding
+                        vb_binding_n[merged_size, vb_col] += 1
+                    if firm_unit[merged_firms[j_bind]] == ent_unit:
+                        vb_binding_entrant[merged_size, vb_col] += 1
         else:
             # REPLAY: Compare synthetic pooled growth to realized standalone growth
 
@@ -1288,6 +1334,9 @@ def merger_kernel_numba(
         mergers_by_K[merged_size] += 1  # C35
         if kw_col >= 0:
             kw_mergers[merged_size, kw_col] += 1  # C38
+            kwt_mergers[merged_size, kw_col, proposal_type] += 1  # C39
+            if proposal_type == 2:
+                vb_mergers[merged_size, vb_col] += 1
         # Track by type using proposal_type set earlier
         if proposal_type == 0:
             mergers_ss += 1
@@ -2237,6 +2286,19 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
     binding_n_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.int64)
     w_sum_by_K_w = np.zeros((M + 1, K_W_BINS + 1), dtype=np.float64)
     log_floor_share2 = float(np.log(2.0 * floor_c / N)) if floor_c > 0.0 else -np.inf
+    # C39: the same split by proposal type (0 solo+solo, 1 solo+unit, 2 unit+unit), and unit+unit proposals by
+    # volatility bin (0: entrant unit calmer than the incumbent unit, 1: not)
+    proposals_by_K_w_type = np.zeros((M + 1, K_W_BINS + 1, 3), dtype=np.int64)
+    mergers_by_K_w_type = np.zeros((M + 1, K_W_BINS + 1, 3), dtype=np.int64)
+    binding_sum_by_K_w_type = np.zeros((M + 1, K_W_BINS + 1, 3), dtype=np.float64)
+    binding_sq_by_K_w_type = np.zeros((M + 1, K_W_BINS + 1, 3), dtype=np.float64)
+    binding_n_by_K_w_type = np.zeros((M + 1, K_W_BINS + 1, 3), dtype=np.int64)
+    proposals_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.int64)
+    mergers_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.int64)
+    binding_sum_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.float64)
+    binding_sq_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.float64)
+    binding_n_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.int64)
+    binding_entrant_by_K_type_volbin = np.zeros((M + 1, 2), dtype=np.int64)
 
     # Track firm exits from conglomerates per period
     exits_per_period = np.zeros(T)
@@ -2418,7 +2480,11 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                 unit_created_step, unit_alpha, unit_born_step,
                 binding_gain_hist_by_K, step >= burn_in,
                 proposals_by_K_w, mergers_by_K_w, binding_sum_by_K_w, binding_sq_by_K_w, binding_n_by_K_w,
-                w_sum_by_K_w, log_floor_share2
+                w_sum_by_K_w, log_floor_share2,
+                proposals_by_K_w_type, mergers_by_K_w_type, binding_sum_by_K_w_type, binding_sq_by_K_w_type,
+                binding_n_by_K_w_type, proposals_by_K_type_volbin, mergers_by_K_type_volbin,
+                binding_sum_by_K_type_volbin, binding_sq_by_K_type_volbin, binding_n_by_K_type_volbin,
+                binding_entrant_by_K_type_volbin, np.ascontiguousarray(iqr_m, dtype=np.float64)
             )
             proposals_by_K_per_period[step] = props_by_K  # C35
             mergers_by_K_per_period[step] = mergs_by_K
@@ -3070,6 +3136,17 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
                        'binding_sum_by_K_w': binding_sum_by_K_w, 'binding_sq_by_K_w': binding_sq_by_K_w,
                        'binding_n_by_K_w': binding_n_by_K_w, 'w_sum_by_K_w': w_sum_by_K_w,
                        'K_w_edges': K_W_EDGES,
+                       # C39: the C38 arrays by proposal type, and unit+unit proposals by volatility bin
+                       'proposals_by_K_w_type': proposals_by_K_w_type, 'mergers_by_K_w_type': mergers_by_K_w_type,
+                       'binding_sum_by_K_w_type': binding_sum_by_K_w_type,
+                       'binding_sq_by_K_w_type': binding_sq_by_K_w_type,
+                       'binding_n_by_K_w_type': binding_n_by_K_w_type,
+                       'proposals_by_K_type_volbin': proposals_by_K_type_volbin,
+                       'mergers_by_K_type_volbin': mergers_by_K_type_volbin,
+                       'binding_sum_by_K_type_volbin': binding_sum_by_K_type_volbin,
+                       'binding_sq_by_K_type_volbin': binding_sq_by_K_type_volbin,
+                       'binding_n_by_K_type_volbin': binding_n_by_K_type_volbin,
+                       'binding_entrant_by_K_type_volbin': binding_entrant_by_K_type_volbin,
                        }
 
     # C24: Handle trace data

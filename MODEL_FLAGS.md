@@ -281,6 +281,7 @@ Pilot D blocks beyond pilot C's:
 - **`nu`** (30 runs): `family="student_t"` with `nu` ∈ {2.5, 4}, the main IQR range, power law, α ∈ {0.1, 0.3, 0.5},
   5 reps, moment rule. ν = 3 is the main t₃ cell.
 - Seeds: both blocks reuse the seeds of the main power-law cell (homogeneous: of the same family; ν: of t₃).
+- **`alpha-0.9`** (C38, 15 runs): the main power-law cells at a fixed α = 0.9, moment rule.
 
 ### `exit_review_every`
 Periodic exit review interval for loggain decision rule.
@@ -414,6 +415,25 @@ The arrays are filled only when `record_binding` is on (after burn-in). They dra
 enter the decision, and every pilot D result is byte-identical without them (`diagnostics/identity_c38.csv`).
 `run_pilot_c.py` saves them (`C38_KEYS`); `analytics/acceptance_c38.py` turns them into
 `pilot_d/acceptance_by_K_w.csv`.
+
+### Acceptance by K × entrant share × proposal type (C39, diagnostics only)
+
+**By type.** The C38 arrays split by proposal type on a third axis (0 = solo+solo, 1 = solo+unit, 2 = unit+unit),
+shape (M + 1, 21, 3): `proposals_by_K_w_type`, `mergers_by_K_w_type`, `binding_sum_by_K_w_type`,
+`binding_sq_by_K_w_type`, `binding_n_by_K_w_type`. Summed over the type axis they are the C38 arrays.
+
+**Unit+unit proposals by volatility bin**, shape (M + 1, 2):
+- Bin 0 is "entrant calmer": the entrant unit (the smaller by capital) has a lower mean member IQR (`iqr_m` of
+  the members' home markets) than the incumbent unit. Bin 1 is everything else, including ties.
+- Arrays: `proposals_by_K_type_volbin`, `mergers_by_K_type_volbin`, `binding_sum_by_K_type_volbin`,
+  `binding_sq_by_K_type_volbin`, `binding_n_by_K_type_volbin`.
+- `binding_entrant_by_K_type_volbin` counts the proposals whose **binding member** is in the entrant unit. The
+  binding member is the member with the smallest margin, or the first with a proposed gain of −∞. So the share of
+  proposals where the calmer unit binds can be read off directly.
+
+**Saving and checks.** Filled after burn-in only, with no random numbers and no effect on decisions
+(`diagnostics/identity_c39.csv`). `run_pilot_c.py` saves them (`C39_KEYS`); `analytics/acceptance_c39.py` writes
+`pilot_d/acceptance_by_K_w_type.csv` and `pilot_d/unit_unit_by_volbin.csv`.
 
 ## Event Study
 

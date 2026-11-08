@@ -10,10 +10,11 @@ C38 = ('proposals_by_K_w', 'mergers_by_K_w', 'binding_sum_by_K_w', 'binding_sq_b
        'w_sum_by_K_w')
 
 
-def kernel(log_sizes, units=(), M=None, N=1, floor_c=0.1, rule=2, steps=40, seed=0):
+def kernel(log_sizes, units=(), M=None, N=1, floor_c=0.1, rule=2, steps=40, seed=0, iqr=None):
     """Call merger_kernel_numba directly for `steps` periods on a fixed state (the state is restored after every
     call, so every call proposes on the same economy). log_sizes: log state of each firm (firm f in market f // N);
-    units: tuples of firm ids forming units. Returns the C38 arrays and the kernel's proposals_by_K summed."""
+    units: tuples of firm ids forming units; iqr: market IQRs (C39 volatility bin; default 0.2 everywhere).
+    Returns the C38 and C39 arrays and the kernel's proposals_by_K summed."""
     F = len(log_sizes)
     M = M or F // N
     window = 10
@@ -36,7 +37,12 @@ def kernel(log_sizes, units=(), M=None, N=1, floor_c=0.1, rule=2, steps=40, seed
     home = np.repeat(np.arange(M, dtype=np.int16), N)
     arrays = dict(p=np.zeros((M + 1, NB), np.int64), m=np.zeros((M + 1, NB), np.int64),
                   s1=np.zeros((M + 1, NB)), s2=np.zeros((M + 1, NB)), n=np.zeros((M + 1, NB), np.int64),
-                  w=np.zeros((M + 1, NB)))
+                  w=np.zeros((M + 1, NB)),
+                  pt=np.zeros((M + 1, NB, 3), np.int64), mt=np.zeros((M + 1, NB, 3), np.int64),
+                  s1t=np.zeros((M + 1, NB, 3)), s2t=np.zeros((M + 1, NB, 3)), nt=np.zeros((M + 1, NB, 3), np.int64),
+                  vp=np.zeros((M + 1, 2), np.int64), vm=np.zeros((M + 1, 2), np.int64), vs1=np.zeros((M + 1, 2)),
+                  vs2=np.zeros((M + 1, 2)), vn=np.zeros((M + 1, 2), np.int64), ve=np.zeros((M + 1, 2), np.int64))
+    iqr = np.full(M, 0.2) if iqr is None else np.asarray(iqr, float)
     props = np.zeros(M + 1, np.int64)
     mergs = np.zeros(M + 1, np.int64)
     cg.seed_numba(seed)
@@ -48,7 +54,9 @@ def kernel(log_sizes, units=(), M=None, N=1, floor_c=0.1, rule=2, steps=40, seed
             np.zeros(MAXU, np.int32), np.full(MAXU, 0.3), np.zeros(MAXU, np.int32),
             np.zeros((M + 1, cg.BINDING_GAIN_BINS), np.int64), True,
             arrays['p'], arrays['m'], arrays['s1'], arrays['s2'], arrays['n'], arrays['w'],
-            float(np.log(2 * floor_c / N)))
+            float(np.log(2 * floor_c / N)),
+            arrays['pt'], arrays['mt'], arrays['s1t'], arrays['s2t'], arrays['nt'],
+            arrays['vp'], arrays['vm'], arrays['vs1'], arrays['vs2'], arrays['vn'], arrays['ve'], iqr)
         props += out[8]
         mergs += out[9]
     return arrays, props, mergs
