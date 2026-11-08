@@ -38,7 +38,9 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
     `analytics/identity_c38.py`.
   - C39: `analytics/acceptance_c39.py`, `analytics/cv_c39.py --append-tidy | --table | --acceptance`,
     `analysis/approximation_error.py <trace_dir> --rule cv`, `analytics/identity_c39.py`.
+  - C40: `run_burnin_c40.py <i> | --report` (burn-in under the moment rule, `submit_burnin_c40.sh`).
 - Without `--pilot`, every script reads and writes pilot C as before.
 - Result pickles and traces are not in git. They are kept on Festus under `/groups/m-larch/bt307958/IOxEE_c37`
   (C38: `IOxEE_c38`, which adds `pilot_d/results_c38/` and the identity reruns `pilot_d/results_c38_identity/`);
   C39: `IOxEE_c39`, with `pilot_d/results_c39/` (15 Task 1 reruns, 45 cv runs) and `pilot_d/results_c39_identity/`.
+  C40: `IOxEE_c40/diagnostics/burn_in_c40_runs/` (the 20 burn-in runs to T = 16,000, `run_burnin_c40.py`).

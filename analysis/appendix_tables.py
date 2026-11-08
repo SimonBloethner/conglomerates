@@ -60,6 +60,8 @@ def main():
     ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap.add_argument("--out", default=None)
     ap.add_argument("--md", default=None)
+    ap.add_argument("--burn-in", choices=["c40", "c33"], default="c40",
+                    help="A3 source: c40 (moment rule, pilot D; default) or c33 (the C33-ext loggain check, pilot C)")
     a = ap.parse_args()
     root = a.root
     texdir = a.out or os.path.join(root, "latex", "tables", "appendix")
@@ -85,9 +87,13 @@ def main():
     rows = [[str(int(r.N)), f"{r.c:.4f}", f"{r.theoretical_hill:.3f}", f"{r.hill_median:.3f} [{r.hill_p25:.3f}, {r.hill_p75:.3f}]", f"{r.hhi_median:.3f}", f"{r.floor_frac_median:.3f}"] for _, r in fc.sort_values(["N", "c"]).iterrows()]
     o.table("a2_floor_calibration", ["N", "c", "1/(1 − c)", "Hill [IQR]", "HHI within", "share at floor"], rows, "Table A2 — Floor calibration grid")
 
-    # A3 burn-in (from c33 ext csv)
-    bi = pd.read_csv(os.path.join(root, "diagnostics", "burn_in_c33_ext.csv"))
-    o.section("A3. Burn-in", "Twenty C33 runs (Laplace α ∈ {0, 0.1, 0.3}, t₃ α = 0.3, five seeds) extended to T = 16,000 under the loggain rule: means over periods 11,000–16,000 against the pilot window 8,000–11,000, 95% CI across replications, and the OLS trend over 8,000–16,000. The 8,000-period burn-in stands if every headline series is within 2%. (Not yet repeated under the moment rule — open point.)")
+    # A3 burn-in: C40 (moment rule, pilot D) by default; --burn-in c33 for the C33-ext loggain check (pilot C)
+    if a.burn_in == "c40":
+        bi = pd.read_csv(os.path.join(root, "diagnostics", "burn_in_c40.csv"))
+        o.section("A3. Burn-in", "Twenty pilot D runs under the moment rule (Laplace α ∈ {0, 0.1, 0.3}, t₃ α = 0.3, main block, power law, five seeds) extended to T = 16,000 (C40): means over periods 11,000–16,000 against the pilot window 8,000–11,000, 95% CI across replications, and the OLS trend over 8,000–16,000. The 8,000-period burn-in stands if every headline series is within 2%. Each run reproduces its pilot D result up to period 11,000. The same check under the loggain rule (C33, pilot C) is in diagnostics/burn_in_c33_ext.md.")
+    else:
+        bi = pd.read_csv(os.path.join(root, "diagnostics", "burn_in_c33_ext.csv"))
+        o.section("A3. Burn-in", "Twenty C33 runs (Laplace α ∈ {0, 0.1, 0.3}, t₃ α = 0.3, five seeds) extended to T = 16,000 under the loggain rule: means over periods 11,000–16,000 against the pilot window 8,000–11,000, 95% CI across replications, and the OLS trend over 8,000–16,000. The 8,000-period burn-in stands if every headline series is within 2%.")
     series = {"mean_k": "Mean K", "ccs": "Pooled capital share", "fhr_standalone": "Floor-hit rate, standalone (all-firm)", "fhr_member": "Floor-hit rate, member (all-firm)", "hill": "Hill exponent"}
     rows = []
     for (fm, al), g_ in bi.groupby(["log_family", "alpha"]):

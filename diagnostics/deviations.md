@@ -779,3 +779,29 @@ The note is `diagnostics/c39_note.md`.
   pilot C loggain twin; the moment twin is the pilot D main scenario with the same family, α and rep.
 - **`analysis/approximation_error.py --rule cv`.** It writes `pilot_d/approximation_error_cv.csv` and leaves
   C38's `approximation_error.csv` as it is (the draws are the same).
+
+# C40: burn-in check under the moment rule
+
+The report is `diagnostics/burn_in_c40.md` (script `run_burnin_c40.py`).
+
+## Departures from the brief and choices it left open
+
+- **Headline series in the 2% test.** Mean K, pooled capital share, floor-hit rate standalone and member (C33's
+  set) and the Hill exponent. Voluntary exits per period are reported (window means, absolute and % difference)
+  but not tested. Under the moment rule they are about 0 at α = 0.3 and 0.026 per period at Laplace α = 0.1, a
+  few dozen events per window, so a 2% band on them measures Poisson noise. This was fixed before the runs.
+- **Imports instead of a copy.** `run_burnin_c40.py` imports `analyse_series`, `rolling_max_deviation` (via
+  `analyse_series`), `compute_convergence_step`, and C33-ext's window comparison, trend and placebo unchanged,
+  rather than copying them. Only the scenario selection, the model call (that of `run_pilot_c.py`, keyword
+  arguments) and the paths are new. The C33 `run_scenario` still uses the pre-C34 positional call.
+- **Scenario source.** Selected from `pilot_design_d.generate_all_scenarios()`; each is asserted equal to its
+  `pilot_d/scenarios.json` entry, and the stored entry is what is run.
+- **Placebo seed.** `default_rng(40)` (C33-ext used 33).
+- **Convergence comparison.** Beside the C18 band step, the report gives a first-entry step: when the 500-step
+  rolling mean first comes within 2% of the series' mean over (8,000, 16,000]. The band step depends on how
+  noisy a series is relative to 2%, so on its own it does not say which rule relaxes faster.
+- **Run series.** As in C33-ext, `diagnostics/burn_in_c40.csv` holds every run's series and the per-run `.npz`
+  files are not in git (Festus: `/groups/m-larch/bt307958/IOxEE_c40/diagnostics/burn_in_c40_runs/`).
+- **A3.** `analysis/appendix_tables.py` reads `burn_in_c40.csv` by default; `--burn-in c33` gives the C33-ext
+  (loggain) table, which reproduces the previously committed `a3_burnin.tex` byte for byte. The A3 intro sentence
+  lost "(Not yet repeated under the moment rule — open point.)". No other appendix table changed.
