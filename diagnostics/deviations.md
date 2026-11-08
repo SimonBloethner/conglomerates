@@ -805,3 +805,35 @@ The report is `diagnostics/burn_in_c40.md` (script `run_burnin_c40.py`).
 - **A3.** `analysis/appendix_tables.py` reads `burn_in_c40.csv` by default; `--burn-in c33` gives the C33-ext
   (loggain) table, which reproduces the previously committed `a3_burnin.tex` byte for byte. The A3 intro sentence
   lost "(Not yet repeated under the moment rule — open point.)". No other appendix table changed.
+
+# C41: growth-rate distributions of members and standalones
+
+The note is `diagnostics/c41_note.md` (script `analysis/growth_distributions.py`).
+
+## Departures from the brief and choices it left open
+
+- **Trace layout.** `logshare` and `cong` are (T + 1, F), row t + 1 the state after step t; `floor` is (F, T).
+  Within a step the order is mergers, pooling, floor, exits. So a firm's growth over step t is a member's if it
+  was pooled in step t: `cong[t] != -1` or `cong[t + 1] != -1`. K is the number of firms pooled in that unit in
+  that step.
+- **"Raw share" growth carries the market term.** Pilot D fixes every market's mean size, so Δ log s is the firm's
+  log growth minus the log growth of its market's mean size. That term moves with the large firms' own shocks and
+  makes their share growth less volatile. The script reports raw Δ log s as asked, and two further measures:
+  - demeaned: minus the market-period mean, which cancels the common term exactly;
+  - standardized: demeaned and divided by the market's shock IQR qₘ (`market_iqr` in the result pickle). Pooled
+    across markets with qₘ ∈ (0.1, 0.3), even standalones would otherwise be a scale mixture, fatter-tailed than
+    their family.
+- **The exclusion rule truncates the lower tail.** Dropping firm-periods with a lift in step t or t − 1 drops
+  exactly the periods in which a firm near the floor draws a large negative shock. Under Laplace, for example,
+  the standalones' standardized 1st percentile is −2.27 against the shock's −2.82, and their SD rises with size
+  across the bottom deciles.
+  - The brief's measures are reported on the excluded sample, as asked.
+  - A fourth measure, `prelift`, uses every firm-period, with the growth before the lift (the trace's `jump`
+    removed), demeaned and divided by qₘ. Tails, the decile slopes and the figure use it.
+- **Weight-based reference.** Beside the brief's √(1 − α(2 − α)(1 − 1/K)), the K table gives the same expression
+  with the units' actual capital weights at the start of the step: √mean[(1 − α + α wᵢ)² + α²(Σ w² − wᵢ²)].
+  Units are unequal (K_eff/K ≈ 0.66), and the equal-weights formula understates members' scale.
+- **Deciles** are by rank with ties broken at random under a fixed seed, because every firm lifted in the previous
+  step sits at the same log share, log(c/N).
+- **Traces on Festus.** Compute nodes cannot read the ~100 MB trace files from /groups (the login node can; md5
+  identical). The runs read the identical copy in `/scratch/bt307958/c39/IOxEE/pilot_d/traces`.

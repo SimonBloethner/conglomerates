@@ -39,6 +39,8 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
   - C39: `analytics/acceptance_c39.py`, `analytics/cv_c39.py --append-tidy | --table | --acceptance`,
     `analysis/approximation_error.py <trace_dir> --rule cv`, `analytics/identity_c39.py`.
   - C40: `run_burnin_c40.py <i> | --report` (burn-in under the moment rule, `submit_burnin_c40.sh`).
+  - C41: `analysis/growth_distributions.py <trace_dir> --pilot d | --tables --pilot d` (growth-rate distributions of
+    members and standalones from the traces; `diagnostics/c41_note.md`).
 - Without `--pilot`, every script reads and writes pilot C as before.
 - Result pickles and traces are not in git. They are kept on Festus under `/groups/m-larch/bt307958/IOxEE_c37`
   (C38: `IOxEE_c38`, which adds `pilot_d/results_c38/` and the identity reruns `pilot_d/results_c38_identity/`);
