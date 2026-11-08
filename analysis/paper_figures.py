@@ -6,7 +6,7 @@ Figures (Section 4 doc, exhibit specification):
   fig1  scope K and pooled capital share versus alpha, by family; loggain dashed; K* markers
   fig2  K/K* versus search probability p at alpha = 0.3 and 0.5          (appendix)
   fig3  owner-return gap: mean/median by family and alpha; by K; floor-hit rate per status
-  fig4  Hill exponent versus pooled capital share, all pilot D cells        (appendix)
+  fig4  Hill exponent versus sharing rate, main block lines + other blocks     (appendix)
   fig5  floor-hit clustering: index of dispersion with binomial reference  (appendix)
   fig6  consent by scope: acceptance by K (moment, loggain), marginal gains and cost, binding gain
 
@@ -125,21 +125,33 @@ def fig3(root, out):
 
 # ---------------------------------------------------------------- fig 4
 def fig4(d, out):
-    x = d[(d.alpha > 0) & d.K_mean.notna() & (d.decision_rule == "moment")]
+    """Hill exponent against the sharing rate (8 Nov: x-axis changed from pooled share to alpha; the pooled
+    share saturates by alpha = 0.05 and hid the proportionality). Main block as lines (medians over reps);
+    the other blocks at the same floor and cost as markers; the endogenous block at its adopted rate."""
+    x = d[d.K_mean.notna() & (d.decision_rule == "moment")]
     x = x[(x.cost_type == "power_law") & (x.floor_c.round(5) == 0.12717) & (x.sharing_rule == "proportional")]
     x = x[~x.block.isin(["nu", "size", "floor-level", "cost-level-high", "cost-level"])]
-    fig, ax = plt.subplots(figsize=(4.6, 3.4))
-    shape = {"main": "o", "search": "s", "endogenous-alpha": "D", "alpha-0.9": "P", "lookback": "v",
-             "correlation": "x", "homogeneous": "+"}
-    for blk, mk in shape.items():
+    fig, ax = plt.subplots(figsize=(4.8, 3.4))
+    for f in FAMILIES:
+        g = med(x[(x.block == "main") & (x.log_family == f)], "alpha", ["hill_exponent_median"])
+        ax.plot(g.alpha, g.hill_exponent_median, color=COLOR[f], marker=MARKER[f], label=LABEL[f], zorder=4)
+    shape = {"alpha-0.9": ("P", r"main, $\alpha$ = 0.9"), "search": ("s", "search"), "lookback": ("v", "lookback"),
+             "correlation": ("x", "correlation"), "homogeneous": ("+", "homogeneous"),
+             "endogenous-alpha": ("D", "endogenous (at adopted rate)")}
+    for blk, (mk, lab) in shape.items():
         y = x[x.block == blk]
+        xs = y.alpha_adopted_median if blk == "endogenous-alpha" else y.alpha
         for f in FAMILIES:
-            z = y[y.log_family == f]
-            ax.scatter(z.cong_capital_share_median, z.hill_exponent_median, color=COLOR[f], marker=mk, s=16,
-                       alpha=0.75, lw=0.8, label=f"{blk}" if f == "normal" else None)
-    ax.set_xlabel("pooled capital share"); ax.set_ylabel("Hill exponent, within-market shares")
-    ax.legend(loc="upper left", title="block (colour: family)", ncol=2)
-    save(fig, out, "fig4_hill_pooled")
+            z = y[y.log_family == f]; xz = xs[y.log_family == f]
+            hollow = mk in ("s", "v", "D")
+            ax.scatter(xz, z.hill_exponent_median, marker=mk, s=18, alpha=0.8, lw=0.8,
+                       facecolors="none" if hollow else COLOR[f], edgecolors=COLOR[f],
+                       label=lab if f == "normal" else None, zorder=3)
+    ax.set_xlabel(r"sharing rate $\alpha$"); ax.set_ylabel("Hill exponent, within-market shares")
+    ax.set_xlim(-0.02, 1.0)
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h, l, loc="upper left", ncol=2, fontsize=7)
+    save(fig, out, "fig4_hill_alpha")
 
 
 # ---------------------------------------------------------------- fig 5
