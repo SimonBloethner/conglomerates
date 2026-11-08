@@ -77,7 +77,7 @@ Twenty C33 runs (Laplace α ∈ {0, 0.1, 0.3}, t₃ α = 0.3, five seeds) extend
 
 **Table A3 — Burn-in check: later window against the pilot window**
 
-| Family | α | Series | Pilot window | Periods 11,000–16,000 | Difference | 95% CI (reps) |
+| Family | α | Series | Pilot window | Periods 11,000–16,000 | Difference, % of pilot mean | 95% CI of the difference, ± % points |
 |---|---|---|---|---|---|---|
 | Laplace | 0 | Floor-hit rate, standalone (all-firm) | 0.1151 | 0.1152 | +0.09% | ±1.05 |
 | Laplace | 0 | Hill exponent | 1.0710 | 1.0653 | -0.52% | ±1.54 |

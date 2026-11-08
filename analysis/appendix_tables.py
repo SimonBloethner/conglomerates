@@ -102,7 +102,7 @@ def main():
             pr = np.array(per_rep)
             ci = 1.96 * pr[:, 2].std(ddof=1) / np.sqrt(len(pr)) if len(pr) > 1 else float("nan")
             rows.append([FAMTX.get(fm, fm), f"{al:g}", lab, f"{pr[:, 0].mean():.4f}", f"{pr[:, 1].mean():.4f}", f"{pr[:, 2].mean():+.2f}%", f"±{ci:.2f}"])
-    o.table("a3_burnin", ["Family", "α", "Series", "Pilot window", "Periods 11,000–16,000", "Difference", "95% CI (reps)"], rows, "Table A3 — Burn-in check: later window against the pilot window", note="Means over replications of each run's window means; difference in per cent of the pilot-window mean; CI across the five seeds.")
+    o.table("a3_burnin", ["Family", "α", "Series", "Pilot window", "Periods 11,000–16,000", "Difference, % of pilot mean", "95% CI of the difference, ± % points"], rows, "Table A3 — Burn-in check: later window against the pilot window", note="Means over replications of each run's window means; difference in per cent of the pilot-window mean; CI across the five seeds.")
 
     # A4 loggain main block
     o.section("A4. The loggain rule as the bounded variant", "Main block, power-law cost, pilot C (same seeds as pilot D); medians over five replications. Compare Table 3.")
