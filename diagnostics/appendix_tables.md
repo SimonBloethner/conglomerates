@@ -536,3 +536,66 @@ Index of dispersion of floor hits per market-period against the binomial referen
 | t₃ | 0.05 | 6.15 | 4.56 [4.11, 4.90] | 0.88 | 0.75 | 0.93 | 49 |
 |  | 0.1 | 5.92 | 4.45 [3.98, 4.83] | 0.88 | 0.74 | 0.91 | 49 |
 |  | 0.3 | 4.95 | 3.79 [3.33, 4.18] | 0.90 | 0.68 | 0.85 | 47 |
+
+
+## A16. Growth-rate distributions of members and standalones
+
+Per-period log growth of market share before any floor lift, market-demeaned and divided by the market's shock IQR q_m; all post-burn-in firm-periods of the 27 traced runs (moment rule). MAD/SD is 0.707 for a Laplace and 0.798 for a normal distribution; the last column is the Laplace minus the normal maximum-likelihood log-likelihood per observation. Ratios in Table A16b are member over standalone of the same cell; the reference is the pooled-return standard deviation implied by the units' actual capital weights, sqrt(mean[(1 - α + α w_i)^2 + α^2 (Σ w^2 - w_i^2)]).
+
+**Table A16 — Growth-rate distributions by status**
+
+| Family | α | Status | sd | IQR | skew | p1 | p99 | MAD/SD | LL Laplace minus normal |
+|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.05 | standalone | 0.734 | 0.990 | 0.01 | -1.71 | 1.70 | 0.798 | -0.048 |
+|  |  | member | 0.708 | 0.956 | 0.01 | -1.64 | 1.66 | 0.798 | -0.048 |
+|  | 0.1 | standalone | 0.733 | 0.990 | 0.01 | -1.71 | 1.70 | 0.798 | -0.048 |
+|  |  | member | 0.681 | 0.918 | 0.03 | -1.57 | 1.60 | 0.798 | -0.048 |
+|  | 0.3 | standalone | 0.734 | 0.989 | 0.01 | -1.72 | 1.69 | 0.798 | -0.048 |
+|  |  | member | 0.567 | 0.760 | 0.07 | -1.29 | 1.36 | 0.796 | -0.046 |
+| Laplace | 0.05 | standalone | 1.010 | 1.011 | -0.00 | -2.80 | 2.77 | 0.713 | +0.064 |
+|  |  | member | 0.973 | 0.974 | 0.06 | -2.64 | 2.71 | 0.714 | +0.063 |
+|  | 0.1 | standalone | 1.010 | 1.011 | -0.00 | -2.80 | 2.76 | 0.713 | +0.064 |
+|  |  | member | 0.934 | 0.939 | 0.11 | -2.51 | 2.62 | 0.715 | +0.062 |
+|  | 0.3 | standalone | 1.009 | 1.013 | 0.01 | -2.81 | 2.74 | 0.714 | +0.062 |
+|  |  | member | 0.780 | 0.807 | 0.28 | -2.00 | 2.24 | 0.721 | +0.053 |
+| t₃ | 0.05 | standalone | 1.162 | 1.013 | -6.03 | -2.98 | 2.90 | 0.623 | +0.199 |
+|  |  | member | 1.081 | 0.977 | 3.48 | -2.76 | 2.88 | 0.643 | +0.167 |
+|  | 0.1 | standalone | 1.167 | 1.012 | -6.40 | -2.99 | 2.89 | 0.620 | +0.203 |
+|  |  | member | 1.043 | 0.944 | 4.20 | -2.63 | 2.81 | 0.643 | +0.167 |
+|  | 0.3 | standalone | 1.200 | 1.016 | -10.38 | -3.03 | 2.87 | 0.606 | +0.226 |
+|  |  | member | 0.888 | 0.815 | 5.01 | -2.12 | 2.47 | 0.646 | +0.163 |
+
+**Table A16b — Members' growth-rate scale and tails by unit size, relative to standalones**
+
+| Family | α | K | mean K | sd ratio | reference | p1 ratio | p99 ratio |
+|---|---|---|---|---|---|---|---|
+| normal | 0.05 | 2 | 2.0 | 0.972 | 0.975 | 0.964 | 0.982 |
+|  |  | 3–4 | 3.5 | 0.965 | 0.965 | 0.957 | 0.973 |
+|  |  | 5+ | 5.4 | 0.959 | 0.960 | 0.951 | 0.969 |
+|  | 0.1 | 2 | 2.0 | 0.950 | 0.952 | 0.937 | 0.967 |
+|  |  | 3–4 | 3.5 | 0.930 | 0.931 | 0.917 | 0.946 |
+|  |  | 5+ | 5.9 | 0.919 | 0.919 | 0.904 | 0.935 |
+|  | 0.3 | 2 | 2.0 | 0.871 | 0.866 | 0.854 | 0.896 |
+|  |  | 3–4 | 3.6 | 0.806 | 0.804 | 0.786 | 0.832 |
+|  |  | 5+ | 7.6 | 0.759 | 0.758 | 0.731 | 0.791 |
+| Laplace | 0.05 | 2 | 2.0 | 0.971 | 0.975 | 0.951 | 0.992 |
+|  |  | 3–4 | 3.5 | 0.962 | 0.965 | 0.945 | 0.978 |
+|  |  | 5+ | 5.7 | 0.958 | 0.959 | 0.939 | 0.975 |
+|  | 0.1 | 2 | 2.0 | 0.947 | 0.952 | 0.916 | 0.978 |
+|  |  | 3–4 | 3.5 | 0.928 | 0.931 | 0.902 | 0.951 |
+|  |  | 5+ | 6.2 | 0.915 | 0.918 | 0.885 | 0.942 |
+|  | 0.3 | 2 | 2.0 | 0.870 | 0.867 | 0.818 | 0.906 |
+|  |  | 3–4 | 3.5 | 0.809 | 0.806 | 0.753 | 0.847 |
+|  |  | 5+ | 8.2 | 0.755 | 0.756 | 0.693 | 0.802 |
+| t₃ | 0.05 | 2 | 2.0 | 0.929 | 0.975 | 0.927 | 1.004 |
+|  |  | 3–4 | 3.5 | 0.931 | 0.965 | 0.931 | 0.993 |
+|  |  | 5+ | 5.7 | 0.931 | 0.959 | 0.919 | 0.987 |
+|  | 0.1 | 2 | 2.0 | 0.907 | 0.952 | 0.894 | 0.990 |
+|  |  | 3–4 | 3.5 | 0.898 | 0.931 | 0.882 | 0.969 |
+|  |  | 5+ | 6.2 | 0.882 | 0.919 | 0.871 | 0.960 |
+|  | 0.3 | 2 | 2.0 | 0.807 | 0.868 | 0.787 | 0.940 |
+|  |  | 3–4 | 3.5 | 0.761 | 0.807 | 0.732 | 0.885 |
+|  |  | 5+ | 8.0 | 0.722 | 0.758 | 0.674 | 0.840 |
+
+A member's lower tail is cut more than its scale (p1 ratio below the sd ratio) and its upper tail less; the scale itself is what linear pooling of gross returns predicts.
+
