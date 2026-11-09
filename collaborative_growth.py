@@ -882,9 +882,11 @@ def merger_kernel_numba(
     -----------
     decision_rule_code : int
         0 = replay (compare synthetic to realized), 1 = loggain (demeaned comparison),
-        2 = moment (C36: loggain's test with Delta-tilde, member_gain_moment, in place of Delta-hat)
+        2 = moment (C36: loggain's test with Delta-tilde, member_gain_moment, in place of Delta-hat),
+        3 = cv (C39), 4 = accept (C42: every feasible proposal is accepted, no member gain is computed;
+        a control. As for the other rules a proposal needs h = min(window, step) > 0, so none is made at step 0.)
     g : float
-        Common growth rate for loggain/moment demeaning. Only used if decision_rule_code >= 1.
+        Common growth rate for loggain/moment demeaning. Only used if 1 <= decision_rule_code <= 3.
 
     binding_gain_hist : int64 array (M + 1, n_bins), updated in place (C35, diagnostic only)
         Under loggain, when record_binding is True, every feasible proposal adds one count in row K (the size of
@@ -1124,7 +1126,10 @@ def merger_kernel_numba(
         
         accept = True
 
-        if decision_rule_code >= 1:
+        if decision_rule_code == 4:
+            # C42 ACCEPT: the proposal is feasible (checked above), so it is accepted; no gain, no binding gain
+            pass
+        elif decision_rule_code >= 1:
             # LOGGAIN: Demeaned log-growth comparison
             # For each firm, compute Δ̂_proposed and compare to Δ̂_current (or 0 if standalone)
             # C36: MOMENT (code 2) is the same test with Δ̃ (member_gain_moment) in place of Δ̂
@@ -1409,7 +1414,7 @@ def compute_exit_candidates_numba(
     exit_candidates,               # 1D array of firm IDs
     window,
     step,
-    decision_rule_code,            # 0 = replay, 1 = loggain, 2 = moment (C36), 3 = cv (C39)
+    decision_rule_code,            # 0 = replay, 1 = loggain, 2 = moment (C36), 3 = cv (C39), 4 = accept (C42)
     g,                      # Common growth for loggain
     alpha,
     sharing_rule_code,
@@ -1428,11 +1433,13 @@ def compute_exit_candidates_numba(
         0 = replay (compare outside to inside log profits)
         1 = loggain (exit if Δ̂_current < 0)
         2 = moment (C36: exit if Δ̃_current < 0, member_gain_moment)
+        3 = cv (C39: the same with the cv estimate)
+        4 = accept (C42: no firm judges, so none leaves voluntarily; returns an empty array)
 
     Returns array of firm IDs that should exit (not a mask).
     """
     n = len(exit_candidates)
-    if n == 0:
+    if n == 0 or decision_rule_code == 4:
         return np.empty(0, dtype=np.int64)
 
     lookback_plus_1 = firm_log_states_buffer.shape[0]
@@ -2060,7 +2067,7 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         - After pooling/floor, renormalizes per market so mean size = 1
         - Skips economy-wide renormalization (redundant when flag is on)
     decision_rule : str
-        Merger/exit decision rule: 'replay' (default), 'loggain', 'moment' or 'cv'.
+        Merger/exit decision rule: 'replay' (default), 'loggain', 'moment', 'cv' or 'accept' (C42, a control).
         - replay: Compare synthetic pooled growth to realized standalone growth.
           Original Phase A/B behavior; sensitive to common market shocks.
         - loggain: Demean returns to remove first-order noise. Each firm's
@@ -2075,6 +2082,10 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         - cv (C39): the loggain rule with the replay's first-order term r_t a (sum_j c_jt u_jt - u_it)
           subtracted period by period (member_gain_cv): exact in expectation, without the demeaned window's
           negative first-order bias. Requires g; windows shorter than 3 periods give -inf.
+        - accept (C42): a control without knowledge. Every feasible proposal (at most one firm per market in
+          the merged set) is accepted, no member gain is computed, and the exit review never produces a
+          voluntary exit. Floor exits, pooling, cost and the floor are unchanged. Not combined with
+          alpha_endogenous; g is not used by the rule.
     exit_review_every : int
         Periodic exit review interval. Default 1 (every step).
         When > 1, members run the exit test only at steps where
@@ -2127,11 +2138,13 @@ def model(params=None, seed=None, *, M=None, N=None, T=None, alpha=None, search_
         raise ValueError("market_size_fixed=True requires growth_process='log_family'")
 
     # Validate decision_rule
-    if decision_rule not in ("replay", "loggain", "moment", "cv"):
-        raise ValueError(f"decision_rule must be 'replay', 'loggain', 'moment' or 'cv', got '{decision_rule}'")
+    if decision_rule not in ("replay", "loggain", "moment", "cv", "accept"):
+        raise ValueError(f"decision_rule must be 'replay', 'loggain', 'moment', 'cv' or 'accept', got '{decision_rule}'")
     if decision_rule in ("loggain", "moment", "cv") and g is None:
         raise ValueError(f"decision_rule='{decision_rule}' requires g to be specified")
-    decision_rule_code = {"replay": 0, "loggain": 1, "moment": 2, "cv": 3}[decision_rule]
+    if decision_rule == "accept" and alpha_endogenous:
+        raise ValueError("decision_rule='accept' is a control at a fixed alpha; it is not combined with alpha_endogenous")
+    decision_rule_code = {"replay": 0, "loggain": 1, "moment": 2, "cv": 3, "accept": 4}[decision_rule]
     if alpha_endogenous and g is None:
         raise ValueError("alpha_endogenous=True requires g (the sharing rate is renegotiated on the demeaned log gain)")
 

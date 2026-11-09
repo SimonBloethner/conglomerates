@@ -3,7 +3,8 @@
 1,995 scenarios: the 1,845 moment twins of pilot C's loggain runs outside rule-replay and the C36 moment block
 (255 of them reuse a C36 run), the homogeneous block (120, both rules) and the nu block (30).
 C38 appends the alpha-0.9 block (15, ids 1995-2009): 2,010 scenarios, the first 1,995 unchanged.
-C39 appends the cv block (45, ids 2010-2054): 2,055 scenarios, the first 2,010 unchanged."""
+C39 appends the cv block (45, ids 2010-2054): 2,055 scenarios, the first 2,010 unchanged.
+C42 appends the accept block (45, ids 2055-2099): 2,100 scenarios, the first 2,055 unchanged."""
 import gzip
 import json
 import os
@@ -27,10 +28,11 @@ TOTAL_C37 = 1995
 BLOCK_COUNTS_C37 = {'main': 540, 'equal-split': 180, 'cost-level': 360, 'lookback': 100, 'correlation': 45,
                     'endogenous-alpha': 60, 'floor-level': 90, 'search': 120, 'size': 80, 'cost-level-full': 180,
                     'cost-level-high': 90, 'homogeneous': 120, 'nu': 30}
-BLOCK_COUNTS = dict(BLOCK_COUNTS_C37, **{'alpha-0.9': 15, 'cv': 45})       # C38, C39
+BLOCK_COUNTS = dict(BLOCK_COUNTS_C37, **{'alpha-0.9': 15, 'cv': 45, 'accept': 45})       # C38, C39, C42
 TOTAL_C38 = TOTAL_C37 + 15
-TOTAL = TOTAL_C38 + 45
-NEW_BLOCKS = ('homogeneous', 'nu', 'alpha-0.9', 'cv')             # not inherited from pilot C
+TOTAL_C39 = TOTAL_C38 + 45
+TOTAL = TOTAL_C39 + 45
+NEW_BLOCKS = ('homogeneous', 'nu', 'alpha-0.9', 'cv', 'accept')   # not inherited from pilot C
 D_KEYS = {'pilot', 'twin_id', 'source_id', 'nu'}
 
 
@@ -117,8 +119,8 @@ def test_model_keys_match_rejects_a_changed_parameter(d, c):
 def test_no_replay_and_rule_by_block(d):
     assert not any(s['decision_rule'] == 'replay' for s in d)
     for s in d:
-        if s['block'] == 'cv':
-            assert s['decision_rule'] == 'cv'
+        if s['block'] in ('cv', 'accept'):
+            assert s['decision_rule'] == s['block']
         elif s['block'] != 'homogeneous':
             assert s['decision_rule'] == 'moment'
     assert sum(s['decision_rule'] == 'loggain' for s in d) == 60
@@ -183,7 +185,7 @@ def test_runner_passes_nu():
 def test_c39_cv_block(d, c):
     """C39: 45 copies of the main power-law scenarios at alpha 0.1, 0.3, 0.5 (same seed, cell, parameters, loggain
     twin) under decision_rule='cv', appended after the C38 scenarios, which are unchanged."""
-    f = d[TOTAL_C38:]
+    f = d[TOTAL_C38:TOTAL_C39]
     assert [s['block'] for s in f] == ['cv'] * 45 and [s['scenario_id'] for s in f] == list(range(2010, 2055))
     assert sorted({s['alpha'] for s in f}) == [0.1, 0.3, 0.5]
     for s in f:
@@ -195,3 +197,16 @@ def test_c39_cv_block(d, c):
         assert c[s['twin_id']]['decision_rule'] == 'loggain' and s['seed'] == t['seed'] == c[s['twin_id']]['seed']
         assert set(s) == set(t)
         assert all(s[k] == t[k] for k in t if k not in ('scenario_id', 'block', 'decision_rule', 'source_id'))
+
+
+def test_c42_accept_block(d, c):
+    """C42: 45 copies of the main power-law scenarios at alpha 0.1, 0.3, 0.5 (same seed, cell, parameters, loggain
+    twin) under decision_rule='accept', appended after the C39 scenarios, which are unchanged."""
+    f = d[TOTAL_C39:]
+    assert [s['block'] for s in f] == ['accept'] * 45 and [s['scenario_id'] for s in f] == list(range(2055, 2100))
+    assert sorted({s['alpha'] for s in f}) == [0.1, 0.3, 0.5]
+    cv = d[TOTAL_C38:TOTAL_C39]
+    for s, v in zip(f, cv):
+        assert all(s[k] == v[k] for k in s if k not in ('scenario_id', 'block', 'decision_rule'))
+        assert s['decision_rule'] == 'accept' and s['source_id'] is None
+        assert c[s['twin_id']]['decision_rule'] == 'loggain' and s['seed'] == c[s['twin_id']]['seed']

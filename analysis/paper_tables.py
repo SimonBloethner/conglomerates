@@ -1,9 +1,12 @@
 """Paper tables as LaTeX (booktabs) from the pilot D files, with the pilot C loggain twin where the text quotes it.
 
-Usage: python analysis/paper_tables.py [--out latex/tables]
+Usage: python analysis/paper_tables.py [--out latex/tables] [--table3c-accept]
 
 Writes table1_parameters.tex, table2_design.tex, table3_scope.tex, table3b_window.tex, table3c_decomposition.tex,
 table4_owner_return.tex, table5_endogenous_alpha.tex, table6_robustness.tex, table6b_cost_level.tex.
+C42: --table3c-accept also writes table3c_decomposition_accept.tex, Table 3c re-cut with the accept rule's K
+(pilot_d/consent_gap_decomposition_accept.csv): environment / consent / transfer conflict / verifiability. The current
+table3c_decomposition.tex is written as before.
 Every number is computed from the CSVs / scenarios.json; nothing is typed in. Captions are placeholders for the
 Section 4 doc's captions and can be edited in the tex that \\input{}s these files.
 """
@@ -196,6 +199,33 @@ def table3c(root, out):
               "Decomposition of the distance to the planner's scope, power-law cost; medians over five replications", "tab:decomposition", note=note))
 
 
+def table3c_accept(root, out):
+    """C42: Table 3c re-cut with K_accept (the accept rule: every feasible proposal accepted, no voluntary exit)."""
+    x = pd.read_csv(os.path.join(root, "pilot_d", "consent_gap_decomposition_accept.csv"))
+    rows = []
+    for fam in FAM:
+        y = x[x.family == fam].sort_values("alpha")
+        for i, r in y.iterrows():
+            tot = r.total
+            rows.append([FAMTEX[fam] if i == y.index[0] else "", f"{r.alpha:g}", str(int(r.K_star)), f(r.K_accept),
+                         f(r.K_mom_hom), f(r.K_mom_het), f(r.K_log_het)] +
+                        [f"{v:.1f} ({100 * v / tot:.0f}\\%)" for v in (r.environment, r.consent_size_noise,
+                                                                      r.transfer, r.verifiability)])
+        if fam != FAM[-1]:
+            rows.append("midrule")
+    note = ("Shares in parentheses are of $K^* - K_{\\text{loggain}}$ (the four parts sum to it; the first two sum to the "
+            "first column of Table~\\ref{tab:decomposition}). $K_{\\text{accept}}$: heterogeneous economy, every feasible "
+            "proposal accepted and no voluntary exit (a control without knowledge). A negative environment part means the "
+            "environment alone permits units larger than $K^*$. The consent part compares the heterogeneous accept economy "
+            "with the homogeneous moment economy, so it also holds the homogeneous-heterogeneous difference of the accept rule.")
+    open(os.path.join(out, "table3c_decomposition_accept.tex"), "w").write(
+        table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{accept}}$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$",
+                     "Environment: $K^* - K_{\\text{accept}}$", "Consent: $K_{\\text{accept}} - K_{\\text{hom}}$",
+                     "Transfer conflict: $K_{\\text{hom}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
+              "Decomposition of the distance to the planner's scope with the accept rule, power-law cost; medians over "
+              "five replications", "tab:decomposition-accept", note=note))
+
+
 # ---------------------------------------------------------------- Table 4
 def table4(root, out):
     p = pd.read_csv(os.path.join(root, "pilot_d", "status_panel_summary.csv")).groupby(["family", "alpha"]).mean(numeric_only=True)
@@ -306,12 +336,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap.add_argument("--out", default=None)
+    ap.add_argument("--table3c-accept", action="store_true", help="C42: also write table3c_decomposition_accept.tex")
     a = ap.parse_args()
     out = a.out or os.path.join(a.root, "latex", "tables")
     os.makedirs(out, exist_ok=True)
     d, c, b, sc = load(a.root)
     table1(sc, out); table2(sc, out); table3(d, c, b, out); table3b(d, c, out); table3c(a.root, out)
     table4(a.root, out); table5(d, a.root, out); table6(d, c, b, out)
+    if a.table3c_accept:
+        table3c_accept(a.root, out)
     print("written to", out)
 
 

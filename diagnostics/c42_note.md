@@ -186,3 +186,201 @@ of its firms' shares. An owner is followed through its largest firm. The script'
 
 At h = 500 the lift-free sample has 11–14 firms per market and many markets have fewer than 10, so its h = 500
 values (in the CSV) are noisy, e.g. t₃ α = 0 bottom-decile persistence 0.000 on few markets.
+
+## 2. `decision_rule='accept'`: the survival-feasible ceiling
+
+**Caveat (Simon's).** The accept rule is a control, not a behavioural alternative. It has no knowledge at all. The
+comparison measures what the knowledge in the moment rule is worth, not whether firms "should" accept more.
+
+**Rule.** `decision_rule='accept'` (code 4) accepts a proposal if and only if it is feasible: the merged set holds at
+most one firm per market.
+- No member gain is computed, and the exit review never produces a voluntary exit.
+- Floor exits, limited liability, pooling, cost and the floor are unchanged. α is the scenario's fixed rate.
+- The acceptance counters stay on, so the accepted proposals' composition is recorded. The binding-gain sums stay
+  empty.
+- As under every rule, no proposal is made at step 0 (window h = 0).
+- MODEL_FLAGS.md has the entry.
+
+**Tests** (`tests/test_accept_rule.py`):
+- (a) On a hand-built three-market economy, every proposal reaching the test merges, while the moment rule refuses
+  some. On an evolving five-market economy, no unit ever holds two firms of one market, and every period's
+  mergers equal its feasible proposals. A brute-force feasibility oracle agrees on which pairs can merge.
+- (b) The exit kernel returns no firm under accept for a member that leaves under moment. In a model run every exit
+  from a unit is a floor exit.
+- (c) The identity check below.
+- (d) The pooling identity Σ s_j(1 + r_j) − Φ(K)S holds to 1e-9 S in every unit-period of accept runs under both
+  sharing rules.
+
+**Identity.** All 2,055 existing pilot D scenarios (C37, C38 α = 0.9, C39 cv) were rerun on the C42 code and compared
+with their C39 pickles, which carry every C38 and C39 key (`analytics/identity_c42.py`,
+`diagnostics/identity_c42.csv`). 2,055 of 2,055 are byte-identical in every field and in the tidy row, with no new
+key. The median runtime ratio is 0.99.
+
+**Runs.** The `accept` block holds the main power-law cells, three families, α ∈ {0.1, 0.3, 0.5}, 5 reps, on the
+main seeds: ids 2055–2099, results in `pilot_d/results_c42/`. The rows are appended to `scenarios.json` and
+`tidy.csv`; the existing 2,055 entries are byte-identical. Each run takes about 2 minutes (moment: about 5).
+
+**Answer.**
+
+**(i) How far above K_moment is the ceiling?** Three to five times as high.
+- K_accept is 12.4–28.2 members against K_moment's 3.5–7.7, a ratio of 3.1–4.8.
+- Paired differences are +8.9 to +20.5 members, with tight IQRs.
+- Consent therefore costs most of the scope the environment permits: 68–79% of K_accept is never formed.
+- Units hold 8.5–10 percentage points more of the firms, and the pooled capital share is 0.02–0.11 higher.
+- Concentration barely moves:
+  - Hill rises by 0.00 to +0.04;
+  - within-market HHI falls slightly, by 0.004–0.012.
+- The extra mergers per period, +2.8 to +13.4, equal the extra floor exits. In the steady state recruits flow in
+  and members are ejected at the floor at the same rate.
+
+**(ii) Unit+unit mergers or small recruits?** In flows, small recruits.
+- At α = 0.3, accept merges 6.5–8.6 more proposals per period than moment.
+- All of the excess is solo+unit entries (+12.5 to +17.0), mostly:
+  - floor-sized standalones, +7.6 to +8.8;
+  - entrants with w ≤ 0.10, +1.8 to +3.5.
+- Solo+solo mergers fall (−4.8 to −7.7), and so do unit+unit mergers (−0.8 to −1.2).
+- The moment rule refuses as many unit+unit proposals as solo+unit ones: 23–30 against 31–33 per period at
+  α = 0.3. Yet unit+unit mergers do not rise once consent is off.
+  - With every feasible proposal accepted, the economy consolidates into fewer, larger units.
+  - Units then occupy most markets, and most unit pairs cannot merge without a market clash.
+  - The unit+unit mergers that remain are mostly a tiny unit joining a giant: entrant w ≤ 0.10 in 82–92% of them,
+    against 18–26% under moment.
+- So, once formed, the large units are kept large by a stream of small recruits that balances floor ejection.
+- The flows cannot tell how the large units were first assembled, by unit+unit mergers or one recruit at a time,
+  so they cannot split the stock K between the two channels. A run that accepts only one type of proposal would;
+  it was not run.
+
+**(iii) Does attrition still keep the accept economy well below K\*?** Only for t₃.
+- In normal and Laplace, K_accept exceeds K\* in all six cells:
+  - normal: 17.6 / 22.2 / 28.2 against K\* = 8 / 12 / 13, about 1.9–2.2 times K\*;
+  - Laplace: 13.8 / 18.1 / 24.3 against 10 / 16 / 20, about 1.1–1.4 times.
+- There the environment does not keep K below the planner's scope. Attrition and the one-firm-per-market
+  constraint would allow units larger than K\*. The whole distance K\* − K_hom, the first column of Table 3c and
+  75–89% of its total, is consent.
+- Under accept, members' floor-hit rates in these cells barely move: −0.0001 to +0.0031 per member-period.
+- In t₃, accept stays well below K\*: 12.4 / 16.2 / 21.8 against 20 / 47 / 50, about 0.3–0.6 times K\*.
+  - There attrition binds: members hit the floor at 0.018–0.043 per period, the highest rates of the three
+    families.
+  - K\* = 47–50 is also at the one-firm-per-market limit (M = 50).
+  - The environment accounts for 7.6 / 30.8 / 28.2 members (44–71% of the total) and consent for 8.9–14.8.
+
+**Table 3c re-cut** (`pilot_d/consent_gap_decomposition_accept.csv`, `latex/tables/table3c_decomposition_accept.tex`
+from `analysis/paper_tables.py --table3c-accept`; the existing `table3c_decomposition.tex` is unchanged):
+- environment = K\* − K_accept;
+- consent on recruit size and noise = K_accept − K_hom;
+- transfer conflict = K_hom − K;
+- verifiability = K − K_loggain.
+
+The first two sum to Table 3c's first part.
+- **Negative environment parts.** A negative environment part (normal, Laplace) means the environment permits more
+  than K\*. The consent part then exceeds 100% of the total.
+- **Not a clean split.** K_accept is the heterogeneous economy and K_hom the homogeneous one, so the consent part
+  also holds the homogeneous–heterogeneous difference of the accept rule. That difference was not run.
+
+| family | α | K* | K_accept | K_hom | K | K_loggain | environment K* − K_accept | consent (size, noise) K_accept − K_hom | transfer K_hom − K | verifiability K − K_loggain |
+|---|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.1 | 8 | 17.60 | 3.78 | 3.68 | 3.04 | -9.6 (-194%) | 13.8 (279%) | 0.1 (2%) | 0.6 (13%) |
+| normal | 0.3 | 12 | 22.24 | 5.57 | 5.48 | 4.29 | -10.2 (-133%) | 16.7 (216%) | 0.1 (1%) | 1.2 (15%) |
+| normal | 0.5 | 13 | 28.22 | 7.98 | 7.70 | 6.34 | -15.2 (-228%) | 20.2 (304%) | 0.3 (4%) | 1.4 (20%) |
+| laplace | 0.1 | 10 | 13.82 | 3.81 | 3.71 | 3.00 | -3.8 (-55%) | 10.0 (143%) | 0.1 (1%) | 0.7 (10%) |
+| laplace | 0.3 | 16 | 18.10 | 5.55 | 5.40 | 4.00 | -2.1 (-18%) | 12.6 (105%) | 0.1 (1%) | 1.4 (12%) |
+| laplace | 0.5 | 20 | 24.30 | 8.17 | 7.76 | 5.95 | -4.3 (-31%) | 16.1 (115%) | 0.4 (3%) | 1.8 (13%) |
+| t3 | 0.1 | 20 | 12.41 | 3.52 | 3.47 | 2.87 | 7.6 (44%) | 8.9 (52%) | 0.0 (0%) | 0.6 (4%) |
+| t3 | 0.3 | 47 | 16.23 | 4.92 | 4.84 | 3.67 | 30.8 (71%) | 11.3 (26%) | 0.1 (0%) | 1.2 (3%) |
+| t3 | 0.5 | 50 | 21.77 | 6.96 | 6.78 | 5.06 | 28.2 (63%) | 14.8 (33%) | 0.2 (0%) | 1.7 (4%) |
+
+### Accept / moment / loggain (medians over the 5 reps; `pilot_d/accept_comparison.csv`)
+
+| family | α | K accept / moment / loggain | pooled share accept / moment / loggain | Hill accept / moment / loggain | HHI within accept / moment / loggain | floor exits / period accept / moment / loggain | mergers / period accept / moment / loggain | voluntary exits / period accept / moment / loggain |
+|---|---|---|---|---|---|---|---|---|
+| normal | 0.1 | 17.60 / 3.68 / 3.04 | 0.954 / 0.850 / 0.561 | 1.124 / 1.113 / 1.087 | 0.1601 / 0.1642 / 0.1689 | 46.0 / 34.1 / 34.8 | 46.0 / 34.2 / 37.7 | 0.00 / 0.06 / 2.99 |
+| normal | 0.3 | 22.24 / 5.48 / 4.29 | 0.967 / 0.939 / 0.733 | 1.207 / 1.209 / 1.169 | 0.1334 / 0.1385 / 0.1477 | 31.8 / 25.0 / 26.0 | 31.8 / 25.0 / 27.3 | 0.00 / 0.00 / 1.37 |
+| normal | 0.5 | 28.22 / 7.70 / 6.34 | 0.980 / 0.956 / 0.912 | 1.373 / 1.342 / 1.316 | 0.1064 / 0.1085 / 0.1182 | 18.4 / 15.6 / 16.1 | 18.4 / 15.6 / 16.3 | 0.00 / 0.00 / 0.24 |
+| laplace | 0.1 | 13.82 / 3.71 / 3.00 | 0.927 / 0.853 / 0.634 | 1.110 / 1.105 / 1.098 | 0.1636 / 0.1676 / 0.1735 | 59.7 / 47.4 / 46.8 | 59.8 / 47.4 / 48.6 | 0.00 / 0.02 / 1.78 |
+| laplace | 0.3 | 18.10 / 5.40 / 4.00 | 0.948 / 0.914 / 0.782 | 1.230 / 1.195 / 1.165 | 0.1353 / 0.1439 / 0.1509 | 43.9 / 36.3 / 36.9 | 43.9 / 36.3 / 37.8 | 0.00 / 0.00 / 0.85 |
+| laplace | 0.5 | 24.30 / 7.76 / 5.95 | 0.966 / 0.934 / 0.906 | 1.347 / 1.344 / 1.329 | 0.1085 / 0.1133 / 0.1205 | 27.5 / 24.5 / 25.1 | 27.5 / 24.5 / 25.2 | 0.00 / 0.00 / 0.18 |
+| t3 | 0.1 | 12.41 / 3.47 / 2.87 | 0.915 / 0.827 / 0.627 | 1.041 / 1.035 / 1.018 | 0.1882 / 0.1914 / 0.1963 | 66.4 / 53.1 / 52.1 | 66.5 / 53.1 / 53.7 | 0.00 / 0.04 / 1.59 |
+| t3 | 0.3 | 16.23 / 4.84 / 3.67 | 0.937 / 0.896 / 0.773 | 1.130 / 1.116 / 1.096 | 0.1597 / 0.1665 / 0.1744 | 51.1 / 42.5 / 43.2 | 51.1 / 42.5 / 44.1 | 0.00 / 0.00 / 0.93 |
+| t3 | 0.5 | 21.77 / 6.78 / 5.06 | 0.957 / 0.920 / 0.884 | 1.259 / 1.221 / 1.182 | 0.1273 / 0.1357 / 0.1445 | 34.7 / 31.2 / 32.3 | 34.7 / 31.2 / 32.6 | 0.00 / 0.00 / 0.31 |
+
+Paired differences accept − moment (median [p25, p75] over the 5 reps)
+
+| family | α | K | pooled share | Hill | HHI within | floor exits / period | mergers / period | member floor-hit rate | share of firms in units |
+|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.1 | +13.86 [+13.50, +14.17] | +0.106 [+0.103, +0.106] | +0.025 [+0.020, +0.030] | -0.0042 [-0.0053, -0.0041] | +11.4 [+11.3, +11.5] | +11.3 [+11.2, +11.5] | +0.0031 [+0.0031, +0.0032] | +0.101 [+0.099, +0.102] |
+| normal | 0.3 | +16.70 [+16.69, +17.02] | +0.028 [+0.027, +0.028] | -0.001 [-0.004, +0.016] | -0.0059 [-0.0073, -0.0051] | +6.4 [+6.3, +6.6] | +6.4 [+6.3, +6.6] | +0.0016 [+0.0015, +0.0017] | +0.088 [+0.088, +0.090] |
+| normal | 0.5 | +20.48 [+20.43, +20.78] | +0.024 [+0.023, +0.024] | +0.029 [+0.019, +0.050] | -0.0047 [-0.0065, -0.0021] | +2.8 [+2.8, +2.8] | +2.8 [+2.8, +2.8] | +0.0004 [+0.0004, +0.0005] | +0.085 [+0.081, +0.087] |
+| laplace | 0.1 | +10.10 [+9.35, +10.98] | +0.072 [+0.070, +0.085] | +0.017 [+0.002, +0.020] | -0.0061 [-0.0063, -0.0057] | +12.4 [+12.3, +12.7] | +12.3 [+12.3, +12.7] | +0.0026 [+0.0024, +0.0026] | +0.094 [+0.091, +0.095] |
+| laplace | 0.3 | +12.69 [+11.58, +13.38] | +0.034 [+0.033, +0.034] | +0.027 [+0.014, +0.032] | -0.0118 [-0.0122, -0.0086] | +7.6 [+7.3, +8.1] | +7.6 [+7.3, +8.1] | +0.0013 [+0.0012, +0.0013] | +0.089 [+0.087, +0.089] |
+| laplace | 0.5 | +16.57 [+15.86, +17.62] | +0.031 [+0.030, +0.032] | +0.010 [+0.010, +0.025] | -0.0046 [-0.0075, -0.0044] | +3.3 [+3.2, +3.5] | +3.2 [+3.2, +3.5] | -0.0001 [-0.0001, +0.0002] | +0.089 [+0.088, +0.091] |
+| t3 | 0.1 | +8.94 [+8.85, +8.97] | +0.085 [+0.085, +0.090] | +0.017 [+0.007, +0.017] | -0.0039 [-0.0058, -0.0033] | +13.4 [+13.4, +13.4] | +13.4 [+13.4, +13.4] | +0.0020 [+0.0020, +0.0021] | +0.096 [+0.095, +0.097] |
+| t3 | 0.3 | +11.41 [+11.13, +11.44] | +0.041 [+0.041, +0.042] | +0.011 [+0.001, +0.025] | -0.0073 [-0.0094, -0.0067] | +8.5 [+8.4, +8.7] | +8.5 [+8.4, +8.7] | +0.0007 [+0.0007, +0.0008] | +0.095 [+0.095, +0.096] |
+| t3 | 0.5 | +15.08 [+14.87, +15.10] | +0.037 [+0.035, +0.037] | +0.040 [+0.032, +0.059] | -0.0085 [-0.0097, -0.0079] | +3.8 [+3.6, +4.1] | +3.8 [+3.6, +4.0] | -0.0008 [-0.0010, -0.0005] | +0.102 [+0.102, +0.105] |
+
+Member floor-hit rate (per member-period) and share of firms in units, accept / moment
+
+| family | α | member floor-hit rate | share of firms in units |
+|---|---|---|---|
+| normal | 0.1 | 0.0248 / 0.0214 | 0.751 / 0.652 |
+| normal | 0.3 | 0.0156 / 0.0139 | 0.825 / 0.736 |
+| normal | 0.5 | 0.0083 / 0.0079 | 0.894 / 0.808 |
+| laplace | 0.1 | 0.0363 / 0.0337 | 0.671 / 0.580 |
+| laplace | 0.3 | 0.0236 / 0.0223 | 0.757 / 0.669 |
+| laplace | 0.5 | 0.0133 / 0.0135 | 0.840 / 0.747 |
+| t3 | 0.1 | 0.0427 / 0.0406 | 0.640 / 0.543 |
+| t3 | 0.3 | 0.0288 / 0.0283 | 0.721 / 0.626 |
+| t3 | 0.5 | 0.0176 / 0.0186 | 0.803 / 0.700 |
+
+### Acceptance and mergers by K, α = 0.3 (pooled over reps; every α in `pilot_d/accept_acceptance_by_K.csv`)
+
+Under accept, acceptance is 1 at every K by construction, so the table shows mergers per period by K for all three
+rules and acceptance for moment and loggain.
+
+| K | normal mergers | laplace mergers | t3 mergers | normal acceptance | laplace acceptance | t3 acceptance |
+|---|---|---|---|---|---|---|
+| 2 | 3.50 / 8.28 / 10.58 | 6.85 / 13.06 / 15.88 | 9.06 / 16.76 / 19.94 | 1.00 / 0.92 | 1.00 / 0.96 | 1.00 / 0.97 |
+| 3 | 0.49 / 2.71 / 4.09 | 1.11 / 4.08 / 5.88 | 1.60 / 5.32 / 7.42 | 0.90 / 0.55 | 0.87 / 0.59 | 0.76 / 0.57 |
+| 4 | 0.15 / 1.89 / 2.85 | 0.38 / 2.60 / 3.87 | 0.58 / 3.36 / 4.73 | 0.68 / 0.37 | 0.68 / 0.41 | 0.59 / 0.39 |
+| 5 | 0.07 / 1.92 / 2.34 | 0.20 / 2.39 / 3.05 | 0.31 / 2.95 / 3.49 | 0.47 / 0.28 | 0.54 / 0.31 | 0.48 / 0.30 |
+| 6 | 0.05 / 2.19 / 1.98 | 0.14 / 2.51 / 2.47 | 0.22 / 2.82 / 2.67 | 0.35 / 0.21 | 0.43 / 0.25 | 0.40 / 0.24 |
+| 7 | 0.04 / 2.26 / 1.64 | 0.12 / 2.59 / 1.96 | 0.18 / 2.71 / 1.94 | 0.26 / 0.17 | 0.35 / 0.20 | 0.34 / 0.20 |
+| 8 | 0.03 / 1.96 / 1.26 | 0.11 / 2.51 / 1.53 | 0.17 / 2.42 / 1.37 | 0.20 / 0.13 | 0.30 / 0.17 | 0.28 / 0.16 |
+| 9 | 0.04 / 1.46 / 0.87 | 0.12 / 2.12 / 1.08 | 0.18 / 2.02 / 0.93 | 0.16 / 0.10 | 0.24 / 0.14 | 0.24 / 0.14 |
+| 10 | 0.04 / 0.94 / 0.54 | 0.13 / 1.60 / 0.71 | 0.21 / 1.50 / 0.60 | 0.12 / 0.07 | 0.20 / 0.11 | 0.20 / 0.11 |
+| 11 | 0.06 / 0.50 / 0.30 | 0.17 / 1.11 / 0.43 | 0.26 / 1.02 / 0.35 | 0.07 / 0.05 | 0.16 / 0.09 | 0.16 / 0.09 |
+| 12 | 0.08 / 0.23 / 0.16 | 0.20 / 0.67 / 0.25 | 0.32 / 0.64 / 0.19 | 0.04 / 0.04 | 0.12 / 0.07 | 0.13 / 0.07 |
+| 13 | 0.10 / 0.09 / 0.08 | 0.27 / 0.37 / 0.13 | 0.39 / 0.36 / 0.10 | 0.02 / 0.02 | 0.09 / 0.05 | 0.10 / 0.05 |
+| 14 | 0.13 / 0.03 / 0.04 | 0.35 / 0.18 / 0.07 | 0.51 / 0.20 / 0.05 | 0.01 / 0.02 | 0.06 / 0.04 | 0.07 / 0.04 |
+| 15 | 0.17 / 0.01 / 0.01 | 0.44 / 0.09 / 0.03 | 0.62 / 0.10 / 0.02 | 0.00 / 0.01 | 0.04 / 0.03 | 0.05 / 0.03 |
+| 16 | 0.22 / 0.00 / 0.01 | 0.54 / 0.03 / 0.01 | 0.76 / 0.04 / 0.01 | 0.00 / 0.01 | 0.02 / 0.02 | 0.03 / 0.02 |
+| 17 | 0.30 / 0.00 / 0.00 | 0.66 / 0.01 / 0.01 | 0.92 / 0.02 / 0.00 | 0.00 / 0.00 | 0.01 / 0.02 | 0.02 / 0.02 |
+| 18 | 0.37 / 0.00 / 0.00 | 0.79 / 0.00 / 0.00 | 1.08 / 0.01 / 0.00 | 0.00 / 0.00 | 0.01 / 0.01 | 0.01 / 0.01 |
+| 19 | 0.46 / 0.00 / 0.00 | 0.95 / 0.00 / 0.00 | 1.26 / 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.01 | 0.01 / 0.01 |
+| 20 | 0.56 / 0.00 / 0.00 | 1.09 / 0.00 / 0.00 | 1.47 / 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 |
+
+### Composition of the accepted proposals, α = 0.3 (accept against moment; every α in `pilot_d/accept_composition.csv`)
+
+**α = 0.3: accepted proposals by type**, per period (share of all mergers): accept / moment; moment refusals per period
+
+| family | solo+solo | solo+unit | unit+unit | refused by moment: solo+solo / solo+unit / unit+unit |
+|---|---|---|---|---|
+| normal | 3.50 (11%) / 8.28 (34%) | 26.54 (86%) / 14.08 (57%) | 0.94 (3%) / 2.13 (9%) | 0.01 / 31.23 / 30.40 |
+| laplace | 6.85 (16%) / 13.06 (36%) | 35.00 (80%) / 19.92 (55%) | 1.70 (4%) / 2.94 (8%) | 0.00 / 31.54 / 23.12 |
+| t3 | 9.06 (18%) / 16.76 (40%) | 39.55 (78%) / 22.54 (53%) | 2.18 (4%) / 2.94 (7%) | 0.00 / 32.57 / 22.81 |
+
+**α = 0.3: entrant class of the accepted solo entries** (solo+solo and solo+unit; share of those mergers) accept / moment, and unit+unit by entrant share
+
+| family | floor | w<=0.10 | 0.10-0.25 | 0.25-0.50 | w>0.50 | unit+unit: w<=0.10 / 0.10-0.25 / 0.25-0.50 / w>0.50 |
+|---|---|---|---|---|---|---|
+| normal | 89% / 86% | 10% / 6% | 0% / 4% | 0% / 4% | 0% / 1% | 92% / 4% / 4% / 0% vs 18% / 36% / 46% / 0% |
+| laplace | 86% / 83% | 13% / 7% | 0% / 4% | 1% / 5% | 0% / 1% | 85% / 8% / 6% / 0% vs 26% / 33% / 41% / 0% |
+| t3 | 86% / 85% | 12% / 6% | 1% / 4% | 1% / 5% | 0% / 1% | 82% / 10% / 8% / 0% vs 24% / 32% / 44% / 0% |
+
+**α = 0.3: excess mergers per period, accept − moment**, by type and (solo entries) entrant class
+
+| family | total | solo+solo | solo+unit | unit+unit | solo entries: floor | w ≤ 0.10 | 0.10–0.25 | > 0.25 |
+|---|---|---|---|---|---|---|---|---|
+| normal | +6.48 | -4.79 | +12.46 | -1.19 | +7.63 | +1.77 | -0.84 | -0.90 |
+| laplace | +7.62 | -6.22 | +15.08 | -1.24 | +8.35 | +3.11 | -1.12 | -1.47 |
+| t3 | +8.55 | -7.70 | +17.01 | -0.76 | +8.75 | +3.48 | -1.18 | -1.74 |
+

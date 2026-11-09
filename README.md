@@ -41,8 +41,16 @@ Simulation code for the paper. The model is `collaborative_growth.py`; its flags
   - C40: `run_burnin_c40.py <i> | --report` (burn-in under the moment rule, `submit_burnin_c40.sh`).
   - C41: `analysis/growth_distributions.py <trace_dir> --pilot d | --tables --pilot d` (growth-rate distributions of
     members and standalones from the traces; `diagnostics/c41_note.md`).
+  - C42: `analysis/rank_mobility.py <trace_dir> [--range-sd] --pilot d | --tables | --range-sd-tables --pilot d` (rank
+    mobility within markets and of owners, and the May article's per-firm rank range and SD, from the traces; the α = 0 traces by `analysis/run_traces.py <trace_dir> --alpha0 --index K --pilot d`);
+    `analytics/accept_c42.py --append-tidy | --table | --acceptance | --composition | --decomposition` (the accept
+    block), `analysis/paper_tables.py --table3c-accept`, `analytics/identity_c42.py`, `submit_c42_identity.sh`;
+    `diagnostics/c42_note.md`.
 - Without `--pilot`, every script reads and writes pilot C as before.
 - Result pickles and traces are not in git. They are kept on Festus under `/groups/m-larch/bt307958/IOxEE_c37`
   (C38: `IOxEE_c38`, which adds `pilot_d/results_c38/` and the identity reruns `pilot_d/results_c38_identity/`);
   C39: `IOxEE_c39`, with `pilot_d/results_c39/` (15 Task 1 reruns, 45 cv runs) and `pilot_d/results_c39_identity/`.
   C40: `IOxEE_c40/diagnostics/burn_in_c40_runs/` (the 20 burn-in runs to T = 16,000, `run_burnin_c40.py`).
+  C42: `IOxEE_c42/pilot_d/results_c42/` (the 45 accept runs). /groups refused further writes (I/O error at close,
+  ~623 GB in use), so the 2,055 identity reruns (byte-identical to the C39 pickles) and the nine α = 0 traces
+  (2 minutes each to regenerate, `run_traces.py --alpha0`) are only in `/scratch/bt307958/c42/IOxEE/pilot_d/`.

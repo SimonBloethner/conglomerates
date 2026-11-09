@@ -33,7 +33,7 @@ from summarize_pilot_c import create_tidy_df  # noqa: E402
 D = os.path.join(ROOT, 'pilot_d')
 TIDY = os.path.join(D, 'tidy.csv')
 RESULTS = os.path.join(D, 'results_c39')
-IDS = range(pdd.TOTAL_C38, pdd.TOTAL)
+IDS = range(pdd.TOTAL_C38, pdd.TOTAL_C39)
 METRICS = ['K_mean', 'cong_capital_share_median', 'hill_exponent_median', 'acceptance_rate',
            'voluntary_exits_per_period', 'floor_exits_per_period']
 FAMILIES = ('normal', 'laplace', 't3')

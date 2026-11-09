@@ -39,7 +39,7 @@ def test_cv_block_tables():
     assert set(a.rule) == {'cv', 'moment', 'loggain'} and (a.groupby(['family', 'rule']).size() == 11).all()
     t = read('tidy.csv')
     cv = t[t.block == 'cv']
-    assert len(t) == 2055 and len(cv) == 45 and list(cv.scenario_id) == list(range(2010, 2055))
+    assert len(t) >= 2055 and len(cv) == 45 and list(cv.scenario_id) == list(range(2010, 2055))
     assert (cv.decision_rule == 'cv').all()
 
 

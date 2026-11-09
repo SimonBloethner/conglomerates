@@ -864,3 +864,36 @@ The note is `diagnostics/c42_note.md`.
   brief's measures against the article's claim without this check.
 - **Extra measures.** The script also reports the mean absolute rank change, members' share of the top decile and
   the share of firms lifted in the window. The by-status split also covers the bottom decile and the rank change.
+
+## C42b: `decision_rule='accept'`
+
+- **Step 0.** As under every rule, a proposal needs a window h = min(window, step) > 0, so the accept rule makes no
+  proposal at step 0. This is one period of 11,000, long before burn-in.
+- **History is still read.** The kernel still reads the merged set's window before the rule branch. That read has
+  no effect and draws no random numbers; skipping it would have meant re-indenting the shared code.
+- **Test (a), "hand-built three-market economy".** Under accept and moment the proposal counts differ even on a
+  state restored every period. A merger within a period changes what later initiators in that period can propose.
+  So the test checks that every proposal merges under accept and that moment refuses some. It does not check equal
+  proposals.
+- **Test (c), identity.** The reference is the C39 pickles: the C39 identity reruns of ids 0–2009 and the C39 cv
+  runs. These carry every C38 and C39 key, so the comparison needs no exception for new keys (C42 adds none).
+- **Identity submission.** The per-user limit is 1,000 queued array tasks. The 2,000 reruns of ids 0–1999 ran four
+  per task (`submit_c42_identity.sh`); ids 2000–2054 and the accept block used `submit_pilot_d.sh`.
+- **"Acceptance by K" under accept** is 1 by construction. The note shows mergers per period by K for all three
+  rules, and acceptance by K for moment and loggain (the pooled pilot D / pilot C tables, main, search 0.05).
+- **Composition.** The accepted proposals come from the post-burn-in `*_by_K_w_type` counters. Entrant classes are:
+  floor-sized standalone; w ≤ 0.10; 0.10–0.25; 0.25–0.50; > 0.50. The moment side is the C39 identity reruns of the
+  main cells, identical to the C42 reruns. Loggain has no composition: pilot C pickles predate the C38/C39 counters.
+- **Question (ii) is answered in flows.** The counters give per-period mergers by type and entrant. They cannot
+  split the stock K between unit+unit mergers and small recruits. A run accepting only one proposal type would
+  split it; it was not run (not in the brief).
+- **Table 3c re-cut.** `analysis/paper_tables.py --table3c-accept` writes `table3c_decomposition_accept.tex`; the
+  default run is unchanged. The environment part is negative in the normal and Laplace cells (K_accept > K\*).
+  The consent part (K_accept − K_hom) mixes rule and economy: the heterogeneous accept economy against the
+  homogeneous moment one.
+- **Table 2 not regenerated.** `paper_tables.py` computes Table 2's total from every pilot D scenario. The committed
+  `table2_design.tex` says 2,010, which was already stale after C39 (2,055); a rerun now gives 2,100. Only the new
+  table was copied into `latex/tables/`; the existing tex files are unchanged.
+- **Storage.** /groups refused further writes (I/O error at close; ~623 GB in use under `bt307958`). Only the 45
+  accept pickles were persisted (`IOxEE_c42/pilot_d/results_c42/`). The identity reruns and the α = 0 traces are
+  on /scratch only.

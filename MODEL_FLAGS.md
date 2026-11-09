@@ -280,6 +280,24 @@ with u, c, A, r as for the moment rule (proportional: c_jτ = s_jτ / Σ_k s_kτ
 
 **Requires:** `g`.
 
+**Accept rule (C42, a control):** `decision_rule == "accept"` accepts a proposal if and only if it is feasible (the
+merged set has at most one firm per market). No member gain is computed, and the exit review never produces a
+voluntary exit: a firm that does not judge cannot leave on a judgement.
+- **Unchanged.** Floor exits, pooling (limited liability included), the coordination cost, the floor and the
+  acceptance counters (by K, by K × w, by type, unit+unit by volatility bin) work as under the other rules. The
+  binding-gain histograms and sums stay empty: there is no gain.
+- **What it measures.** The scope that the environment alone permits: attrition at the floor and the
+  one-firm-per-market constraint. The gap to the moment rule is what consent costs in scope.
+- **What it is not.** It is not a behavioural alternative. It has no knowledge at all, so the comparison measures
+  what the knowledge in the moment rule is worth, not whether firms "should" accept more.
+- **Code.** `decision_rule_code = 4`. In `merger_kernel_numba` the gain block is skipped; as for every rule, a
+  proposal needs h = min(window, step) > 0, so none is made at step 0. `compute_exit_candidates_numba` returns
+  no firm.
+- **Restrictions.** It runs at the scenario's fixed α: `alpha_endogenous=True` raises a ValueError. `g` is not used
+  by the rule; pilot D passes it for the market locations as in every run.
+- **Identity.** Every existing pilot D scenario (2,055) is byte-identical on the C42 code
+  (`diagnostics/identity_c42.csv`).
+
 ### Which rule the paper uses (C37)
 
 - **`"moment"` is the base case.** Pilot D (`pilot_d/`, `pilot_design_d.py`) runs every block under it; its
@@ -304,6 +322,8 @@ Pilot D blocks beyond pilot C's:
 - **`alpha-0.9`** (C38, 15 runs): the main power-law cells at a fixed α = 0.9, moment rule.
 - **`cv`** (C39, 45 runs): the main power-law cells at α ∈ {0.1, 0.3, 0.5} under `decision_rule="cv"`, on the main
   cells' seeds. They are paired with the moment main runs and their pilot C loggain twins (`twin_id`).
+- **`accept`** (C42, 45 runs, ids 2055–2099): the same cells under `decision_rule="accept"` (the control above), on
+  the main cells' seeds, paired the same way.
 
 ### `exit_review_every`
 Periodic exit review interval for loggain decision rule.
