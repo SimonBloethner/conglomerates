@@ -837,3 +837,30 @@ The note is `diagnostics/c41_note.md` (script `analysis/growth_distributions.py`
   step sits at the same log share, log(c/N).
 - **Traces on Festus.** Compute nodes cannot read the ~100 MB trace files from /groups (the login node can; md5
   identical). The runs read the identical copy in `/scratch/bt307958/c39/IOxEE/pilot_d/traces`.
+
+# C42: rank mobility (traces) and the accept-all ceiling
+
+The note is `diagnostics/c42_note.md`.
+
+## C42a: rank mobility (`analysis/rank_mobility.py`)
+
+- **α = 0 traces: nine runs, not three.** The brief allowed adding the three α = 0 main cells if a rerun was cheap.
+  A traced α = 0 run takes 2 minutes, so all three reps of each family were run (`run_traces.py --alpha0`), matching
+  the three reps of the other traced cells. The α = 0 rows are the standalone baseline. The α = 0.05 standalones are
+  in the by-status table as well.
+- **"Excluding firm-periods with a floor lift on either side."** The hit-free sample drops every firm with a lift in
+  (t, t + h] and recomputes ranks, deciles (round(n / 10) firms) and the leader among the rest. So a lifted firm
+  moves neither its own rank nor the others'. Markets with fewer than 10 such firms are skipped. Because most small
+  firms are lifted within 100 periods, this sample is a selected minority of larger firms; the note says so.
+- **Deciles and ties.** The top and bottom decile are the top and bottom N // 10 = 5 firms. Ties (firms at the floor)
+  are broken at random (seeded). Spearman uses average ranks.
+- **Origins.** One every 100 periods from burn-in + 100, for each lag separately (t + h ≤ T).
+- **Owners across the economy.** An owner is a unit or a standalone, and its capital is the sum of its firms' market
+  shares (comparable across markets because pilot D fixes every market's mean size). An owner is followed from t
+  to t + h through its largest firm at t. The top decile is n_owners // 10, as in `top10pct_aggregate`.
+- **The May article's measures, added after delivery.** The brief's measures are lag-based, while the May article
+  measured mobility per firm over the run: rank range and rank SD (Section 5, `fig:mobility_ridges`). `--range-sd`
+  recomputes these from the traces, so the two can be compared directly. The first version of the note set the
+  brief's measures against the article's claim without this check.
+- **Extra measures.** The script also reports the mean absolute rank change, members' share of the top decile and
+  the share of firms lifted in the window. The by-status split also covers the bottom decile and the rank change.

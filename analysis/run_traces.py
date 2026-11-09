@@ -26,6 +26,11 @@ C38, alternative matchings on the existing traces (no model run):
         -> <pilot>/event_study_matching_by_rep.csv (27 x variants) and <pilot>/event_study_matching.csv (means
         over the 3 reps by family x alpha x variant); checks that the 'current' variant reproduces
         <pilot>/event_study_summary.csv (n_matched, DiD medians) and stops otherwise.
+
+C42, the alpha = 0 traces (the standalone baseline for analysis/rank_mobility.py):
+    python analysis/run_traces.py <trace_dir> --alpha0 --index K --pilot d     # K in 0..8
+        reruns the main power-law alpha = 0 scenario of family K // 3 and rep K % 3 with trace_path set ->
+        <trace_dir>/<family>_a0.0_r<rep>.npz. Model run only: with no units there are no events.
 """
 import sys, os, json, time
 import numpy as np
@@ -96,10 +101,10 @@ def merge_matching(events_dir):
     print('merged', len(parts), 'traces;', len(means), 'rows; current matching reproduces the C37 summary')
 
 
-def select(scenarios):
+def select(scenarios, alphas=ALPHAS):
     out = []
     for fam in FAMILIES:
-        for a in ALPHAS:
+        for a in alphas:
             for r in REPS:
                 m = [s for s in scenarios if s['block'] == 'main' and s['cost_type'] == 'power_law'
                      and s['log_family'] == fam and abs(s['alpha'] - a) < 1e-9 and s['rep'] == r]
@@ -144,6 +149,17 @@ def main():
         merge_matching(events_dir)
         return
     scenarios = json.load(open(os.path.join(ROOT, PDIR, 'scenarios.json')))
+    if '--alpha0' in sys.argv:  # C42
+        chosen = select(scenarios, alphas=[0.0])
+        k = int(sys.argv[sys.argv.index('--index') + 1])
+        s = chosen[k]
+        tp = os.path.join(trace_dir, f"{s['log_family']}_a{s['alpha']}_r{s['rep']}.npz")
+        t0 = time.time()
+        run_one(s, tp, quick)
+        z = np.load(tp)
+        assert z['logshare'].shape[0] == (300 if quick else s['T']) + 1 and (z['cong'] == -1).all()
+        print(tp, f'scenario {s["scenario_id"]}', f'{time.time() - t0:.0f}s', flush=True)
+        return
     chosen = select(scenarios)
     if '--index' in sys.argv:
         k = int(sys.argv[sys.argv.index('--index') + 1])
