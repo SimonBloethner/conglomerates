@@ -599,3 +599,45 @@ Per-period log growth of market share before any floor lift, market-demeaned and
 
 A member's lower tail is cut more than its scale (p1 ratio below the sd ratio) and its upper tail less; the scale itself is what linear pooling of gross returns predicts.
 
+
+
+## A17. Rank mobility and persistence within markets
+
+From the 27 traced runs plus nine traced α = 0 runs (moment rule, power law; means over three replications). Ranks are of log market share within the market (50 firms) at an origin t every 100 periods and at t + 100. Spearman: rank correlation across the two dates; top-decile persistence: share of a market's five largest firms at t still among the five largest at t + 100; leader turnover: share of markets whose largest firm has changed; mean rank change: mean absolute change in rank. The hit-free sample drops every firm lifted at the floor in (t, t + 100] and re-ranks the rest. Owners: owning units across the economy, a conglomerate counted once. α = 0 is the standalone baseline.
+
+**Table A17 — Rank mobility within markets and persistence of owners, lag 100 periods**
+
+| Family | α | Spearman (all / hit-free) | Top-decile persistence (all / hit-free) | Leader turnover (all / hit-free) | Mean rank change | Share lifted within 100 | Owners: Spearman | Owners: top-decile persistence |
+|---|---|---|---|---|---|---|---|---|
+| normal | 0 | 0.33 / 0.41 | 0.48 / 0.45 | 0.60 / 0.62 | 13.1 | 0.68 | 0.33 | 0.49 |
+|  | 0.05 | 0.34 / 0.42 | 0.48 / 0.46 | 0.59 / 0.62 | 12.9 | 0.66 | 0.38 | 0.63 |
+|  | 0.1 | 0.36 / 0.43 | 0.49 / 0.47 | 0.59 / 0.62 | 12.7 | 0.63 | 0.38 | 0.66 |
+|  | 0.3 | 0.45 / 0.49 | 0.53 / 0.50 | 0.58 / 0.59 | 11.6 | 0.52 | 0.40 | 0.69 |
+| Laplace | 0 | 0.21 / 0.31 | 0.35 / 0.36 | 0.73 / 0.71 | 14.4 | 0.78 | 0.20 | 0.37 |
+|  | 0.05 | 0.22 / 0.31 | 0.36 / 0.35 | 0.73 / 0.71 | 14.3 | 0.77 | 0.24 | 0.55 |
+|  | 0.1 | 0.24 / 0.32 | 0.37 / 0.35 | 0.72 / 0.72 | 14.1 | 0.75 | 0.24 | 0.59 |
+|  | 0.3 | 0.32 / 0.35 | 0.41 / 0.37 | 0.71 / 0.71 | 13.2 | 0.64 | 0.27 | 0.68 |
+| t₃ | 0 | 0.16 / 0.29 | 0.31 / 0.32 | 0.77 / 0.74 | 14.9 | 0.83 | 0.16 | 0.32 |
+|  | 0.05 | 0.17 / 0.29 | 0.32 / 0.32 | 0.77 / 0.74 | 14.8 | 0.81 | 0.19 | 0.50 |
+|  | 0.1 | 0.19 / 0.29 | 0.32 / 0.32 | 0.77 / 0.73 | 14.7 | 0.80 | 0.19 | 0.55 |
+|  | 0.3 | 0.25 / 0.32 | 0.36 / 0.36 | 0.75 / 0.72 | 13.9 | 0.71 | 0.23 | 0.67 |
+
+Pooling lowers rank mobility within markets in every family (persistence rises with the sharing rate) and makes the top decile of owners more persistent; the hit-free columns show that part, not all, of the fall is fewer recapitalizations at the floor.
+
+
+**Table A17b — Rank mobility by status at the origin, lag 100 periods**
+
+| Family | α | Top-decile persistence (member / standalone) | Mean rank change (member / standalone) | Share lifted within 100 (member / standalone) | Members' share of the top decile |
+|---|---|---|---|---|---|
+| normal | 0.05 | 0.46 / 0.65 | 12.2 / 14.0 | 0.55 / 0.83 | 0.87 |
+|  | 0.1 | 0.48 / 0.63 | 12.0 / 14.1 | 0.52 / 0.84 | 0.94 |
+|  | 0.3 | 0.53 / 0.48 | 10.9 / 13.6 | 0.41 / 0.82 | 0.99 |
+| Laplace | 0.05 | 0.35 / 0.43 | 13.6 / 15.1 | 0.67 / 0.88 | 0.88 |
+|  | 0.1 | 0.37 / 0.36 | 13.4 / 15.1 | 0.65 / 0.89 | 0.93 |
+|  | 0.3 | 0.41 / 0.30 | 12.5 / 14.9 | 0.54 / 0.87 | 0.97 |
+| t₃ | 0.05 | 0.31 / 0.34 | 14.2 / 15.5 | 0.73 / 0.90 | 0.84 |
+|  | 0.1 | 0.33 / 0.29 | 14.0 / 15.6 | 0.70 / 0.91 | 0.89 |
+|  | 0.3 | 0.37 / 0.28 | 13.1 / 15.3 | 0.60 / 0.89 | 0.95 |
+
+Members' ranks move less than standalones' in every cell; the standalone top-decile figures rest on few firms, since members hold 84–99% of the top decile.
+
