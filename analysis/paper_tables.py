@@ -180,6 +180,37 @@ def table3b(d, c, out):
 
 # ---------------------------------------------------------------- Table 3c
 def table3c(root, out):
+    """Table 3c, five-scope form (10 Nov): the equal-members reference K*, the accept-rule control K_accept (what the
+    environment permits), K_hom, K (base) and K_loggain, with two differences: consent (K_accept - K) and
+    verifiability (K - K_loggain). The transfer conflict (K_hom - K) goes to the note; the pre-C42 three-part
+    table is kept in a3c_legacy if ever needed (--table3c-legacy)."""
+    x = pd.read_csv(os.path.join(root, "pilot_d", "consent_gap_decomposition_accept.csv"))
+    rows = []
+    for fam in FAM:
+        y = x[x.family == fam].sort_values("alpha")
+        for i, r in y.iterrows():
+            consent = r.K_accept - r.K_mom_het
+            verif = r.K_mom_het - r.K_log_het
+            rows.append([FAMTEX[fam] if i == y.index[0] else "", f"{r.alpha:g}", str(int(r.K_star)), f(r.K_accept),
+                         f(r.K_mom_hom), f(r.K_mom_het), f(r.K_log_het),
+                         f"{consent:.1f} ({100 * consent / r.K_accept:.0f}\\%)", f"{verif:.1f} ({100 * verif / r.K_accept:.0f}\\%)"])
+        if fam != FAM[-1]:
+            rows.append("midrule")
+    note = ("$K^*$: equal-members reference (Section 3.4). $K_{\\text{accept}}$: every feasible proposal accepted and no "
+            "voluntary exit, i.e. the scope the floor and the one-firm-per-market constraint alone permit (a control without "
+            "knowledge). $K_{\\text{hom}}$: homogeneous economy (every market at $q = 0.20$), moment rule. $K$: base case. "
+            "$K_{\\text{loggain}}$: the same gain estimated by its sample mean. Consent and verifiability are shares of "
+            "$K_{\\text{accept}}$. The transfer conflict between members of unequal volatility, $K_{\\text{hom}} - K$, is "
+            "0.0--0.4 members in every cell (at most 4\\% of $K^* - K_{\\text{loggain}}$) and is not shown.")
+    open(os.path.join(out, "table3c_decomposition.tex"), "w").write(
+        table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{accept}}$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$",
+                     "Consent: $K_{\\text{accept}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
+              "Scope under five rules and the two differences that bound it, power-law cost; medians over five replications",
+              "tab:decomposition", note=note))
+
+
+def table3c_legacy(root, out):
+    """The pre-C42 three-part decomposition (survival+feasibility / transfer / verifiability), kept for the record."""
     x = pd.read_csv(os.path.join(root, "pilot_d", "consent_gap_decomposition.csv"))
     rows = []
     for fam in FAM:
@@ -193,10 +224,10 @@ def table3c(root, out):
             rows.append("midrule")
     note = ("Shares in parentheses are of $K^* - K_{\\text{loggain}}$ (the three parts sum to it). $K_{\\text{hom}}$: homogeneous economy (every market at $q = 0.20$), moment rule. "
             "The first part holds attrition, feasibility, the size of the recruits on offer and residual estimation noise; the third the loggain estimate's sampling noise and finite-window bias.")
-    open(os.path.join(out, "table3c_decomposition.tex"), "w").write(
+    open(os.path.join(out, "table3c_decomposition_legacy.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$", "Survival, feasibility: $K^* - K_{\\text{hom}}$",
                      "Transfer conflict: $K_{\\text{hom}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
-              "Decomposition of the distance to the planner's scope, power-law cost; medians over five replications", "tab:decomposition", note=note))
+              "Decomposition of the distance to the planner's scope, power-law cost; medians over five replications", "tab:decomposition-legacy", note=note))
 
 
 def table3c_accept(root, out):
@@ -337,6 +368,7 @@ def main():
     ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap.add_argument("--out", default=None)
     ap.add_argument("--table3c-accept", action="store_true", help="C42: also write table3c_decomposition_accept.tex")
+    ap.add_argument("--table3c-legacy", action="store_true", help="also write the pre-C42 three-part Table 3c")
     a = ap.parse_args()
     out = a.out or os.path.join(a.root, "latex", "tables")
     os.makedirs(out, exist_ok=True)
@@ -345,6 +377,8 @@ def main():
     table4(a.root, out); table5(d, a.root, out); table6(d, c, b, out)
     if a.table3c_accept:
         table3c_accept(a.root, out)
+    if a.table3c_legacy:
+        table3c_legacy(a.root, out)
     print("written to", out)
 
 
