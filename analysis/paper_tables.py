@@ -71,43 +71,35 @@ def kstar(b, fam, alpha, cost="power_law", mult=1.0):
 
 # ---------------------------------------------------------------- Table 1
 def table1(sc, out):
-    """Table 1, regrouped (14 Nov): one parameter per row, grouped Economy / Shocks / Pooling / Decisions / Simulation;
-    the blocks in which a parameter is varied are Table 2's business, so the old 'Varied in block' column is gone and
-    a short 'Set by' column says where each main-block value comes from."""
+    """Table 1 (14 Nov): one parameter per row, no group rows; a short 'set by' column says where each main-block
+    value comes from. Which block varies which parameter is Table 2's business."""
     main = [s for s in sc if s["block"] == "main"]
     s0 = main[0]
     alphas = sorted({s["alpha"] for s in main})
-    G = lambda name: [f"\\multicolumn{{4}}{{l}}{{\\emph{{{name}}}}}"]
     rows = [
-        G("Economy"),
-        ["$M$", "markets", f"{s0['M']}", "set; varied in the size block"],
-        ["$N$", "firms per market", f"{s0['N']}", "set; varied in the size block"],
-        ["$g$", "time-average growth rate, common to all markets", f"{s0['g']}", "immaterial: cancels from every share (3.1)"],
-        ["$c$", "reflecting floor, fraction of the market mean", f"{s0['floor_c']}", "Hill exponent 1.06 at $\\alpha = 0$ (Axtell, 2001); recalibrated per $N$ (A2)"],
-        G("Shocks"),
-        ["$F$", "shock family", "normal, Laplace, $t_3$", "Laplace is the empirical case; the others bracket it (3.1)"],
-        ["$q_m$", "market IQR of $x_{it}$, drawn once per economy", f"on $[{s0['sigma_range'][0]}, {s0['sigma_range'][1]}]$", "a slice of the Stanley et al.\\ (1996) dispersion range (3.1)"],
-        ["$\\rho$", "cross-market correlation of $\\epsilon$", f"{s0['cross_corr']}", "independence; 0.3 as robustness"],
-        G("Pooling"),
-        ["$\\alpha$", "sharing rate", ", ".join(str(a) for a in alphas), "swept; endogenous in one block"],
-        ["--", "sharing rule", "proportional to size", "equal split as robustness"],
-        ["$\\Phi(K)$", "coordination cost schedule", "power law; linear, quadratic, exponential", "shape unsettled in the literature (3.2); all four run"],
-        ["$\\Phi(40)$", "common cost level of the four schedules", "0.0017 per period", "level swept $\\times 0.5$ to $\\times 20$"],
-        G("Decisions"),
-        ["$p$", "proposal probability per firm-period", f"{s0['merge_thresh']}", "uncalibrated; swept to 1"],
-        ["$l$", "decision window and lock-in, periods", f"{s0['lookback']}", "a practitioner's lookback (3.3); swept 20--500"],
-        ["--", "decision rule", "moment (second moments of the demeaned window)", "Booth--Fama estimate (3.3); loggain, cv, accept as variants and controls"],
-        G("Simulation"),
-        ["$T$", "periods per run", f"{s0['T']:,}", "--"],
-        ["--", "burn-in, periods discarded", f"{s0['burn_in']:,}", "relaxation check to 16,000 periods (A3)"],
-        ["--", "replications per cell", str(len({s["rep"] for s in main})), "common random numbers across $\\alpha$"],
+        ["$M$", "markets", f"{s0['M']}", "set"],
+        ["$N$", "firms per market", f"{s0['N']}", "set"],
+        ["$g$", "time-average growth rate", f"{s0['g']}", "cancels from every share (3.1)"],
+        ["$c$", "reflecting floor, fraction of market mean", f"{s0['floor_c']}", "Hill exponent 1.06 at $\\alpha = 0$ (A2)"],
+        ["$F$", "shock family", "normal, Laplace, $t_3$", "Laplace empirical; the others bracket it"],
+        ["$q_m$", "market IQR of $x_{it}$", f"on $[{s0['sigma_range'][0]}, {s0['sigma_range'][1]}]$", "Stanley et al.\\ (1996) range (3.1)"],
+        ["$\\rho$", "cross-market correlation", f"{s0['cross_corr']}", "independence"],
+        ["$\\alpha$", "sharing rate", ", ".join(str(a) for a in alphas), "swept"],
+        ["--", "sharing rule", "proportional to size", "--"],
+        ["$\\Phi(K)$", "coordination cost schedule", "power law", "shape unsettled; four forms run"],
+        ["$\\Phi(40)$", "cost level", "0.0017 per period", "common to the four forms"],
+        ["$p$", "proposal probability per firm-period", f"{s0['merge_thresh']}", "uncalibrated; swept"],
+        ["$l$", "decision window and lock-in", f"{s0['lookback']}", "practitioner lookback (3.3)"],
+        ["--", "decision rule", "moment", "Booth--Fama estimate (3.3)"],
+        ["$T$", "periods per run; burn-in", f"{s0['T']:,}; {s0['burn_in']:,}", "relaxation check (A3)"],
+        ["--", "replications per cell", str(len({s["rep"] for s in main})), "common random numbers"],
     ]
     note = ("Cost parameters: power law $b_0 = 2.032\\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\\cdot10^{-5}$; "
             "quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. "
-            "Which block varies which parameter, and over which values, is in Table~\\ref{tab:design}.")
+            "The blocks that vary each parameter are in Table~\\ref{tab:design}.")
     open(os.path.join(out, "table1_parameters.tex"), "w").write(
         table(rows, ["Symbol", "Meaning", "Main block", "Set by"], "Parameters of the main block",
-              "tab:parameters", colspec="lp{0.27\\linewidth}p{0.2\\linewidth}p{0.3\\linewidth}", note=note))
+              "tab:parameters", colspec="lp{0.27\\linewidth}p{0.25\\linewidth}p{0.27\\linewidth}", note=note))
 
 
 # ---------------------------------------------------------------- Table 2

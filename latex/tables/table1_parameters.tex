@@ -3,38 +3,27 @@
 \caption{Parameters of the main block}
 \label{tab:parameters}
 \small
-\begin{tabular}{lp{0.27\linewidth}p{0.2\linewidth}p{0.3\linewidth}}
+\begin{tabular}{lp{0.27\linewidth}p{0.25\linewidth}p{0.27\linewidth}}
 \toprule
 Symbol & Meaning & Main block & Set by \\
 \midrule
-\addlinespace[3pt]
-\multicolumn{4}{l}{\emph{Economy}} \\
-$M$ & markets & 50 & set; varied in the size block \\
-$N$ & firms per market & 50 & set; varied in the size block \\
-$g$ & time-average growth rate, common to all markets & 0.055 & immaterial: cancels from every share (3.1) \\
-$c$ & reflecting floor, fraction of the market mean & 0.12717 & Hill exponent 1.06 at $\alpha = 0$ (Axtell, 2001); recalibrated per $N$ (A2) \\
-\addlinespace[3pt]
-\multicolumn{4}{l}{\emph{Shocks}} \\
-$F$ & shock family & normal, Laplace, $t_3$ & Laplace is the empirical case; the others bracket it (3.1) \\
-$q_m$ & market IQR of $x_{it}$, drawn once per economy & on $[0.1, 0.3]$ & a slice of the Stanley et al.\ (1996) dispersion range (3.1) \\
-$\rho$ & cross-market correlation of $\epsilon$ & 0.0 & independence; 0.3 as robustness \\
-\addlinespace[3pt]
-\multicolumn{4}{l}{\emph{Pooling}} \\
-$\alpha$ & sharing rate & 0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5 & swept; endogenous in one block \\
--- & sharing rule & proportional to size & equal split as robustness \\
-$\Phi(K)$ & coordination cost schedule & power law; linear, quadratic, exponential & shape unsettled in the literature (3.2); all four run \\
-$\Phi(40)$ & common cost level of the four schedules & 0.0017 per period & level swept $\times 0.5$ to $\times 20$ \\
-\addlinespace[3pt]
-\multicolumn{4}{l}{\emph{Decisions}} \\
-$p$ & proposal probability per firm-period & 0.05 & uncalibrated; swept to 1 \\
-$l$ & decision window and lock-in, periods & 50 & a practitioner's lookback (3.3); swept 20--500 \\
--- & decision rule & moment (second moments of the demeaned window) & Booth--Fama estimate (3.3); loggain, cv, accept as variants and controls \\
-\addlinespace[3pt]
-\multicolumn{4}{l}{\emph{Simulation}} \\
-$T$ & periods per run & 11,000 & -- \\
--- & burn-in, periods discarded & 8,000 & relaxation check to 16,000 periods (A3) \\
--- & replications per cell & 5 & common random numbers across $\alpha$ \\
+$M$ & markets & 50 & set \\
+$N$ & firms per market & 50 & set \\
+$g$ & time-average growth rate & 0.055 & cancels from every share (3.1) \\
+$c$ & reflecting floor, fraction of market mean & 0.12717 & Hill exponent 1.06 at $\alpha = 0$ (A2) \\
+$F$ & shock family & normal, Laplace, $t_3$ & Laplace empirical; the others bracket it \\
+$q_m$ & market IQR of $x_{it}$ & on $[0.1, 0.3]$ & Stanley et al.\ (1996) range (3.1) \\
+$\rho$ & cross-market correlation & 0.0 & independence \\
+$\alpha$ & sharing rate & 0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5 & swept \\
+-- & sharing rule & proportional to size & -- \\
+$\Phi(K)$ & coordination cost schedule & power law & shape unsettled; four forms run \\
+$\Phi(40)$ & cost level & 0.0017 per period & common to the four forms \\
+$p$ & proposal probability per firm-period & 0.05 & uncalibrated; swept \\
+$l$ & decision window and lock-in & 50 & practitioner lookback (3.3) \\
+-- & decision rule & moment & Booth--Fama estimate (3.3) \\
+$T$ & periods per run; burn-in & 11,000; 8,000 & relaxation check (A3) \\
+-- & replications per cell & 5 & common random numbers \\
 \bottomrule
 \end{tabular}
-\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Cost parameters: power law $b_0 = 2.032\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\cdot10^{-5}$; quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. Which block varies which parameter, and over which values, is in Table~\ref{tab:design}.\end{minipage}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Cost parameters: power law $b_0 = 2.032\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\cdot10^{-5}$; quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. The blocks that vary each parameter are in Table~\ref{tab:design}.\end{minipage}
 \end{table}
