@@ -1,0 +1,37 @@
+\begin{table}[htbp]
+\centering
+\caption{Robustness: contract, shock family and decision rule}
+\label{tab:robustness-b}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Block & Variant & $K$ & Pooled & Hill & Floor exits \\
+\midrule
+equal split (normal) & linear & 2.9 & 0.29 & 1.12 & 21 \\
+ & quadratic & 3.0 & 0.33 & 1.14 & 24 \\
+ & exponential & 2.8 & 0.24 & 1.09 & 21 \\
+ & power law & 3.0 & 0.33 & 1.13 & 24 \\
+\midrule
+endogenous $\alpha$ & normal & 16.9 & 0.98 & 2.05 & 2 \\
+ & Laplace & 18.0 & 0.97 & 2.07 & 4 \\
+ & $t_3$ & 14.3 & 0.95 & 1.83 & 11 \\
+\midrule
+fixed $\alpha = 0.9$ & normal & 16.0 & 0.98 & 1.98 & 2 \\
+ & Laplace & 17.2 & 0.97 & 1.94 & 5 \\
+ & $t_3$ & 13.9 & 0.95 & 1.78 & 11 \\
+\midrule
+tail weight $\nu$ (Student-$t$) & 2.5 & 4.1 & 0.85 & 1.02 & 54 \\
+ & 3 & 4.8 & 0.90 & 1.12 & 42 \\
+ & 4 & 5.3 & 0.92 & 1.17 & 33 \\
+\midrule
+homogeneous markets & normal & 5.6 & 0.94 & 1.20 & 22 \\
+ & Laplace & 5.5 & 0.91 & 1.19 & 34 \\
+ & $t_3$ & 4.9 & 0.89 & 1.10 & 42 \\
+\midrule
+loggain rule & normal & 4.3 & 0.73 & 1.17 & 26 \\
+ & Laplace & 4.0 & 0.78 & 1.16 & 37 \\
+ & $t_3$ & 3.7 & 0.77 & 1.10 & 43 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Conventions as in Table~\ref{tab:robustness}; family rows are at $\alpha = 0.3$ except the endogenous-$\alpha$ block. Homogeneous markets: every market at $q = 0.20$.\end{minipage}
+\end{table}

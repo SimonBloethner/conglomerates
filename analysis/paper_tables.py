@@ -150,6 +150,8 @@ def table2(sc, out):
 
 # ---------------------------------------------------------------- Table 3
 def table3(d, c, b, out):
+    """Table 3 (14 Nov): split in two so that neither needs shrinking. table3_scope.tex holds scope (K, loggain twin,
+    K*, K/K*, pooled share, acceptance); table3t_turnover.tex holds exits and floor hits."""
     A = [0.05, 0.1, 0.3, 0.5]
     m = d[(d.block == "main") & (d.cost_type == "power_law") & (d.alpha.isin(A))]
     mc = c[(c.block == "main") & (c.cost_type == "power_law") & (c.alpha.isin(A)) & (c.decision_rule == "loggain")]
@@ -157,24 +159,29 @@ def table3(d, c, b, out):
             "floor_hit_rate_member_status", "floor_hit_rate_standalone_status"]
     g = med(m, ["log_family", "alpha"], cols)
     gl = med(mc, ["log_family", "alpha"], ["K_mean"])
-    rows = []
+    rows, rows_t = [], []
     for fam in FAM:
         for a in A:
             r = g.loc[(fam, a)]
             ks = kstar(b, fam, a)
-            rows.append([FAMTEX[fam] if a == A[0] else "", f"{a:g}", f(r.K_mean), f(gl.loc[(fam, a)].K_mean), str(ks) if ks else "--",
-                         f(r.K_mean / ks, 2) if ks else "--", f(r.cong_capital_share_median, 2), f(r.floor_exits_per_period),
-                         f(r.voluntary_exits_per_period, 2), f(r.acceptance_rate, 2), f(r.floor_hit_rate_member_status, 3),
-                         f(r.floor_hit_rate_standalone_status, 3)])
+            lab = FAMTEX[fam] if a == A[0] else ""
+            rows.append([lab, f"{a:g}", f(r.K_mean), f(gl.loc[(fam, a)].K_mean), str(ks) if ks else "--",
+                         f(r.K_mean / ks, 2) if ks else "--", f(r.cong_capital_share_median, 2), f(r.acceptance_rate, 2)])
+            rows_t.append([lab, f"{a:g}", f(r.floor_exits_per_period), f(r.voluntary_exits_per_period, 2),
+                           f(r.floor_hit_rate_member_status, 3), f(r.floor_hit_rate_standalone_status, 3)])
         if fam != FAM[-1]:
-            rows.append("midrule")
-    note = ("$K$: mean members per active unit (moment rule; loggain twin from pilot C); $K^*$: planner's optimum at the median market volatility, capped at $M = 50$; "
-            "pooled: share of economy capital held by members; exits per period among 2,500 firms (mergers per period equal floor exits to within 0.2); "
-            "acceptance: share of feasible proposals accepted; floor hit: hits per firm-period of that status.")
+            rows.append("midrule"); rows_t.append("midrule")
+    note = ("$K$: mean members per active unit (moment rule; loggain twin from pilot C); $K^*$: equal-members reference at the median "
+            "market volatility, capped at $M = 50$; pooled: share of economy capital held by members; "
+            "acceptance: share of feasible proposals accepted.")
     open(os.path.join(out, "table3_scope.tex"), "w").write(
-        table(rows, ["Family", "$\\alpha$", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Floor exits", "Vol.\\ exits", "Accept.",
-                     "Floor hit, member", "Floor hit, standalone"],
-              "Scope, turnover and hazard; main block, power-law cost; medians over five replications", "tab:scope", note=note, wide="resize"))
+        table(rows, ["Family", "$\\alpha$", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Accept."],
+              "Scope; main block, power-law cost; medians over five replications", "tab:scope", note=note))
+    note_t = ("Exits per period among 2,500 firms (mergers per period equal floor exits to within 0.2); "
+              "member / standalone hits: floor hits per firm-period of that status.")
+    open(os.path.join(out, "table3t_turnover.tex"), "w").write(
+        table(rows_t, ["Family", "$\\alpha$", "Floor exits", "Vol.\\ exits", "Member hits", "Standalone hits"],
+              "Turnover and floor hits; main block, power-law cost; medians over five replications", "tab:turnover", note=note_t))
 
 
 # ---------------------------------------------------------------- Table 3b
@@ -215,14 +222,14 @@ def table3c(root, out):
     note = ("$K^*$: equal-members reference (Section 3.4). $K_{\\text{accept}}$: every feasible proposal accepted and no "
             "voluntary exit, i.e. the scope the floor and the one-firm-per-market constraint alone permit (a control without "
             "knowledge). $K_{\\text{hom}}$: homogeneous economy (every market at $q = 0.20$), moment rule. $K$: base case. "
-            "$K_{\\text{loggain}}$: the same gain estimated by its sample mean. Consent and verifiability are shares of "
-            "$K_{\\text{accept}}$. The transfer conflict between members of unequal volatility, $K_{\\text{hom}} - K$, is "
+            "$K_{\\text{loggain}}$: the same gain estimated by its sample mean. Consent $= K_{\\text{accept}} - K$, "
+            "Verif.\\ (verifiability) $= K - K_{\\text{loggain}}$; shares of $K_{\\text{accept}}$ in parentheses. The transfer conflict between members of unequal volatility, $K_{\\text{hom}} - K$, is "
             "0.0--0.4 members in every cell (at most 4\\% of $K^* - K_{\\text{loggain}}$) and is not shown.")
     open(os.path.join(out, "table3c_decomposition.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{accept}}$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$",
-                     "Consent: $K_{\\text{accept}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
+                     "Consent", "Verif."],
               "Scope under five rules and the two differences that bound it, power-law cost; medians over five replications",
-              "tab:decomposition", note=note, wide="resize"))
+              "tab:decomposition", note=note))
 
 
 def table3c_legacy(root, out):
@@ -275,24 +282,32 @@ def table3c_accept(root, out):
 
 # ---------------------------------------------------------------- Table 4
 def table4(root, out):
+    """Table 4 (14 Nov): split into the owner-return gap (table4_owner_return.tex) and the ruin hazard by status
+    (table4b_hazard.tex) so that neither needs shrinking."""
     p = pd.read_csv(os.path.join(root, "pilot_d", "status_panel_summary.csv")).groupby(["family", "alpha"]).mean(numeric_only=True)
     dec = pd.read_csv(os.path.join(root, "pilot_d", "status_panel_decomposition.csv"))
     dec = dec.groupby(["family", "alpha"]).mean(numeric_only=True)
-    rows = []
+    rows, rows_h = [], []
     for fam in FAM:
         for a in [0.05, 0.1, 0.3]:
             r = p.loc[(fam, a)]; s = dec.loc[(fam, a)]
-            rows.append([FAMTEX[fam] if a == 0.05 else "", f"{a:g}", f(100 * r.diff_fe_mean, 2), f(100 * r.diff_fe_median, 2),
-                         f(100 * r.diff_K2_mean, 2), f(100 * r.diff_K3_4_mean, 2), f(100 * r.diff_K5p_mean, 2),
-                         f(s.share_ordinary, 2), f(r.floor_rate_member, 3), f(r.floor_rate_standalone, 3), f(r.floor_rate_member / r.floor_rate_standalone, 3)])
+            lab = FAMTEX[fam] if a == 0.05 else ""
+            rows.append([lab, f"{a:g}", f(100 * r.diff_fe_mean, 2), f(100 * r.diff_fe_median, 2),
+                         f(100 * r.diff_K2_mean, 2), f(100 * r.diff_K3_4_mean, 2), f(100 * r.diff_K5p_mean, 2), f(s.share_ordinary, 2)])
+            rows_h.append([lab, f"{a:g}", f(r.floor_rate_member, 3), f(r.floor_rate_standalone, 3), f(r.floor_rate_standalone / r.floor_rate_member, 1)])
         if fam != FAM[-1]:
-            rows.append("midrule")
-    note = ("Owner return: next-period log change of the firm's market share net of floor recapitalization; gap = member $-$ standalone within market $\\times$ size decile, "
-            "in percentage points per period; 27 traced runs, means over three replications. Share ordinary: part of the gap accruing in periods without a floor hit. "
-            "Floor rates per firm-period of that status; hazard ratio = member / standalone.")
+            rows.append("midrule"); rows_h.append("midrule")
+    note = ("Owner return: next-period log change of the firm's market share net of floor recapitalization; gap = member $-$ standalone "
+            "within market $\\times$ size decile, in percentage points per period; columns $K = 2$ to $K \\geq 5$ split the mean gap by "
+            "unit size. 27 traced runs, means over three replications. Ordinary: share of the mean gap accruing in periods without a floor hit.")
     open(os.path.join(out, "table4_owner_return.tex"), "w").write(
-        table(rows, ["Family", "$\\alpha$", "Gap, mean", "Gap, median", "$K = 2$", "$K = 3$--4", "$K \\geq 5$", "Share ordinary", "Floor, member", "Floor, standalone", "Hazard ratio"],
-              "Owners' time-average growth and ruin hazard by affiliation status", "tab:owner", note=note, wide="resize"))
+        table(rows, ["Family", "$\\alpha$", "Mean", "Median", "$K = 2$", "$K = 3$--4", "$K \\geq 5$", "Ordinary"],
+              "Owners' time-average growth: member minus standalone gap in percentage points per period", "tab:owner", note=note))
+    note_h = ("Floor hits per firm-period of that status, within market $\\times$ size decile; same traced runs as "
+              "Table~\\ref{tab:owner}. Hazard ratio $=$ standalone / member.")
+    open(os.path.join(out, "table4b_hazard.tex"), "w").write(
+        table(rows_h, ["Family", "$\\alpha$", "Floor, member", "Floor, standalone", "Hazard ratio"],
+              "Ruin hazard by affiliation status", "tab:hazard", note=note_h))
 
 
 # ---------------------------------------------------------------- Table 5
@@ -304,18 +319,23 @@ def table5(d, root, out):
     g9 = med(f9, "log_family", ["K_mean", "cong_capital_share_median", "hill_exponent_median"]) if len(f9) else None
     rows = []
     from scipy.stats import spearmanr
+    units, fixed = [], []
     for fam in FAM:
         r = g.loc[fam]; s = sc[sc.log_family == fam]
         rho = spearmanr(s.alpha_tavg, s.mean_iqr).correlation
         rows.append([FAMTEX[fam], f(r.alpha_adopted_mean, 2), f(r.alpha_adopted_median, 2), f(r.alpha_adopted_share1, 2), f(r.K_mean),
-                     f(r.cong_capital_share_median, 2), f(r.hill_exponent_median, 2), f(rho, 2), f"{len(s):,}",
-                     f(g9.loc[fam].K_mean) if g9 is not None else "--", f(g9.loc[fam].hill_exponent_median, 2) if g9 is not None else "--"])
+                     f(r.cong_capital_share_median, 2), f(r.hill_exponent_median, 2), f(rho, 2)])
+        units.append(f"{len(s):,}")
+        if g9 is not None:
+            fixed.append(f"$K = {g9.loc[fam].K_mean:.1f}$, Hill {g9.loc[fam].hill_exponent_median:.2f}")
     note = ("Endogenous-$\\alpha$ block, power-law cost, start $\\alpha_C = 0.1$; adopted $\\alpha$ over unit-periods; share at 1: unit-periods at $\\alpha_C = 1$. "
-            "$\\rho$: Spearman correlation of a unit's time-averaged rate with the mean IQR of its members' markets, units alive at $T$. "
-            "Last two columns: the fixed $\\alpha = 0.9$ cell for comparison.")
+            "$\\rho$: Spearman correlation of a unit's time-averaged rate with the mean IQR of its members' markets, over the "
+            + " / ".join(units) + " units alive at $T$ (normal / Laplace / $t_3$). ")
+    if fixed:
+        note += "For comparison, the fixed $\\alpha = 0.9$ cell gives " + "; ".join(fixed) + " (same order)."
     open(os.path.join(out, "table5_endogenous_alpha.tex"), "w").write(
-        table(rows, ["Family", "$\\bar\\alpha$", "median", "share at 1", "$K$", "Pooled", "Hill", "$\\rho(\\alpha, \\bar q)$", "units", "$K$ at $\\alpha = 0.9$", "Hill at $\\alpha = 0.9$"],
-              "The sharing rate units choose", "tab:endogenous", note=note, wide="resize"))
+        table(rows, ["Family", "$\\bar\\alpha$", "median", "share at 1", "$K$", "Pooled", "Hill", "$\\rho(\\alpha, \\bar q)$"],
+              "The sharing rate units choose", "tab:endogenous", note=note))
 
 
 def nu_row(d, cols):
@@ -329,36 +349,51 @@ def nu_row(d, cols):
 
 # ---------------------------------------------------------------- Table 6 and 6b
 def table6(d, c, b, out):
+    """Table 6 (14 Nov): one row per variant (no slash-separated cells), block name on the first row of each block."""
     cols = ["K_mean", "cong_capital_share_median", "hill_exponent_median", "floor_exits_per_period"]
-    def row(sel, by, keys, fmt=("1", "2", "2", "0")):
+    fmt = ("1", "2", "2", "0")
+    rows = []
+    def block(name, sel, by, keys, labels):
         g = med(sel, by, cols)
-        vals = []
-        for i, col in enumerate(cols):
-            vals.append(" / ".join(f"{g.loc[k][col]:.{fmt[i]}f}" for k in keys))
-        return vals
+        for i, (k, lab) in enumerate(zip(keys, labels)):
+            r = g.loc[k]
+            rows.append([name if i == 0 else "", lab] + [f"{r[col]:.{fmt[j]}f}" for j, col in enumerate(cols)])
+        rows.append("midrule")
     L = d[(d.log_family == "laplace")]
-    rows = [
-        ["cost form", "linear / quadratic / exponential"] + row(L[(L.block == "main") & (L.alpha == 0.3)], "cost_type", ["linear", "quadratic", "exponential"]) + ["shape moves scope by under one member"],
-        ["cost level", "$\\times 0.5$ / 2 / 5 / 10 / 20"] + row(L[(L.block.isin(["cost-level", "cost-level-high"])) & (L.cost_type == "power_law") & (L.alpha == 0.3)], "cost_multiplier", [0.5, 2.0, 5.0, 10.0, 20.0]) + ["about 0.6 members per doubling; $K^*$ never reached"],
-        ["window $l$", "20 / 100 / 200 / 500"] + row(L[(L.block == "lookback") & (L.alpha == 0.3)], "lookback", [20, 100, 200, 500]) + ["0.3--0.5 members per grid step, no saturation"],
-        ["search $p$", "0.2 / 1"] + row(L[(L.block == "search") & (L.alpha == 0.3)], "merge_thresh", [0.2, 1.0]) + ["50\\% of $K^*$ at $p = 1$"],
-        ["correlation", "cross-market 0.3"] + row(L[(L.block == "correlation") & (L.alpha == 0.3)], "cross_corr", [0.3]) + ["within 0.2 of baseline"],
-        ["floor $c$", "0.10 / 0.35"] + row(L[(L.block == "floor-level") & (L.alpha == 0.3)], "floor_c", [0.10, 0.35]) + ["$c$ sets the tail; scope $+3\\%$ / $-19\\%$"],
-        ["economy size", "$(M,N)$ = (25,25) / (100,25) / (25,100) / (100,100)"] + row(L[(L.block == "size") & (L.alpha == 0.3)], ["M", "N"], [(25, 25), (100, 25), (25, 100), (100, 100)]) + ["firms per market matter, markets barely"],
-        ["sharing rule", "equal split (normal, four cost forms)"] + row(d[(d.block == "equal-split") & (d.alpha == 0.3)], "cost_type", ["linear", "quadratic", "exponential", "power_law"]) + ["the contract decides existence"],
-        ["sharing rate", "endogenous $\\alpha$ (three families)"] + row(d[(d.block == "endogenous-alpha") & (d.cost_type == "power_law")], "log_family", FAM) + ["adopted $\\alpha \\approx 0.9$"],
-        ["", "fixed $\\alpha = 0.9$ (three families)"] + row(d[d.block == "alpha-0.9"], "log_family", FAM) + ["reproduces the endogenous block"],
-        ["tail weight $\\nu$", "Student-$t$, $\\nu$ = 2.5 / 3 / 4"] + nu_row(d, cols) + ["attrition, not consent, takes the scope"],
-        ["market heterogeneity", "every market at $q = 0.20$ (three families)"] + row(d[(d.block == "homogeneous") & (d.alpha == 0.3) & (d.decision_rule == "moment")], "log_family", FAM) + ["transfer conflict 0--4\\% of the gap"],
-        ["decision rule", "loggain (three families)"] + row(c[(c.block == "main") & (c.cost_type == "power_law") & (c.alpha == 0.3) & (c.decision_rule == "loggain")], "log_family", FAM) + ["verifiability 3--20\\% of the gap"],
-    ]
+    FL = ["normal", "Laplace", "$t_3$"]
+    block("cost form", L[(L.block == "main") & (L.alpha == 0.3)], "cost_type", ["linear", "quadratic", "exponential"], ["linear", "quadratic", "exponential"])
+    block("cost level", L[(L.block.isin(["cost-level", "cost-level-high"])) & (L.cost_type == "power_law") & (L.alpha == 0.3)], "cost_multiplier",
+          [0.5, 2.0, 5.0, 10.0, 20.0], ["$\\times 0.5$", "$\\times 2$", "$\\times 5$", "$\\times 10$", "$\\times 20$"])
+    block("window $l$", L[(L.block == "lookback") & (L.alpha == 0.3)], "lookback", [20, 100, 200, 500], ["20", "100", "200", "500"])
+    block("search $p$", L[(L.block == "search") & (L.alpha == 0.3)], "merge_thresh", [0.2, 1.0], ["0.2", "1"])
+    block("correlation", L[(L.block == "correlation") & (L.alpha == 0.3)], "cross_corr", [0.3], ["cross-market 0.3"])
+    block("floor $c$", L[(L.block == "floor-level") & (L.alpha == 0.3)], "floor_c", [0.10, 0.35], ["0.10", "0.35"])
+    block("economy size $(M, N)$", L[(L.block == "size") & (L.alpha == 0.3)], ["M", "N"], [(25, 25), (100, 25), (25, 100), (100, 100)],
+          ["(25, 25)", "(100, 25)", "(25, 100)", "(100, 100)"])
+    rows.pop()
+    rows_env, rows = rows, []
+    block("equal split (normal)", d[(d.block == "equal-split") & (d.alpha == 0.3)], "cost_type", ["linear", "quadratic", "exponential", "power_law"],
+          ["linear", "quadratic", "exponential", "power law"])
+    block("endogenous $\\alpha$", d[(d.block == "endogenous-alpha") & (d.cost_type == "power_law")], "log_family", FAM, FL)
+    block("fixed $\\alpha = 0.9$", d[d.block == "alpha-0.9"], "log_family", FAM, FL)
+    nu = d[(d.block == "nu") & (d.alpha == 0.3)].copy()
+    t3 = d[(d.block == "main") & (d.cost_type == "power_law") & (d.log_family == "t3") & (d.alpha == 0.3)].copy(); t3["nu"] = 3.0
+    block("tail weight $\\nu$ (Student-$t$)", pd.concat([nu, t3]), "nu", [2.5, 3.0, 4.0], ["2.5", "3", "4"])
+    block("homogeneous markets", d[(d.block == "homogeneous") & (d.alpha == 0.3) & (d.decision_rule == "moment")], "log_family", FAM, FL)
+    block("loggain rule", c[(c.block == "main") & (c.cost_type == "power_law") & (c.alpha == 0.3) & (c.decision_rule == "loggain")], "log_family", FAM, FL)
+    rows.pop()
     base = med(L[(L.block == "main") & (L.cost_type == "power_law") & (L.alpha == 0.3)], "log_family", cols).loc["laplace"]
-    note = (f"At $\\alpha = 0.3$, Laplace unless stated, power-law cost unless stated, moment rule; medians over five replications. Baseline: $K = {base.K_mean:.1f}$, "
+    note = (f"At $\\alpha = 0.3$, Laplace shocks, power-law cost unless stated, moment rule; "
+            f"medians over five replications. Baseline: $K = {base.K_mean:.1f}$, "
             f"pooled {base.cong_capital_share_median:.2f}, Hill {base.hill_exponent_median:.2f}, {base.floor_exits_per_period:.0f} floor exits per period. "
-            "Three-family rows are normal / Laplace / $t_3$; equal-split cells are linear / quadratic / exponential / power law.")
+            "")
+    hdr = ["Block", "Variant", "$K$", "Pooled", "Hill", "Floor exits"]
     open(os.path.join(out, "table6_robustness.tex"), "w").write(
-        table(rows, ["Block", "What varies", "$K$", "Pooled", "Hill", "Floor exits", "Finding"], "Robustness summary", "tab:robustness",
-              colspec="llrrrrp{0.36\\linewidth}", note=note, wide="sideways-resize"))
+        table(rows_env, hdr, "Robustness: environment and decision parameters", "tab:robustness", colspec="llrrrr", note=note))
+    open(os.path.join(out, "table6c_robustness_contract.tex"), "w").write(
+        table(rows, hdr, "Robustness: contract, shock family and decision rule", "tab:robustness-b", colspec="llrrrr",
+              note="Conventions as in Table~\\ref{tab:robustness}; family rows are at $\\alpha = 0.3$ except the endogenous-$\\alpha$ block. "
+                   "Homogeneous markets: every market at $q = 0.20$."))
     # 6b
     rows = []
     for fam, mults in [("laplace", [0.5, 1.0, 2.0, 5.0, 10.0, 20.0]), ("t3", [1.0, 5.0, 10.0, 20.0])]:
@@ -375,7 +410,7 @@ def table6(d, c, b, out):
         if fam == "laplace":
             rows.append("midrule")
     open(os.path.join(out, "table6b_cost_level.tex"), "w").write(
-        table(rows, ["Family", "$\\times$ cost level", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Accept.", "Hill"],
+        table(rows, ["Family", "Cost level", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Accept.", "Hill"],
               "Cost level, power-law form, $\\alpha = 0.3$; medians over five replications", "tab:costlevel"))
 
 
