@@ -267,42 +267,48 @@ def table3c_accept(root, out):
                                                                       r.transfer, r.verifiability)])
         if fam != FAM[-1]:
             rows.append("midrule")
-    note = ("Shares in parentheses are of $K^* - K_{\\text{loggain}}$ (the four parts sum to it; the first two sum to the "
-            "first column of Table~\\ref{tab:decomposition}). $K_{\\text{accept}}$: heterogeneous economy, every feasible "
+    note = ("Environment $= K^* - K_{\\text{accept}}$, consent $= K_{\\text{accept}} - K_{\\text{hom}}$, transfer $= K_{\\text{hom}} - K$, "
+            "verifiability $= K - K_{\\text{loggain}}$; shares in parentheses are of $K^* - K_{\\text{loggain}}$ (the four parts sum to it). $K_{\\text{accept}}$: heterogeneous economy, every feasible "
             "proposal accepted and no voluntary exit (a control without knowledge). A negative environment part means the "
             "environment alone permits units larger than $K^*$. The consent part compares the heterogeneous accept economy "
             "with the homogeneous moment economy, so it also holds the homogeneous-heterogeneous difference of the accept rule.")
     open(os.path.join(out, "table3c_decomposition_accept.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{accept}}$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$",
-                     "Environment: $K^* - K_{\\text{accept}}$", "Consent: $K_{\\text{accept}} - K_{\\text{hom}}$",
-                     "Transfer conflict: $K_{\\text{hom}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
-              "Decomposition of the distance to the planner's scope with the accept rule, power-law cost; medians over "
-              "five replications", "tab:decomposition-accept", note=note))
+                     "Environment", "Consent", "Transfer", "Verifiability"],
+              "Four-part decomposition of the distance to the equal-members reference, power-law cost; medians over "
+              "five replications", "tab:decomposition-accept", note=note, wide="sideways"))
 
 
 # ---------------------------------------------------------------- Table 4
 def table4(root, out):
-    """Table 4 (14 Nov): split into the owner-return gap (table4_owner_return.tex) and the ruin hazard by status
-    (table4b_hazard.tex) so that neither needs shrinking."""
+    """Table 4 (14 Nov, main text): the owner-return gap (mean, median), its ordinary-period share and the hazard ratio
+    in one six-column table. The split by unit size (table4a_owner_by_K.tex) and the floor rates by status
+    (table4b_hazard.tex) go to the appendix."""
     p = pd.read_csv(os.path.join(root, "pilot_d", "status_panel_summary.csv")).groupby(["family", "alpha"]).mean(numeric_only=True)
     dec = pd.read_csv(os.path.join(root, "pilot_d", "status_panel_decomposition.csv"))
     dec = dec.groupby(["family", "alpha"]).mean(numeric_only=True)
-    rows, rows_h = [], []
+    rows, rows_k, rows_h = [], [], []
     for fam in FAM:
         for a in [0.05, 0.1, 0.3]:
             r = p.loc[(fam, a)]; s = dec.loc[(fam, a)]
             lab = FAMTEX[fam] if a == 0.05 else ""
-            rows.append([lab, f"{a:g}", f(100 * r.diff_fe_mean, 2), f(100 * r.diff_fe_median, 2),
-                         f(100 * r.diff_K2_mean, 2), f(100 * r.diff_K3_4_mean, 2), f(100 * r.diff_K5p_mean, 2), f(s.share_ordinary, 2)])
+            rows.append([lab, f"{a:g}", f(100 * r.diff_fe_mean, 2), f(100 * r.diff_fe_median, 2), f(s.share_ordinary, 2),
+                         f(r.floor_rate_standalone / r.floor_rate_member, 1)])
+            rows_k.append([lab, f"{a:g}", f(100 * r.diff_fe_mean, 2), f(100 * r.diff_K2_mean, 2), f(100 * r.diff_K3_4_mean, 2), f(100 * r.diff_K5p_mean, 2)])
             rows_h.append([lab, f"{a:g}", f(r.floor_rate_member, 3), f(r.floor_rate_standalone, 3), f(r.floor_rate_standalone / r.floor_rate_member, 1)])
         if fam != FAM[-1]:
-            rows.append("midrule"); rows_h.append("midrule")
+            rows.append("midrule"); rows_k.append("midrule"); rows_h.append("midrule")
     note = ("Owner return: next-period log change of the firm's market share net of floor recapitalization; gap = member $-$ standalone "
-            "within market $\\times$ size decile, in percentage points per period; columns $K = 2$ to $K \\geq 5$ split the mean gap by "
-            "unit size. 27 traced runs, means over three replications. Ordinary: share of the mean gap accruing in periods without a floor hit.")
+            "within market $\\times$ size decile, in percentage points per period; 27 traced runs, means over three replications. "
+            "Ordinary: share of the mean gap accruing in periods without a floor hit. Hazard ratio: floor hits per standalone-period "
+            "over floor hits per member-period, same cells (Table~\\ref{tab:hazard}).")
     open(os.path.join(out, "table4_owner_return.tex"), "w").write(
-        table(rows, ["Family", "$\\alpha$", "Mean", "Median", "$K = 2$", "$K = 3$--4", "$K \\geq 5$", "Ordinary"],
-              "Owners' time-average growth: member minus standalone gap in percentage points per period", "tab:owner", note=note))
+        table(rows, ["Family", "$\\alpha$", "Gap, mean", "Gap, median", "Ordinary share", "Hazard ratio"],
+              "Owners' time-average growth and ruin hazard by affiliation status", "tab:owner", note=note))
+    open(os.path.join(out, "table4a_owner_by_K.tex"), "w").write(
+        table(rows_k, ["Family", "$\\alpha$", "All units", "$K = 2$", "$K = 3$--4", "$K \\geq 5$"],
+              "The owner-return gap by unit size, percentage points per period", "tab:owner-byK",
+              note="Mean member minus standalone gap of Table~\\ref{tab:owner}, split by the size of the member's unit."))
     note_h = ("Floor hits per firm-period of that status, within market $\\times$ size decile; same traced runs as "
               "Table~\\ref{tab:owner}. Hazard ratio $=$ standalone / member.")
     open(os.path.join(out, "table4b_hazard.tex"), "w").write(

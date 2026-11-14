@@ -77,7 +77,7 @@ Twenty pilot D runs under the moment rule (Laplace α ∈ {0, 0.1, 0.3}, t₃ α
 
 **Table A3 — Burn-in check: later window against the pilot window**
 
-| Family | α | Series | Pilot window | Periods 11,000–16,000 | Difference, % of pilot mean | 95% CI of the difference, ± % points |
+| Family | α | Series | Pilot window | Periods 11,000–16,000 | Difference, % of pilot mean | 95% CI, ± % points |
 |---|---|---|---|---|---|---|
 | Laplace | 0 | Floor-hit rate, standalone (all-firm) | 0.1151 | 0.1152 | +0.09% | ±1.05 |
 | Laplace | 0 | Hill exponent | 1.0710 | 1.0653 | -0.52% | ±1.54 |
@@ -107,7 +107,7 @@ Main block, power-law cost, pilot C (same seeds as pilot D); medians over five r
 
 **Table A4 — Main block under the loggain rule**
 
-| Family | α | K | Pooled | Hill | Acceptance | Voluntary exits / period | Floor exits / period |
+| Family | α | K | Pooled | Hill | Accept. | Voluntary exits / period | Floor exits / period |
 |---|---|---|---|---|---|---|---|
 | normal | 0.05 | 2.7 | 0.47 | 1.08 | 0.33 | 3.6 | 36.0 |
 | normal | 0.1 | 3.0 | 0.56 | 1.09 | 0.33 | 3.0 | 34.8 |
@@ -172,7 +172,7 @@ Main block, power law, α = 0.3, moment rule, five replications pooled. Floor: s
 
 **Table A6 — Proposals by recruit size**
 
-| Family | K | Share floor | w̄ floor | Acceptance, floor | Binding mean, floor | Incumbent margin, floor | Equal-weight gain | Acceptance, w ≥ 0.2 | Binding mean, w ≥ 0.2 |
+| Family | K | Share floor | w̄ floor | Accept., floor | Binding mean, floor | Incumbent margin, floor | Equal- weight gain | Accept., w ≥ 0.2 | Binding mean, w ≥ 0.2 |
 |---|---|---|---|---|---|---|---|---|---|
 | normal | 3 | 0.81 | 0.220 | 0.90 | 6.6e-04 | 6.2e-04 | 9.3e-04 | 0.90 | 7.6e-04 |
 |  | 4 | 0.73 | 0.118 | 0.66 | 1.8e-04 | 2.1e-04 | 4.6e-04 | 0.75 | 3.2e-04 |
@@ -228,7 +228,7 @@ Same 15 runs as A6 with the proposal type recorded. Among proposals whose entran
 
 **Table A6b — Unit–unit proposals: who refuses**
 
-| Family | K | Unit–unit proposals | Acceptance, entrant calmer | entrant more volatile | Calm unit binds, entrant calmer | entrant more volatile | Binding mean, entrant calmer | entrant more volatile |
+| Family | K | Unit–unit proposals | Accept., entrant calmer | entrant more volatile | Calm unit binds, entrant calmer | entrant more volatile | Binding mean, entrant calmer | entrant more volatile |
 |---|---|---|---|---|---|---|---|---|
 | normal | 4 | 4,031 | 0.79 | 0.80 | 0.21 | 0.33 | 3.8e-04 | 3.9e-04 |
 |  | 5 | 6,508 | 0.47 | 0.66 | 0.14 | 0.51 | -3.3e-05 | 4.0e-05 |
@@ -417,7 +417,7 @@ Laplace, power law; medians over five replications.
 
 **Table A11a — Floor level**
 
-| floor_c | α | K | Pooled | Hill | Acceptance | Floor exits / period |
+| c | α | K | Pooled | Hill | Acceptance | Floor exits / period |
 |---|---|---|---|---|---|---|
 | 0.1 | 0.1 | 3.8 | 0.87 | 1.05 | 0.38 | 42.3 |
 | 0.1 | 0.3 | 5.6 | 0.93 | 1.13 | 0.36 | 31.5 |
@@ -428,7 +428,7 @@ Laplace, power law; medians over five replications.
 
 **Table A11b — Cross-market correlation 0.3**
 
-| cross_corr | α | K | Pooled | Hill | Acceptance | Floor exits / period |
+| correlation | α | K | Pooled | Hill | Acceptance | Floor exits / period |
 |---|---|---|---|---|---|---|
 | 0.3 | 0.1 | 3.7 | 0.85 | 1.10 | 0.42 | 47.1 |
 | 0.3 | 0.3 | 5.3 | 0.91 | 1.21 | 0.40 | 36.3 |
@@ -599,6 +599,47 @@ Per-period log growth of market share before any floor lift, market-demeaned and
 
 A member's lower tail is cut more than its scale (p1 ratio below the sd ratio) and its upper tail less; the scale itself is what linear pooling of gross returns predicts.
 
+
+
+## A18. Concentration within markets and across owners
+
+Main block, power law, moment rule; medians over five replications of each run's median snapshot. Top decile: capital held by the largest ten per cent of owning units, a conglomerate counted as one owner. K_eff/K: inverse Herfindahl of members' capital weights over K. Assortativity: dispersion of members' market IQRs relative to a random set of the same size.
+
+**Table A18 — Concentration within markets and across owners**
+
+| Family | α | HHI within markets | Top-decile owners' share | K_eff/K | Assortativity |
+|---|---|---|---|---|---|
+| normal | 0 | 0.175 | 0.65 | -- | -- |
+|  | 0.1 | 0.164 | 0.67 | 0.75 | 0.49 |
+|  | 0.3 | 0.139 | 0.67 | 0.68 | 0.39 |
+|  | 0.5 | 0.109 | 0.65 | 0.65 | 0.36 |
+| Laplace | 0 | 0.179 | 0.66 | -- | -- |
+|  | 0.1 | 0.168 | 0.72 | 0.73 | 0.49 |
+|  | 0.3 | 0.144 | 0.73 | 0.68 | 0.40 |
+|  | 0.5 | 0.113 | 0.74 | 0.64 | 0.35 |
+| t₃ | 0 | 0.201 | 0.68 | -- | -- |
+|  | 0.1 | 0.191 | 0.74 | 0.74 | 0.52 |
+|  | 0.3 | 0.167 | 0.77 | 0.70 | 0.42 |
+|  | 0.5 | 0.136 | 0.79 | 0.67 | 0.35 |
+
+
+## A19. The accept rule: scope without consent
+
+Every feasible proposal merges and no one leaves by choice; 45 runs on the main cells' seeds; medians over five replications.
+
+**Table A19 — The accept rule against the moment and loggain rules**
+
+| Family | α | K: accept | moment | loggain | Pooled: accept | moment | Hill: accept | moment | HHI within: accept | moment |
+|---|---|---|---|---|---|---|---|---|---|---|
+| normal | 0.1 | 17.6 | 3.7 | 3.0 | 0.95 | 0.85 | 1.12 | 1.11 | 0.160 | 0.164 |
+|  | 0.3 | 22.2 | 5.5 | 4.3 | 0.97 | 0.94 | 1.21 | 1.21 | 0.133 | 0.139 |
+|  | 0.5 | 28.2 | 7.7 | 6.3 | 0.98 | 0.96 | 1.37 | 1.34 | 0.106 | 0.109 |
+| Laplace | 0.1 | 13.8 | 3.7 | 3.0 | 0.93 | 0.85 | 1.11 | 1.11 | 0.164 | 0.168 |
+|  | 0.3 | 18.1 | 5.4 | 4.0 | 0.95 | 0.91 | 1.23 | 1.19 | 0.135 | 0.144 |
+|  | 0.5 | 24.3 | 7.8 | 5.9 | 0.97 | 0.93 | 1.35 | 1.34 | 0.109 | 0.113 |
+| t₃ | 0.1 | 12.4 | 3.5 | 2.9 | 0.91 | 0.83 | 1.04 | 1.03 | 0.188 | 0.191 |
+|  | 0.3 | 16.2 | 4.8 | 3.7 | 0.94 | 0.90 | 1.13 | 1.12 | 0.160 | 0.167 |
+|  | 0.5 | 21.8 | 6.8 | 5.1 | 0.96 | 0.92 | 1.26 | 1.22 | 0.127 | 0.136 |
 
 
 ## A17. Rank mobility and persistence within markets

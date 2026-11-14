@@ -1,0 +1,205 @@
+% ---------------------------------------------------------------------------------------------------------------
+% Appendix (draft, 14 Nov 2026). \input{appendix.tex} after the main text and before the bibliography.
+% Needs in the preamble: \usepackage{booktabs,makecell,rotating} (algorithm2e, amsmath, graphicx are already loaded).
+% Every table is generated: latex/tables/*.tex by analysis/paper_tables.py (the tables moved out of Section 4),
+% latex/tables/appendix/*.tex by analysis/appendix_tables.py; nothing in a table is typed.
+% Labels used by the main text: app:A6 (recruit size), app:A17 (rank mobility), alg:period (Section 3.3).
+% Suggested split if the journal's printed length is tight: A and B printed, C and D as an online supplement.
+% ---------------------------------------------------------------------------------------------------------------
+\appendix
+\numberwithin{table}{section}
+\numberwithin{figure}{section}
+\renewcommand{\thetable}{\thesection\arabic{table}}
+\renewcommand{\thefigure}{\thesection\arabic{figure}}
+
+\section{Model details and benchmarks}\label{app:model}
+
+\subsection{Order of events within a period}\label{app:algorithm}
+
+Algorithm~\ref{alg:period} gives the order of events within a period. Merger and exit decisions use the window $\{t-l, \dots, t-1\}$; the current period's shock is never part of the information on which a decision is taken, and a unit formed in period $t$ pools from period $t$ on.
+
+\begin{algorithm}[H]
+\caption{Order of events within a period}\label{alg:period}
+\SetAlgoLined
+Draw $x_{it}$ for all firms; compute $G_{mt}$ and $\tilde r_{it}$\;
+[endogenous-$\alpha$ block] every unit renegotiates $\alpha_C$ on the grid over the last $l$ periods: unanimity first, maximin second\;
+\ForEach{firm $i$ drawn as initiator with probability $p$}{
+  draw a target market among those its unit does not occupy and a target firm in it\;
+  \If{the merged set has at most one firm per market and $\tilde\Delta_i(\hat C, \alpha) > \max\{0, \tilde\Delta_i(C_i, \alpha)\}$ for every member}{
+    merge; set the entry period of every new member (of every member if two units merge) to $t$\;
+  }
+}
+\ForEach{conglomerate}{
+  $\delta_{jt}$ for each member by the pooling equation; a member whose factor would fall below zero keeps nothing and its shortfall is charged to the other members pro rata to their post-pooling capital\;
+}
+$s_{i,t+1} = s_{it}\,\delta_{it}$ for members, $s_{it}\,e^{\tilde r_{it}}$ for unaffiliated firms\;
+\ForEach{market}{
+  lift every firm below $c \times$ mean size to that level, iterating to the fixed point; count floor hits; a lifted member leaves its unit; renormalize the market to mean size one\;
+}
+\ForEach{member with tenure $> l$}{
+  leave if $\tilde\Delta_i(C_i, \alpha) < 0$\;
+}
+dissolve units with one member\;
+every 100 periods: record the size distribution, membership and unit capital\;
+\end{algorithm}
+
+Two details of the floor. Since sizes are shares of a market whose capital is the numeraire, an entrant's share dilutes the incumbents' shares in proportion to their size, as any entry does; after pooling and the floor every market is renormalized to mean size one, which is where this dilution takes place. What survives the loss of the firm's capital is the configuration's knowledge, whether as the same firm recapitalized or as a start-up formed by its people, and with it its record.
+
+\subsection{The equal-members reference}\label{app:kstar}
+
+$K^*$ is the scope that maximizes the time-average growth of a member in a unit of equal members facing i.i.d.\ shocks at the median market volatility $q = 0.20$, net of the coordination cost. It is computed by Monte Carlo ($2 \times 10^6$ draws per $K$) and capped at $M = 50$. Table~\ref{tab:a1_kstar} gives it for every family and cost form at the three reference sharing rates; Table~\ref{tab:a1b_kstar_cost} for the higher cost levels of the power-law form. The reference rises with the sharing rate and with tail weight, and under $t_3$ shocks it reaches the cap at every cost form but the quadratic. Section~\ref{sec:model-decisions} explains why it is a reference and not a prediction: the gain from a recruit depends on the capital weights the members actually have, which the equal-members calculation does not see.
+
+\input{tables/appendix/a1_kstar.tex}
+\input{tables/appendix/a1b_kstar_cost.tex}
+
+\subsection{Floor calibration}\label{app:floor}
+
+The floor $c$ is set in the unaffiliated Laplace economy ($\alpha = 0$) so that the median Hill exponent of the top decile of within-market shares equals 1.06 \citep{axtell2001zipf}. Table~\ref{tab:a2_floor_calibration} is the calibration grid: for each $N$ and $c$ the Hill exponent (median and interquartile range over runs), the within-market Herfindahl index and the share of firms at the floor, from runs with $M = 20$ and $T = 8{,}000$. The column $1/(1-c)$ is the exponent of the continuous-time reflected process; the exponent of the simulated economy with finitely many firms per market differs from it in both directions, which is why $c$ is calibrated on the simulated economy and not set from the formula. The interpolated value at $N = 50$ is $c^* = 0.12717$; at $N = 25$ it is 0.069 and at $N = 100$ it is 0.158, which is what the economy-size block uses. The calibration is to the light-tailed families: at $c^*$ the normal and Laplace economies give 1.07 and 1.06, $t_3$ 1.00 and $\nu = 2.5$ 0.96.
+
+\input{tables/appendix/a2_floor_calibration.tex}
+
+\subsection{Burn-in}\label{app:burnin}
+
+Twenty runs (Laplace at $\alpha \in \{0, 0.1, 0.3\}$, $t_3$ at $\alpha = 0.3$, five seeds each, the main-block scenarios) were extended from $T = 11{,}000$ to $T = 16{,}000$ under the moment rule; every run reproduces its main-block result to period 11,000 exactly. Table~\ref{tab:a3_burnin} compares the means of scope, pooled capital share, floor-hit rates by status and the Hill exponent over periods 11,000--16,000 with their means over the retained window 8,000--11,000. The difference is the mean over seeds of each run's own later-minus-pilot difference, in per cent of its pilot-window mean; the last column is a 95\% confidence interval ($\pm 1.96$ standard errors across the five seeds) for that mean difference. The interval is read against the pre-registered 2\% tolerance, not against the point estimate: an estimate near zero inside an interval of $\pm 1$--$1.5$ points is what the absence of drift looks like, and every interval lies inside the tolerance. The seventeen means are all within 0.54\%; an OLS trend of the $t_3$ pooled share over the extended run is $+0.02\%$ per 1,000 periods ($p = 0.57$); scope and pooled share reach their long-run level within the first 600 periods. The same check under the loggain rule gives 0.71\%.
+
+\input{tables/appendix/a3_burnin.tex}
+
+\section{Additional results}\label{app:results}
+
+\subsection{Scope and turnover in full}\label{app:scope}
+
+Tables~\ref{tab:scope} and \ref{tab:turnover} give the main-block cells behind Figure~\ref{fig:scope}: scope under the moment rule and its loggain twin, the equal-members reference, the pooled capital share and the acceptance rate; floor and voluntary exits per period and the floor-hit rate by status. Table~\ref{tab:window} gives scope by window length, which Figure~\ref{fig:search}(c) plots, and Table~\ref{tab:a4_loggain_main} the full main block under the loggain rule. The effective number of members, the inverse Herfindahl of members' capital weights, is 0.68--0.70 of $K$ at $\alpha = 0.3$ (Table~\ref{tab:a18_concentration}): the typical unit is a few partners of unequal size rather than an equal-weighted pool.
+
+\input{tables/table3_scope.tex}
+\input{tables/table3t_turnover.tex}
+\input{tables/table3b_window.tex}
+\input{tables/appendix/a4_loggain_main.tex}
+
+\subsection{Consent by scope and recruit size}\label{app:A6}
+
+Table~\ref{tab:a5_acceptance_by_K} is the data of Figure~\ref{fig:consent}: the acceptance rate of feasible proposals by the size $K$ of the prospective unit at $\alpha = 0.3$ and $p = 0.05$, under both rules, with the median estimated gain of the binding member (the member with the smallest margin, $\tilde\Delta_i(\hat C) - \max\{0, \tilde\Delta_i(C_i)\}$), the equal-weight marginal gain of the $K$-th member and the marginal coordination cost. Acceptance falls monotonically in $K$ under both rules and the binding gain crosses zero at $K = 5$--6 under the moment rule and at $K = 4$ under loggain, well before the marginal cost catches up with the equal-weight gain.
+
+Table~\ref{tab:a6_recruit_size} splits the same proposals by the size of the recruit. A floor recruit is a standalone entrant with a market share below $2c/N$; the incumbent margin is the exact second-order gain of an incumbent from an entrant of the observed mean weight, net of the marginal cost. Floor recruits are 45--81\% of proposals at $K \leq 10$, and the incumbents' margin on them turns negative at $K = 7$--10. The proposals with an entrant weight of 0.2 or more are not explained by recruit size; Table~\ref{tab:a6b_unit_unit} shows that these are unit--unit mergers (42--46\% of that group at $K = 4$, 88--100\% at $K \geq 8$) and that it is the more volatile side that refuses: when the entrant unit is the calmer one, the volatile incumbent unit holds the binding member in two-thirds to seven-eighths of the proposals and acceptance is about half that of the opposite case. This is the direction of the transfer term in the gain: pooling gross factors moves arithmetic growth from members above the unit's average variance to those below it. Under $t_3$ the mean binding gain of floor recruits is set by rare large estimates and stays positive while acceptance falls; the counters hold mean and standard deviation only.
+
+\input{tables/appendix/a5_acceptance_by_K.tex}
+\input{tables/appendix/a6_recruit_size.tex}
+\input{tables/appendix/a6b_unit_unit.tex}
+
+\subsection{The decision rule: approximation and an exact control}\label{app:rule}
+
+The moment rule is a second-order expansion of the replayed log growth of the window. Table~\ref{tab:a7_approximation} measures what it omits on 27 traced runs with 2,000 random decision points each (a standalone firm and $K - 1$ standalone partners from other markets, $\tilde\Delta$ and the replay $\hat\Delta$ on the same 50-period window). The omitted higher-order terms, computed with the capital weights frozen at the window's first period, are 1--2\% of the gain at the median. The 20--38\% median difference between the two rules is almost entirely the replay's first-order term, the term with expectation zero whose in-window realization makes the replay biased low in finite windows.
+
+The cv rule averages the exact replayed log gain minus that first-order term, so it is exact in expectation and expands nothing. Table~\ref{tab:a7b_cv_statistic} compares the three statistics on the same windows: the cv statistic differs from the moment statistic by 1--2\% at the median and changes the sign of the decision in about 0.1\% of draws or fewer, where loggain changes it in 0.7--2.3\%. Table~\ref{tab:a7c_cv_behaviour} runs the cv rule on the main power-law cells (45 runs on the main cells' seeds): it reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in the Hill exponent, with acceptance by $K$ within 0.02 at every $K \leq 12$. The second-order approximation therefore has no effect on any outcome reported in the paper; the loggain rule's smaller scope is the finite-window bias and noise of the replay's first-order term, which is what Section~\ref{sec:results-scope} calls verifiability.
+
+\input{tables/appendix/a7_approximation.tex}
+\input{tables/appendix/a7b_cv_statistic.tex}
+\input{tables/appendix/a7c_cv_behaviour.tex}
+
+\subsection{Owners' growth and survival}\label{app:owners}
+
+Table~\ref{tab:owner-byK} splits the owner-return gap of Table~\ref{tab:owner} by the size of the member's unit and Table~\ref{tab:hazard} gives the floor-hit rates by status from which its hazard ratio is formed; both are from the 27 traced runs, means over three replications. The gap is largest in the largest units in every cell.
+
+\input{tables/table4a_owner_by_K.tex}
+\input{tables/table4b_hazard.tex}
+
+\paragraph*{Growth after entry.}\label{app:eventstudy}
+An event study was run alongside the status panel. For each firm that joins a unit at $t$, a control is a standalone in the same market, unaffiliated over the 50 preceding periods, with the closest log share at $t$ (within 0.25); the post-entry gap is the joiner's owner-path growth minus the control's over the 50 periods after entry, net of recapitalization at the floor. The post-entry gap is positive in every family $\times$ $\alpha$ cell (0.01--0.26 percentage points per period, rising with $\alpha$) under every matching tried. The difference in differences is not reported as a result: firms in a market are identical ex ante but not ex post, and the one ex-post variable that can be matched, size at entry, selects controls with a different recapitalization history (a standalone at the joiner's size tends to be one just lifted by the floor), so the pre-entry paths differ and the sign of the before--after comparison follows the matching. Table~\ref{tab:a14_event_study} keeps the four matchings as the record of that check; the owner-return result in the main text rests on the status panel, which compares all member-periods with all standalone-periods within market and size decile and needs no matching.
+
+\input{tables/appendix/a14_event_study.tex}
+
+\subsection{Clustering of floor hits}\label{app:burstiness}
+
+Table~\ref{tab:a15_burstiness} is the data of Figure~\ref{fig:burstiness}: the index of dispersion of floor hits per market-period against its binomial reference, the share of market-periods with three or more hits, and the worst market-period in a run; means over three traced replications. Floor hits cluster in every family (index 2.4--4.6 against a binomial 0.9), most under $t_3$, and pooling reduces the clustering without removing it.
+
+\input{tables/appendix/a15_burstiness.tex}
+
+\subsection{Growth-rate distributions of members and standalones}\label{app:growth}
+
+Per-period log growth of market share before any floor lift, market-demeaned and divided by the market's shock IQR, over all post-burn-in firm-periods of the 27 traced runs, by status (Table~\ref{tab:a16_growth_status}) and by unit size (Table~\ref{tab:a16b_growth_by_K}); Figure~\ref{fig:growth_density} shows the densities at $\alpha = 0.3$ on a log axis with maximum-likelihood Laplace fits. Three findings. Shape: members' growth rates stay in their family; under Laplace shocks MAD/SD is 0.71--0.72 (Laplace 0.707) and the Laplace fit beats the normal by 0.05--0.06 nats per observation, as for standalones; the normal family stays normal; $t_3$ members are pulled slightly towards Laplace but stay heavier-tailed. Scale: at $\alpha = 0.3$ the members' standard deviation is 0.77 of the standalones' (0.87 at $K = 2$, 0.81 at $K = 3$--4, 0.76 at $K \geq 5$), within 0.005 of what linear pooling of gross returns with the units' actual capital weights predicts. Tails: the lower tail is cut more than the scale (first-percentile ratio 0.71 under Laplace against a standard-deviation ratio of 0.77) and the upper tail less (99th-percentile ratio 0.82), so members' growth is right-skewed (+0.28) where standalones' is symmetric: a large own loss is floored by the partners' share while a large own gain passes through. This compression of the lower tail is the mechanism behind the tail-exponent result of Section~\ref{sec:results-distribution}. The model has no size--volatility relation for standalones by construction (the standard deviation is flat across size deciles); members show a mild rising one (decile 10 over decile 1, 1.03--1.10), as the weights predict, because a large member is a large part of its own unit.
+
+\input{tables/appendix/a16_growth_status.tex}
+\input{tables/appendix/a16b_growth_by_K.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/appendix/growth_density_alpha0.3.pdf}
+\caption{Densities of normalized per-period growth rates of members and standalones at $\alpha = 0.3$, log axis, with maximum-likelihood Laplace fits; one panel per family. 27 traced runs, moment rule.}
+\label{fig:growth_density}
+\end{figure}
+
+\subsection{Concentration and rank mobility}\label{app:A17}
+
+Table~\ref{tab:a18_concentration} gives the concentration measures behind Section~\ref{sec:results-distribution}. Within markets firms become more equal: the within-market Herfindahl index falls from 0.175--0.20 at $\alpha = 0$ to 0.14--0.17 at $\alpha = 0.3$ and 0.11--0.14 at $\alpha = 0.5$. Across the economy the units that own them become fewer and larger: the capital held by the largest ten per cent of owners, a conglomerate counted as one owner, goes from 0.65 to 0.65 (normal, with 0.67 at $\alpha = 0.3$), 0.66 to 0.74 (Laplace) and 0.68 to 0.79 ($t_3$) between $\alpha = 0$ and $0.5$. Units sort by volatility and grow unequal: assortativity, the dispersion of members' market volatilities relative to that of a random set of the same size, falls from 0.60--0.61 at $\alpha = 0.01$ to 0.35--0.36 at $\alpha = 0.5$, because the consent test selects partners whose fluctuations are worth sharing from both sides; the effective number of members falls from 0.83--0.88 of $K$ to 0.64--0.68 over the same range as units accumulate a few large members and many recruits from the floor.
+
+Tables~\ref{tab:a17_rank_mobility} and \ref{tab:a17b_rank_mobility_status} measure rank mobility from the 27 traced runs and nine traced $\alpha = 0$ runs: within each market, ranks of log share at an origin every 100 periods and 100 periods later, giving the Spearman correlation, the persistence of the top and bottom decile, leader turnover and the mean absolute rank change; a hit-free sample drops firms lifted at the floor in between and re-ranks the rest; the same by status at the origin; and the same for owning units across the economy. Pooling lowers rank mobility within markets in every family (lag-100 Spearman 0.16--0.33 at $\alpha = 0$ against 0.25--0.45 at $\alpha = 0.3$; top-decile persistence 0.31--0.48 against 0.36--0.53), partly through fewer floor lifts (0.68--0.83 of firms lifted within 100 periods against 0.52--0.71) and partly through slower movement among going concerns (members' ranks move 9--20\% less than standalones'); and it makes the top decile of owners markedly more persistent (0.32--0.49 against 0.67--0.69). Mobility is high in every cell and ranks are nearly independent at lag 500. The per-firm rank range and rank standard deviation of the earlier draft, recomputed on the traces, are at their ceiling in the floored economy and move the same way.
+
+\input{tables/appendix/a18_concentration.tex}
+\input{tables/appendix/a17_rank_mobility.tex}
+\input{tables/appendix/a17b_rank_mobility_status.tex}
+
+\subsection{Scope without consent: the accept rule}\label{app:accept}
+
+Under the accept rule every feasible proposal merges and no one leaves by choice; everything else is unchanged. It is a control without knowledge, not a behavioural alternative: it shows the scope the floor and the one-firm-per-market constraint alone permit. Table~\ref{tab:a19_accept} sets it beside the moment and loggain rules on the main power-law cells (45 runs on the main cells' seeds): $K_{\text{accept}}$ is 12.4--28.2 against 3.5--7.7, above the equal-members reference in every normal and Laplace cell and below it under $t_3$ (0.3--0.6 of $K^*$). The extra mergers are solo entries of floor-sized firms into existing units (86--89\% of the control's entries are at the floor); unit--unit mergers do not rise with consent off, because consolidated units occupy most markets and clash. The pooled share rises by 0.02--0.11, the Hill exponent by 0.00--0.04, the within-market Herfindahl index falls by 0.004--0.012, and the members' floor-hit rate rises slightly. Table~\ref{tab:decomposition-accept} is the four-part re-cut of Table~\ref{tab:decomposition} that separates what the environment permits from what consent withholds.
+
+\input{tables/appendix/a19_accept.tex}
+\input{tables/table3c_decomposition_accept.tex}
+
+\subsection{The sharing rate}\label{app:alpha}
+
+Table~\ref{tab:endogenous} gives the endogenous-$\alpha$ block under the power-law cost and Table~\ref{tab:a13_endogenous} under all four cost forms and both rules. Units that choose their rate reach 14--18 mean members under the power-law cost, with 95--98\% of capital pooled and a tail exponent of 1.8--2.1. This is the scope that a rate near 0.9 implies, not a separate effect: along the fixed-rate grid $K$ rises from 5.4 at $\alpha = 0.3$ to 7.8 at $0.5$, and the fixed $\alpha = 0.9$ cell reproduces the endogenous block (Table~\ref{tab:robustness-b}). The ordering across families is the same as elsewhere: the heaviest tails choose a slightly lower rate and reach a smaller scope. The exponential-cost cells reach $K = 16$--23 at a lower pooled share (81--92\%). Neither heterogeneity among members nor the volatility of their markets drives the choice: across 7,630 units active at the end of a run, the Spearman correlation of a unit's time-averaged rate with the dispersion of its members' volatilities is $-0.14$ to $0.00$, and with their mean volatility 0.04--0.10. Under the loggain rule the latter was 0.14--0.26: units in more volatile markets pooled more, not because the optimum differed, it is full pooling at every volatility level, but because only there was the gain from a higher rate large enough to show through the window's noise.
+
+\input{tables/table5_endogenous_alpha.tex}
+\input{tables/appendix/a13_endogenous.tex}
+
+\section{Robustness}\label{app:robustness}
+
+\subsection{Summary}
+
+Tables~\ref{tab:robustness} and \ref{tab:robustness-b} summarize every block at $\alpha = 0.3$ (the endogenous-$\alpha$ block at its adopted rate) against the Laplace power-law baseline. The rest of this section gives each block in full.
+
+\input{tables/table6_robustness.tex}
+\input{tables/table6c_robustness_contract.tex}
+
+\subsection{Cost form and level}\label{app:cost}
+
+Table~\ref{tab:a10_cost_forms} gives the four cost forms at equal $\Phi(40)$ for all three families; the form moves scope by under one member. Table~\ref{tab:costlevel} runs the power-law level from $\times 0.5$ to $\times 20$ at $\alpha = 0.3$ under both rules with the equal-members reference recomputed at each level: scope falls by about 0.6 members per doubling of the cost and the ratio $K/K^*$ rises, but the reference is never reached, because the reference falls with the cost as well. Table~\ref{tab:a10b_cost_levels} gives the $\times 0.5$ and $\times 2$ cells for every form, with $b_0$ alone scaled (power law and exponential: the whole schedule) or all coefficients scaled (linear, quadratic).
+
+\input{tables/appendix/a10_cost_forms.tex}
+\input{tables/table6b_cost_level.tex}
+\input{tables/appendix/a10b_cost_levels.tex}
+
+\subsection{Floor level, correlation and economy size}\label{app:environment}
+
+Tables~\ref{tab:a11a_floor}--\ref{tab:a11c_size}, Laplace shocks and power-law cost. The floor level sets the tail exponent and little else: scope moves by $+3\%$ at $c = 0.10$ and $-19\%$ at $c = 0.35$ while the Hill exponent moves from 1.13 to 1.66 at $\alpha = 0.3$. Cross-market correlation of 0.3 leaves every outcome within 0.2 of the baseline. Economy size matters through the number of firms per market and barely through the number of markets, with the floor recalibrated to $c^*(N)$.
+
+\input{tables/appendix/a11a_floor.tex}
+\input{tables/appendix/a11b_correlation.tex}
+\input{tables/appendix/a11c_size.tex}
+
+\subsection{Homogeneous markets}\label{app:homogeneous}
+
+Table~\ref{tab:a8_homogeneous}: every market at $q = 0.20$, power-law cost, both rules. The homogeneous economy is the $K_{\text{hom}}$ of Table~\ref{tab:decomposition}; it exceeds the heterogeneous base case by 0.0--0.4 members, which bounds the transfer conflict between members of unequal volatility.
+
+\input{tables/appendix/a8_homogeneous.tex}
+
+\subsection{Tail weight}\label{app:nu}
+
+Table~\ref{tab:a9_nu}: Student-$t$ shocks with $\nu \in \{2.5, 3, 4\}$ at equal IQR, power-law cost, moment rule. The last two columns give the distribution of the window variance estimate relative to its population value over 200,000 i.i.d.\ 50-period windows at $q = 0.2$, and the share of windows in which it is below one half. Scope falls with tail weight while acceptance rises: under heavier tails firms are more willing to pool and less able to stay pooled, because members are recapitalized more often. Attrition, not consent, takes the scope.
+
+\input{tables/appendix/a9_nu.tex}
+
+\subsection{Equal sharing}\label{app:equalsplit}
+
+Table~\ref{tab:a12_equal_split}: equal dollar splits of the net pool, normal shocks, four cost forms, with acceptance by proposal type (standalone--standalone, standalone--unit), voluntary exits, pool ruin (a unit's members capped at limited liability in a period) and the shortfall charged to the other members. Mean scope is 2.1--3.2 at every sharing rate and pooled capital never exceeds 34\%, against 3.2--7.7 and up to 96\% under proportional sharing. The reason is visible in who consents: proposals between two unaffiliated firms pass at 3--48\% under equal sharing against 95--100\% under proportional, proposals of a standalone to a unit at 6--17\% against 28--41\%. Under an equal split the larger partner subsidizes the smaller in every period in which it does better, which it expects to do half the time, and refuses. The contract decides whether conglomerates exist at all.
+
+\input{tables/appendix/a12_equal_split.tex}
+
+\section{Computation}\label{app:computation}
+
+\subsection{Identity protocol and tests}\label{app:identity}
+
+Every change to the code after the model was frozen (the diagnostics, the limited-liability correction, the counters, the moment rule, the production block and the traced runs) was accompanied by an identity check: every scenario whose behaviour the change should not touch is rerun on the new code and its result and summary row compared byte for byte with the stored ones, excluding runtime fields and new keys. The production block passes 1,995 of 1,995 scenarios and the accept-rule addition 2,055 of 2,055; the loggain reference block is frozen and verified by checksum. The test suite (281 tests) covers the pooling identity under limited liability (unit capital after pooling equals the sum of members' gross returns net of the coordination cost, to $10^{-9}$), the moment rule against hand-computed cases and against the loggain replay on long windows, the kernel counters' sums, the design counts and the summary schema. Three pool wipeouts (every member of a unit at the floor in the same period) occurred in 1,995 runs, one event each; they are counted, not asserted away.
+
+\subsection{Files and provenance}\label{app:files}
+
+The repository holds the simulation code, the design files, the per-run summaries of the production block and the loggain reference block, the traced runs' panels and every derived file behind a table or figure; \texttt{analysis/paper\_tables.py}, \texttt{analysis/paper\_figures.py} and \texttt{analysis/appendix\_tables.py} regenerate every exhibit from them. The commit the paper is frozen on and the archive DOI are given in the code and data availability statement.

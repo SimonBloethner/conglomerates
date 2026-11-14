@@ -51,7 +51,7 @@ def load(root):
 
 CAPTIONS = {
     "fig1_scope": ("Scope and pooled capital by sharing rate. (a) Mean members per unit $K$ against $\\alpha$, one line per family, with the loggain rule as a dashed twin and the equal-members reference $K^*$ at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$ as ticks; (b) pooled capital share against $\\alpha$. Main block, power-law cost; medians over five replications.", "fig:scope"),
-    "fig2_search": ("Scope relative to the equal-members reference, $K/K^*$, against the proposal probability $p \\in \\{0.05, 0.2, 1\\}$ at $\\alpha = 0.3$ and $0.5$, one line per family. Search block and main block, power-law cost; medians over five replications.", "fig:search"),
+    "fig2_search": ("Decision parameters. (a), (b) Scope relative to the equal-members reference, $K/K^*$, against the proposal probability $p \\in \\{0.05, 0.2, 1\\}$ at $\\alpha = 0.3$ and $0.5$, one line per family; (c) scope against the window length $l$ at $\\alpha = 0.3$, Laplace and $t_3$, moment rule solid and loggain rule dashed. Search, lookback and main blocks, power-law cost; medians over five replications.", "fig:search"),
     "fig3_owner_return": ("Member--standalone owner-return gap. (a) Mean (solid) and median (dashed) gap by family and $\\alpha$, percentage points per period; (b) the gap by unit size ($K = 2$, 3--4, $5+$) at $\\alpha = 0.3$; (c) floor hits per firm-period by status (standalone solid, member dashed). The 27 traced runs.", "fig:owner_return"),
     "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: main-block medians as lines by family; the $\\alpha = 0.9$ cell and the search, lookback, correlation and homogeneous blocks as markers; the endogenous block at its adopted rate. The exponent rises with $\\alpha$, by about 0.45 per unit up to 0.5 and faster beyond, and does not respond to scope or to the number of firms pooling.", "fig:hill"),
     "fig5_burstiness": ("Clustering of floor hits. Index of dispersion of floor hits per market-period by family and $\\alpha$ (median and IQR over the traced replications) against the binomial reference.", "fig:burstiness"),
@@ -104,18 +104,32 @@ def fig1(d, c, b, out):
 
 
 # ---------------------------------------------------------------- fig 2
-def fig2(d, b, out):
+def fig2(d, c, b, out):
+    """Figure 2 (14 Nov): decision parameters. (a), (b) scope relative to K* against the search probability p at
+    alpha = 0.3 and 0.5; (c) scope against the window length l at alpha = 0.3 (Laplace and t3; moment solid, loggain
+    dashed), which replaces the old Table 3b in the main text."""
     s = d[(d.cost_type == "power_law") & (d.block.isin(["main", "search"])) & (d.alpha.isin([0.3, 0.5]))]
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.0), sharey=True)
-    for ax, a in zip(axes, [0.3, 0.5]):
+    fig, axes = plt.subplots(1, 3, figsize=(10.0, 3.0), gridspec_kw={"wspace": 0.32})
+    for ax, a in zip(axes[:2], [0.3, 0.5]):
         for f in FAMILIES:
             g = med(s[(s.log_family == f) & (s.alpha == a)], "merge_thresh", ["K_mean"])
             ks = float(b[(b.family == f) & (b.alpha == a)].K_star.iloc[0])
             ax.plot(g.merge_thresh, g.K_mean / ks, color=COLOR[f], marker=MARKER[f], label=LABEL[f])
         ax.set_xscale("log"); ax.set_xticks([0.05, 0.2, 1]); ax.set_xticklabels(["0.05", "0.2", "1"])
-        ax.set_xlabel("search probability $p$"); ax.set_title(rf"$\alpha$ = {a}", loc="left")
+        ax.set_xlabel("search probability $p$")
         ax.set_ylim(0, 1); ax.axhline(1, color="#888888", lw=0.8, ls=":")
-    axes[0].set_ylabel("$K / K^*$"); axes[0].legend(loc="upper left")
+    axes[0].set_title(r"(a) search, $\alpha = 0.3$", loc="left"); axes[1].set_title(r"(b) search, $\alpha = 0.5$", loc="left")
+    axes[0].set_ylabel("$K / K^*$"); axes[1].set_ylabel("$K / K^*$"); axes[0].legend(loc="upper left")
+    ax = axes[2]
+    w = d[(d.block.isin(["lookback", "main"])) & (d.cost_type == "power_law") & (d.alpha == 0.3) & (d.log_family.isin(["laplace", "t3"]))]
+    wc = c[(c.block.isin(["lookback", "main"])) & (c.cost_type == "power_law") & (c.alpha == 0.3) & (c.log_family.isin(["laplace", "t3"])) & (c.decision_rule == "loggain")]
+    for f in ["laplace", "t3"]:
+        g = med(w[w.log_family == f], "lookback", ["K_mean"]); gl = med(wc[wc.log_family == f], "lookback", ["K_mean"])
+        ax.plot(g.lookback, g.K_mean, color=COLOR[f], marker=MARKER[f], label=LABEL[f])
+        ax.plot(gl.lookback, gl.K_mean, color=COLOR[f], ls="--", lw=1.0, marker=MARKER[f], mfc="white", ms=4)
+    ax.set_xscale("log"); ax.set_xticks([20, 50, 100, 200, 500]); ax.set_xticklabels(["20", "50", "100", "200", "500"]); ax.minorticks_off()
+    ax.set_xlabel("window length $l$"); ax.set_ylabel("mean members per unit, $K$")
+    ax.set_title(r"(c) window, $\alpha = 0.3$", loc="left"); ax.legend(loc="upper left")
     save(fig, out, "fig2_search")
 
 
@@ -242,7 +256,7 @@ def main():
     out = a.out or os.path.join(a.root, "figures", "paper")
     os.makedirs(out, exist_ok=True)
     d, c, b = load(a.root)
-    fig1(d, c, b, out); fig2(d, b, out); fig3(a.root, out); fig4(d, out); fig5(a.root, out); fig6(a.root, out)
+    fig1(d, c, b, out); fig2(d, c, b, out); fig3(a.root, out); fig4(d, out); fig5(a.root, out); fig6(a.root, out)
     print("written to", out)
 
 

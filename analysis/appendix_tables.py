@@ -28,10 +28,29 @@ class Out:
         if text:
             self.md.append(text + "\n")
 
-    def table(self, name, header, rows, caption, note=None):
+    # LaTeX rendering (14 Nov): Unicode in headers, cells and notes is mapped to LaTeX; the "Table An --" prefix of the
+    # Markdown caption is dropped because the appendix numbers its tables itself; headers may carry "\n" for a line
+    # break (makecell); tables in WIDE are set as sidewaystable rather than shrunk.
+    WIDE = {"a3_burnin", "a6_recruit_size", "a6b_unit_unit", "a9_nu", "a12_equal_split", "a14_event_study",
+            "a16_growth_status", "a17_rank_mobility", "a17b_rank_mobility_status", "a13_endogenous", "a15_burstiness", "a5_acceptance_by_K", "a7c_cv_behaviour", "a19_accept"}
+    UNI = [("σ̂²/σ²", "$\\hat\\sigma^2/\\sigma^2$"), ("Δ̂ᶜᵛ", "$\\hat\\Delta^{cv}$"), ("Δ̃", "$\\tilde\\Delta$"), ("Δ̂", "$\\hat\\Delta$"),
+           ("ᾱ", "$\\bar\\alpha$"), ("w̄", "$\\bar w$"), ("t₃", "$t_3$"), ("₃", "$_3$"), ("b₀", "$b_0$"), ("₀", "$_0$"), ("α", "$\\alpha$"), ("ν", "$\\nu$"),
+           ("Φ", "$\\Phi$"), ("−", "$-$"), ("≥", "$\\geq$"), ("≤", "$\\leq$"), ("×", "$\\times$"), ("½", "$\\tfrac12$"),
+           ("±", "$\\pm$"), ("≈", "$\\approx$"), ("∈", "$\\in$"), ("—", "---"), ("–", "--"), ("K*", "$K^*$"), ("K_eff/K", "$K_{\\text{eff}}/K$"), ("c*", "$c^*$"),
+           ("%", "\\%"), ("ρ", "$\\rho$"), ("σ", "$\\sigma$")]
+
+    @classmethod
+    def tex_str(cls, x):
+        x = str(x)
+        for u, t in cls.UNI:
+            x = x.replace(u, t)
+        return x
+
+    def table(self, name, header, rows, caption, note=None, colspec=None):
         # markdown
+        hdr_md = [h.replace("\n", " ") for h in header]
         self.md.append(f"**{caption}**\n")
-        self.md.append("| " + " | ".join(header) + " |")
+        self.md.append("| " + " | ".join(hdr_md) + " |")
         self.md.append("|" + "---|" * len(header))
         for r in rows:
             self.md.append("| " + " | ".join(str(c) for c in r) + " |")
@@ -39,15 +58,21 @@ class Out:
             self.md.append(f"\n{note}\n")
         self.md.append("")
         # latex
-        tex = ["\\begin{table}[htbp]", "\\centering", f"\\caption{{{caption}}}", f"\\label{{tab:{name}}}", "\\small",
-               f"\\begin{{tabular}}{{l{'r' * (len(header) - 1)}}}", "\\toprule",
-               " & ".join(h.replace("₃", "$_3$").replace("σ̂²/σ²", "$\\hat\\sigma^2/\\sigma^2$").replace("α", "$\\alpha$").replace("ν", "$\\nu$").replace("Δ̃", "$\\tilde\\Delta$").replace("Δ̂", "$\\hat\\Delta$") for h in header) + " \\\\", "\\midrule"]
+        cap = caption.split(" — ", 1)[1] if " — " in caption else caption
+        env = "sidewaystable" if name in self.WIDE else "table"
+        hdr = []
+        for h in header:
+            h = self.tex_str(h)
+            hdr.append("\\makecell[b]{" + h.replace("\n", "\\\\{}") + "}" if "\n" in h else h)
+        tex = [f"\\begin{{{env}}}[htbp]", "\\centering", f"\\caption{{{self.tex_str(cap)}}}", f"\\label{{tab:{name}}}", "\\small",
+               f"\\begin{{tabular}}{{{colspec or 'l' + 'r' * (len(header) - 1)}}}", "\\toprule",
+               " & ".join(hdr) + " \\\\", "\\midrule"]
         for r in rows:
-            tex.append(" & ".join(str(c).replace("t₃", "$t_3$").replace("%", "\\%") for c in r) + " \\\\")
+            tex.append(" & ".join(self.tex_str(c) for c in r) + " \\\\")
         tex += ["\\bottomrule", "\\end{tabular}"]
         if note:
-            tex.append(f"\\par\\smallskip\\begin{{minipage}}{{0.95\\linewidth}}\\footnotesize {note.replace('%', chr(92) + '%')}\\end{{minipage}}")
-        tex.append("\\end{table}\n")
+            tex.append(f"\\par\\smallskip\\begin{{minipage}}{{0.95\\linewidth}}\\footnotesize {self.tex_str(note)}\\end{{minipage}}")
+        tex.append(f"\\end{{{env}}}\n")
         open(os.path.join(self.texdir, f"{name}.tex"), "w").write("\n".join(tex))
 
 
@@ -108,14 +133,14 @@ def main():
             pr = np.array(per_rep)
             ci = 1.96 * pr[:, 2].std(ddof=1) / np.sqrt(len(pr)) if len(pr) > 1 else float("nan")
             rows.append([FAMTX.get(fm, fm), f"{al:g}", lab, f"{pr[:, 0].mean():.4f}", f"{pr[:, 1].mean():.4f}", f"{pr[:, 2].mean():+.2f}%", f"±{ci:.2f}"])
-    o.table("a3_burnin", ["Family", "α", "Series", "Pilot window", "Periods 11,000–16,000", "Difference, % of pilot mean", "95% CI of the difference, ± % points"], rows, "Table A3 — Burn-in check: later window against the pilot window", note="Means over replications of each run's window means; difference in per cent of the pilot-window mean; CI across the five seeds.")
+    o.table("a3_burnin", ["Family", "α", "Series", "Pilot\nwindow", "Periods\n11,000–16,000", "Difference,\n% of pilot mean", "95% CI,\n± % points"], rows, "Table A3 — Burn-in check: later window against the pilot window", note="Means over replications of each run's window means; difference in per cent of the pilot-window mean; CI across the five seeds.")
 
     # A4 loggain main block
     o.section("A4. The loggain rule as the bounded variant", "Main block, power-law cost, pilot C (same seeds as pilot D); medians over five replications. Compare Table 3.")
     mc = c[(c.block == "main") & (c.cost_type == "power_law") & (c.decision_rule == "loggain") & (c.alpha.isin([0.05, 0.1, 0.3, 0.5]))]
     g = med(mc, ["log_family", "alpha"], ["K_mean", "cong_capital_share_median", "hill_exponent_median", "acceptance_rate", "voluntary_exits_per_period", "floor_exits_per_period"])
     rows = [[FAMTX[fm], f"{al:g}", f(g.loc[(fm, al)].K_mean, 1), f(g.loc[(fm, al)].cong_capital_share_median), f(g.loc[(fm, al)].hill_exponent_median), f(g.loc[(fm, al)].acceptance_rate), f(g.loc[(fm, al)].voluntary_exits_per_period, 1), f(g.loc[(fm, al)].floor_exits_per_period, 1)] for fm in FAM for al in [0.05, 0.1, 0.3, 0.5]]
-    o.table("a4_loggain_main", ["Family", "α", "K", "Pooled", "Hill", "Acceptance", "Voluntary exits / period", "Floor exits / period"], rows, "Table A4 — Main block under the loggain rule")
+    o.table("a4_loggain_main", ["Family", "α", "K", "Pooled", "Hill", "Accept.", "Voluntary\nexits / period", "Floor\nexits / period"], rows, "Table A4 — Main block under the loggain rule")
 
     # A5 acceptance by K both rules
     am = pd.read_csv(P("acceptance_by_K.csv")); al_ = pd.read_csv(os.path.join(root, "pilot_c", "acceptance_by_K.csv"))
@@ -127,7 +152,7 @@ def main():
         for K in range(2, 13):
             r = gm.loc[(fm, K)]; rl = gl.loc[(fm, K)]
             rows.append([FAMTX[fm] if K == 2 else "", str(K), f(r.acceptance), f(rl.acceptance), f"{r.binding_median:.1e}", f"{rl.binding_median:.1e}", f"{r.marginal_gain_into_K:.1e}", f"{r.marginal_cost_into_K:.1e}"])
-    o.table("a5_acceptance_by_K", ["Family", "K", "Acceptance, moment", "loggain", "Binding median, moment", "loggain", "Marginal gain", "Marginal cost"], rows, "Table A5 — Acceptance and binding gain by K, both rules")
+    o.table("a5_acceptance_by_K", ["Family", "K", "Acceptance,\nmoment", "loggain", "Binding median,\nmoment", "loggain", "Marginal\ngain", "Marginal\ncost"], rows, "Table A5 — Acceptance and binding gain by K, both rules")
 
     # A6 recruit size (C38)
     kw = pd.read_csv(P("acceptance_by_K_w_pooled.csv"))
@@ -143,13 +168,13 @@ def main():
             bb = big.iloc[0] if len(big) else None
             rows.append([FAMTX[fm] if K == 3 else "", str(K), f(r.share_of_K), f(r.w_mean, 3), f(r.acceptance), f"{r.binding_mean:.1e}", f"{r.incumbent_margin:.1e}", f"{r.gain_equal:.1e}",
                          f(bb.acceptance) if bb is not None else "--", f"{bb.binding_mean:.1e}" if bb is not None else "--"])
-    o.table("a6_recruit_size", ["Family", "K", "Share floor", "w̄ floor", "Acceptance, floor", "Binding mean, floor", "Incumbent margin, floor", "Equal-weight gain", "Acceptance, w ≥ 0.2", "Binding mean, w ≥ 0.2"], rows, "Table A6 — Proposals by recruit size")
+    o.table("a6_recruit_size", ["Family", "K", "Share\nfloor", "w̄\nfloor", "Accept.,\nfloor", "Binding\nmean, floor", "Incumbent\nmargin, floor", "Equal-\nweight gain", "Accept.,\nw ≥ 0.2", "Binding\nmean, w ≥ 0.2"], rows, "Table A6 — Proposals by recruit size")
 
     # A7 approximation error
     ae = pd.read_csv(P("approximation_error.csv")); ae = ae[ae.alpha == "all"]
     o.section("A7. The second-order approximation (C38)", "27 pilot D traces, 2,000 random decision points each (a standalone firm and K − 1 standalone partners from other markets), Δ̃ (moment) and Δ̂ (loggain replay) on the same 50-period window. Higher-order: Δ̃ − Δ̂ with the size weights frozen at the window's first period, i.e. the omitted terms proper; replay weight term: the replay's first-order term with in-window weights.")
     rows = [[FAMTX[r.family], str(int(r.K)), f"{r.ratio_median:.2f} [{r.ratio_p5:.2f}, {r.ratio_p95:.2f}]", f"{r.higher_order_ratio_fixed_median:.3f} [{r.higher_order_ratio_fixed_p5:.3f}, {r.higher_order_ratio_fixed_p95:.3f}]", f"{r.weight_term_hat_ratio_median:.2f}", f"{100*r.sign_disagree:.1f}%"] for _, r in ae.iterrows()]
-    o.table("a7_approximation", ["Family", "K", "(Δ̃ − Δ̂)/Δ̂ median [5%, 95%]", "higher-order share, median [5%, 95%]", "replay weight term", "sign differs"], rows, "Table A7 — Size of the omitted terms and of the replay's first-order term")
+    o.table("a7_approximation", ["Family", "K", "(Δ̃ − Δ̂)/Δ̂\nmedian [5%, 95%]", "higher-order share,\nmedian [5%, 95%]", "replay\nweight term", "sign\ndiffers"], rows, "Table A7 — Size of the omitted terms and of the replay's first-order term")
 
 
     # A6b unit+unit by volatility bin (C39)
@@ -163,16 +188,16 @@ def main():
                 continue
             c_ = a_[a_.volbin == "entrant calmer"].iloc[0]; v_ = a_[a_.volbin == "entrant more volatile"].iloc[0]
             rows.append([FAMTX[fm] if K == 4 else "", str(K), f"{int(c_.proposals + v_.proposals):,}", f(c_.acceptance), f(v_.acceptance), f(c_.share_calm_binds), f(v_.share_calm_binds), f"{c_.binding_mean:.1e}", f"{v_.binding_mean:.1e}"])
-    o.table("a6b_unit_unit", ["Family", "K", "Unit\u2013unit proposals", "Acceptance, entrant calmer", "entrant more volatile", "Calm unit binds, entrant calmer", "entrant more volatile", "Binding mean, entrant calmer", "entrant more volatile"], rows, "Table A6b \u2014 Unit\u2013unit proposals: who refuses", note="The volatile side refuses: when the entrant unit is calmer, the incumbent (volatile) unit holds the binding member in 67\u201387% of proposals and acceptance is about half that of the other bin.")
+    o.table("a6b_unit_unit", ["Family", "K", "Unit–unit\nproposals", "Accept.,\nentrant\ncalmer", "entrant\nmore\nvolatile", "Calm unit\nbinds, entrant\ncalmer", "entrant\nmore\nvolatile", "Binding\nmean, entrant\ncalmer", "entrant\nmore\nvolatile"], rows, "Table A6b \u2014 Unit\u2013unit proposals: who refuses", note="The volatile side refuses: when the entrant unit is calmer, the incumbent (volatile) unit holds the binding member in 67\u201387% of proposals and acceptance is about half that of the other bin.")
 
     # A7b cv rule (C39)
     cvr = pd.read_csv(P("approximation_error_cv.csv")); cvr = cvr[cvr.alpha == "all"]
     cvc = pd.read_csv(P("cv_comparison.csv"))
     o.section("A7b. The exact replay without its first-order term: the cv rule (C39)", "decision_rule = cv averages the exact replayed log gain minus its first-order term r\u03c4 \u03b1(\u03a3\u2c7c c\u2c7c\u03c4 u\u2c7c\u03c4 \u2212 u\u1d62\u03c4), which has expectation zero under every arrangement; it is exact in expectation and expands nothing. Left: the statistic on the A7 draws. Right: behaviour on the main power-law cells, 45 runs on the main cells' seeds, medians over five replications; paired differences on the seed.")
     rows = [[FAMTX[r.family], str(int(r.K)), f"{r.rel_cv_moment_median:.3f} [{r.rel_cv_moment_p5:.3f}, {r.rel_cv_moment_p95:.3f}]", f"{r.rel_hat_moment_median:.3f}", f"{100*r.sign_disagree_cv_moment:.2f}%", f"{100*r.sign_disagree_hat_moment:.2f}%"] for _, r in cvr.iterrows()]
-    o.table("a7b_cv_statistic", ["Family", "K", "(\u0394\u0302\u1d9c\u1d5b \u2212 \u0394\u0303)/\u0394\u0303 median [5%, 95%]", "(\u0394\u0302 \u2212 \u0394\u0303)/\u0394\u0303 median", "sign differs, cv vs moment", "loggain vs moment"], rows, "Table A7b \u2014 The cv statistic against moment and loggain on the same windows")
+    o.table("a7b_cv_statistic", ["Family", "K", "(Δ̂ᶜᵛ − Δ̃)/Δ̃\nmedian [5%, 95%]", "(Δ̂ − Δ̃)/Δ̃\nmedian", "sign differs,\ncv vs moment", "loggain\nvs moment"], rows, "Table A7b \u2014 The cv statistic against moment and loggain on the same windows")
     rows = [[FAMTX[r.family], f"{r.alpha:g}", f"{r.K_mean_cv:.2f} / {r.K_mean_moment:.2f} / {r.K_mean_loggain:.2f}", f"{r.K_mean_cv_minus_moment_median:+.2f} [{r.K_mean_cv_minus_moment_p25:+.2f}, {r.K_mean_cv_minus_moment_p75:+.2f}]", f"{r.K_mean_moment_minus_loggain_median:+.2f}", f"{r.cong_capital_share_median_cv:.3f} / {r.cong_capital_share_median_moment:.3f}", f"{r.hill_exponent_median_cv:.3f} / {r.hill_exponent_median_moment:.3f}"] for _, r in cvc.iterrows()]
-    o.table("a7c_cv_behaviour", ["Family", "\u03b1", "K: cv / moment / loggain", "cv \u2212 moment, median [IQR]", "moment \u2212 loggain", "Pooled: cv / moment", "Hill: cv / moment"], rows, "Table A7c \u2014 Scope under the cv rule against moment and loggain", note="The cv rule reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in Hill; its difference to loggain is the first-order term alone.")
+    o.table("a7c_cv_behaviour", ["Family", "\u03b1", "K:\ncv / moment / loggain", "cv − moment,\nmedian [IQR]", "moment −\nloggain", "Pooled:\ncv / moment", "Hill:\ncv / moment"], rows, "Table A7c \u2014 Scope under the cv rule against moment and loggain", note="The cv rule reproduces the moment rule to within 0.11 members, 0.005 in pooled share and 0.03 in Hill; its difference to loggain is the first-order term alone.")
 
     # A8 homogeneous
     o.section("A8. Homogeneous markets", "Every market at q = 0.20, power law; both rules; medians over five replications. Compare Table 3c.")
@@ -192,7 +217,7 @@ def main():
         for al in [0.1, 0.3, 0.5]:
             r = g.loc[(n_, al)]
             rows.append([f"{n_:g}" if al == 0.1 else "", f"{al:g}", f(r.K_mean, 1), f(r.cong_capital_share_median), f(r.hill_exponent_median), f(r.acceptance_rate), f(r.floor_exits_per_period, 1), f(r.floor_hit_rate_member_status / r.floor_hit_rate_standalone_status), f"{v.q50:.2f} [{v.q05:.2f}, {v.q95:.2f}]" if al == 0.1 else "", f"{v.share_below_half:.2f}" if al == 0.1 else ""])
-    o.table("a9_nu", ["ν", "α", "K", "Pooled", "Hill", "Acceptance", "Floor exits / period", "Hazard ratio", "σ̂²/σ² median [5%, 95%]", "share < ½"], rows, "Table A9 — ν block")
+    o.table("a9_nu", ["ν", "α", "K", "Pooled", "Hill", "Acceptance", "Floor exits\n/ period", "Hazard\nratio", "σ̂²/σ²\nmedian [5%, 95%]", "share\n< ½"], rows, "Table A9 — ν block")
 
     # A10 cost forms and levels
     o.section("A10. Cost forms and levels", "Laplace (cost forms: all three families at α = 0.3 in the first table), power law unless stated; medians over five replications. Table 6b has the power-law level series.")
@@ -211,21 +236,21 @@ def main():
         x = d[(d.block == blk) & (d.alpha.isin([0.1, 0.3, 0.5]))]
         g = med(x, keys + ["alpha"], ["K_mean", "cong_capital_share_median", "hill_exponent_median", "acceptance_rate", "floor_exits_per_period"])
         rows = [[" / ".join(f"{k:g}" for k in (idx[:-1] if isinstance(idx, tuple) else (idx,))), f"{idx[-1]:g}", f(r.K_mean, 1), f(r.cong_capital_share_median), f(r.hill_exponent_median), f(r.acceptance_rate), f(r.floor_exits_per_period, 1)] for idx, r in g.iterrows()]
-        o.table(name, [" / ".join(keys), "α", "K", "Pooled", "Hill", "Acceptance", "Floor exits / period"], rows, cap)
+        o.table(name, [{"floor_c": "c", "cross_corr": "correlation"}.get(keys[0], "M / N"), "α", "K", "Pooled", "Hill", "Acceptance", "Floor exits\n/ period"], rows, cap)
 
     # A12 equal split
     o.section("A12. Equal sharing", "Normal shocks, four cost forms; medians over five replications; acceptance by proposal type (standalone–standalone, standalone–unit); pool ruin: members capped at limited liability per period.")
     eq = d[(d.block == "equal-split") & (d.alpha.isin([0.05, 0.1, 0.3, 0.5]))]
     g = med(eq, ["cost_type", "alpha"], ["K_mean", "cong_capital_share_median", "acceptance_rate_ss", "acceptance_rate_sc", "voluntary_exits_per_period", "pool_ruin_per_period", "pool_shortfall_per_period"])
     rows = [[ct.replace("_", " ") if al == 0.05 else "", f"{al:g}", f(r.K_mean, 1), f(r.cong_capital_share_median), f(r.acceptance_rate_ss), f(r.acceptance_rate_sc), f(r.voluntary_exits_per_period, 1), f(r.pool_ruin_per_period, 3), f"{r.pool_shortfall_per_period:.1e}"] for (ct, al), r in g.iterrows()]
-    o.table("a12_equal_split", ["Cost form", "α", "K", "Pooled", "Acceptance s–s", "Acceptance s–u", "Voluntary exits / period", "Pool ruin / period", "Shortfall / period"], rows, "Table A12 — Equal-split block")
+    o.table("a12_equal_split", ["Cost form", "α", "K", "Pooled", "Acceptance\ns–s", "Acceptance\ns–u", "Voluntary\nexits / period", "Pool ruin\n/ period", "Shortfall\n/ period"], rows, "Table A12 — Equal-split block")
 
     # A13 endogenous alpha all cost forms + fixed 0.9
     o.section("A13. Endogenous sharing rate, all cost forms", "Start α = 0.1; medians over five replications; moment / loggain where both exist.")
     e = d[d.block == "endogenous-alpha"]; ec = c[(c.block == "endogenous-alpha")]
     g = med(e, ["log_family", "cost_type"], ["alpha_adopted_mean", "alpha_adopted_median", "alpha_adopted_share1", "K_mean", "cong_capital_share_median", "hill_exponent_median"]); gc = med(ec, ["log_family", "cost_type"], ["alpha_adopted_median", "K_mean"])
     rows = [[FAMTX[fm] if ct == "power_law" else "", ct.replace("_", " "), f(r.alpha_adopted_mean), f"{r.alpha_adopted_median:.2f} / {gc.loc[(fm, ct)].alpha_adopted_median:.2f}", f(r.alpha_adopted_share1), f"{r.K_mean:.1f} / {gc.loc[(fm, ct)].K_mean:.1f}", f(r.cong_capital_share_median), f(r.hill_exponent_median)] for fm in FAM for ct in ["power_law", "linear", "quadratic", "exponential"] for r in [g.loc[(fm, ct)]]]
-    o.table("a13_endogenous", ["Family", "Cost form", "ᾱ", "median, moment / loggain", "share at 1", "K, moment / loggain", "Pooled", "Hill"], rows, "Table A13 — Endogenous α by cost form")
+    o.table("a13_endogenous", ["Family", "Cost form", "ᾱ", "median,\nmoment / loggain", "share\nat 1", "K,\nmoment / loggain", "Pooled", "Hill"], rows, "Table A13 — Endogenous α by cost form")
 
     # A14 event study
     es = pd.read_csv(P("event_study_matching.csv"))
@@ -236,13 +261,13 @@ def main():
         for al in [0.05, 0.1, 0.3]:
             x = es[(es.family == fm) & (es.alpha == al)].set_index("variant")
             rows.append([FAMTX[fm] if al == 0.05 else "", f"{al:g}", f"{100*x.loc['current'].did_itt_median:.2f}"] + [f"{100*x.loc[v].did_owner_median:.2f}" for v in want] + [f"{100*x.loc['current'].post_gap_owner_mean:.2f}", f"{int(x.loc['B_k10'].n_matched):,}"])
-    o.table("a14_event_study", ["Family", "α", "ITT DiD", "Owner DiD: raw-share matching", "owner-path matching", "hit-free k = 10", "same hit count", "Post-entry gap", "matched events (B)"], rows, "Table A14 — Event study under four matchings")
+    o.table("a14_event_study", ["Family", "α", "ITT DiD", "Owner DiD:\nraw-share matching", "owner-path\nmatching", "hit-free\nk = 10", "same\nhit count", "Post-entry\ngap", "matched\nevents (B)"], rows, "Table A14 — Event study under four matchings")
 
     # A15 burstiness
     bs = pd.read_csv(P("burstiness_summary.csv")).groupby(["family", "alpha"]).mean(numeric_only=True)
     o.section("A15. Clustering of floor hits", "Index of dispersion of floor hits per market-period against the binomial reference; share of market-periods with three or more hits; worst market-period in a run. Means over three traced replications.")
     rows = [[FAMTX[fm] if al == 0.05 else "", f"{al:g}", f(r.hits_per_market_period), f"{r.D_median:.2f} [{r.D_p25:.2f}, {r.D_p75:.2f}]", f(r.D_binomial), f(r.share_periods_3plus), f(r.share_periods_3plus_binom), f"{r.max_hits_one_period:.0f}"] for (fm, al), r in bs.iterrows()]
-    o.table("a15_burstiness", ["Family", "α", "Hits / market-period", "D median [IQR]", "D binomial", "share ≥ 3 hits", "binomial", "max hits in one period"], rows, "Table A15 — Burstiness")
+    o.table("a15_burstiness", ["Family", "α", "Hits /\nmarket-period", "D median\n[IQR]", "D\nbinomial", "share\n≥ 3 hits", "binomial", "max hits in\none period"], rows, "Table A15 — Burstiness")
 
     # A16 growth-rate distributions (C41)
     gd = pd.read_csv(P("growth_distributions.csv"))
@@ -256,7 +281,7 @@ def main():
                 r = gd[(gd.table == "status") & (gd.family == fm) & (gd.alpha == al) & (gd.status == st)].iloc[0]
                 rows.append([FAMTX[fm] if (al == 0.05 and st == "standalone") else "", f"{al:g}" if st == "standalone" else "", st,
                              f(r.sd, 3), f(r.iqr, 3), f(r["skew"], 2), f(r.p1, 2), f(r.p99, 2), f(r.mad_sd, 3), f"{r.ll_laplace - r.ll_normal:+.3f}"])
-    o.table("a16_growth_status", ["Family", "α", "Status", "sd", "IQR", "skew", "p1", "p99", "MAD/SD", "LL Laplace minus normal"], rows,
+    o.table("a16_growth_status", ["Family", "α", "Status", "sd", "IQR", "skew", "p1", "p99", "MAD/SD", "LL Laplace\nminus normal"], rows,
             "Table A16 — Growth-rate distributions by status")
     rows = []
     for fm in ["normal", "laplace", "t3"]:
@@ -269,6 +294,34 @@ def main():
     o.table("a16b_growth_by_K", ["Family", "α", "K", "mean K", "sd ratio", "reference", "p1 ratio", "p99 ratio"], rows,
             "Table A16b — Members' growth-rate scale and tails by unit size, relative to standalones",
             note="A member's lower tail is cut more than its scale (p1 ratio below the sd ratio) and its upper tail less; the scale itself is what linear pooling of gross returns predicts.")
+
+    # A18 concentration (14 Nov): within-market HHI, top-decile owners' capital share, effective members, assortativity
+    o.section("A18. Concentration within markets and across owners", "Main block, power law, moment rule; medians over five replications of each run's median snapshot. Top decile: capital held by the largest ten per cent of owning units, a conglomerate counted as one owner. K_eff/K: inverse Herfindahl of members' capital weights over K. Assortativity: dispersion of members' market IQRs relative to a random set of the same size.")
+    m = d[(d.block == "main") & (d.cost_type == "power_law") & (d.alpha.isin([0.0, 0.1, 0.3, 0.5]))]
+    g = med(m, ["log_family", "alpha"], ["hhi_within_median", "top10pct_aggregate_median", "K_eff_over_K_median", "assort_iqr"])
+    rows = []
+    for fm in FAM:
+        for al in [0.0, 0.1, 0.3, 0.5]:
+            r = g.loc[(fm, al)]
+            rows.append([FAMTX[fm] if al == 0.0 else "", f"{al:g}", f(r.hhi_within_median, 3), f(r.top10pct_aggregate_median),
+                         f(r.K_eff_over_K_median) if al > 0 else "--", f(r.assort_iqr) if al > 0 else "--"])
+    o.table("a18_concentration", ["Family", "α", "HHI within\nmarkets", "Top-decile\nowners' share", "K_eff/K", "Assortativity"], rows,
+            "Table A18 — Concentration within markets and across owners")
+
+    # A19 accept rule (14 Nov): accept / moment / loggain side by side
+    o.section("A19. The accept rule: scope without consent", "Every feasible proposal merges and no one leaves by choice; 45 runs on the main cells' seeds; medians over five replications.")
+    ac = pd.read_csv(os.path.join(root, "pilot_d", "accept_comparison.csv"))
+    rows = []
+    for fm in FAM:
+        y = ac[ac.family == fm].sort_values("alpha")
+        for j, (_, r) in enumerate(y.iterrows()):
+            rows.append([FAMTX[fm] if j == 0 else "", f"{r.alpha:g}", f(r.K_mean_accept, 1), f(r.K_mean_moment, 1), f(r.K_mean_loggain, 1),
+                         f(r.cong_capital_share_median_accept), f(r.cong_capital_share_median_moment),
+                         f(r.hill_exponent_median_accept), f(r.hill_exponent_median_moment),
+                         f(r.hhi_within_median_accept, 3), f(r.hhi_within_median_moment, 3)])
+    o.table("a19_accept", ["Family", "α", "K:\naccept", "moment", "loggain", "Pooled:\naccept", "moment", "Hill:\naccept", "moment",
+                           "HHI within:\naccept", "moment"], rows,
+            "Table A19 — The accept rule against the moment and loggain rules")
 
     # A17 rank mobility (C42a)
     rm = pd.read_csv(P("rank_mobility.csv"))
@@ -289,7 +342,7 @@ def main():
                          f"{rmv(fm, al, 'all', 'all', 'hit_share'):.2f}",
                          f"{rmv(fm, al, 'owners', 'all', 'spearman'):.2f}",
                          f"{rmv(fm, al, 'owners', 'all', 'top_persist'):.2f}"])
-    o.table("a17_rank_mobility", ["Family", "α", "Spearman (all / hit-free)", "Top-decile persistence (all / hit-free)", "Leader turnover (all / hit-free)", "Mean rank change", "Share lifted within 100", "Owners: Spearman", "Owners: top-decile persistence"],
+    o.table("a17_rank_mobility", ["Family", "α", "Spearman\n(all /\nhit-free)", "Top-decile\npersistence\n(all / hit-free)", "Leader\nturnover\n(all / hit-free)", "Mean\nrank\nchange", "Share\nlifted\nwithin 100", "Owners:\nSpearman", "Owners:\ntop-decile\npersistence"],
             rows, "Table A17 — Rank mobility within markets and persistence of owners, lag 100 periods",
             note="Pooling lowers rank mobility within markets in every family (persistence rises with the sharing rate) and makes the top decile of owners more persistent; the hit-free columns show that part, not all, of the fall is fewer recapitalizations at the floor.")
     rows = []
@@ -300,7 +353,7 @@ def main():
                          f"{rmv(fm, al, 'all', 'member', 'mean_abs_drank'):.1f} / {rmv(fm, al, 'all', 'standalone', 'mean_abs_drank'):.1f}",
                          f"{rmv(fm, al, 'all', 'member', 'hit_share'):.2f} / {rmv(fm, al, 'all', 'standalone', 'hit_share'):.2f}",
                          f"{rmv(fm, al, 'all', 'member', 'top_share_of_decile'):.2f}"])
-    o.table("a17b_rank_mobility_status", ["Family", "α", "Top-decile persistence (member / standalone)", "Mean rank change (member / standalone)", "Share lifted within 100 (member / standalone)", "Members' share of the top decile"],
+    o.table("a17b_rank_mobility_status", ["Family", "α", "Top-decile persistence\n(member / standalone)", "Mean rank change\n(member / standalone)", "Share lifted within 100\n(member / standalone)", "Members' share\nof the top decile"],
             rows, "Table A17b — Rank mobility by status at the origin, lag 100 periods",
             note="Members' ranks move less than standalones' in every cell; the standalone top-decile figures rest on few firms, since members hold 84–99% of the top decile.")
 
