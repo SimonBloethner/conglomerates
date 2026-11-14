@@ -49,10 +49,36 @@ def load(root):
     return d, c, b
 
 
+CAPTIONS = {
+    "fig1_scope": ("Scope and pooled capital by sharing rate. (a) Mean members per unit $K$ against $\\alpha$, one line per family, with the loggain rule as a dashed twin and the equal-members reference $K^*$ at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$ as ticks; (b) pooled capital share against $\\alpha$. Main block, power-law cost; medians over five replications.", "fig:scope"),
+    "fig2_search": ("Scope relative to the equal-members reference, $K/K^*$, against the proposal probability $p \\in \\{0.05, 0.2, 1\\}$ at $\\alpha = 0.3$ and $0.5$, one line per family. Search block and main block, power-law cost; medians over five replications.", "fig:search"),
+    "fig3_owner_return": ("Member--standalone owner-return gap. (a) Mean (solid) and median (dashed) gap by family and $\\alpha$, percentage points per period; (b) the gap by unit size ($K = 2$, 3--4, $5+$) at $\\alpha = 0.3$; (c) floor hits per firm-period by status (standalone solid, member dashed). The 27 traced runs.", "fig:owner_return"),
+    "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: main-block medians as lines by family; the $\\alpha = 0.9$ cell and the search, lookback, correlation and homogeneous blocks as markers; the endogenous block at its adopted rate. The exponent rises with $\\alpha$, by about 0.45 per unit up to 0.5 and faster beyond, and does not respond to scope or to the number of firms pooling.", "fig:hill"),
+    "fig5_burstiness": ("Clustering of floor hits. Index of dispersion of floor hits per market-period by family and $\\alpha$ (median and IQR over the traced replications) against the binomial reference.", "fig:burstiness"),
+    "fig6_consent": ("Consent by scope. (a) Acceptance rate by size $K$ of the prospective unit at $\\alpha = 0.3$ under the moment and loggain rules ($p = 0.05$ and $p = 1$); (b) the equal-weight marginal gain of the $K$-th member, the incumbents' gain from a floor-sized recruit and the marginal cost, log axis; (c) the binding member's estimated gain by $K$ (median and IQR).", "fig:consent"),
+}
+
+
+def write_figure_tex(out, name):
+    """A \\input-able figure environment beside the PDF: latex/figures/<name>.tex (path relative to latex/)."""
+    cap, label = CAPTIONS[name]
+    texdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(out))), "latex", "figures")
+    os.makedirs(texdir, exist_ok=True)
+    import shutil
+    os.makedirs(os.path.join(texdir, "paper"), exist_ok=True)
+    shutil.copyfile(os.path.join(out, f"{name}.pdf"), os.path.join(texdir, "paper", f"{name}.pdf"))
+    rel = f"figures/paper/{name}.pdf"   # relative to latex/, where collaboration.tex compiles
+    tex = ["\\begin{figure}[htbp]", "\\centering", f"\\includegraphics[width=\\linewidth]{{{rel}}}",
+           f"\\caption{{{cap}}}", f"\\label{{{label}}}", "\\end{figure}", ""]
+    open(os.path.join(texdir, f"{name}.tex"), "w").write("\n".join(tex))
+
+
 def save(fig, out, name):
     for ext in ("pdf", "png"):
         fig.savefig(os.path.join(out, f"{name}.{ext}"))
     plt.close(fig)
+    if name in CAPTIONS:
+        write_figure_tex(out, name)
 
 
 # ---------------------------------------------------------------- fig 1
