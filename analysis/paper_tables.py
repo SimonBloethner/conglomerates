@@ -27,12 +27,16 @@ def f(x, nd=1):
     return f"{x:.{nd}f}"
 
 
-def table(rows, header, caption, label, colspec=None, note=None, small=True):
+def table(rows, header, caption, label, colspec=None, note=None, small=True, wide=None):
+    """wide=None | "resize" (tabular scaled to \\linewidth) | "sideways" (rotated page; needs \\usepackage{rotating})."""
     n = len(header)
     colspec = colspec or ("l" + "r" * (n - 1))
-    lines = ["\\begin{table}[htbp]", "\\centering", f"\\caption{{{caption}}}", f"\\label{{{label}}}"]
+    env = "sidewaystable" if wide in ("sideways", "sideways-resize") else "table"
+    lines = [f"\\begin{{{env}}}[htbp]", "\\centering", f"\\caption{{{caption}}}", f"\\label{{{label}}}"]
     if small:
         lines.append("\\small")
+    if wide in ("resize", "sideways-resize"):
+        lines.append("\\resizebox{\\linewidth}{!}{%")
     lines.append(f"\\begin{{tabular}}{{{colspec}}}")
     lines.append("\\toprule")
     lines.append(" & ".join(header) + " \\\\")
@@ -46,9 +50,11 @@ def table(rows, header, caption, label, colspec=None, note=None, small=True):
             lines.append(" & ".join(str(c) for c in r) + " \\\\")
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
+    if wide in ("resize", "sideways-resize"):
+        lines.append("}")
     if note:
         lines.append(f"\\par\\smallskip\\begin{{minipage}}{{0.95\\linewidth}}\\footnotesize {note}\\end{{minipage}}")
-    lines.append("\\end{table}")
+    lines.append(f"\\end{{{env}}}")
     return "\n".join(lines) + "\n"
 
 
@@ -168,7 +174,7 @@ def table3(d, c, b, out):
     open(os.path.join(out, "table3_scope.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Floor exits", "Vol.\\ exits", "Accept.",
                      "Floor hit, member", "Floor hit, standalone"],
-              "Scope, turnover and hazard; main block, power-law cost; medians over five replications", "tab:scope", note=note))
+              "Scope, turnover and hazard; main block, power-law cost; medians over five replications", "tab:scope", note=note, wide="resize"))
 
 
 # ---------------------------------------------------------------- Table 3b
@@ -216,7 +222,7 @@ def table3c(root, out):
         table(rows, ["Family", "$\\alpha$", "$K^*$", "$K_{\\text{accept}}$", "$K_{\\text{hom}}$", "$K$", "$K_{\\text{loggain}}$",
                      "Consent: $K_{\\text{accept}} - K$", "Verifiability: $K - K_{\\text{loggain}}$"],
               "Scope under five rules and the two differences that bound it, power-law cost; medians over five replications",
-              "tab:decomposition", note=note))
+              "tab:decomposition", note=note, wide="resize"))
 
 
 def table3c_legacy(root, out):
@@ -286,7 +292,7 @@ def table4(root, out):
             "Floor rates per firm-period of that status; hazard ratio = member / standalone.")
     open(os.path.join(out, "table4_owner_return.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "Gap, mean", "Gap, median", "$K = 2$", "$K = 3$--4", "$K \\geq 5$", "Share ordinary", "Floor, member", "Floor, standalone", "Hazard ratio"],
-              "Owners' time-average growth and ruin hazard by affiliation status", "tab:owner", note=note))
+              "Owners' time-average growth and ruin hazard by affiliation status", "tab:owner", note=note, wide="resize"))
 
 
 # ---------------------------------------------------------------- Table 5
@@ -309,7 +315,7 @@ def table5(d, root, out):
             "Last two columns: the fixed $\\alpha = 0.9$ cell for comparison.")
     open(os.path.join(out, "table5_endogenous_alpha.tex"), "w").write(
         table(rows, ["Family", "$\\bar\\alpha$", "median", "share at 1", "$K$", "Pooled", "Hill", "$\\rho(\\alpha, \\bar q)$", "units", "$K$ at $\\alpha = 0.9$", "Hill at $\\alpha = 0.9$"],
-              "The sharing rate units choose", "tab:endogenous", note=note))
+              "The sharing rate units choose", "tab:endogenous", note=note, wide="resize"))
 
 
 def nu_row(d, cols):
@@ -352,7 +358,7 @@ def table6(d, c, b, out):
             "Three-family rows are normal / Laplace / $t_3$; equal-split cells are linear / quadratic / exponential / power law.")
     open(os.path.join(out, "table6_robustness.tex"), "w").write(
         table(rows, ["Block", "What varies", "$K$", "Pooled", "Hill", "Floor exits", "Finding"], "Robustness summary", "tab:robustness",
-              colspec="llrrrrl", note=note))
+              colspec="llrrrrp{0.36\\linewidth}", note=note, wide="sideways-resize"))
     # 6b
     rows = []
     for fam, mults in [("laplace", [0.5, 1.0, 2.0, 5.0, 10.0, 20.0]), ("t3", [1.0, 5.0, 10.0, 20.0])]:

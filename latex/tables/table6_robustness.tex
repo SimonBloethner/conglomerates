@@ -1,9 +1,10 @@
-\begin{table}[htbp]
+\begin{sidewaystable}[htbp]
 \centering
 \caption{Robustness summary}
 \label{tab:robustness}
 \small
-\begin{tabular}{llrrrrl}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llrrrrp{0.36\linewidth}}
 \toprule
 Block & What varies & $K$ & Pooled & Hill & Floor exits & Finding \\
 \midrule
@@ -22,5 +23,6 @@ market heterogeneity & every market at $q = 0.20$ (three families) & 5.6 / 5.5 /
 decision rule & loggain (three families) & 4.3 / 4.0 / 3.7 & 0.73 / 0.78 / 0.77 & 1.17 / 1.16 / 1.10 & 26 / 37 / 43 & verifiability 3--20\% of the gap \\
 \bottomrule
 \end{tabular}
+}
 \par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize At $\alpha = 0.3$, Laplace unless stated, power-law cost unless stated, moment rule; medians over five replications. Baseline: $K = 5.4$, pooled 0.91, Hill 1.19, 36 floor exits per period. Three-family rows are normal / Laplace / $t_3$; equal-split cells are linear / quadratic / exponential / power law.\end{minipage}
-\end{table}
+\end{sidewaystable}
