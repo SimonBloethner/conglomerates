@@ -41,6 +41,8 @@ def table(rows, header, caption, label, colspec=None, note=None, small=True):
         if r == "midrule":
             lines.append("\\midrule")
         else:
+            if isinstance(r, list) and len(r) == 1 and str(r[0]).startswith("\\multicolumn"):
+                lines.append("\\addlinespace[3pt]")
             lines.append(" & ".join(str(c) for c in r) + " \\\\")
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
@@ -69,67 +71,83 @@ def kstar(b, fam, alpha, cost="power_law", mult=1.0):
 
 # ---------------------------------------------------------------- Table 1
 def table1(sc, out):
+    """Table 1, regrouped (14 Nov): one parameter per row, grouped Economy / Shocks / Pooling / Decisions / Simulation;
+    the blocks in which a parameter is varied are Table 2's business, so the old 'Varied in block' column is gone and
+    a short 'Set by' column says where each main-block value comes from."""
     main = [s for s in sc if s["block"] == "main"]
     s0 = main[0]
     alphas = sorted({s["alpha"] for s in main})
-    vals = lambda key, blk: sorted({s[key] for s in sc if s["block"] == blk})
+    G = lambda name: [f"\\multicolumn{{4}}{{l}}{{\\emph{{{name}}}}}"]
     rows = [
-        ["$M$, $N$", "markets, firms per market", f"{s0['M']}, {s0['N']}", "size: $\\{25, 100\\}^2$"],
-        ["$T$, burn-in", "periods, discarded periods", f"{s0['T']:,}, {s0['burn_in']:,}", "--"],
-        ["$F$", "shock family, equal IQR", "normal, Laplace, $t_3$", f"$\\nu$: Student-$t$, $\\nu \\in \\{{{', '.join(str(v) for v in vals('nu', 'nu'))}\\}}$"],
-        ["$q_m$", "market IQR of $x_{it}$", f"rescaled onto $[{s0['sigma_range'][0]}, {s0['sigma_range'][1]}]$", "homogeneous: every market at 0.20"],
-        ["$g$", "time-average growth rate", f"{s0['g']}", "--"],
-        ["--", "cross-market correlation", f"{s0['cross_corr']}", f"correlation: {vals('cross_corr', 'correlation')[-1]}"],
-        ["$c$", "floor, fraction of market mean", f"{s0['floor_c']}", f"floor: {', '.join(str(v) for v in vals('floor_c', 'floor-level'))}; size: $c^*(N)$"],
-        ["$\\alpha$", "sharing rate", ", ".join(str(a) for a in alphas), "endogenous: chosen by each unit; fixed 0.9"],
-        ["--", "sharing rule", "proportional to size", "equal split"],
-        ["$\\Phi(K)$", "coordination cost, $\\Phi(40) = 0.0017$", "power law (main); linear, quadratic, exponential",
-         "cost level: $\\times$" + ", $\\times$".join(str(v) for v in sorted({s.get('cost_multiplier', 1.0) for s in sc if s['block'] in ('cost-level', 'cost-level-high')} - {1.0}))],
-        ["$p$", "search probability per firm-period", f"{s0['merge_thresh']}", f"search: {', '.join(str(v) for v in vals('merge_thresh', 'search'))}"],
-        ["$l$", "decision window and lock-in", f"{s0['lookback']}", f"lookback: {', '.join(str(v) for v in vals('lookback', 'lookback') if v != s0['lookback'])}"],
-        ["--", "decision rule", "second moments of the demeaned window (moment)", "sample mean of the replayed log gain (loggain), every cell"],
-        ["--", "replications per cell", str(len({s["rep"] for s in main})), "--"],
+        G("Economy"),
+        ["$M$", "markets", f"{s0['M']}", "set; varied in the size block"],
+        ["$N$", "firms per market", f"{s0['N']}", "set; varied in the size block"],
+        ["$g$", "time-average growth rate, common to all markets", f"{s0['g']}", "immaterial: cancels from every share (3.1)"],
+        ["$c$", "reflecting floor, fraction of the market mean", f"{s0['floor_c']}", "Hill exponent 1.06 at $\\alpha = 0$ (Axtell, 2001); recalibrated per $N$ (A2)"],
+        G("Shocks"),
+        ["$F$", "shock family", "normal, Laplace, $t_3$", "Laplace is the empirical case; the others bracket it (3.1)"],
+        ["$q_m$", "market IQR of $x_{it}$, drawn once per economy", f"on $[{s0['sigma_range'][0]}, {s0['sigma_range'][1]}]$", "a slice of the Stanley et al.\\ (1996) dispersion range (3.1)"],
+        ["$\\rho$", "cross-market correlation of $\\epsilon$", f"{s0['cross_corr']}", "independence; 0.3 as robustness"],
+        G("Pooling"),
+        ["$\\alpha$", "sharing rate", ", ".join(str(a) for a in alphas), "swept; endogenous in one block"],
+        ["--", "sharing rule", "proportional to size", "equal split as robustness"],
+        ["$\\Phi(K)$", "coordination cost schedule", "power law; linear, quadratic, exponential", "shape unsettled in the literature (3.2); all four run"],
+        ["$\\Phi(40)$", "common cost level of the four schedules", "0.0017 per period", "level swept $\\times 0.5$ to $\\times 20$"],
+        G("Decisions"),
+        ["$p$", "proposal probability per firm-period", f"{s0['merge_thresh']}", "uncalibrated; swept to 1"],
+        ["$l$", "decision window and lock-in, periods", f"{s0['lookback']}", "a practitioner's lookback (3.3); swept 20--500"],
+        ["--", "decision rule", "moment (second moments of the demeaned window)", "Booth--Fama estimate (3.3); loggain, cv, accept as variants and controls"],
+        G("Simulation"),
+        ["$T$", "periods per run", f"{s0['T']:,}", "--"],
+        ["--", "burn-in, periods discarded", f"{s0['burn_in']:,}", "relaxation check to 16,000 periods (A3)"],
+        ["--", "replications per cell", str(len({s["rep"] for s in main})), "common random numbers across $\\alpha$"],
     ]
     note = ("Cost parameters: power law $b_0 = 2.032\\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\\cdot10^{-5}$; "
-            "quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$.")
+            "quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. "
+            "Which block varies which parameter, and over which values, is in Table~\\ref{tab:design}.")
     open(os.path.join(out, "table1_parameters.tex"), "w").write(
-        table(rows, ["Symbol", "Meaning", "Main block", "Varied in block"], "Parameters (main block, and the block in which each is varied)",
-              "tab:parameters", colspec="llll", note=note))
+        table(rows, ["Symbol", "Meaning", "Main block", "Set by"], "Parameters of the main block",
+              "tab:parameters", colspec="lp{0.27\\linewidth}p{0.2\\linewidth}p{0.3\\linewidth}", note=note))
 
 
 # ---------------------------------------------------------------- Table 2
 def table2(sc, out):
+    """Table 2, regrouped (14 Nov): blocks grouped by what they vary (environment / contract / decisions / rule
+    controls); the three cost-level blocks merged into one row; the 'Cost forms' column folded into 'What varies'
+    (power law unless stated). Run counts come from scenarios.json."""
     df = pd.DataFrame(sc)
-    order = ["main", "equal-split", "cost-level", "cost-level-full", "cost-level-high", "lookback", "correlation",
-             "endogenous-alpha", "floor-level", "search", "size", "homogeneous", "nu", "alpha-0.9"]
-    what = {"main": "--", "equal-split": "sharing rule: equal", "cost-level": "$b_0 \\times 0.5, \\times 2$ (power law, exponential: whole schedule)",
-            "cost-level-full": "$b_0, b_1, b_2 \\times 0.5, \\times 2$", "cost-level-high": "$b_0 \\times 5, \\times 10, \\times 20$",
-            "lookback": "$l \\in \\{20, 50, 100, 200, 500\\}$", "correlation": "cross-market correlation 0.3",
-            "endogenous-alpha": "$\\alpha_C$ chosen by unit, start 0.1", "floor-level": "$c \\in \\{0.10, 0.35\\}$",
-            "search": "$p \\in \\{0.2, 1\\}$", "size": "$(M, N) \\in \\{25, 100\\}^2$, $c^*(N)$",
-            "homogeneous": "every market at $q = 0.20$; both decision rules", "nu": "Student-$t$, $\\nu \\in \\{2.5, 4\\}$",
-            "alpha-0.9": "fixed $\\alpha = 0.9$ (C38)"}
-    grid = sorted(df[df.block == "main"].alpha.unique())
-    rows = []
-    for blk in order:
-        x = df[df.block == blk]
-        if len(x) == 0:
-            continue
-        fams = sorted(x.log_family.unique(), key=lambda s: (FAM + ["student_t"]).index(s) if s in FAM + ["student_t"] else 9)
-        famtxt = "all three" if set(fams) >= set(FAM) else ", ".join(FAMTEX.get(s, "$t$") for s in fams)
-        costs = sorted(x.cost_type.unique())
-        costtxt = "all four" if len(costs) == 4 else ", ".join(s.replace("_", " ") for s in costs)
-        al = sorted(x.alpha.dropna().unique())
-        altxt = "grid" if list(al) == list(grid) else ("--" if blk == "endogenous-alpha" else ", ".join(f"{a:g}" for a in al))
-        rows.append([blk.replace("-", " ").replace("alpha", "$\\alpha$").replace("nu", "$\\nu$") if blk not in ("alpha-0.9",) else "fixed $\\alpha = 0.9$",
-                     what[blk], famtxt, costtxt, altxt, f"{len(x):,}"])
-    rows.append("midrule")
-    rows.append(["total", "", "", "", "", f"{len(df):,}"])
-    note = ("Five replications per cell; ``grid'' is the nine-value $\\alpha$ grid. Every cell except the $\\nu$ block is also run under the loggain rule "
-            "with the same seeds (pilot C, 2,100 runs).")
+    n = lambda *blks: int(sum((df.block == b).sum() for b in blks))
+    grid = "grid"
+    G = lambda name: [f"\\multicolumn{{5}}{{l}}{{\\emph{{{name}}}}}"]
+    rows = [
+        ["main", "--; all four cost schedules", "all three", grid, f"{n('main'):,}"],
+        G("Environment"),
+        ["$\\nu$", "Student-$t$ with $\\nu \\in \\{2.5, 4\\}$", "$t$", "0.1, 0.3, 0.5", f"{n('nu'):,}"],
+        ["correlation", "$\\rho = 0.3$ (Gaussian copula)", "Laplace", grid, f"{n('correlation'):,}"],
+        ["floor level", "$c \\in \\{0.10, 0.35\\}$", "Laplace", grid, f"{n('floor-level'):,}"],
+        ["size", "$(M, N) \\in \\{25, 100\\}^2$ with $c^*(N)$", "Laplace", "0, 0.1, 0.3, 0.5", f"{n('size'):,}"],
+        ["homogeneous", "every market at $q = 0.20$; moment and loggain rules", "all three", "0.05, 0.1, 0.3, 0.5", f"{n('homogeneous'):,}"],
+        G("Contract"),
+        ["equal split", "net pool split equally; all four cost schedules", "normal", grid, f"{n('equal-split'):,}"],
+        ["cost level", "$\\times 0.5$, $\\times 2$: all four schedules (linear and quadratic also with $b_1, b_2$ scaled); $\\times 5$, $\\times 10$, $\\times 20$: power law",
+         "Laplace; $t_3$ at the high levels", "grid; 0.1, 0.3, 0.5 at the high levels", f"{n('cost-level', 'cost-level-full', 'cost-level-high'):,}"],
+        ["endogenous $\\alpha$", "$\\alpha_C$ renegotiated by each unit, start 0.1; all four cost schedules", "all three", "--", f"{n('endogenous-alpha'):,}"],
+        ["fixed $\\alpha = 0.9$", "one point beyond the grid, for the endogenous block", "all three", "0.9", f"{n('alpha-0.9'):,}"],
+        G("Decisions"),
+        ["lookback", "$l \\in \\{20, 50, 100, 200, 500\\}$", "Laplace, $t_3$", "0.1, 0.3", f"{n('lookback'):,}"],
+        ["search", "$p \\in \\{0.2, 1\\}$", "all three", "0.05, 0.1, 0.3, 0.5", f"{n('search'):,}"],
+        G("Rule controls (3.3)"),
+        ["cv", "exact replay minus its first-order term", "all three", "0.1, 0.3, 0.5", f"{n('cv'):,}"],
+        ["accept", "every feasible proposal accepted, no voluntary exit", "all three", "0.1, 0.3, 0.5", f"{n('accept'):,}"],
+        "midrule",
+        ["total", "", "", "", f"{len(df):,}"],
+    ]
+    note = ("Five replications per cell; ``grid'' is the nine-value $\\alpha$ grid of the main block; power-law cost unless "
+            "stated. Every cell of the original design except the $\\nu$ block is also run under the loggain rule with the "
+            "same seeds (2,100 runs; appendix).")
     open(os.path.join(out, "table2_design.tex"), "w").write(
-        table(rows, ["Block", "What varies", "Families", "Cost forms", "$\\alpha$", "Runs"], "Simulation design", "tab:design",
-              colspec="llllll", note=note))
+        table(rows, ["Block", "What varies", "Families", "$\\alpha$", "Runs"], "Simulation design", "tab:design",
+              colspec="lp{0.36\\linewidth}p{0.12\\linewidth}p{0.17\\linewidth}r", note=note))
 
 
 # ---------------------------------------------------------------- Table 3

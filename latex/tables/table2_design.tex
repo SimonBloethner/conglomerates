@@ -3,27 +3,35 @@
 \caption{Simulation design}
 \label{tab:design}
 \small
-\begin{tabular}{llllll}
+\begin{tabular}{lp{0.36\linewidth}p{0.12\linewidth}p{0.17\linewidth}r}
 \toprule
-Block & What varies & Families & Cost forms & $\alpha$ & Runs \\
+Block & What varies & Families & $\alpha$ & Runs \\
 \midrule
-main & -- & all three & all four & grid & 540 \\
-equal split & sharing rule: equal & normal & all four & grid & 180 \\
-cost level & $b_0 \times 0.5, \times 2$ (power law, exponential: whole schedule) & Laplace & all four & grid & 360 \\
-cost level full & $b_0, b_1, b_2 \times 0.5, \times 2$ & Laplace & linear, quadratic & grid & 180 \\
-cost level high & $b_0 \times 5, \times 10, \times 20$ & Laplace, $t_3$ & power law & 0.1, 0.3, 0.5 & 90 \\
-lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & power law & 0.1, 0.3 & 100 \\
-correlation & cross-market correlation 0.3 & Laplace & power law & grid & 45 \\
-endogenous $\alpha$ & $\alpha_C$ chosen by unit, start 0.1 & all three & all four & -- & 60 \\
-floor level & $c \in \{0.10, 0.35\}$ & Laplace & power law & grid & 90 \\
-search & $p \in \{0.2, 1\}$ & all three & power law & 0.05, 0.1, 0.3, 0.5 & 120 \\
-size & $(M, N) \in \{25, 100\}^2$, $c^*(N)$ & Laplace & power law & 0, 0.1, 0.3, 0.5 & 80 \\
-homogeneous & every market at $q = 0.20$; both decision rules & all three & power law & 0.05, 0.1, 0.3, 0.5 & 120 \\
-$\nu$ & Student-$t$, $\nu \in \{2.5, 4\}$ & $t$ & power law & 0.1, 0.3, 0.5 & 30 \\
-fixed $\alpha = 0.9$ & fixed $\alpha = 0.9$ (C38) & all three & power law & 0.9 & 15 \\
+main & --; all four cost schedules & all three & grid & 540 \\
+\addlinespace[3pt]
+\multicolumn{5}{l}{\emph{Environment}} \\
+$\nu$ & Student-$t$ with $\nu \in \{2.5, 4\}$ & $t$ & 0.1, 0.3, 0.5 & 30 \\
+correlation & $\rho = 0.3$ (Gaussian copula) & Laplace & grid & 45 \\
+floor level & $c \in \{0.10, 0.35\}$ & Laplace & grid & 90 \\
+size & $(M, N) \in \{25, 100\}^2$ with $c^*(N)$ & Laplace & 0, 0.1, 0.3, 0.5 & 80 \\
+homogeneous & every market at $q = 0.20$; moment and loggain rules & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
+\addlinespace[3pt]
+\multicolumn{5}{l}{\emph{Contract}} \\
+equal split & net pool split equally; all four cost schedules & normal & grid & 180 \\
+cost level & $\times 0.5$, $\times 2$: all four schedules (linear and quadratic also with $b_1, b_2$ scaled); $\times 5$, $\times 10$, $\times 20$: power law & Laplace; $t_3$ at the high levels & grid; 0.1, 0.3, 0.5 at the high levels & 630 \\
+endogenous $\alpha$ & $\alpha_C$ renegotiated by each unit, start 0.1; all four cost schedules & all three & -- & 60 \\
+fixed $\alpha = 0.9$ & one point beyond the grid, for the endogenous block & all three & 0.9 & 15 \\
+\addlinespace[3pt]
+\multicolumn{5}{l}{\emph{Decisions}} \\
+lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & 0.1, 0.3 & 100 \\
+search & $p \in \{0.2, 1\}$ & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
+\addlinespace[3pt]
+\multicolumn{5}{l}{\emph{Rule controls (3.3)}} \\
+cv & exact replay minus its first-order term & all three & 0.1, 0.3, 0.5 & 45 \\
+accept & every feasible proposal accepted, no voluntary exit & all three & 0.1, 0.3, 0.5 & 45 \\
 \midrule
-total &  &  &  &  & 2,100 \\
+total &  &  &  & 2,100 \\
 \bottomrule
 \end{tabular}
-\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Five replications per cell; ``grid'' is the nine-value $\alpha$ grid. Every cell except the $\nu$ block is also run under the loggain rule with the same seeds (pilot C, 2,100 runs).\end{minipage}
+\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Five replications per cell; ``grid'' is the nine-value $\alpha$ grid of the main block; power-law cost unless stated. Every cell of the original design except the $\nu$ block is also run under the loggain rule with the same seeds (2,100 runs; appendix).\end{minipage}
 \end{table}
