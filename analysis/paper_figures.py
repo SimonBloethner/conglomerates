@@ -53,7 +53,7 @@ CAPTIONS = {
     "fig1_scope": ("Scope and pooled capital by sharing rate. (a) Mean members per unit $K$ against $\\alpha$, one line per family, with the loggain rule as a dashed twin and the equal-members reference $K^*$ at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$ as ticks; (b) pooled capital share against $\\alpha$. Main block, power-law cost; medians over five replications.", "fig:scope"),
     "fig2_search": ("Decision parameters. (a), (b) Scope relative to the equal-members reference, $K/K^*$, against the proposal probability $p \\in \\{0.05, 0.2, 1\\}$ at $\\alpha = 0.3$ and $0.5$, one line per family; (c) scope against the window length $l$ at $\\alpha = 0.3$, Laplace and $t_3$, moment rule solid and loggain rule dashed. Search, lookback and main blocks, power-law cost; medians over five replications.", "fig:search"),
     "fig3_owner_return": ("Member--standalone owner-return gap. (a) Mean (solid) and median (dashed) gap by family and $\\alpha$, percentage points per period; (b) the gap by unit size ($K = 2$, 3--4, $5+$) at $\\alpha = 0.3$; (c) floor hits per firm-period by status (standalone solid, member dashed). The 27 traced runs.", "fig:owner_return"),
-    "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: main-block medians as lines by family; the $\\alpha = 0.9$ cell and the search, lookback, correlation and homogeneous blocks as markers; the endogenous block at its adopted rate. The exponent rises with $\\alpha$, by about 0.45 per unit up to 0.5 and faster beyond, and does not respond to scope or to the number of firms pooling.", "fig:hill"),
+        "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: main-block medians as lines by family; the search block ($p = 0.2$ and $1$ against the baseline $0.05$) as hollow squares, one per cell; the fixed $\\alpha = 0.9$ cell as crosses; the endogenous block as one diamond per family at its median adopted rate. No cells were run between $\\alpha = 0.5$ and $0.9$. The exponent rises with $\\alpha$ and does not respond to scope: the search block raises scope by a third to two thirds at the same rate and sits on the curve.", "fig:hill"),
     "fig5_burstiness": ("Clustering of floor hits. Index of dispersion of floor hits per market-period by family and $\\alpha$ (median and IQR over the traced replications) against the binomial reference.", "fig:burstiness"),
     "fig6_consent": ("Consent by scope. (a) Acceptance rate by size $K$ of the prospective unit at $\\alpha = 0.3$ under the moment and loggain rules ($p = 0.05$ and $p = 1$); (b) the equal-weight marginal gain of the $K$-th member, the incumbents' gain from a floor-sized recruit and the marginal cost, log axis; (c) the binding member's estimated gain by $K$ (median and IQR).", "fig:consent"),
 }
@@ -165,32 +165,33 @@ def fig3(root, out):
 
 # ---------------------------------------------------------------- fig 4
 def fig4(d, out):
-    """Hill exponent against the sharing rate (8 Nov: x-axis changed from pooled share to alpha; the pooled
-    share saturates by alpha = 0.05 and hid the proportionality). Main block as lines (medians over reps);
-    the other blocks at the same floor and cost as markers; the endogenous block at its adopted rate."""
+    """Hill exponent against the sharing rate (15 Nov redraw). Main block as lines (medians over replications); the
+    search block (p = 0.2 and 1) as hollow squares, one marker per cell = median over replications; the fixed
+    alpha = 0.9 cell as crosses; the endogenous block as one diamond per family at its median adopted rate. The
+    lookback, correlation and homogeneous markers of the earlier version are dropped (they sit on the curve and are
+    in the robustness tables); the earlier version also drew every replication, hence five markers per cell."""
     x = d[d.K_mean.notna() & (d.decision_rule == "moment")]
     x = x[(x.cost_type == "power_law") & (x.floor_c.round(5) == 0.12717) & (x.sharing_rule == "proportional")]
-    x = x[~x.block.isin(["nu", "size", "floor-level", "cost-level-high", "cost-level"])]
-    fig, ax = plt.subplots(figsize=(4.8, 3.4))
+    fig, ax = plt.subplots(figsize=(5.0, 3.4))
     for f in FAMILIES:
         g = med(x[(x.block == "main") & (x.log_family == f)], "alpha", ["hill_exponent_median"])
-        ax.plot(g.alpha, g.hill_exponent_median, color=COLOR[f], marker=MARKER[f], label=LABEL[f], zorder=4)
-    shape = {"alpha-0.9": ("P", r"main, $\alpha$ = 0.9"), "search": ("s", "search"), "lookback": ("v", "lookback"),
-             "correlation": ("x", "correlation"), "homogeneous": ("+", "homogeneous"),
-             "endogenous-alpha": ("D", "endogenous (at adopted rate)")}
-    for blk, (mk, lab) in shape.items():
-        y = x[x.block == blk]
-        xs = y.alpha_adopted_median if blk == "endogenous-alpha" else y.alpha
-        for f in FAMILIES:
-            z = y[y.log_family == f]; xz = xs[y.log_family == f]
-            hollow = mk in ("s", "v", "D")
-            ax.scatter(xz, z.hill_exponent_median, marker=mk, s=18, alpha=0.8, lw=0.8,
-                       facecolors="none" if hollow else COLOR[f], edgecolors=COLOR[f],
-                       label=lab if f == "normal" else None, zorder=3)
+        ax.plot(g.alpha, g.hill_exponent_median, color=COLOR[f], marker=MARKER[f], ms=4, label=LABEL[f], zorder=4)
+        sr = med(x[(x.block == "search") & (x.log_family == f)], ["alpha", "merge_thresh"], ["hill_exponent_median"])
+        ax.scatter(sr.alpha, sr.hill_exponent_median, marker="s", s=28, facecolors="none", edgecolors=COLOR[f], lw=0.9,
+                   label="search, $p = 0.2$ and $1$" if f == "normal" else None, zorder=3)
+        a9 = med(x[(x.block == "alpha-0.9") & (x.log_family == f)], "alpha", ["hill_exponent_median"])
+        ax.scatter(a9.alpha, a9.hill_exponent_median, marker="P", s=30, color=COLOR[f],
+                   label=r"fixed $\alpha = 0.9$" if f == "normal" else None, zorder=4)
+        e = x[(x.block == "endogenous-alpha") & (x.log_family == f)]
+        ax.scatter([e.alpha_adopted_median.median()], [e.hill_exponent_median.median()], marker="D", s=30, facecolors="none",
+                   edgecolors=COLOR[f], lw=1.0, label="endogenous, at adopted rate" if f == "normal" else None, zorder=4)
+    ax.axvspan(0.5, 0.9, color="#000000", alpha=0.04, lw=0)
+    ax.text(0.7, ax.get_ylim()[0] + 0.03, "no runs", ha="center", va="bottom", fontsize=7, color="#555555")
     ax.set_xlabel(r"sharing rate $\alpha$"); ax.set_ylabel("Hill exponent, within-market shares")
     ax.set_xlim(-0.02, 1.0)
     h, l = ax.get_legend_handles_labels()
-    ax.legend(h, l, loc="upper left", ncol=2, fontsize=7)
+    order = [l.index(LABEL[f]) for f in FAMILIES] + [i for i, lab in enumerate(l) if lab not in LABEL.values()]
+    ax.legend([h[i] for i in order], [l[i] for i in order], loc="upper left", fontsize=7)
     save(fig, out, "fig4_hill_alpha")
 
 
