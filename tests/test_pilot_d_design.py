@@ -4,7 +4,8 @@
 (255 of them reuse a C36 run), the homogeneous block (120, both rules) and the nu block (30).
 C38 appends the alpha-0.9 block (15, ids 1995-2009): 2,010 scenarios, the first 1,995 unchanged.
 C39 appends the cv block (45, ids 2010-2054): 2,055 scenarios, the first 2,010 unchanged.
-C42 appends the accept block (45, ids 2055-2099): 2,100 scenarios, the first 2,055 unchanged."""
+C42 appends the accept block (45, ids 2055-2099): 2,100 scenarios, the first 2,055 unchanged.
+C43 appends the alpha-gap block (45, ids 2100-2144): 2,145 scenarios, the first 2,100 unchanged."""
 import gzip
 import json
 import os
@@ -28,11 +29,13 @@ TOTAL_C37 = 1995
 BLOCK_COUNTS_C37 = {'main': 540, 'equal-split': 180, 'cost-level': 360, 'lookback': 100, 'correlation': 45,
                     'endogenous-alpha': 60, 'floor-level': 90, 'search': 120, 'size': 80, 'cost-level-full': 180,
                     'cost-level-high': 90, 'homogeneous': 120, 'nu': 30}
-BLOCK_COUNTS = dict(BLOCK_COUNTS_C37, **{'alpha-0.9': 15, 'cv': 45, 'accept': 45})       # C38, C39, C42
+BLOCK_COUNTS = dict(BLOCK_COUNTS_C37, **{'alpha-0.9': 15, 'cv': 45, 'accept': 45,        # C38, C39, C42
+                                         'alpha-gap': 45})                                # C43
 TOTAL_C38 = TOTAL_C37 + 15
 TOTAL_C39 = TOTAL_C38 + 45
-TOTAL = TOTAL_C39 + 45
-NEW_BLOCKS = ('homogeneous', 'nu', 'alpha-0.9', 'cv', 'accept')   # not inherited from pilot C
+TOTAL_C42 = TOTAL_C39 + 45
+TOTAL = TOTAL_C42 + 45
+NEW_BLOCKS = ('homogeneous', 'nu', 'alpha-0.9', 'cv', 'accept', 'alpha-gap')   # not inherited from pilot C
 D_KEYS = {'pilot', 'twin_id', 'source_id', 'nu'}
 
 
@@ -124,6 +127,8 @@ def test_no_replay_and_rule_by_block(d):
         elif s['block'] != 'homogeneous':
             assert s['decision_rule'] == 'moment'
     assert sum(s['decision_rule'] == 'loggain' for s in d) == 60
+    # moment: 1,845 inherited + 60 homogeneous + 30 nu + 15 alpha-0.9 + 45 alpha-gap
+    assert sum(s['decision_rule'] == 'moment' for s in d) == 1995 == TOTAL - 60 - 45 - 45
 
 
 def test_homogeneous_block(d, c):
@@ -202,7 +207,7 @@ def test_c39_cv_block(d, c):
 def test_c42_accept_block(d, c):
     """C42: 45 copies of the main power-law scenarios at alpha 0.1, 0.3, 0.5 (same seed, cell, parameters, loggain
     twin) under decision_rule='accept', appended after the C39 scenarios, which are unchanged."""
-    f = d[TOTAL_C39:]
+    f = d[TOTAL_C39:TOTAL_C42]
     assert [s['block'] for s in f] == ['accept'] * 45 and [s['scenario_id'] for s in f] == list(range(2055, 2100))
     assert sorted({s['alpha'] for s in f}) == [0.1, 0.3, 0.5]
     cv = d[TOTAL_C38:TOTAL_C39]
@@ -210,3 +215,25 @@ def test_c42_accept_block(d, c):
         assert all(s[k] == v[k] for k in s if k not in ('scenario_id', 'block', 'decision_rule'))
         assert s['decision_rule'] == 'accept' and s['source_id'] is None
         assert c[s['twin_id']]['decision_rule'] == 'loggain' and s['seed'] == c[s['twin_id']]['seed']
+
+
+def test_c43_alpha_gap_block(d):
+    """C43: 45 copies of the main power-law alpha = 0.5 scenarios (same seed, cell, parameters) at alpha 0.6, 0.7,
+    0.8, appended after the C42 scenarios, which are unchanged; built as the C38 alpha-0.9 block."""
+    f = d[TOTAL_C42:]
+    assert [s['block'] for s in f] == ['alpha-gap'] * 45 and [s['scenario_id'] for s in f] == list(range(2100, 2145))
+    assert [(s['log_family'], s['alpha'], s['rep']) for s in f] == [
+        (fam, a, r) for fam in pc.FAMILIES for a in (0.6, 0.7, 0.8) for r in range(pc.N_REPS)]
+    nine = {(s['log_family'], s['rep']): s for s in d[TOTAL_C37:TOTAL_C38]}
+    for s in f:
+        src = [t for t in d[:TOTAL_C37] if t['block'] == 'main' and t['cost_type'] == 'power_law'
+               and t['log_family'] == s['log_family'] and t['alpha'] == 0.5 and t['rep'] == s['rep']]
+        assert len(src) == 1
+        t = src[0]
+        assert s['decision_rule'] == 'moment' and s['twin_id'] is None and s['source_id'] is None
+        assert s['seed'] == pc.cell_seed(t['cell_id'], s['rep']) == t['seed']
+        assert set(s) == set(t)
+        assert all(s[k] == t[k] for k in t if k not in ('scenario_id', 'block', 'alpha', 'twin_id', 'source_id'))
+        # the same scenario as the alpha-0.9 copy of its family and rep, up to alpha
+        n = nine[(s['log_family'], s['rep'])]
+        assert all(s[k] == n[k] for k in s if k not in ('scenario_id', 'block', 'alpha'))

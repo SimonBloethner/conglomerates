@@ -39,7 +39,7 @@ from analytics.identity_c35 import load  # noqa: E402
 D = os.path.join(ROOT, 'pilot_d')
 TIDY = os.path.join(D, 'tidy.csv')
 RESULTS = os.path.join(D, 'results_c42')
-IDS = range(pdd.TOTAL_C39, pdd.TOTAL)
+IDS = range(pdd.TOTAL_C39, pdd.TOTAL_C42)
 METRICS = ['K_mean', 'cong_capital_share_median', 'hill_exponent_median', 'hhi_within_median',
            'floor_exits_per_period', 'mergers_per_period', 'voluntary_exits_per_period', 'acceptance_rate',
            'floor_hit_rate_member_status', 'member_firm_share']

@@ -43,6 +43,11 @@ C42 appends one block (ids 2055-2099; the 2,055 above are unchanged):
   feasible proposal accepted, no voluntary exit; a control, not a behavioural rule) = 45, each a copy of the main
   scenario of its family, α and rep (same cell id, seed, parameters), as in the cv block.
 
+C43 appends one block (ids 2100-2144; the 2,100 above are unchanged):
+- alpha-gap: the main power-law cell of each family at fixed α ∈ {0.6, 0.7, 0.8}, 5 reps, moment rule = 45, each a
+  copy of the main α = 0.5 power-law scenario of its family and rep (same cell id, seed, parameters) with α set, as
+  in the alpha-0.9 block: fills the main block's α grid between 0.5 and 0.9. No loggain, cv or accept twin.
+
 The 27 traced runs (main, power law, 3 families, α ∈ {0.05, 0.1, 0.3}, reps 0-2) are reruns of pilot D main
 scenarios with trace_path set (analysis/run_traces.py --pilot d), not separate scenarios.
 """
@@ -62,7 +67,9 @@ TOTAL_C38 = TOTAL_C37 + 3 * pc.N_REPS
 CV_ALPHAS = [0.1, 0.3, 0.5]  # C39
 TOTAL_C39 = TOTAL_C38 + 3 * len(CV_ALPHAS) * pc.N_REPS
 ACCEPT_ALPHAS = [0.1, 0.3, 0.5]  # C42
-TOTAL = TOTAL_C39 + 3 * len(ACCEPT_ALPHAS) * pc.N_REPS
+TOTAL_C42 = TOTAL_C39 + 3 * len(ACCEPT_ALPHAS) * pc.N_REPS
+GAP_ALPHAS = [0.6, 0.7, 0.8]     # C43
+TOTAL = TOTAL_C42 + 3 * len(GAP_ALPHAS) * pc.N_REPS
 
 
 def main_power_law_cell(family):
@@ -146,6 +153,23 @@ def generate_fixed_alpha(inherited, scenario_id):
     return out, scenario_id
 
 
+def generate_alpha_gap(inherited, scenario_id, alphas=GAP_ALPHAS):
+    """C43: the main power-law alpha = 0.5 scenario of each family and rep, at each alpha in GAP_ALPHAS (as C38)."""
+    out = []
+    for family in pc.FAMILIES:
+        for alpha in alphas:
+            for rep in range(pc.N_REPS):
+                src = [s for s in inherited if s['block'] == 'main' and s['cost_type'] == 'power_law'
+                       and s['log_family'] == family and s['alpha'] == 0.5 and s['rep'] == rep]
+                assert len(src) == 1
+                s = dict(src[0])
+                s.update({'block': 'alpha-gap', 'scenario_id': scenario_id, 'alpha': alpha,
+                          'twin_id': None, 'source_id': None})
+                out.append(s)
+                scenario_id += 1
+    return out, scenario_id
+
+
 def generate_cv(inherited, scenario_id, alphas=CV_ALPHAS, rule='cv'):
     """C39: the main power-law scenario of each family, alpha in CV_ALPHAS and rep, under decision_rule='cv'.
     C42: with alphas=ACCEPT_ALPHAS, rule='accept' the accept block (block name = rule)."""
@@ -174,7 +198,9 @@ def generate_all_scenarios():
     cv, sid = generate_cv(inherited, sid)
     assert sid == TOTAL_C39, sid
     acc, sid = generate_cv(inherited, sid, ACCEPT_ALPHAS, 'accept')
-    scenarios = inherited + homog + nus + fixed + cv + acc
+    assert sid == TOTAL_C42, sid
+    gap, sid = generate_alpha_gap(inherited, sid)
+    scenarios = inherited + homog + nus + fixed + cv + acc + gap
     assert len(scenarios) == TOTAL, len(scenarios)
     return scenarios
 
