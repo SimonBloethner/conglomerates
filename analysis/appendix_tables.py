@@ -296,12 +296,13 @@ def main():
             note="A member's lower tail is cut more than its scale (p1 ratio below the sd ratio) and its upper tail less; the scale itself is what linear pooling of gross returns predicts.")
 
     # A18 concentration (14 Nov): within-market HHI, top-decile owners' capital share, effective members, assortativity
-    o.section("A18. Concentration within markets and across owners", "Main block, power law, moment rule; medians over five replications of each run's median snapshot. Top decile: capital held by the largest ten per cent of owning units, a conglomerate counted as one owner. K_eff/K: inverse Herfindahl of members' capital weights over K. Assortativity: dispersion of members' market IQRs relative to a random set of the same size.")
-    m = d[(d.block == "main") & (d.cost_type == "power_law") & (d.alpha.isin([0.0, 0.1, 0.3, 0.5]))]
+    o.section("A18. Concentration within markets and across owners", "Main block to α = 0.5, the same scenarios at α = 0.7 and 0.9 (C43, C38), power law, moment rule; medians over five replications of each run's median snapshot. Top decile: capital held by the largest ten per cent of owning units, a conglomerate counted as one owner. K_eff/K: inverse Herfindahl of members' capital weights over K. Assortativity: dispersion of members' market IQRs relative to a random set of the same size.")
+    m = d[(d.block.isin(["main", "alpha-gap", "alpha-0.9"])) & (d.cost_type == "power_law") & (d.decision_rule == "moment")
+          & (d.alpha.isin([0.0, 0.1, 0.3, 0.5, 0.7, 0.9]))]
     g = med(m, ["log_family", "alpha"], ["hhi_within_median", "top10pct_aggregate_median", "K_eff_over_K_median", "assort_iqr"])
     rows = []
     for fm in FAM:
-        for al in [0.0, 0.1, 0.3, 0.5]:
+        for al in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
             r = g.loc[(fm, al)]
             rows.append([FAMTX[fm] if al == 0.0 else "", f"{al:g}", f(r.hhi_within_median, 3), f(r.top10pct_aggregate_median),
                          f(r.K_eff_over_K_median) if al > 0 else "--", f(r.assort_iqr) if al > 0 else "--"])

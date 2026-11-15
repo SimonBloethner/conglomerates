@@ -50,10 +50,10 @@ def load(root):
 
 
 CAPTIONS = {
-    "fig1_scope": ("Scope and pooled capital by sharing rate. (a) Mean members per unit $K$ against $\\alpha$, one line per family, with the loggain rule as a dashed twin and the equal-members reference $K^*$ at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$ as ticks; (b) pooled capital share against $\\alpha$. Main block, power-law cost; medians over five replications.", "fig:scope"),
+    "fig1_scope": ("Scope and pooled capital by sharing rate. (a) Mean members per unit $K$ against $\\alpha$, one line per family, with the loggain rule as a dashed twin and the equal-members reference $K^*$ at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$ as ticks; (b) pooled capital share against $\\alpha$. Main block to $\\alpha = 0.5$ and the same scenarios at $\\alpha = 0.6$--$0.9$ (the loggain twin exists to $0.5$), power-law cost; medians over five replications.", "fig:scope"),
     "fig2_search": ("Decision parameters. (a), (b) Scope relative to the equal-members reference, $K/K^*$, against the proposal probability $p \\in \\{0.05, 0.2, 1\\}$ at $\\alpha = 0.3$ and $0.5$, one line per family; (c) scope against the window length $l$ at $\\alpha = 0.3$, Laplace and $t_3$, moment rule solid and loggain rule dashed. Search, lookback and main blocks, power-law cost; medians over five replications.", "fig:search"),
     "fig3_owner_return": ("Member--standalone owner-return gap. (a) Mean (solid) and median (dashed) gap by family and $\\alpha$, percentage points per period; (b) the gap by unit size ($K = 2$, 3--4, $5+$) at $\\alpha = 0.3$; (c) floor hits per firm-period by status (standalone solid, member dashed). The 27 traced runs.", "fig:owner_return"),
-        "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: main-block medians as lines by family; the search block ($p = 0.2$ and $1$ against the baseline $0.05$) as hollow squares, one per cell; the fixed $\\alpha = 0.9$ cell as crosses; the endogenous block as one diamond per family at its median adopted rate. No cells were run between $\\alpha = 0.5$ and $0.9$. The exponent rises with $\\alpha$ and does not respond to scope: the search block raises scope by a third to two thirds at the same rate and sits on the curve.", "fig:hill"),
+            "fig4_hill_alpha": ("Tail exponent against the sharing rate. Hill exponent of within-market shares: medians by family over the main block, the $\\alpha = 0.6$--$0.8$ cells and the $\\alpha = 0.9$ cell as lines; the search block ($p = 0.2$ and $1$ against the baseline $0.05$) as hollow squares, one per cell; the endogenous block as one diamond per family at its median adopted rate. The exponent rises with $\\alpha$, slowly to $0.5$ and steeply beyond, and does not respond to scope: the search block raises scope by a third to two thirds at the same rate and sits on the curve.", "fig:hill"),
     "fig5_burstiness": ("Clustering of floor hits. Index of dispersion of floor hits per market-period by family and $\\alpha$ (median and IQR over the traced replications) against the binomial reference.", "fig:burstiness"),
     "fig6_consent": ("Consent by scope. (a) Acceptance rate by size $K$ of the prospective unit at $\\alpha = 0.3$ under the moment and loggain rules ($p = 0.05$ and $p = 1$); (b) the equal-weight marginal gain of the $K$-th member, the incumbents' gain from a floor-sized recruit and the marginal cost, log axis; (c) the binding member's estimated gain by $K$ (median and IQR).", "fig:consent"),
 }
@@ -83,7 +83,9 @@ def save(fig, out, name):
 
 # ---------------------------------------------------------------- fig 1
 def fig1(d, c, b, out):
-    m = d[(d.block == "main") & (d.cost_type == "power_law") & (d.alpha > 0)]
+    # 15 Nov (C43): the moment-rule curve runs through the main block, the alpha-gap block (0.6-0.8) and the
+    # alpha-0.9 cell, all copies of the main power-law scenario at their alpha; the loggain twin exists to 0.5 only.
+    m = d[(d.block.isin(["main", "alpha-gap", "alpha-0.9"])) & (d.cost_type == "power_law") & (d.alpha > 0) & (d.decision_rule == "moment")]
     mc = c[(c.block == "main") & (c.cost_type == "power_law") & (c.alpha > 0) & (c.decision_rule == "loggain")]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.6, 3.0), gridspec_kw={"wspace": 0.3})
     for f in FAMILIES:
@@ -91,12 +93,12 @@ def fig1(d, c, b, out):
         gl = med(mc[mc.log_family == f], "alpha", ["K_mean"])
         ax1.plot(g.alpha, g.K_mean, color=COLOR[f], marker=MARKER[f], label=LABEL[f])
         ax1.plot(gl.alpha, gl.K_mean, color=COLOR[f], ls="--", lw=1.0, marker=MARKER[f], mfc="white", ms=4)
-        bk = b[b.family == f]
+        bk = b[(b.family == f) & (b.cost_type == "power_law") & (b.cost_multiplier == 1.0)]
         ax1.scatter(bk.alpha, bk.K_star, color=COLOR[f], marker="_", s=120, lw=1.8, zorder=5)
         ax2.plot(g.alpha, g.cong_capital_share_median, color=COLOR[f], marker=MARKER[f], label=LABEL[f])
     ax1.set_xlabel(r"sharing rate $\alpha$"); ax1.set_ylabel("mean members per unit, $K$")
     ax1.set_yscale("log"); ax1.set_yticks([2, 3, 5, 10, 20, 50]); ax1.set_yticklabels(["2", "3", "5", "10", "20", "50"]); ax1.minorticks_off()
-    ax1.set_title("(a) scope; $K^*$ as ticks", loc="left")
+    ax1.set_title("(a) scope; $K^*$ as ticks, loggain dashed", loc="left")
     ax2.set_xlabel(r"sharing rate $\alpha$"); ax2.set_ylabel("pooled capital share")
     ax2.set_ylim(0, 1); ax2.set_title("(b) pooled capital", loc="left")
     ax1.legend(loc="upper left")
@@ -174,19 +176,14 @@ def fig4(d, out):
     x = x[(x.cost_type == "power_law") & (x.floor_c.round(5) == 0.12717) & (x.sharing_rule == "proportional")]
     fig, ax = plt.subplots(figsize=(5.0, 3.4))
     for f in FAMILIES:
-        g = med(x[(x.block == "main") & (x.log_family == f)], "alpha", ["hill_exponent_median"])
+        g = med(x[(x.block.isin(["main", "alpha-gap", "alpha-0.9"])) & (x.log_family == f)], "alpha", ["hill_exponent_median"])
         ax.plot(g.alpha, g.hill_exponent_median, color=COLOR[f], marker=MARKER[f], ms=4, label=LABEL[f], zorder=4)
         sr = med(x[(x.block == "search") & (x.log_family == f)], ["alpha", "merge_thresh"], ["hill_exponent_median"])
         ax.scatter(sr.alpha, sr.hill_exponent_median, marker="s", s=28, facecolors="none", edgecolors=COLOR[f], lw=0.9,
                    label="search, $p = 0.2$ and $1$" if f == "normal" else None, zorder=3)
-        a9 = med(x[(x.block == "alpha-0.9") & (x.log_family == f)], "alpha", ["hill_exponent_median"])
-        ax.scatter(a9.alpha, a9.hill_exponent_median, marker="P", s=30, color=COLOR[f],
-                   label=r"fixed $\alpha = 0.9$" if f == "normal" else None, zorder=4)
         e = x[(x.block == "endogenous-alpha") & (x.log_family == f)]
         ax.scatter([e.alpha_adopted_median.median()], [e.hill_exponent_median.median()], marker="D", s=30, facecolors="none",
                    edgecolors=COLOR[f], lw=1.0, label="endogenous, at adopted rate" if f == "normal" else None, zorder=4)
-    ax.axvspan(0.5, 0.9, color="#000000", alpha=0.04, lw=0)
-    ax.text(0.7, ax.get_ylim()[0] + 0.03, "no runs", ha="center", va="bottom", fontsize=7, color="#555555")
     ax.set_xlabel(r"sharing rate $\alpha$"); ax.set_ylabel("Hill exponent, within-market shares")
     ax.set_xlim(-0.02, 1.0)
     h, l = ax.get_legend_handles_labels()

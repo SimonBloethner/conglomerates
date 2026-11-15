@@ -152,8 +152,8 @@ def table2(sc, out):
 def table3(d, c, b, out):
     """Table 3 (14 Nov): split in two so that neither needs shrinking. table3_scope.tex holds scope (K, loggain twin,
     K*, K/K*, pooled share, acceptance); table3t_turnover.tex holds exits and floor hits."""
-    A = [0.05, 0.1, 0.3, 0.5]
-    m = d[(d.block == "main") & (d.cost_type == "power_law") & (d.alpha.isin(A))]
+    A = [0.05, 0.1, 0.3, 0.5, 0.7, 0.9]   # 0.7 from the alpha-gap block, 0.9 from the alpha-0.9 block (C43, C38)
+    m = d[(d.block.isin(["main", "alpha-gap", "alpha-0.9"])) & (d.cost_type == "power_law") & (d.alpha.isin(A)) & (d.decision_rule == "moment")]
     mc = c[(c.block == "main") & (c.cost_type == "power_law") & (c.alpha.isin(A)) & (c.decision_rule == "loggain")]
     cols = ["K_mean", "cong_capital_share_median", "floor_exits_per_period", "voluntary_exits_per_period", "acceptance_rate",
             "floor_hit_rate_member_status", "floor_hit_rate_standalone_status"]
@@ -165,14 +165,15 @@ def table3(d, c, b, out):
             r = g.loc[(fam, a)]
             ks = kstar(b, fam, a)
             lab = FAMTEX[fam] if a == A[0] else ""
-            rows.append([lab, f"{a:g}", f(r.K_mean), f(gl.loc[(fam, a)].K_mean), str(ks) if ks else "--",
+            kl = gl.loc[(fam, a)].K_mean if (fam, a) in gl.index else None
+            rows.append([lab, f"{a:g}", f(r.K_mean), f(kl) if kl is not None else "--", str(ks) if ks else "--",
                          f(r.K_mean / ks, 2) if ks else "--", f(r.cong_capital_share_median, 2), f(r.acceptance_rate, 2)])
             rows_t.append([lab, f"{a:g}", f(r.floor_exits_per_period), f(r.voluntary_exits_per_period, 2),
                            f(r.floor_hit_rate_member_status, 3), f(r.floor_hit_rate_standalone_status, 3)])
         if fam != FAM[-1]:
             rows.append("midrule"); rows_t.append("midrule")
-    note = ("$K$: mean members per active unit (moment rule; loggain twin from pilot C); $K^*$: equal-members reference at the median "
-            "market volatility, capped at $M = 50$; pooled: share of economy capital held by members; "
+    note = ("$K$: mean members per active unit (moment rule; loggain twin from pilot C, run to $\\alpha = 0.5$); $K^*$: equal-members reference at the median "
+            "market volatility, capped at $M = 50$, computed at $\\alpha \\in \\{0.1, 0.3, 0.5\\}$; pooled: share of economy capital held by members; "
             "acceptance: share of feasible proposals accepted.")
     open(os.path.join(out, "table3_scope.tex"), "w").write(
         table(rows, ["Family", "$\\alpha$", "$K$", "$K$, loggain", "$K^*$", "$K/K^*$", "Pooled", "Accept."],
