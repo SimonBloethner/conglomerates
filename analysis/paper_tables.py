@@ -130,7 +130,7 @@ def table2(sc, out):
         ["cost level", "$\\times 0.5$, $\\times 2$: all four schedules (linear and quadratic also with $b_1, b_2$ scaled); $\\times 5$, $\\times 10$, $\\times 20$: power law",
          "Laplace; $t_3$ at the high levels", "grid; 0.1, 0.3, 0.5 at the high levels", f"{n('cost-level', 'cost-level-full', 'cost-level-high'):,}"],
         ["endogenous $\\alpha$", "$\\alpha_C$ renegotiated by each unit, start 0.1; all four cost schedules", "all three", "--", f"{n('endogenous-alpha'):,}"],
-        ["fixed $\\alpha = 0.9$", "one point beyond the grid, for the endogenous block", "all three", "0.9", f"{n('alpha-0.9'):,}"],
+        ["$\\alpha$ beyond the grid", "the main power-law scenarios at $\\alpha \\in \\{0.6, 0.7, 0.8, 0.9\\}$", "all three", "0.6--0.9", f"{n('alpha-0.9', 'alpha-gap'):,}"],
         G("Decisions"),
         ["lookback", "$l \\in \\{20, 50, 100, 200, 500\\}$", "Laplace, $t_3$", "0.1, 0.3", f"{n('lookback'):,}"],
         ["search", "$p \\in \\{0.2, 1\\}$", "all three", "0.05, 0.1, 0.3, 0.5", f"{n('search'):,}"],
