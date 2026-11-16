@@ -305,45 +305,7 @@ $T$ & periods per run; burn-in & 11,000; 8,000 \\
 \end{table}
 
 
-The simulation design is a main block plus thirteen one-factor blocks and one extra cell (Table~\ref{tab:design}). Each block holds every parameter at its main-block value except the one it varies. Within a cell the five replications use five seeds, and the same five seeds are used at every value of $\alpha$, so that comparisons across $\alpha$ are made under common random numbers \parencite{glasserman1992some} and all randomness, including the draw of market volatilities, is under the scenario seed. Every cell of the original design except the $\nu$ block is also run under the loggain rule with the same seeds ($2,100$ runs, appendix), so that the two decision rules can be compared pair by pair. Three additions were made after that design was frozen: the $\alpha = 0.9$ cell and the $\alpha \in \{0.6, 0.7, 0.8\}$ cells extend the main block's grid, and the cv block reruns the main power-law cells at $\alpha \in {0.1, 0.3, 0.5}$ under the third decision rule of Section~\ref{sec:decision}. A fourth addition, the accept block, switches consent off altogether — every feasible proposal merges and no one leaves by choice — and serves as a control for what consent costs in scope; it is not a behavioural rule.
-
-\begin{table}[htbp]
-\centering
-\caption{Simulation design}
-\label{tab:design}
-\small
-\begin{tabular}{lp{0.36\linewidth}p{0.12\linewidth}p{0.17\linewidth}r}
-\toprule
-Block & What varies & Families & $\alpha$ & Runs \\
-\midrule
-main & --; all four cost schedules & all three & grid & 540 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Environment}} \\
-$\nu$ & Student-$t$ with $\nu \in \{2.5, 4\}$ & $t$ & 0.1, 0.3, 0.5 & 30 \\
-correlation & $\rho = 0.3$ (Gaussian copula) & Laplace & grid & 45 \\
-floor level & $c \in \{0.10, 0.35\}$ & Laplace & grid & 90 \\
-size & $(M, N) \in \{25, 100\}^2$ with $c^*(N)$ & Laplace & 0, 0.1, 0.3, 0.5 & 80 \\
-homogeneous & every market at $q = 0.20$; moment and loggain rules & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Contract}} \\
-equal split & net pool split equally; all four cost schedules & normal & grid & 180 \\
-cost level & $\times 0.5$, $\times 2$: all four schedules (linear and quadratic also with $b_1, b_2$ scaled); $\times 5$, $\times 10$, $\times 20$: power law & Laplace; $t_3$ at the high levels & grid; 0.1, 0.3, 0.5 at the high levels & 630 \\
-endogenous $\alpha$ & $\alpha_C$ renegotiated by each unit, start 0.1; all four cost schedules & all three & -- & 60 \\
-$\alpha$ beyond the grid & the main power-law scenarios at $\alpha \in \{0.6, 0.7, 0.8, 0.9\}$ & all three & 0.6--0.9 & 60 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Decisions}} \\
-lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & 0.1, 0.3 & 100 \\
-search & $p \in \{0.2, 1\}$ & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Rule controls (3.3)}} \\
-cv & exact replay minus its first-order term & all three & 0.1, 0.3, 0.5 & 45 \\
-accept & every feasible proposal accepted, no voluntary exit & all three & 0.1, 0.3, 0.5 & 45 \\
-\midrule
-total &  &  &  & 2,145 \\
-\bottomrule
-\end{tabular}
-\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Five replications per cell; ``grid'' is the nine-value $\alpha$ grid of the main block; power-law cost unless stated. Every cell of the original design except the $\nu$ block is also run under the loggain rule with the same seeds (2,100 runs; appendix).\end{minipage}
-\end{table}
+The simulation design is a main block plus thirteen one-factor blocks, each holding every parameter at its main-block value except the one it varies, and four additions made after the design was frozen: the $\alpha \in \{0.6, 0.7, 0.8, 0.9\}$ cells that extend the main grid, the cv block that reruns the main cells under the third decision rule of Section~\ref{sec:decision}, and the accept block that switches consent off altogether --- every feasible proposal merges and no one leaves by choice --- as a control for what consent costs in scope, not a behavioural rule. Within a cell the five replications use five seeds, the same at every value of $\alpha$, so that comparisons across $\alpha$ are made under common random numbers \parencite{glasserman1992some}. Every cell of the original design except the $\nu$ block is also run under the loggain rule with the same seeds, so that the two rules can be compared pair by pair: 2,145 runs under the moment rule and 2,100 under loggain. Appendix~\ref{app:design} lists the blocks.
 
 The state is recorded every $100$ periods, giving $30$ post-burn-in snapshots per run, from which the tail exponent, the Herfindahl indices and unit capital are computed; mergers, exits and floor hits are counted in every period. Scope $K$ is the number of members of a unit, averaged over all active units and snapshots; the pooled capital share is the fraction of economy capital held by members; the tail exponent is the Hill estimator on the top decile of all $MN$ within-market shares; concentration within markets is the Herfindahl index of shares, and concentration across the economy the capital share of the largest ten per cent of units, where a conglomerate counts as one unit; floor hits are counted per firm-period of each affiliation status. Unless stated otherwise we report the median across the five replications of each run's post-burn-in statistic. Sampling error across replications is small relative to the differences we interpret; the uncertainty that matters is structural, which is why the design varies structure rather than adding replications. 
 
