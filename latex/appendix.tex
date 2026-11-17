@@ -68,43 +68,7 @@ Twenty runs (Laplace at $\alpha \in \{0, 0.1, 0.3\}$, $t_3$ at $\alpha = 0.3$, f
 
 Table~\ref{tab:design} lists the blocks of the design described in Section~\ref{sec:calibration}; every block holds every parameter at its main-block value except the one it varies.
 
-\begin{table}[htbp]
-\centering
-\caption{Simulation design}
-\label{tab:design}
-\small
-\begin{tabular}{lp{0.36\linewidth}p{0.12\linewidth}p{0.17\linewidth}r}
-\toprule
-Block & What varies & Families & $\alpha$ & Runs \\
-\midrule
-main & --; all four cost schedules & all three & grid & 540 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Environment}} \\
-$\nu$ & Student-$t$ with $\nu \in \{2.5, 4\}$ & $t$ & 0.1, 0.3, 0.5 & 30 \\
-correlation & $\rho = 0.3$ (Gaussian copula) & Laplace & grid & 45 \\
-floor level & $c \in \{0.10, 0.35\}$ & Laplace & grid & 90 \\
-size & $(M, N) \in \{25, 100\}^2$ with $c^*(N)$ & Laplace & 0, 0.1, 0.3, 0.5 & 80 \\
-homogeneous & every market at $q = 0.20$; moment and loggain rules & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Contract}} \\
-equal split & net pool split equally; all four cost schedules & normal & grid & 180 \\
-cost level & $\times 0.5$, $\times 2$: all four schedules (linear and quadratic also with $b_1, b_2$ scaled); $\times 5$, $\times 10$, $\times 20$: power law & Laplace; $t_3$ at the high levels & grid; 0.1, 0.3, 0.5 at the high levels & 630 \\
-endogenous $\alpha$ & $\alpha_C$ renegotiated by each unit, start 0.1; all four cost schedules & all three & -- & 60 \\
-$\alpha$ beyond the grid & the main power-law scenarios at $\alpha \in \{0.6, 0.7, 0.8, 0.9\}$ & all three & 0.6--0.9 & 60 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Decisions}} \\
-lookback & $l \in \{20, 50, 100, 200, 500\}$ & Laplace, $t_3$ & 0.1, 0.3 & 100 \\
-search & $p \in \{0.2, 1\}$ & all three & 0.05, 0.1, 0.3, 0.5 & 120 \\
-\addlinespace[3pt]
-\multicolumn{5}{l}{\emph{Rule controls (3.3)}} \\
-cv & exact replay minus its first-order term & all three & 0.1, 0.3, 0.5 & 45 \\
-accept & every feasible proposal accepted, no voluntary exit & all three & 0.1, 0.3, 0.5 & 45 \\
-\midrule
-total &  &  &  & 2,145 \\
-\bottomrule
-\end{tabular}
-\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Five replications per cell; ``grid'' is the nine-value $\alpha$ grid of the main block; power-law cost unless stated. The homogeneous block's 60 loggain runs are part of the design; every other moment-rule cell outside the $\nu$ block and the $\alpha$ cells beyond the grid is also run under the loggain rule with the same seeds (1,845 runs, not in the table).\end{minipage}
-\end{table}
+\input{tables/table2_design.tex}
 
 \section{Additional results}\label{app:results}
 

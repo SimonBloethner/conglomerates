@@ -101,7 +101,7 @@ The statistical signatures of multiplicative dynamics are unambiguous. \textcite
 
 The lower the gross return, the greater its weight in the growth rate: while an increment of $\delta_t = 0.8$ already requires the next one to be $\delta_{t + 1} = 1.25$ to compensate it, one of $\delta_t = 0.5$ requires $\delta_{t+1}$ to be $2$. This asymmetry in influence of losses over gains grows exponentially and follows a logarithmic function of the increments' impact on the growth rate as seen in Figure \ref{fig:log}. 
 
-Now suppose there are two firms $i$ and $j$ in a conglomerate and absolute increments defined as $\Delta_{it} = \delta_{it} s_{it-1} - s_{it-1}$ \parencite{sutton1997gibrat}. Furthermore, without loss of generality suppose $\Delta_{it} > \Delta_{jt}$ and a sharing amount of $x$, which is transferred from the better-performing firm $i$ to the worse-performing firm $j$. Given that $\frac{\partial^2 log(x)}{\partial^2 x} < 0$, it is clear that $\log(\Delta_{it}) - \log(\Delta_{it} - x) < \log(\Delta_{jt} + x) - \log(\Delta_{jt})$. The reduction in firm $i$'s growth is overcompensated by the increase in firm $j$'s growth, which raises the conglomerate's growth rate. This is a key result, since it is fundamentally different from conventional diversification arguments.
+Now suppose there are two firms $i$ and $j$ in a conglomerate, and write $s_{it} = \delta_{it} s_{it-1}$ for firm $i$'s size after the period's return and before any transfer. Suppose without loss of generality that $i$ did better, $s_{it} > s_{jt}$, and that an amount $x$ with $s_{jt} + x \leq s_{it}$ is transferred from $i$ to $j$. Since the logarithm is concave, the same increment $x$ is worth less at the larger size than at the smaller one: $\log s_{it} - \log(s_{it} - x) < \log(s_{jt} + x) - \log s_{jt}$. The reduction in firm $i$'s log growth is overcompensated by the increase in firm $j$'s, so the sum of the two members' log growth rates rises. This is a key result, since it is fundamentally different from conventional diversification arguments.
 
 \begin{figure}[h]
     \centering
@@ -129,10 +129,10 @@ Now suppose there are two firms $i$ and $j$ in a conglomerate and absolute incre
             \addplot[dashed] coordinates {(9,0) (9, 2.197)};
     
             % Add labels for the points
-            \node at (axis cs:2, -0.02) [anchor=north] {$\Delta_{jt}$};
-            \node at (axis cs:4, -0.02) [anchor=north] {$\Delta_{jt} + x$};
-            \node at (axis cs:7, -0.02) [anchor=north] {$\Delta_{it} - x$};
-            \node at (axis cs:9, -0.02) [anchor=north] {$\Delta_{it}$};
+            \node at (axis cs:2, -0.02) [anchor=north] {$s_{jt}$};
+            \node at (axis cs:4, -0.02) [anchor=north] {$s_{jt} + x$};
+            \node at (axis cs:7, -0.02) [anchor=north] {$s_{it} - x$};
+            \node at (axis cs:9, -0.02) [anchor=north] {$s_{it}$};
     
         \end{axis}
     \end{tikzpicture}
@@ -216,7 +216,10 @@ Pooling operates on gross factors: a member keeps $(1 - \alpha)$ of its own fact
 
 Section~\ref{sec:Background} gives a firm's time-average growth to second order as its mean log return less half its variance. Pooling leaves the mean where it was, since every member has the same drift $g$, and changes the variance, so the gain in time-average growth of member $i$ from a unit $C$ operating at rate $\alpha$ is, to the same order,
 
-$$\Delta_i(C,\alpha) \;=\; \tfrac12\Big[(1-\alpha)\,V(\epsilon_i) \;+\; \alpha\sum_{j\in C}\omega_j\,V(\epsilon_j) \;-\; V(y_i)\Big] \;-\; \Phi(K), \qquad y_i \;=\; (1-\alpha)\,\epsilon_i \;+\; \alpha\sum_{j\in C}\omega_j\,\epsilon_j ,$$
+\begin{align*}
+\Delta_i(C,\alpha) &= \tfrac12\Big[(1-\alpha)\,V(\epsilon_i) + \alpha\sum_{j\in C}\omega_j\,V(\epsilon_j) - V(y_i)\Big] - \Phi(K), \\
+y_i &= (1-\alpha)\,\epsilon_i + \alpha\sum_{j\in C}\omega_j\,\epsilon_j ,
+\end{align*}
 
 where $\varepsilon_i$ is the fluctuation of $i$'s relative return around its mean, $V(\cdot)$ a variance and $y_i$ the fluctuation $i$ carries as a member. The three terms in the bracket are the variance the firm gives up, the variance of the partners it takes on, and the variance of the pooled return it ends up with. For members of equal volatility the first two collapse to $V(\varepsilon_i)$ and the gain is half the variance reduction. The second term is where the terms of the contract bite when volatilities differ: rearranging, $\Delta_i$ contains the transfer $\tfrac12 \alpha [\sum_j \omega_j V(\varepsilon_j) - V(\varepsilon_i)]$, which is negative for a member whose variance is above the unit's capital-weighted average and positive for one below it. Pooling gross factors moves arithmetic growth from volatile members to calm ones, so a volatile member pays for its calmer partners' protection as well as its own and since $\alpha$ is one rate for the whole unit and there are no side payments, it is the volatile side that can refuse. For $K$ members of equal volatility $\sigma^2$ with independent shocks and equal weights the expression reduces to
 
@@ -252,7 +255,9 @@ $$y_{i\tau} = (1-\alpha)\,\epsilon_{i\tau} + \alpha \sum_{j \in \hat C} \omega_{
 
 with the weights $\omega_{j\tau}$ taken from the members' sizes in period $\tau$. The firm's estimate of its gain is the $\Delta_{i}$ computed on the window, with sample variances $\hat{V}$ in place of $V$ and the prospective size $\hat{K}$ in place of $K$:
 
-$$\tilde\Delta_i(\hat C, \alpha) = \tfrac12 \Bigl[ (1-\alpha)\,\hat V(\epsilon_i) + \alpha \sum_{j \in \hat C} \bar\omega_j\,\hat V(\epsilon_j) - \hat V(y_i) \Bigr] - \Phi(\hat K)$$
+$$\tilde\Delta_i(\hat C, \alpha) = \tfrac12 \Bigl[ (1-\alpha)\,\hat V(\epsilon_i) + \alpha\, \frac{1}{l} \sum_{\tau} \sum_{j \in \hat C} \omega_{j\tau}\,\epsilon_{j\tau}^2 - \hat V(y_i) \Bigr] - \Phi(\hat K),$$
+
+with the partners' term weighted period by period as $y_{i\tau}$ is, so that a partner's fluctuations count by the size it had when they occurred.
 
 This is the replayed log growth of the window expanded to second order in the fluctuations; the exact replay is the bounded variant described below, and the two coincide as $l$ grows. \footnote{for symmetric shocks the first omitted term is of fourth order. On the traced runs the omitted terms are a median $1-2$\% of the gain, within $\pm 5$ \%of it in nine windows out of ten under normal shocks and $\pm 8$\% under Laplace, and within $-19$\% to $+35$\% under t$_3$, where rare windows with an extreme draw carry the error (appendix).} The rate $\alpha$ is the rate at which the merged unit would operate: the common rate in the main design, and in the endogenous block the rate of the larger of the two units, or the starting rate when two unaffiliated firms meet. A proposal is accepted if and only if
 
@@ -274,35 +279,7 @@ The floor coefficient is calibrated to the empirical firm-size tail. \textcite{a
 
 The time-average rate is set to $g = 0.055$. Its level is immaterial: as shown in Section~\ref{sec:conglomerates} it cancels from every share, and it enters the decision rule only as the recentring constant, where its level has a second-order effect. The window is $l = 50$ periods in the main block and varied from $20$ to $500$ in a block of its own. The search probability is $p = 0.05$ and is varied to $0.2$ and $1$.
 
-\begin{table}[htbp]
-\centering
-\caption{Parameters of the main block}
-\label{tab:parameters}
-\small
-\begin{tabular}{lp{0.35\linewidth}p{0.4\linewidth}}
-\toprule
-Symbol & Meaning & Main block \\
-\midrule
-$M$ & markets & 50 \\
-$N$ & firms per market & 50 \\
-$g$ & time-average growth rate & 0.055 \\
-$c$ & reflecting floor, fraction of market mean & 0.12717 \\
-$F$ & shock family & normal, Laplace, $t_3$ \\
-$q_m$ & market IQR of $x_{it}$ & on $[0.1, 0.3]$ \\
-$\rho$ & cross-market correlation & 0.0 \\
-$\alpha$ & sharing rate & 0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5 \\
--- & sharing rule & proportional to size \\
-$\Phi(K)$ & coordination cost schedule & power law \\
-$\Phi(40)$ & cost level & 0.0017 per period \\
-$p$ & proposal probability per firm-period & 0.05 \\
-$l$ & decision window and lock-in & 50 \\
--- & decision rule & moment \\
-$T$ & periods per run; burn-in & 11,000; 8,000 \\
--- & replications per cell & 5 \\
-\bottomrule
-\end{tabular}
-\par\smallskip\begin{minipage}{0.95\linewidth}\footnotesize Cost parameters: power law $b_0 = 2.032\cdot10^{-5}$, $b_1 = 1.2$; linear $b_0 = 10^{-5}$, $b_1 = 4.225\cdot10^{-5}$; quadratic $b_0 = 10^{-4}$, $b_1 = 10^{-6}$, $b_2 = 9.7\cdot10^{-7}$; exponential $b_0 = 10^{-3}$, $b_1 = 0.013266$. The blocks that vary each parameter are in Table~\ref{tab:design}.\end{minipage}
-\end{table}
+\input{tables/table1_parameters.tex}
 
 
 The simulation design is a main block plus thirteen one-factor blocks, each holding every parameter at its main-block value except the one it varies. Within a cell the five replications use five seeds, the same at every value of $\alpha$, so that comparisons across $\alpha$ are made under common random numbers \parencite{glasserman1992some}. Every moment-rule cell outside the $\nu$ block and the $\alpha$ cells beyond the grid is also run under the loggain rule with the same seeds, so that the two rules can be compared pair by pair: 1,995 runs under the moment rule, 1,905 under loggain and 90 under the two rule controls. Appendix~\ref{app:design} lists the blocks.
@@ -319,9 +296,10 @@ The state is recorded every $100$ periods, giving $30$ post-burn-in snapshots pe
 Calculations were performed using the festus-cluster of the Bayreuth Centre for High Performance Computing (\url{https://www.bzhpc.uni-bayreuth.de}), funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) -- 523317330.
 
 \section*{Code and data availability}
-The simulation code and replication materials for this paper are publicly available at \href{https://github.com/SimonBloethner/conglomerates}{https://github.com/SimonBloethner/conglomerates}. The package includes the agent-based model implementation, calibrated parameter values for all cost-function specifications, and scripts to reproduce all figures and tables in the paper.
+The simulation code, the design files, the per-run summaries of every block and every derived file behind a table or figure are at \url{https://github.com/SimonBloethner/conglomerates}; the version this paper reports is the tag \texttt{jee-submission}, archived at Zenodo (DOI to be inserted). Every table and figure regenerates from the repository with \texttt{analysis/paper\_tables.py}, \texttt{analysis/paper\_figures.py} and \texttt{analysis/appendix\_tables.py}. The per-run result pickles and the firm-level traces of the 27 traced runs, from which the summaries were computed, exceed the repository's size limit and are kept on the Festus cluster; they are available from the authors on request.
 
-
+\section*{Use of AI tools}
+Large language models were used beyond copy editing in two ways, and the authors are accountable for the result. Coding agents implemented the simulation kernel, the design files and the analysis scripts to the authors' specification, under test suites and identity checks described in Appendix~\ref{app:identity}; every rule in the model and every parameter was set by the authors, and the results were checked against the stored run files by the authors. A language model also assisted in drafting and revising the text of Sections~\ref{sec:Results}--\ref{sec:Conclusion} and the appendix from the authors' notes and the run files; the authors revised and take responsibility for every statement in the paper.
 
 \clearpage
 \printbibliography

@@ -141,8 +141,9 @@ def table2(sc, out):
         ["total", "", "", "", f"{len(df):,}"],
     ]
     note = ("Five replications per cell; ``grid'' is the nine-value $\\alpha$ grid of the main block; power-law cost unless "
-            "stated. Every cell of the original design except the $\\nu$ block is also run under the loggain rule with the "
-            "same seeds (2,100 runs; appendix).")
+            "stated. The homogeneous block's 60 loggain runs are part of the design; every other moment-rule cell outside the "
+            "$\\nu$ block and the $\\alpha$ cells beyond the grid is also run under the loggain rule with the same seeds "
+            "(1,845 runs, not in the table).")
     open(os.path.join(out, "table2_design.tex"), "w").write(
         table(rows, ["Block", "What varies", "Families", "$\\alpha$", "Runs"], "Simulation design", "tab:design",
               colspec="lp{0.36\\linewidth}p{0.12\\linewidth}p{0.17\\linewidth}r", note=note))
